@@ -1,0 +1,193 @@
+# Cursor Rules for SafeChat Project
+
+## 🎯 Project Overview
+This is a full-stack chat application with React frontend and Node.js backend, implementing secure messaging with role-based access control.
+
+## 🏗️ Architecture Principles
+
+### Model-View-Controller (MVC) Enforcement
+- **Backend**: Strictly follow MVC pattern
+  - Models: Database schemas and business logic in `/server/models/`
+  - Views: API responses and data formatting in `/server/controllers/`
+  - Controllers: Request handling and business logic in `/server/controllers/`
+  - Services: Model to request data into business logic layer in `/server/services/`
+  - Routes: API endpoints in `/server/routes/`
+
+- **Frontend**: Component-based architecture
+  - Components: Reusable UI components in `/client/src/components/`
+  - Pages: Route-level components in `/client/src/pages/`
+  - Context: State management in `/client/src/context/`
+  - Services: API calls in `/client/src/services/`
+
+### File Structure Standards
+```
+server/
+├── models/          # Database models and schemas
+├── controllers/     # Request handlers (MVC Controllers)
+├── services/        # Business logic layer
+├── routes/          # API route definitions
+├── middleware/      # Custom middleware
+├── config/          # Configuration files
+└── utils/           # Utility functions
+
+client/
+├── src/
+│   ├── components/  # Reusable UI components
+│   ├── pages/       # Route-level components
+│   ├── context/     # State management
+│   ├── services/    # API services
+│   └── utils/       # Utility functions
+```
+
+## 🔧 Development Standards
+
+### Cross-Platform Compatibility
+- **Node.js Scripts**: Use Node.js built-in modules (`fs`, `path`, `child_process`) instead of shell commands
+- **File Paths**: Use `path.join()` for cross-platform path handling
+- **Line Endings**: Use LF (`\n`) for consistency across platforms
+- **Shell Commands**: Avoid platform-specific commands (`grep`, `sed`, `awk`) in favor of Node.js alternatives
+- **Environment**: Ensure all scripts work on Windows, macOS, and Linux
+
+### Library and Dependency Management
+- **Version Updates**: Regularly update dependencies to latest stable versions
+- **Security**: Use `npm audit` to check for vulnerabilities
+- **Maintenance**: Prefer well-maintained libraries with active development
+- **Bundle Size**: Keep frontend bundle size minimal
+- **Tree Shaking**: Use ES6 imports for better tree shaking
+
+### Code Quality Standards
+- **ESLint**: Enforce consistent code style
+- **Prettier**: Maintain consistent formatting
+- **TypeScript**: Use TypeScript for better type safety (when applicable)
+- **Comments**: Document complex business logic
+- **Error Handling**: Implement proper error handling and logging
+
+## 🚀 Pre-Commit Hooks and Validation
+
+### Backend Pre-Commit Rules
+- **Logging**: Use `logger` instead of `console` for all logging
+- **Logger Format**: Use single string arguments with template literals, no comma-separated arguments
+- **Environment**: Use centralized environment config (`config/env.js`), no direct `dotenv` imports
+- **Console Usage**: Block any `console.log`, `console.error`, etc.
+- **Direct Dotenv**: Block direct `require('dotenv')` or `require('dotenv-safe')` imports
+
+### Frontend Pre-Commit Rules
+- **Environment**: Use centralized environment config (`src/config/env.js`)
+- **Console Usage**: Block `console.log` in production builds
+- **API Calls**: Use centralized API service
+- **State Management**: Use context for global state
+
+### Validation Scripts
+```bash
+# Backend validation
+npm run lint:console      # Check for console usage
+npm run lint:logger-commas # Check logger format
+npm run validate-env      # Validate environment variables
+
+# Frontend validation
+npm run lint              # ESLint checks
+npm run validate-env      # Validate environment variables
+```
+
+## 🔐 Security Standards
+
+### Authentication & Authorization
+- **JWT**: Use secure JWT tokens with proper expiration
+- **Role-Based Access**: Implement role-based permissions
+- **Password Security**: Use bcrypt for password hashing
+- **Session Management**: Implement proper session handling
+
+### Data Protection
+- **Input Validation**: Validate all user inputs
+- **SQL Injection**: Use parameterized queries
+- **XSS Prevention**: Sanitize user inputs
+- **CORS**: Configure proper CORS policies
+
+## 📝 Code Style Guidelines
+
+### JavaScript/Node.js
+- **Async/Await**: Prefer async/await over callbacks
+- **Error Handling**: Use try-catch blocks
+- **Destructuring**: Use object destructuring
+- **Arrow Functions**: Use arrow functions for callbacks
+- **Template Literals**: Use template literals for string interpolation
+
+### React/JSX
+- **Functional Components**: Use functional components with hooks
+- **Props Destructuring**: Destructure props in function parameters
+- **Event Handlers**: Use arrow functions for event handlers
+- **Conditional Rendering**: Use logical operators and ternary operators
+- **Key Props**: Always provide unique keys for list items
+
+## 🧪 Testing Standards
+- **Unit Tests**: Write unit tests for business logic
+- **Integration Tests**: Test API endpoints
+- **Component Tests**: Test React components
+- **Coverage**: Maintain good test coverage
+
+## 📚 Documentation
+- **README**: Keep README files updated
+- **API Docs**: Document API endpoints
+- **Code Comments**: Comment complex logic
+- **Setup Instructions**: Provide clear setup guides
+
+## 🚨 Error Handling
+- **Graceful Degradation**: Handle errors gracefully
+- **User Feedback**: Provide meaningful error messages
+- **Logging**: Log errors for debugging
+- **Recovery**: Implement error recovery mechanisms
+
+## 🔄 Git Workflow
+- **Branch Naming**: Use descriptive branch names
+- **Commit Messages**: Write clear commit messages
+- **Pull Requests**: Use pull requests for code review
+- **Squash Commits**: Squash commits before merging
+
+## 📦 Build and Deployment
+- **Environment Variables**: Use proper environment configuration
+- **Build Optimization**: Optimize build process
+- **Asset Optimization**: Optimize static assets
+- **Deployment**: Use CI/CD pipelines
+
+## 🎨 UI/UX Standards
+- **Responsive Design**: Ensure mobile compatibility
+- **Accessibility**: Follow WCAG guidelines
+- **Consistent Design**: Maintain design consistency
+- **Loading States**: Provide loading indicators
+- **Error States**: Show meaningful error messages
+
+## 🔍 Code Review Checklist
+- [ ] Follows MVC architecture
+- [ ] Cross-platform compatible
+- [ ] No console usage (backend)
+- [ ] Proper logger usage
+- [ ] Environment variables centralized
+- [ ] Security best practices followed
+- [ ] Error handling implemented
+- [ ] Code is documented
+- [ ] Tests are included
+- [ ] Performance considerations addressed
+
+## 🚀 Quick Start Commands
+```bash
+# Full project setup
+npm run i
+
+# Backend development
+cd server && npm run dev
+
+# Frontend development
+cd client && npm run dev
+
+# Run all tests
+npm run test
+
+# Validate environment
+npm run validate-env
+```
+
+## 📞 Support
+- Check existing documentation first
+- Follow established patterns
+- Ask for code review when unsure
+- Document any new patterns or conventions
