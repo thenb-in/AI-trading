@@ -23,7 +23,12 @@ export default function AdminSidebar({
 
   const menuItems = [
     { id: "users", label: "User Management", icon: User, path: "/admin/users" },
-    
+    {
+      id: "company",
+      label: "Company Settings",
+      icon: Building,
+      path: "/admin/company",
+    },
    
     userData?.role?.name === "sadmin" && {
       id: "rolesAndPermissions",
