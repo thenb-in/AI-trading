@@ -8,7 +8,7 @@ const {
   revokeRefreshToken 
 } = require('../utils/authUtils');
 
-const signup = async ({ phone, password, name, companyId, role }) => {
+const signup = async ({ phone, username, password, name, companyId, role }) => {
   logger.info('Signup attempt', { phone, name, companyId, role });
   
   const existingUser = await User.findOne({ where: { phone } });
@@ -21,7 +21,6 @@ const signup = async ({ phone, password, name, companyId, role }) => {
       await existingUser.update({
         isActive: true,
         is_approved: false,
-        // todo : handle the situation when the same user leaves one company and joins another company that are using our safe chat 
       });
       logger.info('Reactivated existing user', { phone });
       return existingUser;
@@ -57,6 +56,7 @@ const signup = async ({ phone, password, name, companyId, role }) => {
 
   const user = await User.create({
     phone,
+    username,
     password: hashedPassword,
     name,
     companyId,
@@ -72,18 +72,18 @@ const signup = async ({ phone, password, name, companyId, role }) => {
 };
 
 const loginUser = async (credentials) => {
-  const { phone, password } = credentials;
-  logger.info('User login attempt', { phone });
+  const { username, password } = credentials;
+  logger.info('User login attempt', { username });
 
   // Fetch user with relations including role and permissions
-  logger.info('Looking up user by phone', { phone });
+  logger.info('Looking up user by username', { username });
   const user = await User.findOne({
-    where: { phone },
+    where: { username },
     include: [
       { 
         model: Company, 
         as: 'company',
-        attributes: ['id', 'name','deleteOnSeen', 'messageTimer']
+        attributes: ['id', 'name']
       },
       { 
         model: Role, 
@@ -101,14 +101,14 @@ const loginUser = async (credentials) => {
     }
   });
   if (!user) {
-    logger.warn('Login failed: User not found', { phone });
+    logger.warn('Login failed: User not found', { username });
     throw { status: 401, message: "User not found" };
   }
 
   logger.info('Verifying user password', { userId: user.id });
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    logger.warn('Login failed: Invalid password', { phone });
+    logger.warn('Login failed: Invalid password', { username });
     throw { status: 401, message: "Invalid credentials" };
   }
 
@@ -155,6 +155,7 @@ logger.info('Refresh token generated', { refreshToken });
     user: {
       id: userData.id,
       phone: userData.phone,
+      username: userData.username,
       name: userData.name,
       isActive: userData.isActive,
       company: userData.company,
@@ -170,8 +171,8 @@ logger.info('Refresh token generated', { refreshToken });
   };
 };
 
-const resetPassword = async ({ phone, password }) => {
-  const user = await User.findOne({ where: { phone } });
+const resetPassword = async ({ username, password }) => {
+  const user = await User.findOne({ where: { username } });
   if (!user) {
     throw new Error('User not found');
   }

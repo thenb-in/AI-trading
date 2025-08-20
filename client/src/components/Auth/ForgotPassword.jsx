@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaLock, FaPhone, FaArrowLeft ,FaUser} from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
 
 const ForgotPassword = () => {
   const [formData, setFormData] = useState({
-    phone: '',
+    username: '',
     newPassword: '',
     confirmPassword: '',
   });
@@ -21,13 +21,8 @@ const ForgotPassword = () => {
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
   };
 
-  const toggleNewPasswordVisibility = () => {
-    setShowNewPassword(!showNewPassword);
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
+  const toggleNewPasswordVisibility = () => setShowNewPassword(!showNewPassword);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
   const handlePasswordResetSubmit = async (e) => {
     e.preventDefault();
@@ -42,7 +37,7 @@ const ForgotPassword = () => {
 
     try {
       await ApiService.request('POST', '/auth/reset-password', {
-        phone: formData.phone,
+        username: formData.username,
         password: formData.newPassword,
       });
       toast.success('Password reset successful! Please log in.');
@@ -72,7 +67,7 @@ const ForgotPassword = () => {
         >
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Reset Password</h2>
-            <p className="text-gray-600">Enter your phone number and new password</p>
+            <p className="text-gray-600">Enter your username and new password</p>
           </div>
 
           {error && (
@@ -81,6 +76,7 @@ const ForgotPassword = () => {
             </div>
           )}
 
+          {/* Username Input */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -88,17 +84,20 @@ const ForgotPassword = () => {
               </div>
               <input
                 type="text"
-                name="phone"
-                id="phone"
+                name="username"
+                id="username"
                 placeholder="Username"
-                value={formData.phone}
+                value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg 
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 
+                           focus:border-transparent transition duration-200"
               />
             </div>
           </div>
 
+          {/* New Password */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -112,18 +111,22 @@ const ForgotPassword = () => {
                 value={formData.newPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg 
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 
+                           focus:border-transparent transition duration-200"
               />
               <button
                 type="button"
                 onClick={toggleNewPasswordVisibility}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none transition"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 
+                           hover:text-gray-700 focus:outline-none transition"
               >
                 {showNewPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
 
+          {/* Confirm Password */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -137,33 +140,42 @@ const ForgotPassword = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg 
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 
+                           focus:border-transparent transition duration-200"
               />
               <button
                 type="button"
                 onClick={toggleConfirmPasswordVisibility}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none transition"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 
+                           hover:text-gray-700 focus:outline-none transition"
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>
 
+          {/* Submit */}
           <div className="mb-6">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg 
+                         hover:bg-blue-700 transition duration-300 
+                         transform hover:scale-[1.02] shadow-md hover:shadow-lg 
+                         disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
             >
               {isLoading ? 'Resetting...' : 'Reset Password'}
             </button>
           </div>
 
+          {/* Back to Login */}
           <div className="text-center">
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition flex items-center justify-center gap-2"
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline 
+                         transition flex items-center justify-center gap-2"
             >
               <FaArrowLeft /> Back to Login
             </button>

@@ -7,7 +7,7 @@ const AdminDashboard = () => {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
-        <Route index element={<Navigate to="chat" replace />} />
+        <Route index element={<Navigate to="users" replace />} />
         <Route path="users" element={<UserManagement />} />
       </Route>
     </Routes>

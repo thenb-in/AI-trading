@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaUser, FaLock } from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     phone: '',
     password: '',
     confirmPassword: '',
     companyId: '',
-    role: 'sadmin',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -21,20 +21,20 @@ export default function Signup() {
   const navigate = useNavigate();
   const location = useLocation();
 
-useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  const companyParam = params.get('company_id');
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const companyParam = params.get('company_id');
 
-  if (companyParam) {
-    const id = companyParam.substring(companyParam.lastIndexOf('_') + 1);
+    if (companyParam) {
+      const id = companyParam.substring(companyParam.lastIndexOf('_') + 1);
     console.log('Company ID:', id);
-    setFormData(prev => ({
-      ...prev,
-      companyId: id || '',
-    }));
+      setFormData(prev => ({
+        ...prev,
+        companyId: id || '',
+      }));
     console.log('Form Data:', formData);
-  }
-}, [location.search]);
+    }
+  }, [location.search]);
 
 
   useEffect(() => {
@@ -78,6 +78,7 @@ useEffect(() => {
     try {
       await ApiService.signup({
         name: formData.name,
+        username: formData.username,
         phone: formData.phone,
         password: formData.password,
         companyId: parseInt(formData.companyId, 10),
@@ -111,9 +112,10 @@ useEffect(() => {
         >
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h2>
-            <p className="text-gray-600">Join SafeChat today</p>
+            <p className="text-gray-600">Join App today</p>
           </div>
 
+          {/* Full Name */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -132,6 +134,7 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Username */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -139,9 +142,28 @@ useEffect(() => {
               </div>
               <input
                 type="text"
+                name="username"
+                id="username"
+                placeholder="Username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div className="mb-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FaPhone className="text-gray-400" />
+              </div>
+              <input
+                type="text"
                 name="phone"
                 id="phone"
-                placeholder="Username"
+                placeholder="Phone Number"
                 value={formData.phone}
                 onChange={handleChange}
                 required
@@ -150,6 +172,7 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Password */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -175,6 +198,7 @@ useEffect(() => {
             </div>
           </div>
 
+          {/* Confirm Password */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -206,7 +230,7 @@ useEffect(() => {
               <input
                 type="number"
                 name="companyId"
-              id="companyId"
+                id="companyId"
                 placeholder="Company ID"
                 value={formData.companyId}
                 onChange={handleChange}

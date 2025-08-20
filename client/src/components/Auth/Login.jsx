@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaLock, FaPhone ,FaUser} from 'react-icons/fa';
+import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import ApiService from '../../services/ApiService'
+import ApiService from '../../services/ApiService';
 import { useDataContext } from '../../context/AuthContext';
 
 export default function Login() {
-  const [formData, setFormData] = useState({ phone: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,23 +24,16 @@ export default function Login() {
     setError(null);
 
     try {
-      console.log('Attempting login with:', { phone: formData.phone });
-      setIsLoading(true);
+      console.log('Attempting login with:', { username: formData.username });
+      
       const response = await ApiService.login({
-        phone: formData.phone,
+        username: formData.username,
         password: formData.password
       });
       
-      // Log the full response to see what we're getting
       console.log('Login response:', response);
-      
-      // For HTTP-only cookies, we don't need to handle the token on the client
-      console.log('Login successful, checking for HTTP-only cookie...');
-      
-      // Log all cookies for debugging
       console.log('Current cookies:', document.cookie);
       
-      // Handle the response based on your API structure
       const { user } = response.data;
       setUserData(user);
       toast.success('Login successful!');
@@ -51,7 +44,7 @@ export default function Login() {
       );
       
       // Navigate based on admin permission
-      navigate(isAdmin ? '/admin' : '/chat');
+      navigate(isAdmin ? '/admin' : '/user-routes');
     } catch (err) {
       const message = err.response?.data?.error || err.response?.error || err.error || 'Login failed. Please check your credentials.';
       setError(message);
@@ -81,7 +74,7 @@ export default function Login() {
         >
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Log in to your SafeChat account</p>
+            <p className="text-gray-600">Log in to your App account</p>
           </div>
 
           {error && (
@@ -90,17 +83,18 @@ export default function Login() {
             </div>
           )}
 
+          {/* Username field */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser style={{ transform: 'scaleX(-1)' }} className="text-gray-400" />
+                <FaUser className="text-gray-400" />
               </div>
               <input
                 type="text"
-                name="phone"
-                id="phone"
+                name="username"
+                id="username"
                 placeholder="Username"
-                value={formData.phone}
+                value={formData.username}
                 onChange={handleChange}
                 required
                 className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
@@ -108,6 +102,7 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Password field */}
           <div className="mb-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -133,6 +128,7 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Forgot password */}
           <div className="mb-4 text-right">
             <button
               type="button"
@@ -143,6 +139,7 @@ export default function Login() {
             </button>
           </div>
 
+          {/* Submit */}
           <div className="mb-6">
             <button
               type="submit"
@@ -153,6 +150,7 @@ export default function Login() {
             </button>
           </div>
 
+          {/* Signup link */}
           <div className="text-center">
             <p className="text-sm text-gray-600">
               Not registered yet?{' '}

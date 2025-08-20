@@ -39,8 +39,8 @@ const resetPasswordValidation = [
 
 const signup = async (req, res) => {
   try {
-    const { phone, password, name, companyId ,role} = req.body;
-    const user = await authService.signup({ phone, password, name, companyId,role });
+    const { phone, username, password, name, companyId, role } = req.body;
+    const user = await authService.signup({ phone, username, password, name, companyId, role });
     res.status(201).json({ message: 'User registered successfully, awaiting admin approval', userId: user.id });
   } catch (error) {
     if (error.message === 'Phone number already exists') {
@@ -89,6 +89,7 @@ const login = async (req, res) => {
       user: {
         id: user.id,
         phone: user.phone,
+        username: user.username,
         name: user.name,
         role: user.role,
         companyId: user.companyId,
@@ -115,8 +116,8 @@ const login = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { phone, password } = req.body;
-    await authService.resetPassword({ phone, password });
+    const { username, password } = req.body;
+    await authService.resetPassword({ username, password });
     res.status(200).json({ message: 'Password reset successfully, account deactivated pending admin approval' });
   } catch (error) {
     if (error.message === 'User not found') {
