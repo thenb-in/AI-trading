@@ -6,7 +6,7 @@ const companyService = {
   async getCompanySettings(id) {
     try {
       const company = await Company.findByPk(id, {
-        attributes: ['id', 'name', 'deleteOnSeen', 'messageTimer', 'hideChat' ,'mobileApp','desktopWeb','mobileWeb'],
+        attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb'],
       });
       if (!company) {
         throw new Error('Company not found');
@@ -26,17 +26,16 @@ const companyService = {
         throw new Error('Company not found');
       }
       await company.update({
-        deleteOnSeen: data.deleteOnSeen ,
-        messageTimer: data.messageTimer ,
+        
         name: data.name,
-        hideChat: data.hideChat,
+      
         mobileApp: data.mobileApp,
         desktopWeb: data.desktopWeb,
         mobileWeb: data.mobileWeb,
       });
       return company;
     } catch (error) {
-      throw new Error(`Failed to update company settings: ${error.message}`);
+      throw new Error(`Failed to update company settings: ${error.message}`); 
     }
   },
 
@@ -45,9 +44,6 @@ const companyService = {
       const { name, messageTimer = null, hideChat = false, deleteOnSeen=false } = data;
       const company = await Company.create({
         name,
-        deleteOnSeen,
-        messageTimer,
-        hideChat,
       });
       return company;
     } catch (error) {

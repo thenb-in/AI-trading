@@ -231,7 +231,7 @@ const getCurrentUser = async (userId) => {
         {
           model: Company,
           as: 'company',
-          attributes: ['id', 'name','deleteOnSeen', 'messageTimer']
+          attributes: ['id', 'name']
         },
         {
           model: Role,
