@@ -1,0 +1,128 @@
+import PropTypes from 'prop-types';
+import { useCallback } from 'react';
+import UserTableRow from './UserTableRow';
+
+const UserTable = ({
+  users,
+  roles,
+  title,
+  emptyMessage,
+  statusColor,
+  bulkDeleteMode,
+  selectedUsers,
+  toggleUserSelection,
+  showConfirmation,
+  selectAllUsersFromTable,
+  deselectAllUsersFromTable,
+  handleRoleChange,
+  // deviceAccessOptions,
+  handleDeviceOptionUpdate
+}) => {
+  const allUsersInTableSelected = users.length > 0 && users.every(user => selectedUsers.includes(user.id));
+
+  const formatLastActive = useCallback((dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    };
+    return date.toLocaleDateString('en-GB', options).replace(',', '');
+  }, []);
+  
+
+
+  return (
+    <div className={`mb-4 rounded-lg overflow-hidden shadow-md border ${statusColor || 'bg-gray-100'}`}>
+      <div className="p-4 flex justify-between items-center">
+        <h3 className="font-bold text-lg">{title} ({users.length})</h3>
+        
+      </div>
+      <div className="overflow-x-auto">
+        {users.length === 0 ? (
+          <p className="p-4 text-center text-gray-500">{emptyMessage}</p>
+        ) : (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                   {bulkDeleteMode && users.length > 0 && (
+                    <button
+                      onClick={() =>
+                        allUsersInTableSelected
+                          ? deselectAllUsersFromTable(users)
+                          : selectAllUsersFromTable(users)
+                      }
+                      className="px-3 py-1 mt-2 ml-2 text-xs font-semibold rounded-md bg-gray-200 hover:bg-gray-300 transition-colors"
+                    >
+                      {allUsersInTableSelected ? 'Deselect All' : 'Select All'}
+                    </button>
+                  )}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Access</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => (
+                <UserTableRow
+                  key={user.id}
+                  user={user}
+                  roles={roles}
+                  selectedUsers={selectedUsers}
+                  bulkDeleteMode={bulkDeleteMode}
+                  toggleUserSelection={toggleUserSelection}
+                  showConfirmation={showConfirmation}
+                  formatLastActive={formatLastActive}
+                  handleRoleChange={handleRoleChange}
+                  // deviceAccessOptions={deviceAccessOptions}
+                  handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
+UserTable.propTypes = {
+  users: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    firstname: PropTypes.string,
+    lastname: PropTypes.string,
+    name: PropTypes.string,
+    phone: PropTypes.string,
+    email: PropTypes.string,
+    role: PropTypes.shape({
+      name: PropTypes.string
+    }),
+    is_approved: PropTypes.bool,
+    last_active: PropTypes.string,
+  })).isRequired,
+  roles: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired
+  })).isRequired,
+  title: PropTypes.string.isRequired,
+  emptyMessage: PropTypes.string.isRequired,
+  statusColor: PropTypes.string,
+  bulkDeleteMode: PropTypes.bool.isRequired,
+  selectedUsers: PropTypes.arrayOf(PropTypes.string).isRequired,
+  toggleUserSelection: PropTypes.func.isRequired,
+  showConfirmation: PropTypes.func.isRequired,
+  selectAllUsersFromTable: PropTypes.func.isRequired,
+  deselectAllUsersFromTable: PropTypes.func.isRequired,
+  handleRoleChange: PropTypes.func.isRequired,
+  // deviceAccessOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
+  handleDeviceOptionUpdate: PropTypes.func.isRequired
+};
+
+export default UserTable;

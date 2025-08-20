@@ -1,0 +1,53 @@
+import React, { useState } from 'react';;
+import { motion } from 'framer-motion';
+import { FaUser, FaLock } from 'react-icons/fa';
+const AnimatedBackground = () => {
+  return (
+    <div className="md:w-1/2 bg-gradient-to-br from-blue-600 to-teal-600 flex items-center justify-center p-8">
+    <div className="text-center text-white">
+      <motion.div
+        animate={{
+          y: [0, -20, 0],
+          rotate: [0, 10, -10, 0],
+        }}
+        transition={{
+          y: { repeat: Infinity, duration: 3, ease: 'easeInOut' },
+          rotate: { repeat: Infinity, duration: 5, ease: 'easeInOut' },
+        }}
+        className="mb-6"
+      >
+        <FaUser className="text-6xl mx-auto" />
+      </motion.div>
+      <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1 }}
+        className="text-4xl font-bold mb-4"
+      >
+        Welcome to SafeChat
+      </motion.h1>
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.2 }}
+        className="text-lg"
+      >
+        Secure messaging for your team
+      </motion.p>
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+        }}
+        transition={{
+          scale: { repeat: Infinity, duration: 2, ease: 'easeInOut' },
+        }}
+        className="mt-6"
+      >
+        <FaLock className="text-4xl mx-auto" />
+      </motion.div>
+    </div>
+  </div>
+  );
+};
+
+export default AnimatedBackground;

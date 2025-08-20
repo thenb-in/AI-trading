@@ -1,0 +1,19 @@
+{
+  "name": "safechat",
+  "version": "1.0.0",
+  "description": "SafeChat application with client and server",
+  "main": "index.js",
+  "scripts": {
+    "i": "npm install && cd client && npm install && cd ../server && npm install",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

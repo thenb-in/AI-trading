@@ -1,0 +1,103 @@
+// services/companyService.js
+const { Company, User, Room, Message } = require('../models');
+const { Op } = require('sequelize');
+
+const companyService = {
+  async getCompanySettings(id) {
+    try {
+      const company = await Company.findByPk(id, {
+        attributes: ['id', 'name', 'deleteOnSeen', 'messageTimer', 'hideChat' ,'mobileApp','desktopWeb','mobileWeb'],
+      });
+      if (!company) {
+        throw new Error('Company not found');
+      }
+      return company;
+    } catch (error) {
+      throw new Error(`Failed to fetch company settings: ${error.message}`);
+    }
+  },
+
+  async updateCompanySettings(id, data) {
+    console.log('Updating company settings for ID:', id);
+    console.log('New settings:', data);
+    try {
+      const company = await Company.findByPk(id);
+      if (!company) {
+        throw new Error('Company not found');
+      }
+      await company.update({
+        deleteOnSeen: data.deleteOnSeen ,
+        messageTimer: data.messageTimer ,
+        name: data.name,
+        hideChat: data.hideChat,
+        mobileApp: data.mobileApp,
+        desktopWeb: data.desktopWeb,
+        mobileWeb: data.mobileWeb,
+      });
+      return company;
+    } catch (error) {
+      throw new Error(`Failed to update company settings: ${error.message}`);
+    }
+  },
+
+  async createCompany(data) {
+    try {
+      const { name, messageTimer = null, hideChat = false, deleteOnSeen=false } = data;
+      const company = await Company.create({
+        name,
+        deleteOnSeen,
+        messageTimer,
+        hideChat,
+      });
+      return company;
+    } catch (error) {
+      throw new Error(`Failed to create company: ${error.message}`);
+    }
+  },
+
+  async getCompanies() {
+    try {
+      const companies = await Company.findAll({
+        include: [
+          { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
+          { model: Room, as: 'rooms', attributes: ['id', 'name'] },
+        ],
+      });
+      return companies;
+    } catch (error) {
+      throw new Error(`Failed to fetch companies: ${error.message}`);
+    }
+  },
+
+  async getCompany(id) {
+    try {
+      const company = await Company.findByPk(id, {
+        include: [
+          { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
+          { model: Room, as: 'rooms', attributes: ['id', 'name'] },
+        ],
+      });
+      if (!company) {
+        throw new Error('Company not found');
+      }
+      return company;
+    } catch (error) {
+      throw new Error(`Failed to fetch company: ${error.message}`);
+    }
+  },
+
+  async deleteCompany(id) {
+    try {
+      const company = await Company.findByPk(id);
+      if (!company) {
+        throw new Error('Company not found');
+      }
+      await company.destroy();
+      return { message: 'Company deleted successfully' };
+    } catch (error) {
+      throw new Error(`Failed to delete company: ${error.message}`);
+    }
+  },
+};
+
+module.exports = companyService;
