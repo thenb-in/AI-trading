@@ -24,7 +24,7 @@ const AnimatedBackground = () => {
         transition={{ duration: 1 }}
         className="text-4xl font-bold mb-4"
       >
-        Welcome to SafeChat
+        Welcome to Your App
       </motion.h1>
       <motion.p
         initial={{ opacity: 0, y: 20 }}
@@ -32,7 +32,7 @@ const AnimatedBackground = () => {
         transition={{ duration: 1, delay: 0.2 }}
         className="text-lg"
       >
-        Secure messaging for your team
+        Customize according to your needs
       </motion.p>
       <motion.div
         animate={{
