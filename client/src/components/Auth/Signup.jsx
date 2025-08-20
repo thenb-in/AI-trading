@@ -107,7 +107,7 @@ export default function Signup() {
     >
       <div className="w-full max-w-md">
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(e) => handleSubmit(e)}
           className="bg-white shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4 transform transition-all duration-300 hover:scale-[1.01]"
         >
           <div className="text-center mb-6">
