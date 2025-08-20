@@ -7,7 +7,7 @@ const {
   revokeRefreshToken ,
   generateRefreshToken
 } = require('../utils/authUtils');
-require('dotenv').config();
+const env = require('../config/env');
 
 // In-memory cache to store promises of ongoing refresh token operations
 const refreshTokenPromises = new Map();
@@ -19,12 +19,12 @@ const refreshTokenPromises = new Map();
 exports.protect = async (req, res, next) => {
   try {
     // Validate required environment variables
-    if (!process.env.JWT_SECRET || !process.env.REFRESH_TOKEN_SECRET) {
+    if (!env.JWT_SECRET || !env.REFRESH_TOKEN_SECRET) {
       logger.error('Missing required JWT secrets in environment variables');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    if (!process.env.MAX_JWT_ACCESS_EXPIRATION_MS || !process.env.MAX_JWT_REFRESH_EXPIRATION_MS) {
+    if (!env.MAX_JWT_ACCESS_EXPIRATION_MS || !env.MAX_JWT_REFRESH_EXPIRATION_MS) {
       logger.warn('Missing JWT expiration times in environment variables, using defaults');
     }
 
@@ -38,7 +38,7 @@ exports.protect = async (req, res, next) => {
     // 1. Try access token first
     if (accessToken) {
       try {
-        const decoded = verifyToken(accessToken, process.env.JWT_SECRET);
+        const decoded = verifyToken(accessToken, env.JWT_SECRET);
         const user = await User.findByPk(decoded.id, {
           attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'is_approved', 'refresh_token']
         });
@@ -76,7 +76,7 @@ exports.protect = async (req, res, next) => {
     if (refreshToken) {
       let decodedRefresh;
       try {
-        decodedRefresh = verifyToken(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        decodedRefresh = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
       } catch (err) {
         logger.error('Refresh token verification failed:', err.message);
         res.clearCookie('accessToken');

@@ -52,7 +52,7 @@ export const DataProvider = ({ children }) => {
         // Redirect from login page if already authenticated
         if (isLoginPage && user) {
           const isAdmin = user.role?.permissions?.some((p) => p.name === "isAdmin");
-          navigate(isAdmin ? "/admin" : "/chat");
+          navigate(isAdmin ? "/admin" : "/app");
         }
       } catch (err) {
         console.error("Error fetching user:", err);
