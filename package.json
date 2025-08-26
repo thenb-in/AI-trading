@@ -1,7 +1,7 @@
 {
-  "name": "safechat",
+  "name": "nbnext",
   "version": "1.0.0",
-  "description": "SafeChat application with client and server",
+  "description": "NB Next application with client and server",
   "main": "index.js",
   "scripts": {
     "i": "npm install && cd client && npm install && cd ../server && npm install && npm run setup-hooks && npm run setup-env",
