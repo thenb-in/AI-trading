@@ -1,20 +1,20 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
-require('dotenv').config();
+const env = require('../config/env');
 
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user.id },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRATION  }
+    env.JWT_SECRET,
+    { expiresIn: env.JWT_ACCESS_EXPIRATION  }
   );
 };
 
 const generateRefreshToken = async (user) => {
   return jwt.sign(
     { id: user.id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRATION }
+    env.REFRESH_TOKEN_SECRET,
+    { expiresIn: env.JWT_REFRESH_EXPIRATION }
   );
 
  

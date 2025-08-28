@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const cors = require('cors');
-require('dotenv').config();
+const env = require('./config/env');
 // require('./sheduler/messageDelete')
 const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
@@ -24,7 +24,7 @@ db.sequelize.authenticate()
   .catch(err =>  logger.error('❌ Database connection error:', err));
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/static', express.static(path.join(__dirname, 'static')));
@@ -45,7 +45,7 @@ app.use(errorMiddleware);
 
 
 // Start server after syncing database
-const PORT = process.env.PORT || 5000;
+const PORT = env.PORT;
 
 db.sequelize.sync({ force: false }).then(() => {
   server.listen(PORT, () => {

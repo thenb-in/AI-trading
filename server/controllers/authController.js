@@ -3,7 +3,7 @@ const { validationResult } = require('express-validator');
 const { body } = require('express-validator');
 const allowedPermissions = require('../utils/allowedPermissions');
 const logger = require('../logger');
-require('dotenv').config();
+const env = require('../config/env');
 
 const signupValidation = [
   body('phone').isMobilePhone().withMessage('Invalid phone number for signup'),
@@ -22,7 +22,7 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
-if (process.env.NODE_ENV === 'production') {
+if (env.isProduction) {
   loginValidation.push(body('phone').isMobilePhone().withMessage('Invalid phone number for login'));
 }
 
@@ -66,23 +66,23 @@ const login = async (req, res) => {
     // Set HTTP-only cookies
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.isProduction,
       sameSite: 'strict',
-      maxAge: process.env.MAX_JWT_ACCESS_EXPIRATION_MS
+      maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.isProduction,
       sameSite: 'strict',
-    maxAge: process.env.MAX_JWT_REFRESH_EXPIRATION_MS
+    maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
     });
 
     // Non-HTTP-only cookie for frontend state
     res.cookie('isLoggedIn', 'true', {
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.isProduction,
       sameSite: 'strict',
-     maxAge: process.env.MAX_JWT_REFRESH_EXPIRATION_MS
+     maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
     });
     
     res.json({ 
