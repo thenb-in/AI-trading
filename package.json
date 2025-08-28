@@ -4,7 +4,7 @@
   "description": "NB Next application with client and server",
   "main": "index.js",
   "scripts": {
-    "i": "npm install && cd client && npm install && cd ../server && npm install && npm run setup-hooks && npm run setup-env",
+    "i": "npm install && cd client && npm install && npm run setup-env && cd ../server && npm install && npm run setup-hooks && npm run setup-env",
     "setup-hooks": "cd server && npm run setup-hooks",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",

@@ -24,7 +24,7 @@ export default function App() {
         element={
           <ProtectedRoute>
            <div>
-            continue from this 
+            Implement app logic here. This is normal user routes.
            </div>
           </ProtectedRoute>
         }

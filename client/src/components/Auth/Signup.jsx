@@ -38,6 +38,7 @@ export default function Signup() {
 
 
   useEffect(() => {
+    // todo: do not fetch roles here by default. fetch only when user triple clicks on the lock icon
     const fetchRoles = async () => {
       try {
         const response = await ApiService.getAllRoles();
