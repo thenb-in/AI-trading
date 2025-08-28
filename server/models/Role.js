@@ -19,6 +19,8 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+  }, {
+    tableName: 'roles',
   });
 
   Role.associate = (models) => {
@@ -30,7 +32,7 @@ module.exports = (sequelize) => {
 
     // A Role can have many Permissions (through RolePermission join table)
     Role.belongsToMany(models.Permission, {
-      through: 'RolePermission',
+      through: 'role_permission_mapping',
       as: 'permissions',
       foreignKey: 'roleId',
     });

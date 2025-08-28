@@ -6,24 +6,25 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Roles',
+        model: 'Role',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    permissionId: {
+    permissionId: {  // todo: check why permission id is created capital when roleId is small 
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Permissions',
+        model: 'Permission',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     }
   }, {
-    tableName: 'RolePermission',
+    tableName: 'role_permission_mapping',
+    underscored: true,
     timestamps: true,
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',

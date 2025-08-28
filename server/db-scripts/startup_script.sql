@@ -1,19 +1,19 @@
 BEGIN;
 
 -- Insert roles: sadmin, admin, user
-INSERT INTO "Roles" (name, description, "createdAt", "updatedAt")
+INSERT INTO "roles" (name, description, "createdAt", "updatedAt")
 VALUES 
   ('sadmin', 'Super Administrator with full system access', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
   ('admin', 'Administrator with elevated permissions', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
   ('user', 'Standard user with basic access', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
   -- Insert a company with name 'default'
-INSERT INTO "Companies" (name, "mobileApp", "desktopWeb", "mobileWeb", "roleId", "createdAt", "updatedAt")
+INSERT INTO "companies" (name, "mobileApp", "desktopWeb", "mobileWeb", "roleId", "createdAt", "updatedAt")
 VALUES ('default', false, true, false, 3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 
 -- Insert permissions
-INSERT INTO "Permissions" (name, description, "createdAt", "updatedAt")
+INSERT INTO "permissions" (name, description, "createdAt", "updatedAt")
 VALUES 
   ('Approve User', 'Permission to approve new users', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
   ('Deactivate User', 'Permission to deactivate users', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -26,7 +26,7 @@ VALUES
   ('View AdminLayout', 'Permission to access admin layout view', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- Assign all permissions to the sadmin role (assumed roleId = 1)
-INSERT INTO "RolePermission" ("roleId", "permissionId", "createdAt", "updatedAt")
+INSERT INTO "role_permission_mapping" ("roleId", "permissionId", "createdAt", "updatedAt")
 VALUES 
   (1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
   (1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

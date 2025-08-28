@@ -20,13 +20,14 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
   }, {
+    tableName: 'permissions',
     timestamps: true,
   });
 
   Permission.associate = (models) => {
-    // A Permission can belong to many Roles (through RolePermission join table)
+    // A Permission can belong to many Roles (through role_permission_mapping join table)
     Permission.belongsToMany(models.Role, {
-      through: 'RolePermission',
+      through: 'role_permission_mapping',
       as: 'roles',
       foreignKey: 'permissionId',
     });

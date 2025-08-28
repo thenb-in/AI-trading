@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: 3,
     },
+  }, {
+    tableName: 'companies',
   });
 
   Company.associate = (models) => {

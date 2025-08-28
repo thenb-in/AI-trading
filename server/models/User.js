@@ -1,3 +1,4 @@
+// todo: create a user profile
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define("User", {
     id: {
@@ -57,6 +58,8 @@ module.exports = (sequelize, DataTypes) => {
     mobileWeb: {
       type: DataTypes.BOOLEAN,
     },
+  }, {
+    tableName: 'users',
   });
 
   User.associate = (models) => {
