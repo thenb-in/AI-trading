@@ -19,6 +19,8 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+  }, {
+    timestamps: true,
   });
 
   Permission.associate = (models) => {
@@ -32,4 +34,3 @@ module.exports = (sequelize) => {
 
   return Permission;
 };
-    

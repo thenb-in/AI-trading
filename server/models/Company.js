@@ -21,10 +21,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+     roleId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: 3,
+    },
   });
 
   Company.associate = (models) => {
     Company.hasMany(models.User, { foreignKey: 'companyId' });
+     Company.belongsTo(models.Role, { foreignKey: "roleId", as: "role" });
   };
 
   return Company;
