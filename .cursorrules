@@ -1,9 +1,7 @@
 # Cursor Rules for Project
 
-## 🎯 Project Overview
-This is a full-stack chat application with React frontend and Node.js backend, implementing secure messaging with role-based access control.
-
 ## 🏗️ Architecture Principles
+use sequelize
 
 ### Model-View-Controller (MVC) Enforcement
 - **Backend**: Strictly follow MVC pattern
