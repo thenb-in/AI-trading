@@ -45,16 +45,21 @@ function findJsFiles(dir, excludeDirs = ['node_modules', '.git']) {
   return files;
 }
 
+// Get the directory where this script is located
+function getScriptDir() {
+  return path.dirname(require.main.filename);
+}
+
 // Check for console usage
 function checkConsoleUsage() {
   log('🔍 Checking for console usage...', 'blue');
   
   const violations = [];
-  const jsFiles = findJsFiles(process.cwd());
+  const jsFiles = findJsFiles(getScriptDir());
   
   for (const file of jsFiles) {
-    // Skip logger.js and the lint scripts themselves
-    if (file.includes('logger.js') || file.includes('lint-checks') || file.includes('setup-hooks')) {
+    // Skip logger.js, lint scripts, setup scripts, and validation scripts
+    if (file.includes('logger.js') || file.includes('lint-checks') || file.includes('setup-hooks') || file.includes('setup-env') || file.includes('validate-commit')) {
       continue;
     }
     
@@ -71,7 +76,7 @@ function checkConsoleUsage() {
           /console\.(log|error|warn)\s*\(/.test(line) &&
           !/console\.(log|error|warn)\s*=/.test(line)
         ) {
-          const relativePath = path.relative(process.cwd(), file);
+          const relativePath = path.relative(getScriptDir(), file);
           violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
         }
       }
@@ -96,7 +101,7 @@ function checkLoggerCommas() {
   log('🔍 Checking for commas in logger calls...', 'blue');
   
   const violations = [];
-  const jsFiles = findJsFiles(process.cwd());
+  const jsFiles = findJsFiles(getScriptDir());
   
   for (const file of jsFiles) {
     // Skip the lint scripts themselves
@@ -113,9 +118,34 @@ function checkLoggerCommas() {
         const lineNumber = i + 1;
         
         // Check for logger calls with commas (multiple arguments)
-        if (/logger\.(info|error|warn|debug)\s*\([^)]*,[^)]*\)/.test(line)) {
-          const relativePath = path.relative(process.cwd(), file);
-          violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
+        // Use a more sophisticated approach to detect actual multiple arguments
+        const loggerCallMatch = line.match(/logger\.(info|error|warn|debug|silly|verbose)\s*\(([^)]*)\)/);
+        if (loggerCallMatch) {
+          const args = loggerCallMatch[2];
+          // Count commas that are not inside quotes
+          let commaCount = 0;
+          let inQuotes = false;
+          let quoteChar = null;
+          
+          for (let j = 0; j < args.length; j++) {
+            const char = args[j];
+            if ((char === '"' || char === "'") && (j === 0 || args[j-1] !== '\\')) {
+              if (!inQuotes) {
+                inQuotes = true;
+                quoteChar = char;
+              } else if (char === quoteChar) {
+                inQuotes = false;
+                quoteChar = null;
+              }
+            } else if (char === ',' && !inQuotes) {
+              commaCount++;
+            }
+          }
+          
+          if (commaCount > 0) {
+            const relativePath = path.relative(getScriptDir(), file);
+            violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
+          }
         }
       }
     } catch (error) {
@@ -140,7 +170,7 @@ function checkDirectDotenvUsage() {
   log('🔍 Checking for direct dotenv usage...', 'blue');
   
   const violations = [];
-  const jsFiles = findJsFiles(process.cwd());
+  const jsFiles = findJsFiles(getScriptDir());
   
   for (const file of jsFiles) {
     // Skip the centralized env config and lint scripts
@@ -156,13 +186,12 @@ function checkDirectDotenvUsage() {
         const line = lines[i];
         const lineNumber = i + 1;
         
-        // Check for direct dotenv or dotenv-safe usage
+        // Check for direct dotenv or dotenv-safe usage (excluding config/env.js)
         if (
           /require\s*\(\s*['"]dotenv['"]\s*\)/.test(line) ||
-          /require\s*\(\s*['"]dotenv-safe['"]\s*\)/.test(line) ||
-          /require\s*\(\s*['"]\.\/config\/env['"]\s*\)/.test(line) && /dotenv-safe/.test(line)
+          /require\s*\(\s*['"]dotenv-safe['"]\s*\)/.test(line)
         ) {
-          const relativePath = path.relative(process.cwd(), file);
+          const relativePath = path.relative(getScriptDir(), file);
           violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
         }
       }

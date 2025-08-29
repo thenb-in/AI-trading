@@ -14,7 +14,7 @@ const getAllUsers = async (req, res) => {
     const users = await authService.getAllUsers();
     res.status(200).json(users);
   } catch (error) {
-    logger.error('Get all users error', { error: error.message, stack: error.stack });
+    logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -49,7 +49,7 @@ const deactivateUser = async (req, res) => {
 
     res.status(200).json({ message: 'User deactivated successfully' });
   } catch (error) {
-    logger.error('Deactivate user error', { error: error.message, stack: error.stack });
+    logger.error(`Deactivate user error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -60,7 +60,7 @@ const getMe = async (req, res) => {
     const user = await authService.getCurrentUser(userData.id);
     res.status(200).json(user);
   } catch (error) {
-    logger.error('Error in getMe', { error: error.message, stack: error.stack });
+    logger.error(`Error in getMe: ${error.message} - Stack: ${error.stack}`);
     res.status(401).json({ error: error.message });
   }
 };
@@ -77,7 +77,7 @@ const deleteUser = async (req, res) => {
     await userService.deleteUser(userId);
     res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
-    logger.error('Delete user error' + JSON.stringify({ error: error.message, stack: error.stack }));
+    logger.error(`Delete user error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -89,7 +89,7 @@ const updateUserRole=async(req,res)=>{
     await userService.updateUserRole(userId, role);
     res.status(200).json({ message: 'User role updated successfully' });
   } catch (error) {
-    logger.error('Update user role error' + JSON.stringify({ error: error.message, stack: error.stack }));
+    logger.error(`Update user role error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -100,7 +100,7 @@ const updateUserDeviceAccess=async(req,res)=>{
     await userService.updateUserDeviceAccess(userId, deviceAccess);
     res.status(200).json({ message: 'User device access updated successfully' });
   } catch (error) {
-    logger.error('Update user device access error' + JSON.stringify({ error: error.message, stack: error.stack }));
+    logger.error(`Update user device access error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

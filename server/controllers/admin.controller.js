@@ -10,7 +10,7 @@ const renderRoleForm = async (req, res) => {
   try {
     res.render('role-form', { error: null, success: null, process: { env: process.env } });
   } catch (error) {
-    logger.error('Error rendering role form', { error: error.message, stack: error.stack });
+    logger.error(`Error rendering role form: ${error.message} - Stack: ${error.stack}`);
     res.status(500).render('role-form', { error: 'An error occurred while loading the form', success: null, process: { env: process.env } });
   }
 };
@@ -30,7 +30,7 @@ const createRole = async (req, res) => {
       process: { env: process.env }
     });
   } catch (error) {
-    logger.error('Error creating role', { error: error.message, stack: error.stack });
+    logger.error(`Error creating role: ${error.message} - Stack: ${error.stack}`);
     res.render('role-form', { 
       error: error.message, 
       success: null,
@@ -48,7 +48,7 @@ const renderPermissionForm = async (req, res) => {
   try {
     res.render('permission-form', { error: null, success: null, process: { env: process.env } });
   } catch (error) {
-    logger.error('Error rendering permission form', { error: error.message, stack: error.stack });
+    logger.error(`Error rendering permission form: ${error.message} - Stack: ${error.stack}`);
     res.status(500).render('permission-form', { error: 'An error occurred while loading the form', success: null, process: { env: process.env } });
   }
 };
@@ -68,7 +68,7 @@ const createPermission = async (req, res) => {
       process: { env: process.env }
     });
   } catch (error) {
-    logger.error('Error creating permission', { error: error.message, stack: error.stack });
+    logger.error(`Error creating permission: ${error.message} - Stack: ${error.stack}`);
     res.render('permission-form', { 
       error: error.message, 
       success: null,
@@ -95,7 +95,7 @@ const renderRolePermissionsPage = async (req, res) => {
       process: { env: process.env } // Pass environment variables to template
     });
   } catch (error) {
-    logger.error('Error loading user management page:', error);
+    logger.error(`Error loading user management page: ${error.message}`);
     res.status(500).render('role-permissions', {  
       roles: [], 
       allPermissions: [], 
@@ -115,7 +115,7 @@ const addPermissionToRole = async (req, res) => {
     await adminService.addPermissionToRole(roleId, permissionIds);
     res.redirect('/api/v1/admin/role-permissions?message=Permission added successfully');
   } catch (error) {
-    logger.error('Error adding permission to role:', error);
+    logger.error(`Error adding permission to role: ${error.message}`);
     res.redirect(`/api/v1/admin/role-permissions?error=${error.message}`);
   }
 };

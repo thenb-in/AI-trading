@@ -9,10 +9,10 @@ const {
 } = require('../utils/authUtils');
 
 const signup = async ({ phone, username, password, name, companyId, role }) => {
-  logger.info('Signup attempt', { phone, name, companyId, role });
+  logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
   
   const existingUser = await User.findOne({ where: { phone } });
-  logger.info('Checking if user already exists', { exists: !!existingUser });
+  logger.info(`Checking if user already exists: ${phone} - Found: ${!!existingUser}`);
   
   if (existingUser) {
     // Check if user is inactive
@@ -22,7 +22,7 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
         isActive: true,
         is_approved: false,
       });
-      logger.info('Reactivated existing user', { phone });
+      logger.info(`Reactivated existing user: ${phone}`);
       return existingUser;
     } else {
       // User is already active, throw error
@@ -31,24 +31,24 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
   }
 
   const company = await Company.findByPk(companyId);
-  logger.info('Looking up company by ID', { companyId, companyFound: !!company });
+  logger.info(`Looking up company by ID: ${companyId} - Found: ${!!company}`);
   if (!company) {
     throw new Error('Company not found');
   }
 
   let roleInstance = null;
   if (role) {
-    logger.info('Looking up role information', { role, roleType: typeof role });
+    logger.info(`Looking up role information: ${role} - Type: ${typeof role}`);
     // Check if role is a number (ID) or string (name)
     if (typeof role === 'number' || !isNaN(role)) {
       roleInstance = await Role.findByPk(role);
-      logger.info('Role lookup by ID completed', { roleId: role, roleFound: !!roleInstance });
+      logger.info(`Role lookup by ID completed: ${role} - Found: ${!!roleInstance}`);
     } else {
       roleInstance = await Role.findOne({ where: { name: role } });
-      logger.info('Role lookup by name completed', { roleName: role, roleFound: !!roleInstance });
+      logger.info(`Role lookup by name completed: ${role} - Found: ${!!roleInstance}`);
     }
     if (!roleInstance) {
-      logger.error('Invalid role specified', { role });
+      logger.error(`Invalid role specified: ${role}`);
       throw new Error('Invalid role');
     }
   }
@@ -73,10 +73,10 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
 
 const loginUser = async (credentials) => {
   const { username, password } = credentials;
-  logger.info('User login attempt', { username });
+  logger.info(`User login attempt: ${username}`);
 
   // Fetch user with relations including role and permissions
-  logger.info('Looking up user by username', { username });
+  logger.info(`Looking up user by username: ${username}`);
   const user = await User.findOne({
     where: { username },
     include: [
@@ -101,19 +101,19 @@ const loginUser = async (credentials) => {
     }
   });
   if (!user) {
-    logger.warn('Login failed: User not found', { username });
+    logger.warn(`Login failed: User not found: ${username}`);
     throw { status: 401, message: "User not found" };
   }
 
-  logger.info('Verifying user password', { userId: user.id });
+  logger.info(`Verifying user password: ${user.id}`);
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    logger.warn('Login failed: Invalid password', { username });
+    logger.warn(`Login failed: Invalid password: ${username}`);
     throw { status: 401, message: "Invalid credentials" };
   }
 
   if (!user.isActive) {
-    logger.warn('Login failed: Account not found', { userId: user.id });
+    logger.warn(`Login failed: Account not found: ${user.id}`);
     throw {
       status: 403, 
       message: "Account not found" 
@@ -121,22 +121,22 @@ const loginUser = async (credentials) => {
   }
 
   if (!user.is_approved) {
-    logger.warn('Login failed: Account not approved', { userId: user.id });
+    logger.warn(`Login failed: Account not approved: ${user.id}`);
     throw {
       status: 403,
       message: "Your account is pending admin approval. Please try again later.",
     };
   }
   
-  logger.info('User login successful', { userId: user.id });
+  logger.info(`User login successful: ${user.id}`);
 
   // Generate tokens using utility functions
 const accessToken = generateAccessToken(user);
-logger.info('Access token generated', { accessToken });
+logger.info(`Access token generated: ${accessToken}`);
 
 
 const refreshToken = await generateRefreshToken(user);
-logger.info('Refresh token generated', { refreshToken });
+logger.info(`Refresh token generated: ${refreshToken}`);
 
 // Update user with refresh token
   await User.update(

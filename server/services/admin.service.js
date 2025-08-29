@@ -122,7 +122,7 @@ const createRole = async (name, description) => {
       description: trimmedDescription
     });
   
-    logger.info('New permission created successfully', { permissionId: newPermission.id, permissionName: newPermission.name, permission: newPermission });
+    logger.info(`New permission created successfully: ${newPermission.id} - ${newPermission.name} - ${newPermission}`);
     return newPermission;
   };
   

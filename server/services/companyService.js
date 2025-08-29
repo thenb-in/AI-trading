@@ -1,6 +1,7 @@
 // services/companyService.js
 const { Company, User, Room, Message } = require('../models');
 const { Op } = require('sequelize');
+const logger = require('../logger');
 
 const companyService = {
   async getCompanySettings(id) {
@@ -18,8 +19,8 @@ const companyService = {
   },
 
   async updateCompanySettings(id, data) {
-    console.log('Updating company settings for ID:', id);
-    console.log('New settings:', data);
+    logger.info(`Updating company settings for ID: ${id}`);
+    logger.info(`New settings: ${JSON.stringify(data)}`);
     try {
       const company = await Company.findByPk(id);
       if (!company) {

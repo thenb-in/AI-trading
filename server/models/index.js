@@ -60,7 +60,7 @@ sequelize
     logger.info('Database connection established successfully');
   })
   .catch(err => {
-    logger.error('Unable to connect to the database', { error: err.message, stack: err.stack });
+    logger.error(`Unable to connect to the database: ${err.message} - Stack: ${err.stack}`);
   });
 
 // Synchronize models
@@ -70,7 +70,7 @@ sequelize
     logger.info('Database tables synchronized successfully');
   })
   .catch(error => { 
-    logger.error('Error synchronizing database tables' + { error: error.message, stack: error.stack });
+    logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
   });
 
 db.sequelize = sequelize;

@@ -29,12 +29,12 @@ exports.protect = async (req, res, next) => {
     }
 
     const { accessToken, refreshToken } = req.cookies || {};
-    console.log('[DEBUG] Cookies received:', {
+    logger.debug(`Cookies received: ${JSON.stringify({
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       accessTokenLength: accessToken?.length,
       refreshTokenLength: refreshToken?.length
-    })
+    })}`);
     // 1. Try access token first
     if (accessToken) {
       try {
@@ -49,7 +49,7 @@ exports.protect = async (req, res, next) => {
         }
         
         if (!user.is_approved) {
-          logger.warn('Login attempt by inactive user', { userId: user.id });
+          logger.warn(`Login attempt by inactive user: ${user.id}`);
           res.clearCookie('accessToken');
           res.clearCookie('refreshToken');
           res.clearCookie('isLoggedIn');
@@ -68,7 +68,7 @@ exports.protect = async (req, res, next) => {
         };
         return next();
       } catch (error) {
-        logger.error('Access token verification failed, proceeding to refresh', { error: error.message });
+        logger.error(`Access token verification failed, proceeding to refresh: ${error.message}`);
       }
     }
 
@@ -78,7 +78,7 @@ exports.protect = async (req, res, next) => {
       try {
         decodedRefresh = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
       } catch (err) {
-        logger.error('Refresh token verification failed:', err.message);
+        logger.error(`Refresh token verification failed: ${err.message}`);
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
         res.clearCookie('isLoggedIn');
@@ -107,12 +107,12 @@ exports.protect = async (req, res, next) => {
           const user = await User.findByPk(userId, { attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'refresh_token', 'roleId', 'role'], lock: transaction.LOCK.UPDATE, transaction });
           if (!user || user.refresh_token !== refreshToken) {
             await transaction.rollback();
-            logger.warn('Invalid refresh token or user not found', { userId });
+            logger.warn(`Invalid refresh token or user not found: ${userId}`);
             throw new Error('Invalid refresh token or user not found');
           }
           if (!user.isActive) {
             await transaction.rollback();
-            logger.warn('Login attempt by inactive user during token refresh', { userId });
+            logger.warn(`Login attempt by inactive user during token refresh: ${userId}`);
             res.clearCookie('accessToken');
             res.clearCookie('refreshToken');
             res.clearCookie('isLoggedIn');
@@ -156,10 +156,10 @@ exports.protect = async (req, res, next) => {
         res.cookie('accessToken', newTokens.accessToken, newTokens.cookieOptions.access);
         res.cookie('refreshToken', newTokens.refreshToken, newTokens.cookieOptions.refresh);
         res.cookie('isLoggedIn', 'true', newTokens.cookieOptions.isLoggedIn);
-        logger.info('Successfully refreshed tokens', { userId });
+        logger.info(`Successfully refreshed tokens: ${userId}`);
        return next();
       } catch (err) {
-        logger.error('Token refresh failed:', { userId, error: err.message });
+        logger.error(`Token refresh failed: ${userId} - ${err.message}`);
         
         return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
       } finally {
@@ -172,7 +172,7 @@ exports.protect = async (req, res, next) => {
     res.status(401).json({ message: 'Not authorized, no token', requiresLogin: true });
 
   } catch (error) {
-    logger.error('An unexpected error occurred in auth middleware:', error);
+    logger.error(`An unexpected error occurred in auth middleware: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

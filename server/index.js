@@ -21,7 +21,7 @@ const logger = require('./logger');
 // Test database connection
 db.sequelize.authenticate()
   .then(() => logger.debug('✅ Database connected...'))
-  .catch(err =>  logger.error('❌ Database connection error:', err));
+  .catch(err =>  logger.error(`❌ Database connection error: ${err.message} - Stack: ${err.stack}`));
 
 // Middleware
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
@@ -52,5 +52,5 @@ db.sequelize.sync({ force: false }).then(() => {
     logger.info(`🚀 Server running on http://localhost:${PORT}`);
   });
 }).catch(err => {
-  logger.error('❌ Database sync failed:', err);
+  logger.error(`❌ Database sync failed: ${err.message} - Stack: ${err.stack}`);
 });
