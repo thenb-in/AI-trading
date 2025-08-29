@@ -5,11 +5,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "prepare": "husky",
     "lint:console": "node scripts/lint-checks-cross-platform.js",
     "lint:logger-commas": "node scripts/lint-checks-cross-platform.js",
-    "pre-commit": "node scripts/lint-checks-cross-platform.js",
-    "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
     "validate-env": "node scripts/setup-env.js validate",
@@ -42,14 +39,6 @@
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
-  },
-  "devDependencies": {
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.2"
-  },
-  "lint-staged": {
-    "*.js": [
-      "node scripts/lint-checks-cross-platform.js"
-    ]
   }
+
 }
