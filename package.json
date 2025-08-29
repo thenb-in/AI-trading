@@ -16,7 +16,10 @@
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "cd client && npm run build"
+    "build": "cd client && npm run build",
+    
+    "create-app": "node scripts/create-app.js",
+    "update-starter-app": "node scripts/update-starter-app.js"
   },
   "keywords": [],
   "author": "",

@@ -1,0 +1,46 @@
+name: Build and Upload Artifact
+
+on:
+  push:
+    branches:
+      - main  # Change if needed
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18 # Change if needed
+
+      - name: Install dependencies
+        run: |
+          cd client
+          npm install
+
+      - name: Run build
+        run: |
+          cd client
+          npm run build
+
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+            age: '2 days'
+            skip-recent: 2
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact
+          path: client/dist/
