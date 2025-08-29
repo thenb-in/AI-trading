@@ -30,6 +30,7 @@ export const isInWebView = (ua = getUserAgent()) => {
 
     return iosWebView || androidWebView || hasReactNativeBridge;
   } catch (e) {
+    console.error(e);
     return false;
   }
 };

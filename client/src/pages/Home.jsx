@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import Login from '../components/Auth/Login';
 import { motion } from 'framer-motion';
 import AnimatedBackground from '../components/AnimatedBackground';
