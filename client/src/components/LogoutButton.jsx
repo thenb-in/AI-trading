@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
+import PropTypes from 'prop-types';
 import ApiService from "../services/ApiService";
 
-export default function LogoutButton({ collapsed }) {
+function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
 
@@ -31,8 +32,8 @@ export default function LogoutButton({ collapsed }) {
 
       {showConfirm &&
         ReactDOM.createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg p-6 shadow-xl text-gray-800 w-80">
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="bg-white rounded-lg p-6 shadow-xl text-gray-800 w-80 relative z-[10000]">
               <h2 className="text-lg font-semibold mb-4">Confirm Logout</h2>
               <p className="mb-6">Are you sure you want to log out?</p>
               <div className="flex justify-end space-x-4">
@@ -56,3 +57,9 @@ export default function LogoutButton({ collapsed }) {
     </>
   );
 }
+
+LogoutButton.propTypes = {
+  collapsed: PropTypes.bool.isRequired
+};
+
+export default LogoutButton;
