@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "lint:console": "node scripts/lint-checks-cross-platform.js",
-    "lint:logger-commas": "node scripts/lint-checks-cross-platform.js",
+    "lint": "node scripts/lint-checks-cross-platform.js",
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
     "validate-env": "node scripts/setup-env.js validate",

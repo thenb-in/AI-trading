@@ -10,6 +10,7 @@
     "setup-env": "cd client && npm run setup-env && cd ../server && npm run setup-env",
     "setup-env:check": "cd client && npm run setup-env:check && cd ../server && npm run check-env",
     "setup-env:validate": "cd client && npm run validate-env && cd ../server && npm run validate-env",
+    "lint": "cd server && npm run lint",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
