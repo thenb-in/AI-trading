@@ -4,8 +4,11 @@
   "description": "NB Next application with client and server",
   "main": "index.js",
   "scripts": {
-    "i": "npm install && cd client && npm install && npm run setup-env && cd ../server && npm install && npm run setup-hooks && npm run setup-env",
+    "i": "npm run setup-env && npm install && cd client && npm install && cd ../server && npm install && npm run setup-hooks",
     "setup-hooks": "cd server && npm run setup-hooks",
+    "setup-env": "cd client && npm run setup-env && cd ../server && npm run setup-env",
+    "setup-env:check": "cd client && npm run setup-env:check && cd ../server && npm run check-env",
+    "setup-env:validate": "cd client && npm run validate-env && cd ../server && npm run validate-env",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",

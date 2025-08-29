@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const readline = require('readline');
 
 // Colors for console output
 const colors = {
@@ -21,7 +22,23 @@ function generateSecret(length = 64) {
   return crypto.randomBytes(length).toString('hex');
 }
 
-function checkEnvFile() {
+function createPrompt() {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+}
+
+function askQuestion(prompt, question, defaultValue = '') {
+  return new Promise((resolve) => {
+    const defaultText = defaultValue ? ` (default: ${defaultValue})` : '';
+    prompt.question(`${question}${defaultText}: `, (answer) => {
+      resolve(answer.trim() || defaultValue);
+    });
+  });
+}
+
+async function checkEnvFile() {
   const envPath = path.join(process.cwd(), '.env');
   const envExamplePath = path.join(process.cwd(), '.env.example');
   
@@ -33,13 +50,43 @@ function checkEnvFile() {
   
   if (!fs.existsSync(envPath)) {
     log('⚠️  .env file not found!', 'yellow');
-    log('Creating .env file from .env.example...', 'blue');
+    log('Creating .env file with interactive configuration...', 'blue');
     
     try {
-      const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-      fs.writeFileSync(envPath, envExampleContent);
-      log('✅ .env file created from .env.example', 'green');
-      log('⚠️  Please update the .env file with your actual values!', 'yellow');
+      // Get database configuration from user
+      const dbConfig = await configureDatabase();
+      if (!dbConfig) {
+        log('❌ Database configuration failed, using .env.example as fallback', 'red');
+        const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
+        fs.writeFileSync(envPath, envExampleContent);
+        log('✅ .env file created from .env.example (fallback)', 'green');
+        log('⚠️  Please update the .env file with your actual values!', 'yellow');
+        return true;
+      }
+      
+      // Generate JWT secrets
+      const { accessSecret, refreshSecret } = generateSecrets();
+      
+      // Read .env.example and replace placeholders
+      let envContent = fs.readFileSync(envExamplePath, 'utf8');
+      
+      // Replace database configuration
+      envContent = envContent.replace(/DATABASE_URL=.*/g, `DATABASE_URL=${dbConfig.databaseUrl}`);
+      
+      // Add JWT secrets
+      envContent = envContent.replace(/JWT_SECRET=.*/g, `JWT_SECRET=${accessSecret}`);
+      envContent = envContent.replace(/REFRESH_TOKEN_SECRET=.*/g, `REFRESH_TOKEN_SECRET=${refreshSecret}`);
+      
+      // Set default frontend URL
+      envContent = envContent.replace(/FRONTEND_URL=.*/g, 'FRONTEND_URL=http://localhost:5173');
+      
+      // Write the configured .env file
+      fs.writeFileSync(envPath, envContent);
+      
+      log('✅ .env file created with your configuration!', 'green');
+      log('🔐 JWT secrets have been generated and added', 'green');
+      log('💡 You can modify these values later if needed', 'blue');
+      
       return true;
     } catch (error) {
       log('❌ Failed to create .env file:', 'red');
@@ -81,6 +128,46 @@ function generateSecrets() {
   return { accessSecret, refreshSecret };
 }
 
+async function configureDatabase() {
+  log('\n🗄️  Database Configuration', 'blue');
+  log('Let\'s set up your database connection...', 'blue');
+  
+  const prompt = createPrompt();
+  
+  try {
+    // Database host
+    const dbHost = await askQuestion(prompt, 'Database host', 'localhost');
+    
+    // Database port
+    const dbPort = await askQuestion(prompt, 'Database port', '5432');
+    
+    // Database name
+    const dbName = await askQuestion(prompt, 'Database name', 'nbnext_db');
+    
+    // Database username
+    const dbUser = await askQuestion(prompt, 'Database username', 'postgres');
+    
+    // Database password
+    const dbPassword = await askQuestion(prompt, 'Database password', '');
+    
+    // Close the prompt
+    prompt.close();
+    
+    // Build the DATABASE_URL
+    const databaseUrl = `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`;
+    
+    log('\n✅ Database configuration completed!', 'green');
+    log(`📊 Connection string: ${dbHost}:${dbPort}/${dbName}`, 'blue');
+    
+    return { databaseUrl, dbHost, dbPort, dbName, dbUser, dbPassword };
+  } catch (error) {
+    prompt.close();
+    log('❌ Error during database configuration:', 'red');
+    log(error.message, 'red');
+    return null;
+  }
+}
+
 function showSetupInstructions() {
   log('\n📋 Environment Setup Instructions:', 'blue');
   log('1. Copy .env.example to .env:', 'yellow');
@@ -95,40 +182,58 @@ function showSetupInstructions() {
   log('   npm run validate-env', 'blue');
 }
 
-function main() {
+async function main() {
   const command = process.argv[2];
   
-  switch (command) {
-    case 'check':
-      log('🔍 Checking environment setup...', 'blue');
-      const envExists = checkEnvFile();
-      if (envExists) {
+  try {
+    switch (command) {
+      case 'check':
+        log('🔍 Checking environment setup...', 'blue');
+        const envExists = await checkEnvFile();
+        if (envExists) {
+          validateEnvFile();
+        }
+        break;
+        
+      case 'generate-secrets':
+        generateSecrets();
+        break;
+        
+      case 'validate':
         validateEnvFile();
-      }
-      break;
-      
-    case 'generate-secrets':
-      generateSecrets();
-      break;
-      
-    case 'validate':
-      validateEnvFile();
-      break;
-      
-    case 'setup':
-      log('🚀 Setting up environment...', 'blue');
-      checkEnvFile();
-      showSetupInstructions();
-      break;
-      
-    default:
-      log('🔧 Environment Setup Script', 'blue');
-      log('\nUsage:', 'yellow');
-      log('  node scripts/setup-env.js check          - Check if .env file exists', 'blue');
-      log('  node scripts/setup-env.js validate       - Validate environment variables', 'blue');
-      log('  node scripts/setup-env.js generate-secrets - Generate JWT secrets', 'blue');
-      log('  node scripts/setup-env.js setup          - Show setup instructions', 'blue');
-      break;
+        break;
+        
+      case 'setup':
+        log('🚀 Setting up environment...', 'blue');
+        const setupEnvExists = await checkEnvFile();
+        if (setupEnvExists) {
+          log('✅ Environment file already exists, validating configuration...', 'green');
+          const isValid = validateEnvFile();
+          if (isValid) {
+            log('\n🎉 Environment is properly configured!', 'green');
+            log('💡 Use "npm run validate-env" for quick validation in the future.', 'blue');
+          } else {
+            log('\n⚠️  Environment validation failed. Please check your .env file.', 'yellow');
+            showSetupInstructions();
+          }
+        } else {
+          showSetupInstructions();
+        }
+        break;
+        
+      default:
+        log('🔧 Environment Setup Script', 'blue');
+        log('\nUsage:', 'yellow');
+        log('  node scripts/setup-env.js check          - Check if .env file exists', 'blue');
+        log('  node scripts/setup-env.js validate       - Validate environment variables', 'blue');
+        log('  node scripts/setup-env.js generate-secrets - Generate JWT secrets', 'blue');
+        log('  node scripts/setup-env.js setup          - Setup or validate environment', 'blue');
+        break;
+    }
+  } catch (error) {
+    log('❌ An error occurred:', 'red');
+    log(error.message, 'red');
+    process.exit(1);
   }
 }
 
