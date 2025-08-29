@@ -1,13 +1,15 @@
 // pages/SignupPage.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import Signup from '../components/Auth/Signup';
 import { motion } from 'framer-motion';
 export default function SignupPage() {
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
     {/* Left Side: Animated Section */}
-   <AnimatedBackground/>
+   <AnimatedBackground setShowRoleDropdown={setShowRoleDropdown} />
     {/* Right Side: Login/Signup */}
     <div className="md:w-1/2 flex items-center justify-center p-8 bg-gray-100">
       <div className="w-full max-w-md">
@@ -19,7 +21,7 @@ export default function SignupPage() {
           transition={{ duration: 0.3 }}
           className="w-full"
         >
-        <Signup />
+        <Signup showRoleDropdown={showRoleDropdown} />
         </motion.div>
       </div>
     </div>

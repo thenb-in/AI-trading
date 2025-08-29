@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
 
-export default function Signup() {
+export default function Signup({ showRoleDropdown }) {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -38,28 +38,29 @@ export default function Signup() {
 
 
   useEffect(() => {
-    // todo: do not fetch roles here by default. fetch only when user triple clicks on the lock icon
-    const fetchRoles = async () => {
-      try {
-        const response = await ApiService.getAllRoles();
-        setRoles(response.data);
-        // Set default role if available
-        if (response.data.length > 0) {
-          setFormData(prev => ({
-            ...prev,
-            role: response.data.find(role => role.name === 'user')?.id || response.data[0].id
-          }));
+    if (showRoleDropdown) {
+      const fetchRoles = async () => {
+        try {
+          const response = await ApiService.getAllRoles();
+          setRoles(response.data);
+          if (response.data.length > 0) {
+            setFormData(prev => ({
+              ...prev,
+              role: response.data.find(role => role.name === 'user')?.id || response.data[0].id
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+          toast.error('Failed to load roles. Please try again later.');
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Error fetching roles:', error);
-        toast.error('Failed to load roles. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRoles();
-  }, []);
+      };
+      fetchRoles();
+    } else {
+      setLoading(false);
+    }
+  }, [showRoleDropdown]);
 
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
@@ -241,28 +242,31 @@ export default function Signup() {
             </div>
           )}
 
-          <div className="mb-4">
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
-            >
-              <option value="" disabled hidden>
-                Select Role
-              </option>
-              {loading ? (
-                <option>Loading roles...</option>
-              ) : (
-                roles.map((role) => (
-                  <option key={role.id} value={role.name}>
-                    {role.name}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          {/* Role Dropdown - only show if showRoleDropdown is true */}
+          {showRoleDropdown && (
+            <div className="mb-4">
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              >
+                <option value="" disabled hidden>
+                  Select Role
+                </option>
+                {loading ? (
+                  <option>Loading roles...</option>
+                ) : (
+                  roles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 text-center">

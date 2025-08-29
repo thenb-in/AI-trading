@@ -1,7 +1,26 @@
-import React, { useState } from 'react';;
+// components/AnimatedBackground.jsx
+import React from 'react';
 import { motion } from 'framer-motion';
 import { FaUser, FaLock } from 'react-icons/fa';
-const AnimatedBackground = () => {
+
+const AnimatedBackground = ({ setShowRoleDropdown }) => {
+  let clickCount = 0;
+  let clickTimeout = null;
+
+  const handleLockClick = () => {
+    clickCount++;
+    if (clickCount === 3) {
+      setShowRoleDropdown(true);
+      clickCount = 0;
+      clearTimeout(clickTimeout);
+    } else {
+      clearTimeout(clickTimeout);
+      clickTimeout = setTimeout(() => {
+        clickCount = 0;
+      }, 500); // Reset after 500ms if not triple-clicked
+    }
+  };
+
   return (
     <div className="md:w-1/2 bg-gradient-to-br from-blue-600 to-teal-600 flex items-center justify-center p-8">
     <div className="text-center text-white">
@@ -43,7 +62,7 @@ const AnimatedBackground = () => {
         }}
         className="mt-6"
       >
-        <FaLock className="text-4xl mx-auto" />
+        <FaLock className="text-4xl mx-auto cursor-pointer" onClick={handleLockClick} />
       </motion.div>
     </div>
   </div>
