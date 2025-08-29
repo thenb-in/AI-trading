@@ -3,7 +3,7 @@
 ## What Was Implemented
 
 ### 1. Commit Message Validation Script
-- **File**: `server/scripts/validate-commit-msg.js`
+- **File**: `scripts/validate-commit-msg.js` (root level)
 - **Purpose**: Enforces conventional commit format
 - **Features**:
   - Validates commit message structure
@@ -17,6 +17,7 @@
 - **Commit-msg Hook**: Validates commit message format
 - **Location**: `.husky/` directory (repository root)
 - **Integration**: Works with existing Husky setup
+- **Setup**: Root-level script manages all git hooks
 
 ### 3. Documentation
 - **COMMIT_CONVENTIONS.md**: Comprehensive guide to conventional commits
@@ -90,6 +91,29 @@ git commit -m "fix: resolve issue"
 - **Professional Standards**: Industry-standard commit message format
 - **Error Prevention**: Catches formatting issues before they reach the repository
 
+## Project Structure
+
+The commit message validation is properly organized at the root level:
+
+```
+project-root/
+├── scripts/
+│   ├── validate-commit-msg.js    # ✅ Root-level validation script
+│   └── setup-hooks.js            # ✅ Root-level git hooks setup
+├── server/
+│   └── scripts/
+│       └── lint-checks-cross-platform.js # Server-specific linting
+├── .husky/                        # Git hooks directory (repository-wide)
+│   ├── pre-commit                # Runs lint-staged
+│   └── commit-msg                # Validates commit messages
+└── package.json                   # Root-level scripts and dependencies
+```
+
+**Why This Structure is Correct:**
+- **Git hooks are repository-wide** - managed at root level where `.git` directory is located
+- **Server-specific scripts** (like logger checks) remain in server directory
+- **Root coordinates** while individual directories handle their specific concerns
+
 ## Troubleshooting
 
 ### If Commits Are Rejected
@@ -116,12 +140,12 @@ The commit message validation is now fully functional. You can:
 
 ## Files Modified/Created
 
-- ✅ `server/scripts/validate-commit-msg.js` - Main validation script
+- ✅ `scripts/validate-commit-msg.js` - Main validation script (root level)
 - ✅ `scripts/setup-hooks.js` - Root-level git hooks setup script
 - ✅ `.husky/commit-msg` - Git hook for commit message validation
 - ✅ `COMMIT_CONVENTIONS.md` - Comprehensive documentation
 - ✅ `COMMIT_VALIDATION_SETUP.md` - This setup summary
-- ✅ `server/package.json` - Added validation script reference
+- ✅ `server/package.json` - Removed setup-hooks (moved to root)
 - ✅ `package.json` - Added setup-hooks script and updated setup flow
 - ✅ `readme.md` - Updated to mention new feature
 

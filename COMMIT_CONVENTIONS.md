@@ -107,9 +107,10 @@ The project includes automated validation of commit messages through Git hooks. 
 ## Tools
 
 This project uses:
-- **Husky** - Git hooks management
-- **Custom validation script** - Enforces conventional commit format
+- **Husky** - Git hooks management (root level)
+- **Custom validation script** - Enforces conventional commit format (root level)
 - **Pre-commit hooks** - Runs linting and validation before commits
+- **Root-level coordination** - Git hooks setup managed from project root
 
 ## Setup
 
