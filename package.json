@@ -6,53 +6,43 @@
   "scripts": {
     "i": "npm install && npm run setup && cd client && npm install && cd ../server && npm install",
     "setup": "husky && npm run setup-hooks && npm run setup-env",
-
     "create-app": "node scripts/create-app.js",
     "update-starter-app": "node scripts/update-starter-app.js",
     "commit": "git-cz",
-
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "cd client && npm run setup-env && cd ../server && npm run setup-env",
     "setup-env:check": "cd client && npm run setup-env:check && cd ../server && npm run check-env",
     "setup-env:validate": "cd client && npm run validate-env && cd ../server && npm run validate-env",
-
     "lint": "cd server && npm run lint",
     "lint:fix": "cd server && npm run lint:fix",
     "lint:client": "cd client && npm run lint",
     "lint:client:fix": "cd client && npm run lint:fix",
     "lint:all": "npm run lint && npm run lint:client",
     "lint:all:fix": "npm run lint:fix && npm run lint:client:fix",
-
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "build": "cd client && npm run build",
     "build:server": "cd server && npm run build",
     "build:all": "npm run build:server && npm run build",
-
     "test": "npm run test:server && npm run test:client",
     "test:server": "cd server && npm run test",
     "test:client": "cd client && npm run test",
     "test:watch": "concurrently \"npm run test:server -- --watch\" \"npm run test:client -- --watch\"",
-
     "clean": "npm run clean:node_modules && npm run clean:build && npm run clean:logs",
     "clean:node_modules": "rimraf node_modules client/node_modules server/node_modules",
     "clean:build": "rimraf client/dist server/dist",
     "clean:logs": "rimraf server/logs/*.log",
-
     "validate": "npm run lint:all && npm run test && npm run setup-env:validate",
     "validate:quick": "npm run lint:all",
-
     "commitlint": "commitlint --edit",
     "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
-
     "dev-utils": "node scripts/dev-utils.js",
     "dev-utils:check": "node scripts/dev-utils.js check",
     "dev-utils:lint": "node scripts/dev-utils.js lint",
     "dev-utils:test": "node scripts/dev-utils.js test",
     "dev-utils:build": "node scripts/dev-utils.js build",
     "dev-utils:help": "node scripts/dev-utils.js help",
-
     "prepare": "husky"
   },
   "keywords": [],
@@ -64,6 +54,7 @@
     "commitizen": "^4.3.1",
     "concurrently": "^8.2.2",
     "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.34.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "rimraf": "^6.0.1"
