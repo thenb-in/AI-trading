@@ -54,6 +54,7 @@ client/
 - **Tree Shaking**: Use ES6 imports for better tree shaking
 
 ### Code Quality Standards
+- **Dummy Data**: Do not use any dummy data in client or server
 - **ESLint**: Enforce consistent code style
 - **Prettier**: Maintain consistent formatting
 - **TypeScript**: Use TypeScript for better type safety (when applicable)
