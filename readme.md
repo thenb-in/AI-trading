@@ -6,9 +6,10 @@ An app in nodejs and reacts which is a starting point to other applications.
 - authentication
 - DB connection using sequelize
 - Structured logging (Winston)
-- Pre-commit hooks to ensure logger is used instead of server
+- Pre-commit hooks to ensure logger is used instead of console (on server)
 - Pre-commit hooks to ensure there are no commas in logger
-- npm run i sets up everything, including pre-commit hooks
+- Commit message validation enforcing conventional commit format (fix/, feat/, chore/, etc.)
+- npm run i sets up everything, including pre-commit hooks and commit message validation
 - dotenv + dotenv-safe (forces .env.example to keep track of required envs).
 
 

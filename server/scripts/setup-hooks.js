@@ -42,18 +42,29 @@ function setupHuskyHooks() {
     // Write pre-commit hook file
     fs.writeFileSync(preCommitPath, preCommitContent);
     
-    // Make the file executable (Unix-like systems only)
+    // Create commit-msg hook content
+    const commitMsgContent = 'node scripts/validate-commit-msg.js "$1"\n';
+    const commitMsgPath = path.join(huskyDir, 'commit-msg');
+    
+    // Write commit-msg hook file
+    fs.writeFileSync(commitMsgPath, commitMsgContent);
+    
+    // Make the files executable (Unix-like systems only)
     if (process.platform !== 'win32') {
       try {
         fs.chmodSync(preCommitPath, '755');
         log('✅ Made pre-commit hook executable', 'green');
+        
+        fs.chmodSync(commitMsgPath, '755');
+        log('✅ Made commit-msg hook executable', 'green');
       } catch (error) {
-        log('⚠️  Could not make pre-commit hook executable (this is normal on Windows)', 'yellow');
+        log('⚠️  Could not make hooks executable (this is normal on Windows)', 'yellow');
       }
     }
     
-    log('✅ Husky pre-commit hooks setup completed!', 'green');
+    log('✅ Husky hooks setup completed!', 'green');
     log('📝 Pre-commit hook created at: .husky/pre-commit', 'blue');
+    log('📝 Commit-msg hook created at: .husky/commit-msg', 'blue');
     
     return true;
   } catch (error) {
