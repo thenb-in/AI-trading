@@ -25,7 +25,7 @@ function ensureDirectoryExists(dirPath) {
 
 function setupHuskyHooks() {
   try {
-    log('🔧 Setting up Husky pre-commit hooks...', 'blue');
+    log('🔧 Setting up Husky hooks...', 'blue');
     
     // Initialize Husky
     log('📦 Initializing Husky...', 'blue');
@@ -81,7 +81,7 @@ function main() {
   
   if (success) {
     log('🎉 Setup completed successfully!', 'green');
-    log('💡 The pre-commit hooks will now run on every commit.', 'blue');
+    log('💡 The git hooks will now run on every commit.', 'blue');
     process.exit(0);
   } else {
     log('❌ Setup failed. Please check the error messages above.', 'red');

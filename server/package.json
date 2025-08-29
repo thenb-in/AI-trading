@@ -6,9 +6,11 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "lint": "node scripts/lint-checks-cross-platform.js",
+
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
     "validate-env": "node scripts/setup-env.js validate",
+
     "generate-secrets": "node scripts/setup-env.js generate-secrets"
   },
   "keywords": [],

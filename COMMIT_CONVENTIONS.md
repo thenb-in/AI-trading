@@ -119,11 +119,11 @@ To set up the commit message validation:
 # Install dependencies
 npm install
 
-# Set up git hooks
+# Set up git hooks (from root directory)
 npm run setup
 
 # Or manually set up hooks
-cd server && npm run setup-hooks
+npm run setup-hooks
 ```
 
 ## Troubleshooting

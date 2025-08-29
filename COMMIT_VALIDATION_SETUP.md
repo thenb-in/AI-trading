@@ -15,7 +15,7 @@
 ### 2. Git Hooks Configuration
 - **Pre-commit Hook**: Runs lint-staged for code quality checks
 - **Commit-msg Hook**: Validates commit message format
-- **Location**: `.husky/` directory
+- **Location**: `.husky/` directory (repository root)
 - **Integration**: Works with existing Husky setup
 
 ### 3. Documentation
@@ -101,8 +101,8 @@ git commit -m "fix: resolve issue"
 
 ### If Hooks Aren't Working
 1. Ensure Husky is properly installed: `npm install`
-2. Run setup: `npm run setup`
-3. Check `.husky/` directory exists
+2. Run setup: `npm run setup` (from root directory)
+3. Check `.husky/` directory exists at repository root
 4. Verify hook files are executable (on Unix-like systems)
 
 ## Next Steps
@@ -117,13 +117,12 @@ The commit message validation is now fully functional. You can:
 ## Files Modified/Created
 
 - ✅ `server/scripts/validate-commit-msg.js` - Main validation script
-- ✅ `server/scripts/test-commit-validation.js` - Test suite
-- ✅ `server/scripts/setup-hooks.js` - Updated to include commit-msg hook
+- ✅ `scripts/setup-hooks.js` - Root-level git hooks setup script
 - ✅ `.husky/commit-msg` - Git hook for commit message validation
 - ✅ `COMMIT_CONVENTIONS.md` - Comprehensive documentation
 - ✅ `COMMIT_VALIDATION_SETUP.md` - This setup summary
-- ✅ `server/package.json` - Added validation scripts
-- ✅ `package.json` - Added root-level validation scripts
+- ✅ `server/package.json` - Added validation script reference
+- ✅ `package.json` - Added setup-hooks script and updated setup flow
 - ✅ `readme.md` - Updated to mention new feature
 
 🎉 **Setup Complete!** Your repository now enforces conventional commit message format.
