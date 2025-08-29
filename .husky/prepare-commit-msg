@@ -1,0 +1,1 @@
+exec < /dev/tty && npx --no -- commitizen prompt || true

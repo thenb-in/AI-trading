@@ -66,8 +66,9 @@ npm run update-starter-app
 - **Database** - Sequelize ORM with connection management
 - **Structured Logging** - Winston logger with proper formatting
 - **Pre-commit Hooks** - Enforce code quality standards
-- **Commit Validation** - Conventional commit format enforcement
+- **Commit Validation** - Commitlint for conventional commit format
 - **Environment Management** - Centralized .env configuration
+- **Code Quality Tools** - ESLint, Prettier, and Husky integration
 
 ## 🏗️ Architecture
 
@@ -88,8 +89,10 @@ npm run update-starter-app
 
 ### Code Quality
 - **No Console Usage**: Uses structured logging instead
-- **Pre-commit Hooks**: Automatic code quality checks
-- **Conventional Commits**: Enforced commit message format
+- **Pre-commit Hooks**: Automatic code quality checks with Husky
+- **Commit Validation**: Commitlint enforces conventional commit format
+- **Code Formatting**: Prettier for consistent code style
+- **Linting**: ESLint with custom rules for code standards
 - **Cross-platform**: Works on Windows, macOS, and Linux
 
 ### Security
@@ -116,7 +119,9 @@ npm run build
 
 # Code quality checks
 npm run lint
+npm run format
 npm run setup-env:validate
+npm run validate-commit
 
 # Repository management
 npm run create-app <new-app-url>  # Create new app from template
@@ -142,7 +147,8 @@ npm run update-starter-app         # Update from starter template
 ├── scripts/               # Setup and utility scripts
 │   ├── create-app.js      # Script to create new apps from template
 │   ├── update-starter-app.js # Script to update from starter template
-│   └── setup-hooks.js     # Git hooks setup
+│   ├── setup-hooks.js     # Git hooks setup
+│   └── lint-checks.js     # Cross-platform linting utilities
 └── package.json           # Root package.json
 ```
 
@@ -153,29 +159,45 @@ npm run update-starter-app         # Update from starter template
 - **Testing Suite** - Comprehensive unit and integration tests
 - **API Documentation** - Swagger/OpenAPI specifications
 - **Monitoring** - Health checks and performance metrics
+- **Storybook** - Component documentation and testing
+- **Performance Monitoring** - Bundle analysis and optimization
 
 ### 🔄 CI/CD Pipeline
 - **Staging Environment** - Add staging environment pipeline
 - **Automated Versioning** - Semantic-release integration for login page
 - **Changelog Generation** - Automated changelog creation
+- **Automated Testing** - Jest and Cypress integration in CI/CD
+- **Code Coverage** - Coverage reports and quality gates
 
 ### 🔒 Security Enhancements
 - **Security Headers** - Helmet.js integration for Express
 - **Rate Limiting** - Request throttling and abuse prevention
 - **Input Validation** - Joi/Zod/Yup schema validation
 - **Vulnerability Scanning** - npm audit and Snyk integration
+- **Content Security Policy** - CSP headers and nonce generation
+- **Security Testing** - OWASP ZAP integration and security audits
 
 ### 🚀 Deployment & Infrastructure
 - **Web Server** - Nginx + systemctl configuration
 - **Health Monitoring** - Health-check endpoint for nginx
 - **Request Logging** - Morgan middleware integration
 - **Error Handling** - Centralized error handler with stack tracing
+- **Containerization** - Docker and Docker Compose setup
+- **Load Balancing** - Reverse proxy and load balancer configuration
+- **Backup & Recovery** - Automated backup strategies and disaster recovery
+
+### 🧪 Testing & Quality Assurance
+- **E2E Testing** - Cypress for end-to-end testing
+- **Visual Regression** - Percy or Chromatic for UI testing
+- **Accessibility Testing** - axe-core integration
+- **Performance Testing** - Lighthouse CI and WebPageTest
 
 ## 📚 Documentation
 
 - **Setup Guide**: Run `npm run i` to get started
 - **Architecture**: Follows MVC pattern with clear separation of concerns
-- **Code Standards**: Enforced through pre-commit hooks and linting
+- **Code Standards**: Enforced through pre-commit hooks, ESLint, and Prettier
+- **Commit Standards**: Commitlint enforces conventional commit format
 - **Security**: Built-in authentication and authorization system
 
 ## 🤝 Contributing

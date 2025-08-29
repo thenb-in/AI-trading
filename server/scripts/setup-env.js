@@ -204,7 +204,7 @@ async function main() {
         break;
         
       case 'setup':
-        log('🚀 Setting up environment...', 'blue');
+        log('🚀 Setting up server environment...', 'blue');
         const setupEnvExists = await checkEnvFile();
         if (setupEnvExists) {
           log('✅ Environment file already exists, validating configuration...', 'green');
