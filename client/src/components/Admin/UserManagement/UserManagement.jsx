@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { UserPlus, UserMinus, Search, Users, Menu, Trash2 } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
-import { useDataContext } from '../../../context/AuthContext';
+import { useDataContext } from '../../../context/useDataContext';
 import UserTable from './components/UserTable';
 import ConfirmationDialog from './components/ConfirmationDialog';
 import BulkDeleteConfirmationDialog from './components/BulkDeleteConfirmationDialog';

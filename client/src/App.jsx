@@ -1,10 +1,11 @@
 import { Routes, Route } from 'react-router-dom';
-import { useDataContext } from './context/AuthContext';
+import { useDataContext } from "./context/useDataContext";
 import Home from './pages/Home';
 import AdminDashboard from './pages/AdminDashboard';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import { Navigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 function ProtectedRoute({ children }) {
   const { userData } = useDataContext();
@@ -40,3 +41,7 @@ export default function App() {
     </Routes>
   );
 }
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};

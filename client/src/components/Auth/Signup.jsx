@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
+import PropTypes from "prop-types";
+
 
 export default function Signup({ showRoleDropdown }) {
   const [formData, setFormData] = useState({
@@ -32,7 +34,6 @@ export default function Signup({ showRoleDropdown }) {
         ...prev,
         companyId: id || '',
       }));
-    console.log('Form Data:', formData);
     }
   }, [location.search]);
 
@@ -300,3 +301,7 @@ export default function Signup({ showRoleDropdown }) {
     </div>
   );
 }
+
+Signup.propTypes = {
+  showRoleDropdown: PropTypes.bool,
+};

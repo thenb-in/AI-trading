@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ApiService from "../services/ApiService";
 import { isAllowedDevice } from "../utiles/deviceUtils";
-
-const DataContext = createContext();
+import PropTypes from "prop-types";
+import DataContext from "./DataContext";
 
 export const DataProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
@@ -140,5 +140,6 @@ export const DataProvider = ({ children }) => {
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
-
-export const useDataContext = () => useContext(DataContext);
+DataProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};

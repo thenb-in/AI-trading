@@ -1,21 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { Outlet } from "react-router-dom";
-import { useDataContext } from "../../context/AuthContext";
+import { useDataContext } from "../../context/useDataContext";
 import AccessDenied from "../AccessDenied";
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { userData, hamburgerMenu } = useDataContext();
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [isMobileView] = useState(window.innerWidth < 768);
 
+  const requiredPermission = "View AdminLayout";
   const hasPermission = userData?.role?.permissions?.some(
-    (permission) => permission.name === "View AdminLayout"
+    (permission) => permission.name === requiredPermission
   );
 
   if (!userData || !hasPermission) {
-    return <AccessDenied />;
+    return <AccessDenied requiredPermission={requiredPermission} />;
   }
+
 
   const renderOutlet = () => (
     <div className="min-h-screen bg-gray-50" style={{ overflowX: "auto" }}>

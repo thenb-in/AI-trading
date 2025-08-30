@@ -1,7 +1,6 @@
-// components/AnimatedBackground.jsx
-import React from 'react';
 import { motion } from 'framer-motion';
 import { FaUser, FaLock } from 'react-icons/fa';
+import PropTypes from 'prop-types';
 
 const AnimatedBackground = ({ setShowRoleDropdown }) => {
   let clickCount = 0;
@@ -67,6 +66,10 @@ const AnimatedBackground = ({ setShowRoleDropdown }) => {
     </div>
   </div>
   );
+};
+
+AnimatedBackground.propTypes = {
+  setShowRoleDropdown: PropTypes.func.isRequired,
 };
 
 export default AnimatedBackground;

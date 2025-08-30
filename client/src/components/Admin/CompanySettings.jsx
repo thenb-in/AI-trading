@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDataContext } from "../../context/AuthContext";
+import { useDataContext } from "../../context/useDataContext";
 import ApiService from "../../services/ApiService";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Clock,
   Building,
   Check,
   AlertCircle,
@@ -16,12 +14,12 @@ import {
   Globe,
 } from "lucide-react";
 import AccessDenied from "../AccessDenied";
-import ToggleSwitch from "./ToggleSwitch"; // Import the new component
+import ToggleSwitch from "./ToggleSwitch";
 
 export default function CompanySettings() {
-  const navigate = useNavigate();
+
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
-  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+  const [isMobileView] = useState(window.innerWidth < 768);
   const [companySettings, setCompanySettings] = useState({
     name: "",
     mobileApp: false,
@@ -48,19 +46,21 @@ export default function CompanySettings() {
 
         setIsLoading(false);
       } catch (err) {
-        setError(err.message || "Failed to load company settings");
+        console.log(err)
+        setError(err.error || "Failed to load company settings");
         setIsLoading(false);
       }
     };
     fetchSettings();
   }, []);
 
+  const requiredPermission = "View Company Settings";
   const hasPermission = userData?.role?.permissions?.some(
-    (permission) => permission.name === "View Company Settings"
+    (permission) => permission.name === requiredPermission
   );
 
   if (!hasPermission) {
-    return <AccessDenied />;
+      return <AccessDenied requiredPermission={requiredPermission} />;
   }
 
   const handleInputChange = (field, value) => {

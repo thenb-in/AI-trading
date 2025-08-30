@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../services/ApiService';
-import { useDataContext } from '../../context/AuthContext';
+import { useDataContext } from '../../context/useDataContext';
 
 export default function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });

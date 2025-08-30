@@ -1,17 +1,15 @@
-import { useState } from "react";
 import {
   User,
-  Users2,
   Building,
-  MessageSquare,
   Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext } from "../../context/AuthContext";
+import { useDataContext } from "../../context/useDataContext";
 import LogoutButton from "../LogoutButton";
+import PropTypes from "prop-types";
+
 export default function AdminSidebar({
   collapsed,
   setCollapsed,
@@ -117,3 +115,9 @@ export default function AdminSidebar({
     </>
   );
 }
+
+AdminSidebar.propTypes = {
+  collapsed: PropTypes.bool.isRequired,
+  setCollapsed: PropTypes.func.isRequired,
+  isMobileView: PropTypes.bool.isRequired,
+};

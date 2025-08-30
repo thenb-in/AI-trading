@@ -1,4 +1,3 @@
-import React from 'react';
 import AnimatedBackground from '../components/AnimatedBackground';
 import ForgotPassword from '../components/Auth/ForgotPassword';
 import { motion } from 'framer-motion';

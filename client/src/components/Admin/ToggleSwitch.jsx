@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import PropTypes from 'prop-types';
 
 export default function ToggleSwitch({ label, checked, onChange, description }) {
   return (
@@ -38,3 +39,9 @@ export default function ToggleSwitch({ label, checked, onChange, description }) 
     </div>
   );
 }
+ToggleSwitch.propTypes = {
+  label: PropTypes.string.isRequired,
+  checked: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
+  description: PropTypes.string,
+};
