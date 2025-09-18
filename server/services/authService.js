@@ -2,25 +2,25 @@ const bcrypt = require('bcrypt');
 const { User, Company, Role, Permission } = require('../models');
 const logger = require('../logger');
 const { where } = require('sequelize');
-const { 
-  generateAccessToken, 
-  generateRefreshToken, 
-  revokeRefreshToken 
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  revokeRefreshToken
 } = require('../utils/authUtils');
 
 const signup = async ({ phone, username, password, name, companyId, role }) => {
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
-  
+
   const existingUser = await User.findOne({ where: { phone } });
   logger.info(`Checking if user already exists: ${phone} - Found: ${!!existingUser}`);
-  
+
   if (existingUser) {
     // Check if user is inactive
     if (!existingUser.isActive) {
       // Update inactive user to active and set is_approved to false
       await existingUser.update({
         isActive: true,
-        is_approved: false,
+        is_approved: false
       });
       logger.info(`Reactivated existing user: ${phone}`);
       return existingUser;
@@ -66,7 +66,7 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
     is_approved: false,
     mobileApp: company.mobileApp,      // inherits from company
     desktopWeb: company.desktopWeb,    // inherits from company
-    mobileWeb: company.mobileWeb,      // inherits from company
+    mobileWeb: company.mobileWeb      // inherits from company
   });
   return user;
 };
@@ -80,13 +80,13 @@ const loginUser = async (credentials) => {
   const user = await User.findOne({
     where: { username },
     include: [
-      { 
-        model: Company, 
+      {
+        model: Company,
         as: 'company',
         attributes: ['id', 'name']
       },
-      { 
-        model: Role, 
+      {
+        model: Role,
         as: 'role',
         include: [{
           model: Permission,
@@ -102,21 +102,21 @@ const loginUser = async (credentials) => {
   });
   if (!user) {
     logger.warn(`Login failed: User not found: ${username}`);
-    throw { status: 401, message: "User not found" };
+    throw { status: 401, message: 'User not found' };
   }
 
   logger.info(`Verifying user password: ${user.id}`);
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     logger.warn(`Login failed: Invalid password: ${username}`);
-    throw { status: 401, message: "Invalid credentials" };
+    throw { status: 401, message: 'Invalid credentials' };
   }
 
   if (!user.isActive) {
     logger.warn(`Login failed: Account not found: ${user.id}`);
     throw {
-      status: 403, 
-      message: "Account not found" 
+      status: 403,
+      message: 'Account not found'
     };
   }
 
@@ -124,34 +124,34 @@ const loginUser = async (credentials) => {
     logger.warn(`Login failed: Account not approved: ${user.id}`);
     throw {
       status: 403,
-      message: "Your account is pending admin approval. Please try again later.",
+      message: 'Your account is pending admin approval. Please try again later.'
     };
   }
-  
+
   logger.info(`User login successful: ${user.id}`);
 
   // Generate tokens using utility functions
-const accessToken = generateAccessToken(user);
-logger.info(`Access token generated: ${accessToken}`);
+  const accessToken = generateAccessToken(user);
+  logger.info(`Access token generated: ${accessToken}`);
 
 
-const refreshToken = await generateRefreshToken(user);
-logger.info(`Refresh token generated: ${refreshToken}`);
+  const refreshToken = await generateRefreshToken(user);
+  logger.info(`Refresh token generated: ${refreshToken}`);
 
-// Update user with refresh token
+  // Update user with refresh token
   await User.update(
     { refresh_token: refreshToken, last_active: new Date() },
     { where: { id: user.id } }
   );
   // Prepare user data for response
   const userData = user.get({ plain: true });
-  
+
   // Remove sensitive data
   delete userData.password;
   delete userData.refresh_token;
 
   // Structure the response
-  return { 
+  return {
     user: {
       id: userData.id,
       phone: userData.phone,
@@ -166,8 +166,8 @@ logger.info(`Refresh token generated: ${refreshToken}`);
         permissions: userData.role.permissions || []
       } : null
     },
-    accessToken, 
-    refreshToken 
+    accessToken,
+    refreshToken
   };
 };
 
@@ -206,12 +206,12 @@ const getAllUsers = async () => {
     order: [['last_active', 'DESC']]
   });
 
-   // Fetch all roles separately
+  // Fetch all roles separately
   const roles = await Role.findAll({
     attributes: ['id', 'name'],
     order: [['name', 'ASC']]
   });
-  
+
   return { users, roles  };
 };
 
@@ -266,7 +266,7 @@ const getCurrentUser = async (userId) => {
       isActive: user.isActive,
       is_approved: user.is_approved,
       company: user.company,
-      
+
       role: user.role ? {
         id: user.role.id,
         name: user.role.name,
@@ -284,7 +284,7 @@ const getCurrentUser = async (userId) => {
 
 const getAllRoles = async () => {
   const roles = await Role.findAll({
-    attributes: ['id', 'name', 'description'],
+    attributes: ['id', 'name', 'description']
   });
   return roles;
 };
@@ -297,5 +297,5 @@ module.exports = {
   getAllUsers,
   getUserById,
   getCurrentUser,
-  getAllRoles,
+  getAllRoles
 };

@@ -7,7 +7,7 @@ const companyService = {
   async getCompanySettings(id) {
     try {
       const company = await Company.findByPk(id, {
-        attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb'],
+        attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb']
       });
       if (!company) {
         throw new Error('Company not found');
@@ -27,16 +27,16 @@ const companyService = {
         throw new Error('Company not found');
       }
       await company.update({
-        
+
         name: data.name,
-      
+
         mobileApp: data.mobileApp,
         desktopWeb: data.desktopWeb,
-        mobileWeb: data.mobileWeb,
+        mobileWeb: data.mobileWeb
       });
       return company;
     } catch (error) {
-      throw new Error(`Failed to update company settings: ${error.message}`); 
+      throw new Error(`Failed to update company settings: ${error.message}`);
     }
   },
 
@@ -44,7 +44,7 @@ const companyService = {
     try {
       const { name, messageTimer = null, hideChat = false, deleteOnSeen=false } = data;
       const company = await Company.create({
-        name,
+        name
       });
       return company;
     } catch (error) {
@@ -57,8 +57,8 @@ const companyService = {
       const companies = await Company.findAll({
         include: [
           { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
-          { model: Room, as: 'rooms', attributes: ['id', 'name'] },
-        ],
+          { model: Room, as: 'rooms', attributes: ['id', 'name'] }
+        ]
       });
       return companies;
     } catch (error) {
@@ -71,8 +71,8 @@ const companyService = {
       const company = await Company.findByPk(id, {
         include: [
           { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
-          { model: Room, as: 'rooms', attributes: ['id', 'name'] },
-        ],
+          { model: Room, as: 'rooms', attributes: ['id', 'name'] }
+        ]
       });
       if (!company) {
         throw new Error('Company not found');
@@ -94,7 +94,7 @@ const companyService = {
     } catch (error) {
       throw new Error(`Failed to delete company: ${error.message}`);
     }
-  },
+  }
 };
 
 module.exports = companyService;

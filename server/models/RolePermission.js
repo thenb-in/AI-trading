@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    permissionId: {  // todo: check why permission id is created capital when roleId is small 
+    permissionId: {  // todo: check why permission id is created capital when roleId is small
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -47,7 +47,7 @@ module.exports = (sequelize) => {
       foreignKey: 'roleId',
       as: 'role'
     });
-    
+
     RolePermission.belongsTo(models.Permission, {
       foreignKey: 'permissionId',
       as: 'permission'

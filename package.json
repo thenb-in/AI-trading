@@ -68,7 +68,7 @@
       "node server/scripts/lint-checks-cross-platform.js"
     ],
     "client/src/**/*.{js,jsx}": [
-      "cd client && npm run lint"
+      "node scripts/lint-client.js"
     ]
   },
   "commitlint": {

@@ -18,7 +18,7 @@ let sequelize;
 if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], {
     dialect: config.dialect,
-    logging: false, // Disable SQL logging
+    logging: false // Disable SQL logging
   });
 } else {
   sequelize = new Sequelize(
@@ -69,7 +69,7 @@ sequelize
   .then(() => {
     logger.info('Database tables synchronized successfully');
   })
-  .catch(error => { 
+  .catch(error => {
     logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
   });
 

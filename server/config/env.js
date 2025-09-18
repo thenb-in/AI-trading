@@ -12,11 +12,11 @@ module.exports = {
   PORT: process.env.PORT || 5000,
   FRONTEND_URL: process.env.FRONTEND_URL,
   SERVER_URL: process.env.SERVER_URL,
-  
+
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,
   DB_DIALECT: process.env.DB_DIALECT || 'postgres',
-  
+
   // JWT configuration
   JWT_SECRET: process.env.JWT_SECRET,
   REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
@@ -24,7 +24,7 @@ module.exports = {
   JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION,
   MAX_JWT_ACCESS_EXPIRATION_MS: parseInt(process.env.MAX_JWT_ACCESS_EXPIRATION_MS, 10) || 900000,
   MAX_JWT_REFRESH_EXPIRATION_MS: parseInt(process.env.MAX_JWT_REFRESH_EXPIRATION_MS, 10) || 604800000,
-  
+
   // Helper functions
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV === 'development',

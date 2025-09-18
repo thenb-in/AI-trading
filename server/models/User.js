@@ -1,71 +1,71 @@
 // todo: create a user profile
 module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define("User", {
+  const User = sequelize.define('User', {
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
+      primaryKey: true
     },
     phone: {
       type: DataTypes.STRING,
       unique: true,
-      allowNull: false,
+      allowNull: false
     },
     username: {
       type: DataTypes.STRING,
       unique: true,
-      allowNull: false,
+      allowNull: false
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     roleId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: true
     },
     companyId: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: false
     },
     isActive: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
-      defaultValue: false,
+      defaultValue: false
     },
     last_active: {
       type: DataTypes.DATE,
-      allowNull: true,
+      allowNull: true
     },
     refresh_token: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: true
     },
     is_approved: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
+      defaultValue: false
     },
     mobileApp: {
-      type: DataTypes.BOOLEAN,
+      type: DataTypes.BOOLEAN
     },
     desktopWeb: {
-      type: DataTypes.BOOLEAN,
+      type: DataTypes.BOOLEAN
     },
     mobileWeb: {
-      type: DataTypes.BOOLEAN,
-    },
+      type: DataTypes.BOOLEAN
+    }
   }, {
-    tableName: 'users',
+    tableName: 'users'
   });
 
   User.associate = (models) => {
-    User.belongsTo(models.Company, { foreignKey: "companyId", as: "company" });
+    User.belongsTo(models.Company, { foreignKey: 'companyId', as: 'company' });
 
-    User.belongsTo(models.Role, { foreignKey: "roleId", as: "role" });
+    User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
   };
 
   return User;

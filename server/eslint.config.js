@@ -1,4 +1,4 @@
-const customPlugin = require('./eslint-rules/custom-rules.js')
+const customPlugin = require('./eslint-rules/custom-rules.js');
 
 module.exports = [
   { ignores: ['node_modules', 'logs', 'migrations'] },
@@ -27,18 +27,18 @@ module.exports = [
         clearImmediate: 'readonly',
         // ES2020 globals
         BigInt: 'readonly',
-        globalThis: 'readonly',
+        globalThis: 'readonly'
       },
-      sourceType: 'commonjs', // Server uses CommonJS modules
+      sourceType: 'commonjs' // Server uses CommonJS modules
     },
     plugins: {
-      custom: customPlugin,
+      custom: customPlugin
     },
     rules: {
       // Basic recommended rules
-      'no-unused-vars': ['error', { 
+      'no-unused-vars': ['error', {
         'argsIgnorePattern': '^_',
-        'varsIgnorePattern': '^_' 
+        'varsIgnorePattern': '^_'
       }],
       'no-undef': 'error',
       'prefer-const': 'error',
@@ -52,7 +52,7 @@ module.exports = [
       'indent': ['error', 2],
       'no-trailing-spaces': 'error',
       'eol-last': 'error',
-      
+
       // Custom project-specific rules (migrated from legacy checks)
       'custom/no-console-usage': 'error',
       'custom/no-logger-commas': 'error',
@@ -64,12 +64,12 @@ module.exports = [
       // Node.js specific rules
       'no-process-exit': 'error',
       'no-path-concat': 'error',
-      
+
       // Security rules
       'no-eval': 'error',
       'no-implied-eval': 'error',
-      'no-new-func': 'error',
-    },
+      'no-new-func': 'error'
+    }
   },
 
   // Scripts config (more relaxed for utility scripts)
@@ -96,12 +96,12 @@ module.exports = [
         clearImmediate: 'readonly',
         // ES2020 globals
         BigInt: 'readonly',
-        globalThis: 'readonly',
+        globalThis: 'readonly'
       },
-      sourceType: 'commonjs',
+      sourceType: 'commonjs'
     },
     plugins: {
-      custom: customPlugin,
+      custom: customPlugin
     },
     rules: {
       'no-process-exit': 'off',
@@ -111,7 +111,7 @@ module.exports = [
       'custom/no-logger-commas': 'off', // Relaxed for scripts
       'custom/no-direct-dotenv': 'off', // Allow direct dotenv in setup scripts
       'custom/no-hardcoded-logger-strings': 'off', // Relaxed for scripts
-      'custom/no-json-stringify-in-logs': 'off', // Relaxed for scripts
-    },
-  },
-]
+      'custom/no-json-stringify-in-logs': 'off' // Relaxed for scripts
+    }
+  }
+];

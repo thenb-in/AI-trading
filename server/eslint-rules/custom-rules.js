@@ -7,39 +7,39 @@ const customRules = {
       docs: {
         description: 'Disallow console usage in favor of logger',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
-        noConsole: 'Use logger instead of console.{{method}}. Replace with logger.{{loggerMethod}}',
-      },
+        noConsole: 'Use logger instead of console.{{method}}. Replace with logger.{{loggerMethod}}'
+      }
     },
     create(context) {
       return {
         CallExpression(node) {
-          if (node.callee.type === 'MemberExpression' && 
+          if (node.callee.type === 'MemberExpression' &&
               node.callee.object.name === 'console') {
             const method = node.callee.property.name;
             const loggerMethod = method === 'log' ? 'info' : method;
-            
+
             // Skip if it's a console override (console.log = ...)
             if (node.parent && node.parent.type === 'AssignmentExpression') {
               return;
             }
-            
+
             context.report({
               node,
               messageId: 'noConsole',
               data: {
                 method,
-                loggerMethod,
-              },
+                loggerMethod
+              }
             });
           }
-        },
+        }
       };
-    },
+    }
   },
 
   'no-logger-commas': {
@@ -48,28 +48,28 @@ const customRules = {
       docs: {
         description: 'Disallow commas in logger calls - use template literals instead',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
-        noCommas: 'Logger calls should use single argument with template literals instead of multiple arguments',
-      },
+        noCommas: 'Logger calls should use single argument with template literals instead of multiple arguments'
+      }
     },
     create(context) {
       return {
         CallExpression(node) {
-          if (node.callee.type === 'MemberExpression' && 
+          if (node.callee.type === 'MemberExpression' &&
               node.callee.object.name === 'logger' &&
               node.arguments.length > 1) {
             context.report({
               node,
-              messageId: 'noCommas',
+              messageId: 'noCommas'
             });
           }
-        },
+        }
       };
-    },
+    }
   },
 
   'no-direct-dotenv': {
@@ -78,31 +78,31 @@ const customRules = {
       docs: {
         description: 'Disallow direct dotenv usage - use centralized config/env.js',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
-        noDirectDotenv: 'Use centralized environment config instead of direct dotenv. Replace with: const env = require("./config/env")',
-      },
+        noDirectDotenv: 'Use centralized environment config instead of direct dotenv. Replace with: const env = require("./config/env")'
+      }
     },
     create(context) {
       return {
         CallExpression(node) {
-          if (node.callee.name === 'require' && 
+          if (node.callee.name === 'require' &&
               node.arguments.length === 1 &&
               node.arguments[0].type === 'Literal') {
             const arg = node.arguments[0].value;
             if (arg === 'dotenv' || arg === 'dotenv-safe') {
               context.report({
                 node,
-                messageId: 'noDirectDotenv',
+                messageId: 'noDirectDotenv'
               });
             }
           }
-        },
+        }
       };
-    },
+    }
   },
 
   'no-hardcoded-logger-strings': {
@@ -111,78 +111,78 @@ const customRules = {
       docs: {
         description: 'Disallow hardcoded strings in logger calls and error messages - use variables or template literals with variables',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
         noHardcodedStrings: 'Logger calls should use variables or template literals with variables instead of hardcoded strings',
         noHardcodedErrorStrings: 'Error messages should use variables or template literals with variables instead of hardcoded strings',
-        noHardcodedTemplateStrings: 'Template literals should contain variables - avoid hardcoded template strings',
-      },
+        noHardcodedTemplateStrings: 'Template literals should contain variables - avoid hardcoded template strings'
+      }
     },
     create(context) {
       // Helper function to check if a template literal contains variables
       function hasTemplateVariables(templateLiteral) {
         return templateLiteral.expressions && templateLiteral.expressions.length > 0;
       }
-      
+
       // Helper function to check if a string is hardcoded (no variables)
       function isHardcodedString(arg) {
         if (arg.type === 'Literal' && typeof arg.value === 'string') {
           return true;
         }
-        
+
         if (arg.type === 'TemplateLiteral') {
           return !hasTemplateVariables(arg);
         }
-        
+
         return false;
       }
-      
+
       return {
         CallExpression(node) {
           // Check logger calls
-          if (node.callee.type === 'MemberExpression' && 
+          if (node.callee.type === 'MemberExpression' &&
               node.callee.object.name === 'logger' &&
               node.arguments.length === 1) {
             const arg = node.arguments[0];
-            
+
             if (isHardcodedString(arg)) {
               context.report({
                 node,
-                messageId: arg.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedStrings',
+                messageId: arg.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedStrings'
               });
             }
           }
-          
+
           // Check error constructor calls (new Error(), new TypeError(), etc.)
-          if (node.callee.type === 'NewExpression' && 
-              node.callee.callee.name && 
+          if (node.callee.type === 'NewExpression' &&
+              node.callee.callee.name &&
               node.callee.callee.name.endsWith('Error') &&
               node.arguments.length === 1) {
             const arg = node.arguments[0];
-            
+
             if (isHardcodedString(arg)) {
               context.report({
                 node,
-                messageId: arg.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedErrorStrings',
+                messageId: arg.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedErrorStrings'
               });
             }
           }
         },
-        
+
         // Check throw statements with string literals directly
         ThrowStatement(node) {
           if (node.argument && isHardcodedString(node.argument)) {
             context.report({
               node,
-              messageId: node.argument.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedErrorStrings',
+              messageId: node.argument.type === 'TemplateLiteral' ? 'noHardcodedTemplateStrings' : 'noHardcodedErrorStrings'
             });
           }
-        },
+        }
       };
-    },
+    }
   },
 
   'no-json-stringify-in-logs': {
@@ -191,14 +191,14 @@ const customRules = {
       docs: {
         description: 'Disallow JSON.stringify in logger calls above debug level - use debug level or lower for JSON.stringify',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
         noJsonStringifyInLogs: 'JSON.stringify should only be used in debug level or lower logger calls. Move to logger.debug() or use a lower log level',
-        noJsonStringifyInNonDebug: 'JSON.stringify detected in {{logLevel}} level. Use debug level or lower for JSON.stringify to avoid exposing sensitive data',
-      },
+        noJsonStringifyInNonDebug: 'JSON.stringify detected in {{logLevel}} level. Use debug level or lower for JSON.stringify to avoid exposing sensitive data'
+      }
     },
     create(context) {
       // Define log levels in order of severity (debug is lowest, error is highest)
@@ -211,7 +211,7 @@ const customRules = {
         'warn': 3,
         'warning': 3,
         'error': 4,
-        'fatal': 5,
+        'fatal': 5
       };
 
       // Helper function to check if a logger call contains JSON.stringify
@@ -222,13 +222,13 @@ const customRules = {
 
         // Check all arguments for JSON.stringify usage
         for (const arg of node.arguments) {
-          if (arg.type === 'CallExpression' && 
+          if (arg.type === 'CallExpression' &&
               arg.callee.type === 'MemberExpression' &&
               arg.callee.object.name === 'JSON' &&
               arg.callee.property.name === 'stringify') {
             return true;
           }
-          
+
           // Check template literals for JSON.stringify
           if (arg.type === 'TemplateLiteral' && arg.expressions) {
             for (const expr of arg.expressions) {
@@ -246,7 +246,7 @@ const customRules = {
 
       // Helper function to get log level from logger call
       function getLogLevel(node) {
-        if (node.callee.type === 'MemberExpression' && 
+        if (node.callee.type === 'MemberExpression' &&
             node.callee.object.name === 'logger') {
           return node.callee.property.name;
         }
@@ -256,30 +256,30 @@ const customRules = {
       return {
         CallExpression(node) {
           // Check logger calls
-          if (node.callee.type === 'MemberExpression' && 
+          if (node.callee.type === 'MemberExpression' &&
               node.callee.object.name === 'logger') {
-            
+
             const logLevel = getLogLevel(node);
             const hasJsonStringify = containsJsonStringify(node);
-            
+
             if (hasJsonStringify && logLevel) {
               const levelValue = logLevels[logLevel];
-              
+
               // Allow debug, verbose, trace levels (level 0)
               if (levelValue > 0) {
                 context.report({
                   node,
                   messageId: 'noJsonStringifyInNonDebug',
                   data: {
-                    logLevel: logLevel,
-                  },
+                    logLevel: logLevel
+                  }
                 });
               }
             }
           }
-        },
+        }
       };
-    },
+    }
   },
 
   'constants-in-single-folder': {
@@ -288,20 +288,20 @@ const customRules = {
       docs: {
         description: 'Enforce that all constants (except logger) are defined in the constants folder',
         category: 'Best Practices',
-        recommended: true,
+        recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
         constantsInSingleFolder: 'Constants should be defined in the constants folder. Move {{constantName}} to constants/index.js and import it from there',
-        noInlineConstants: 'Avoid inline constants. Define {{constantName}} in constants/index.js and import it',
-      },
+        noInlineConstants: 'Avoid inline constants. Define {{constantName}} in constants/index.js and import it'
+      }
     },
     create(context) {
       const filename = context.getFilename();
       const isConstantsFile = filename.includes('/constants/') || filename.includes('\\constants\\');
       const isLoggerFile = filename.includes('logger.js') || filename.includes('logger.ts');
-      
+
       // Skip if this is the constants file itself or logger file
       if (isConstantsFile || isLoggerFile) {
         return {};
@@ -324,9 +324,9 @@ const customRules = {
           const declaration = node.declarations[0];
           if (declaration.init) {
             // Check if it's a literal value or simple expression
-            return declaration.init.type === 'Literal' || 
+            return declaration.init.type === 'Literal' ||
                    declaration.init.type === 'TemplateLiteral' ||
-                   (declaration.init.type === 'CallExpression' && 
+                   (declaration.init.type === 'CallExpression' &&
                     declaration.init.callee.type === 'MemberExpression' &&
                     declaration.init.callee.object.name === 'process' &&
                     declaration.init.callee.property.name === 'env');
@@ -339,16 +339,16 @@ const customRules = {
         VariableDeclaration(node) {
           if (isConstantDeclaration(node)) {
             for (const declaration of node.declarations) {
-              if (declaration.id.type === 'Identifier' && 
+              if (declaration.id.type === 'Identifier' &&
                   isConstantName(declaration.id.name) &&
                   isInlineConstant(node)) {
-                
+
                 context.report({
                   node: declaration.id,
                   messageId: 'constantsInSingleFolder',
                   data: {
-                    constantName: declaration.id.name,
-                  },
+                    constantName: declaration.id.name
+                  }
                 });
               }
             }
@@ -357,25 +357,25 @@ const customRules = {
 
         // Check for object property assignments that look like constants
         AssignmentExpression(node) {
-          if (node.left.type === 'MemberExpression' && 
+          if (node.left.type === 'MemberExpression' &&
               node.left.object.type === 'Identifier' &&
               node.left.property.type === 'Identifier' &&
               isConstantName(node.left.property.name)) {
-            
+
             context.report({
               node: node.left.property,
               messageId: 'noInlineConstants',
               data: {
-                constantName: node.left.property.name,
-              },
+                constantName: node.left.property.name
+              }
             });
           }
-        },
+        }
       };
-    },
-  },
+    }
+  }
 };
 
 module.exports = {
-  rules: customRules,
+  rules: customRules
 };

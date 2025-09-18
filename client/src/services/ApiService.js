@@ -1,8 +1,7 @@
 import axios from 'axios';
+import { API_CONFIG } from '../constants';
 
-
-
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = API_CONFIG.BASE_URL;
 
 const ApiService = {
   async request(method, url, data = null, config = {}) {

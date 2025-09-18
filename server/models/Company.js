@@ -3,36 +3,36 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
-      primaryKey: true,
+      primaryKey: true
     },
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: false
     },
     mobileApp: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
+      defaultValue: false
     },
     desktopWeb: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true,
+      defaultValue: true
     },
     mobileWeb: {
       type: DataTypes.BOOLEAN,
-      defaultValue: false,
+      defaultValue: false
     },
-     roleId: {
+    roleId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: 3,
-    },
+      defaultValue: 3
+    }
   }, {
-    tableName: 'companies',
+    tableName: 'companies'
   });
 
   Company.associate = (models) => {
     Company.hasMany(models.User, { foreignKey: 'companyId' });
-     Company.belongsTo(models.Role, { foreignKey: "roleId", as: "role" });
+    Company.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
   };
 
   return Company;

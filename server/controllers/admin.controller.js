@@ -23,16 +23,16 @@ const createRole = async (req, res) => {
   try {
     const { name, description } = req.body;
     const newRole = await adminService.createRole(name, description);
-    res.render('role-form', { 
-      error: null, 
+    res.render('role-form', {
+      error: null,
       success: `Role "${newRole.name}" created successfully!`,
       formData: { name: '', description: '' },
       process: { env: process.env }
     });
   } catch (error) {
     logger.error(`Error creating role: ${error.message} - Stack: ${error.stack}`);
-    res.render('role-form', { 
-      error: error.message, 
+    res.render('role-form', {
+      error: error.message,
       success: null,
       formData: { name: req.body.name, description: req.body.description },
       process: { env: process.env }
@@ -61,16 +61,16 @@ const createPermission = async (req, res) => {
   try {
     const { name, description } = req.body;
     const newPermission = await adminService.createPermission(name, description);
-    res.render('permission-form', { 
-      error: null, 
+    res.render('permission-form', {
+      error: null,
       success: `Permission "${newPermission.name}" created successfully!`,
       formData: { name: '', description: '' },
       process: { env: process.env }
     });
   } catch (error) {
     logger.error(`Error creating permission: ${error.message} - Stack: ${error.stack}`);
-    res.render('permission-form', { 
-      error: error.message, 
+    res.render('permission-form', {
+      error: error.message,
       success: null,
       formData: { name: req.body.name, description: req.body.description },
       process: { env: process.env }
@@ -96,9 +96,9 @@ const renderRolePermissionsPage = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error loading user management page: ${error.message}`);
-    res.status(500).render('role-permissions', {  
-      roles: [], 
-      allPermissions: [], 
+    res.status(500).render('role-permissions', {
+      roles: [],
+      allPermissions: [],
       error: 'Failed to load user management page.',
       process: { env: process.env } // Pass environment variables to template
     });
@@ -156,6 +156,5 @@ module.exports = {
   renderRolePermissionsPage,
   addPermissionToRole,
   removePermissionFromRole,
-  renderUserManagementPage,
+  renderUserManagementPage
 };
-  

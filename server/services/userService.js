@@ -1,6 +1,5 @@
 const db = require('../models');
 const { Op } = require('sequelize');
-const logger = require('../logger');
 
 
 async function deleteUser(userId) {
@@ -18,11 +17,11 @@ async function deleteUser(userId) {
   if (userRooms.length > 0) {
     const adminRoles = await db.Role.findAll({
       // name = admin or sadmin
-      where: { 
+      where: {
         name: {
           [Op.in]: ['admin', 'sadmin']
         }
-       } // todo: make this dynamic if needed
+      } // todo: make this dynamic if needed
     });
 
     if (!adminRoles.length) {
@@ -32,9 +31,9 @@ async function deleteUser(userId) {
     const options = {
       roleId: { [Op.in]: adminRoles.map(role => role.id) },
       id: { [Op.ne]: userId }
-    }
+    };
     const adminUser = await db.User.findOne({
-      where: options,
+      where: options
     });
 
     if (!adminUser) {
@@ -86,7 +85,7 @@ async function updateUserRole(userId, newRoleId) {
 async function updateUserDeviceAccess(userId, deviceAccess) {
   const user = await db.User.findByPk(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new Error('User not found');
   }
 
   // Update only fields present in the payload
@@ -106,7 +105,7 @@ async function updateUserDeviceAccess(userId, deviceAccess) {
 
 
 
-  module.exports = {
+module.exports = {
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess

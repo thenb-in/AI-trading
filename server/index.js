@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const env = require('./config/env');
+const constants = require('./constants');
 // require('./sheduler/messageDelete')
 const db = require('./models');
 const authRoutes = require('./routes/authRoutes');
@@ -11,8 +12,8 @@ const companyRoutes = require('./routes/compnayRoutes');
 const adminRoutes = require('./routes/admin.route');
 const errorMiddleware = require('./middleware/errorMiddleware');
 
-const cookieParser = require('cookie-parser')
-const app = express();  
+const cookieParser = require('cookie-parser');
+const app = express();
 const bodyParser = require('body-parser');
 const server = http.createServer(app);
 const logger = require('./logger');
@@ -28,7 +29,7 @@ app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use('/static', express.static(path.join(__dirname, 'static')));
-app.use(cookieParser())
+app.use(cookieParser());
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
@@ -45,7 +46,7 @@ app.use(errorMiddleware);
 
 
 // Start server after syncing database
-const PORT = env.PORT;
+const PORT = env.PORT || constants.SERVER_CONSTANTS.DEFAULT_PORT;
 
 db.sequelize.sync({ force: false }).then(() => {
   server.listen(PORT, () => {

@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { User, Company, Role, Permission } = require('../models');
 const logger = require('../logger');
-const { 
-  verifyToken, 
-  generateAccessToken, 
+const {
+  verifyToken,
+  generateAccessToken,
   revokeRefreshToken ,
   generateRefreshToken
 } = require('../utils/authUtils');
@@ -42,12 +42,12 @@ exports.protect = async (req, res, next) => {
         const user = await User.findByPk(decoded.id, {
           attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'is_approved', 'refresh_token']
         });
-        
+
         if (!user) {
           logger.warn('User not found during token verification');
           return res.status(401).json({ message: 'User not found', requiresLogin: true });
         }
-        
+
         if (!user.is_approved) {
           logger.warn(`Login attempt by inactive user: ${user.id}`);
           res.clearCookie('accessToken');
@@ -55,7 +55,7 @@ exports.protect = async (req, res, next) => {
           res.clearCookie('isLoggedIn');
           return res.status(401).json({ message: 'Your account has been deactivated', requiresLogin: true });
         }
-        
+
         // Attach user to request
         req.user = {
           id: user.id,
@@ -64,7 +64,7 @@ exports.protect = async (req, res, next) => {
           role: user.role,
           companyId: user.companyId,
           isActive: user.isActive,
-          roleId: user.roleId,
+          roleId: user.roleId
         };
         return next();
       } catch (error) {
@@ -138,12 +138,14 @@ exports.protect = async (req, res, next) => {
               cookieOptions: {
                 access: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: accessTokenMaxAge },
                 refresh: { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: refreshTokenMaxAge },
-                isLoggedIn: { secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: refreshTokenMaxAge },
-              },
-            },
+                isLoggedIn: { secure: process.env.NODE_ENV === 'production', sameSite: 'strict', maxAge: refreshTokenMaxAge }
+              }
+            }
           };
         } catch (error) {
-          if (transaction && !transaction.finished) await transaction.rollback();
+          if (transaction && !transaction.finished) {
+            await transaction.rollback();
+          }
           throw error;
         }
       })();
@@ -157,10 +159,10 @@ exports.protect = async (req, res, next) => {
         res.cookie('refreshToken', newTokens.refreshToken, newTokens.cookieOptions.refresh);
         res.cookie('isLoggedIn', 'true', newTokens.cookieOptions.isLoggedIn);
         logger.info(`Successfully refreshed tokens: ${userId}`);
-       return next();
+        return next();
       } catch (err) {
         logger.error(`Token refresh failed: ${userId} - ${err.message}`);
-        
+
         return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
       } finally {
         refreshTokenPromises.delete(userId);
@@ -179,10 +181,10 @@ exports.protect = async (req, res, next) => {
 
 exports.admin = (req, res, next) => {
   // todo: find the permission
-  let requiredPermission = 'Admin'
+  const requiredPermission = 'Admin';
   const hasPermission = allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
-    return res.status(403).json({ error: "You are not authorized to access this resource " + requiredPermission });
+    return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
   }
   next();
 };

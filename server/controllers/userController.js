@@ -20,10 +20,10 @@ const getAllUsers = async (req, res) => {
 };
 
 const deactivateUser = async (req, res) => {
-  let requiredPermission = 'Deactivate User'
+  const requiredPermission = 'Deactivate User';
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
-    return res.status(403).json({ error: "You are not authorized to access this resource " + requiredPermission });
+    return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
   }
   try {
     const { userId } = req.params;
@@ -56,7 +56,7 @@ const deactivateUser = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    let userData=req.user;
+    const userData=req.user;
     const user = await authService.getCurrentUser(userData.id);
     res.status(200).json(user);
   } catch (error) {
@@ -67,10 +67,10 @@ const getMe = async (req, res) => {
 
 
 const deleteUser = async (req, res) => {
-  let requiredPermission = 'Delete User'
+  const requiredPermission = 'Delete User';
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
-    return res.status(403).json({ error: "You are not authorized to access this resource " + requiredPermission });
+    return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
   }
   try {
     const { userId } = req.params;
@@ -92,9 +92,9 @@ const updateUserRole=async(req,res)=>{
     logger.error(`Update user role error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
 const updateUserDeviceAccess=async(req,res)=>{
-    try {
+  try {
     const { userId } = req.params;
     const { deviceAccess } = req.body;
     await userService.updateUserDeviceAccess(userId, deviceAccess);
@@ -103,7 +103,7 @@ const updateUserDeviceAccess=async(req,res)=>{
     logger.error(`Update user device access error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: 'Internal server error' });
   }
-}
+};
 module.exports = {
   getAllUsers,
   deactivateUser,

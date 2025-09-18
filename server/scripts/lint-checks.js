@@ -19,14 +19,14 @@ function log(message, color = 'reset') {
 
 function checkConsoleUsage() {
   log('🔍 Checking for console usage...', 'blue');
-  
+
   try {
     // Find all console usage excluding the logger.js file, console overrides, and this script
     const result = execSync(
       'grep -r "console\\." . --include="*.js" --exclude-dir=node_modules --exclude-dir=.git --exclude=logger.js | grep -v "console\\.log = " | grep -v "console\\.error = " | grep -v "console\\.warn = " | grep -v "scripts/lint-checks.js"',
       { encoding: 'utf8', cwd: process.cwd() }
     );
-    
+
     if (result.trim()) {
       log('❌ Found console usage that should be replaced with logger:', 'red');
       log(result, 'red');
@@ -44,20 +44,20 @@ function checkConsoleUsage() {
       return false;
     }
   }
-  
+
   return true;
 }
 
 function checkLoggerCommas() {
   log('🔍 Checking for commas in logger calls...', 'blue');
-  
+
   try {
     // Find logger calls with commas (indicating multiple arguments)
     const result = execSync(
       'grep -r "logger\\.[a-z]*([^)]*,[^)]*)" . --include="*.js" --exclude-dir=node_modules --exclude-dir=.git | grep -v "scripts/lint-checks.js"',
       { encoding: 'utf8', cwd: process.cwd() }
     );
-    
+
     if (result.trim()) {
       log('❌ Found logger calls with commas that should use template literals or concatenation:', 'red');
       log(result, 'red');
@@ -76,16 +76,16 @@ function checkLoggerCommas() {
       return false;
     }
   }
-  
+
   return true;
 }
 
 function main() {
   log('🚀 Running pre-commit lint checks...', 'blue');
-  
+
   const consoleCheck = checkConsoleUsage();
   const commaCheck = checkLoggerCommas();
-  
+
   if (consoleCheck && commaCheck) {
     log('✅ All checks passed!', 'green');
     process.exit(0);

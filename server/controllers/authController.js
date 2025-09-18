@@ -15,11 +15,11 @@ const signupValidation = [
     .matches(/[0-9]/)
     .withMessage('Password must contain at least one number'),
   body('name').notEmpty().withMessage('Name is required'),
-  body('companyId').isUUID().withMessage('Invalid company ID'),
+  body('companyId').isUUID().withMessage('Invalid company ID')
 ];
 
 const loginValidation = [
-  body('password').notEmpty().withMessage('Password is required'),
+  body('password').notEmpty().withMessage('Password is required')
 ];
 
 if (env.isProduction) {
@@ -34,7 +34,7 @@ const resetPasswordValidation = [
     .matches(/[A-Z]/)
     .withMessage('New password must contain at least one uppercase letter')
     .matches(/[0-9]/)
-    .withMessage('New password must contain at least one number'),
+    .withMessage('New password must contain at least one number')
 ];
 
 const signup = async (req, res) => {
@@ -62,7 +62,7 @@ const login = async (req, res) => {
     }
 
     const { user, accessToken, refreshToken } = await authService.loginUser(req.body);
-    
+
     // Set HTTP-only cookies
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
@@ -75,17 +75,17 @@ const login = async (req, res) => {
       httpOnly: true,
       secure: env.isProduction,
       sameSite: 'strict',
-    maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
     });
 
     // Non-HTTP-only cookie for frontend state
     res.cookie('isLoggedIn', 'true', {
       secure: env.isProduction,
       sameSite: 'strict',
-     maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
     });
-    
-    res.json({ 
+
+    res.json({
       user: {
         id: user.id,
         phone: user.phone,
@@ -109,7 +109,7 @@ const login = async (req, res) => {
     if (error.message === 'Your account is pending admin approval. Please try again later.') {
       return res.status(403).json({ error: error.message });
     }
-    logger.error('Login error' + error.message + ":" + error.stack);
+    logger.error('Login error' + error.message + ':' + error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -123,16 +123,16 @@ const resetPassword = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error('Reset password error' + error.message + ":" + error.stack);
+    logger.error('Reset password error' + error.message + ':' + error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 const approveUser = async (req, res) => {
-  let requiredPermission = 'Approve User'
+  const requiredPermission = 'Approve User';
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
-    return res.status(404).json({ error: "You are not authorized to access this resource " + requiredPermission });
+    return res.status(404).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
   }
 
   try {
@@ -144,7 +144,7 @@ const approveUser = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error('Approve user error' + error.message + ":" + error.stack);
+    logger.error('Approve user error' + error.message + ':' + error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -188,5 +188,5 @@ module.exports = {
   approveUser,
   getAllUsers,
   getAllRoles,
-  logout,
+  logout
 };

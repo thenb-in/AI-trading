@@ -5,23 +5,23 @@ module.exports = (sequelize) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
       validate: {
-        notEmpty: true,
-      },
+        notEmpty: true
+      }
     },
     description: {
       type: DataTypes.STRING,
-      allowNull: true,
-    },
+      allowNull: true
+    }
   }, {
     tableName: 'permissions',
-    timestamps: true,
+    timestamps: true
   });
 
   Permission.associate = (models) => {
@@ -29,7 +29,7 @@ module.exports = (sequelize) => {
     Permission.belongsToMany(models.Role, {
       through: 'role_permission_mapping',
       as: 'roles',
-      foreignKey: 'permissionId',
+      foreignKey: 'permissionId'
     });
   };
 

@@ -17,8 +17,8 @@ const generateRefreshToken = async (user) => {
     { expiresIn: env.JWT_REFRESH_EXPIRATION }
   );
 
- 
-}
+
+};
 
 
 const verifyToken = (token, secret) => {
@@ -31,7 +31,7 @@ const verifyToken = (token, secret) => {
 const revokeRefreshToken = async (userId) => {
   const [updated] = await User.update(
     { refresh_token: null },
-    { 
+    {
       where: { id: userId },
       returning: true
     }
