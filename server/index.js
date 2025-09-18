@@ -21,7 +21,7 @@ const logger = require('./logger');
 
 // Test database connection
 db.sequelize.authenticate()
-  .then(() => logger.debug('✅ Database connected...'))
+  .then(() => logger.debug(`Database connected successfully at ${new Date().toISOString()}`))
   .catch(err =>  logger.error(`❌ Database connection error: ${err.message} - Stack: ${err.stack}`));
 
 // Middleware
@@ -50,8 +50,8 @@ const PORT = env.PORT || constants.SERVER_CONSTANTS.DEFAULT_PORT;
 
 db.sequelize.sync({ force: false }).then(() => {
   server.listen(PORT, () => {
-    logger.info(`🚀 Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on http://localhost:${PORT} at ${new Date().toISOString()}`);
   });
 }).catch(err => {
-  logger.error(`❌ Database sync failed: ${err.message} - Stack: ${err.stack}`);
+  logger.error(`Database sync failed: ${err.message} - Stack: ${err.stack}`);
 });

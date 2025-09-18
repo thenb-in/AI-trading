@@ -1,6 +1,6 @@
 const authService = require('../services/authService');
-const { Message, Room } = require('../models');
-const { sequelize } = require('../models');
+const { Message: _Message, Room: _Room } = require('../models');
+const { sequelize: _sequelize } = require('../models');
 const allowedPermissions = require('../utils/allowedPermissions');
 const userService = require('../services/userService');
 const logger = require('../logger');

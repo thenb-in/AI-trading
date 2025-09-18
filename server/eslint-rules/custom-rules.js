@@ -87,6 +87,7 @@ const customRules = {
       }
     },
     create(context) {
+      const filename = context.getFilename();
       return {
         CallExpression(node) {
           if (node.callee.name === 'require' &&
@@ -94,6 +95,10 @@ const customRules = {
               node.arguments[0].type === 'Literal') {
             const arg = node.arguments[0].value;
             if (arg === 'dotenv' || arg === 'dotenv-safe') {
+              // Allow dotenv usage in the centralized config file
+              if (filename.includes('config/env.js') || filename.endsWith('config/env.js') || filename.includes('\\config\\env.js') || filename.includes('/config/env.js')) {
+                return;
+              }
               context.report({
                 node,
                 messageId: 'noDirectDotenv'
@@ -189,15 +194,15 @@ const customRules = {
     meta: {
       type: 'problem',
       docs: {
-        description: 'Disallow JSON.stringify in logger calls above debug level - use debug level or lower for JSON.stringify',
+        description: 'Disallow JSON.stringify in logger calls above debug level - use lower levels for JSON.stringify',
         category: 'Best Practices',
         recommended: true
       },
       fixable: null,
       schema: [],
       messages: {
-        noJsonStringifyInLogs: 'JSON.stringify should only be used in debug level or lower logger calls. Move to logger.debug() or use a lower log level',
-        noJsonStringifyInNonDebug: 'JSON.stringify detected in {{logLevel}} level. Use debug level or lower for JSON.stringify to avoid exposing sensitive data'
+        noJsonStringifyInLogs: 'JSON.stringify should only be used in debug level or lower logger calls. Move to logger.silly() or use a lower log level',
+        noJsonStringifyInNonDebug: 'JSON.stringify detected in {{logLevel}} level. Use lower levels for JSON.stringify to avoid exposing sensitive data'
       }
     },
     create(context) {

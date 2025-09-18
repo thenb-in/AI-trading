@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const { User, Company, Role, Permission } = require('../models');
 const logger = require('../logger');
-const { where } = require('sequelize');
+const { where: _where } = require('sequelize');
 const {
   generateAccessToken,
   generateRefreshToken,

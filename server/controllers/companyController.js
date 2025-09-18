@@ -1,5 +1,5 @@
 // controllers/companyController.js
-const { get } = require('../routes/authRoutes');
+const { get: _get } = require('../routes/authRoutes');
 const companyService = require('../services/companyService');
 const allowedPermissions = require('../utils/allowedPermissions');
 

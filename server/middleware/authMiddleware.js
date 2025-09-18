@@ -1,13 +1,14 @@
-const jwt = require('jsonwebtoken');
-const { User, Company, Role, Permission } = require('../models');
+const _jwt = require('jsonwebtoken');
+const { User, Company: _Company, Role: _Role, Permission: _Permission } = require('../models');
 const logger = require('../logger');
 const {
   verifyToken,
   generateAccessToken,
-  revokeRefreshToken ,
+  revokeRefreshToken: _revokeRefreshToken,
   generateRefreshToken
 } = require('../utils/authUtils');
 const env = require('../config/env');
+const allowedPermissions = require('../utils/allowedPermissions');
 
 // In-memory cache to store promises of ongoing refresh token operations
 const refreshTokenPromises = new Map();
@@ -20,16 +21,16 @@ exports.protect = async (req, res, next) => {
   try {
     // Validate required environment variables
     if (!env.JWT_SECRET || !env.REFRESH_TOKEN_SECRET) {
-      logger.error('Missing required JWT secrets in environment variables');
+      logger.error(`Missing required JWT secrets in environment variables ${env.JWT_SECRET} ${env.REFRESH_TOKEN_SECRET}`);
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
     if (!env.MAX_JWT_ACCESS_EXPIRATION_MS || !env.MAX_JWT_REFRESH_EXPIRATION_MS) {
-      logger.warn('Missing JWT expiration times in environment variables, using defaults');
+      logger.warn(`Missing JWT expiration times in environment variables, using defaults ${env.MAX_JWT_ACCESS_EXPIRATION_MS} ${env.MAX_JWT_REFRESH_EXPIRATION_MS}`);
     }
 
     const { accessToken, refreshToken } = req.cookies || {};
-    logger.debug(`Cookies received: ${JSON.stringify({
+    logger.silly(`Cookies received: ${JSON.stringify({
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       accessTokenLength: accessToken?.length,
@@ -44,12 +45,12 @@ exports.protect = async (req, res, next) => {
         });
 
         if (!user) {
-          logger.warn('User not found during token verification');
+          logger.warn(`User not found during token verification ${decoded.id}`);
           return res.status(401).json({ message: 'User not found', requiresLogin: true });
         }
 
         if (!user.is_approved) {
-          logger.warn(`Login attempt by inactive user: ${user.id}`);
+          logger.warn(`Login attempt by inactive user: ${user.id} ${user.name}`);
           res.clearCookie('accessToken');
           res.clearCookie('refreshToken');
           res.clearCookie('isLoggedIn');
@@ -68,7 +69,7 @@ exports.protect = async (req, res, next) => {
         };
         return next();
       } catch (error) {
-        logger.error(`Access token verification failed, proceeding to refresh: ${error.message}`);
+        logger.error(`Access token verification failed, proceeding to refresh: ${error.message} ${error.stack}`);
       }
     }
 
@@ -78,7 +79,7 @@ exports.protect = async (req, res, next) => {
       try {
         decodedRefresh = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
       } catch (err) {
-        logger.error(`Refresh token verification failed: ${err.message}`);
+        logger.error(`Refresh token verification failed: ${err.message} ${err.stack}`);
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
         res.clearCookie('isLoggedIn');
@@ -96,7 +97,7 @@ exports.protect = async (req, res, next) => {
           res.cookie('refreshToken', newTokens.refreshToken, newTokens.cookieOptions.refresh);
           res.cookie('isLoggedIn', 'true', newTokens.cookieOptions.isLoggedIn);
           return next();
-        } catch (error) {
+        } catch {
           return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
         }
       }
@@ -107,12 +108,12 @@ exports.protect = async (req, res, next) => {
           const user = await User.findByPk(userId, { attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'refresh_token', 'roleId', 'role'], lock: transaction.LOCK.UPDATE, transaction });
           if (!user || user.refresh_token !== refreshToken) {
             await transaction.rollback();
-            logger.warn(`Invalid refresh token or user not found: ${userId}`);
+            logger.warn(`Invalid refresh token or user not found: ${userId} ${user.name}`);
             throw new Error('Invalid refresh token or user not found');
           }
           if (!user.isActive) {
             await transaction.rollback();
-            logger.warn(`Login attempt by inactive user during token refresh: ${userId}`);
+            logger.warn(`Login attempt by inactive user during token refresh: ${userId} ${user.name}`);
             res.clearCookie('accessToken');
             res.clearCookie('refreshToken');
             res.clearCookie('isLoggedIn');
@@ -158,10 +159,10 @@ exports.protect = async (req, res, next) => {
         res.cookie('accessToken', newTokens.accessToken, newTokens.cookieOptions.access);
         res.cookie('refreshToken', newTokens.refreshToken, newTokens.cookieOptions.refresh);
         res.cookie('isLoggedIn', 'true', newTokens.cookieOptions.isLoggedIn);
-        logger.info(`Successfully refreshed tokens: ${userId}`);
+        logger.info(`Successfully refreshed tokens: ${userId} ${user.name}`);
         return next();
       } catch (err) {
-        logger.error(`Token refresh failed: ${userId} - ${err.message}`);
+        logger.error(`Token refresh failed: ${userId} - ${err.message} ${err.stack}`);
 
         return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
       } finally {
@@ -170,11 +171,11 @@ exports.protect = async (req, res, next) => {
     }
 
     // 3. If no tokens are found at all
-    logger.warn('No tokens found in request, user is not authorized.');
+    logger.warn(`No tokens found in request, user is not authorized. ${req.cookies}`);
     res.status(401).json({ message: 'Not authorized, no token', requiresLogin: true });
 
   } catch (error) {
-    logger.error(`An unexpected error occurred in auth middleware: ${error.message} - Stack: ${error.stack}`);
+    logger.error(`An unexpected error occurred in auth middleware: ${error.message} - Stack: ${error.stack} ${error.stack}`);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 };

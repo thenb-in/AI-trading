@@ -72,7 +72,7 @@ console.log = (...args) => {
 
 // Helper function to determine if it's an error or an exception
 // todo: check if this can be used to differentiate between errors and exceptions
-const isCriticalError = (err) => {
+const _isCriticalError = (err) => {
   return err instanceof SyntaxError || err instanceof ReferenceError || err instanceof TypeError;
 };
 

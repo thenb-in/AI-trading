@@ -38,7 +38,7 @@ function findJsFiles(dir, excludeDirs = ['node_modules', '.git']) {
           files.push(fullPath);
         }
       }
-    } catch (error) {
+    } catch {
       // Skip directories we can't read
     }
   }
@@ -82,7 +82,7 @@ function checkConsoleUsage() {
           violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
         }
       }
-    } catch (error) {
+    } catch {
       // Skip files we can't read
     }
   }
@@ -150,7 +150,7 @@ function checkLoggerCommas() {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Skip files we can't read
     }
   }
@@ -197,7 +197,7 @@ function checkDirectDotenvUsage() {
           violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
         }
       }
-    } catch (error) {
+    } catch {
       // Skip files we can't read
     }
   }
@@ -261,7 +261,7 @@ function checkLoggerHardcodedStrings() {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Skip files we can't read
     }
   }
@@ -306,7 +306,7 @@ function checkConstantsInSingleFolder() {
         // Check for const declarations with UPPER_CASE names
         const constMatch = line.match(/const\s+([A-Z_][A-Z0-9_]*)\s*=/);
         if (constMatch) {
-          const constantName = constMatch[1];
+          const _constantName = constMatch[1];
 
           // Skip if it's importing from constants
           if (line.includes('require(\'./constants\')') || line.includes('from \'../constants\'')) {
@@ -325,12 +325,12 @@ function checkConstantsInSingleFolder() {
         // Check for object property assignments that look like constants
         const assignmentMatch = line.match(/([A-Z_][A-Z0-9_]*)\s*:\s*[^,}]/);
         if (assignmentMatch && !line.includes('require') && !line.includes('import')) {
-          const constantName = assignmentMatch[1];
+          const _constantName = assignmentMatch[1];
           const relativePath = path.relative(getScriptDir(), file);
           violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
         }
       }
-    } catch (error) {
+    } catch {
       // Skip files we can't read
     }
   }

@@ -57,21 +57,24 @@ Object.keys(db).forEach(modelName => {
 sequelize
   .authenticate()
   .then(() => {
-    logger.info('Database connection established successfully');
+    logger.info(`Database connection established successfully at ${new Date().toISOString()}`);
   })
   .catch(err => {
     logger.error(`Unable to connect to the database: ${err.message} - Stack: ${err.stack}`);
   });
 
 // Synchronize models
-sequelize
-  .sync()
-  .then(() => {
-    logger.info('Database tables synchronized successfully');
-  })
-  .catch(error => {
-    logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
-  });
+// sync only if not in production
+if (nodeEnv !== 'production') {
+  sequelize
+    .sync()
+    .then(() => {
+      logger.info(`Database tables synchronized successfully at ${new Date().toISOString()}`);
+    })
+    .catch(error => {
+      logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
+    });
+}
 
 db.sequelize = sequelize;
 

@@ -1,6 +1,6 @@
 // services/companyService.js
-const { Company, User, Room, Message } = require('../models');
-const { Op } = require('sequelize');
+const { Company, User, Room, Message: _Message } = require('../models');
+const { Op: _Op } = require('sequelize');
 const logger = require('../logger');
 
 const companyService = {
@@ -20,11 +20,11 @@ const companyService = {
 
   async updateCompanySettings(id, data) {
     logger.info(`Updating company settings for ID: ${id}`);
-    logger.info(`New settings: ${JSON.stringify(data)}`);
+    logger.silly(`New settings: ${JSON.stringify(data)}`);
     try {
       const company = await Company.findByPk(id);
       if (!company) {
-        throw new Error('Company not found');
+        throw new Error(`Company with id ${id} not found`);
       }
       await company.update({
 
@@ -42,7 +42,7 @@ const companyService = {
 
   async createCompany(data) {
     try {
-      const { name, messageTimer = null, hideChat = false, deleteOnSeen=false } = data;
+      const { name, messageTimer: _messageTimer = null, hideChat: _hideChat = false, deleteOnSeen: _deleteOnSeen=false } = data;
       const company = await Company.create({
         name
       });
@@ -75,7 +75,7 @@ const companyService = {
         ]
       });
       if (!company) {
-        throw new Error('Company not found');
+        throw new Error(`Company with id ${id} not found`);
       }
       return company;
     } catch (error) {
@@ -87,7 +87,7 @@ const companyService = {
     try {
       const company = await Company.findByPk(id);
       if (!company) {
-        throw new Error('Company not found');
+        throw new Error(`Company with id ${id} not found`);
       }
       await company.destroy();
       return { message: 'Company deleted successfully' };

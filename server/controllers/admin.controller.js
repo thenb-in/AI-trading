@@ -1,5 +1,5 @@
 const adminService = require('../services/admin.service');
-const allowedPermissions = require('../utils/allowedPermissions');
+const _allowedPermissions = require('../utils/allowedPermissions');
 const logger = require('../logger');
 
 const renderRoleForm = async (req, res) => {
@@ -143,7 +143,7 @@ const renderUserManagementPage = async (req, res) => {
     const users = await adminService.fetchAllUsers();
     const roles = await adminService.getRolesAndPermissions();
     res.render('user-management', { users, roles, process: { env: process.env } });
-  } catch (error) {
+  } catch {
     res.status(500).render('user-management', { error: 'Failed to load user management page.' });
   }
 };

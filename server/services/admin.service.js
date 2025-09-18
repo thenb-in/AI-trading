@@ -50,7 +50,7 @@ const createRole = async (name, description) => {
   // Check for duplicate
   const existingRole = await checkRoleExists(trimmedName);
   if (existingRole) {
-    throw new Error('Role with this name already exists');
+    throw new Error(`Role with name ${trimmedName} already exists`);
   }
 
   // Create the role
@@ -65,31 +65,31 @@ const createRole = async (name, description) => {
 const createPermission = async (name, description) => {
   // Input validation
   if (!name || typeof name !== 'string') {
-    logger.warn('Name is invalid');
+    logger.warn(`Name is invalid (${name}, ${typeof name}) - Must be a string`);
     throw new Error('Permission name is required and must be a string');
   }
 
   const trimmedName = name.trim();
 
   if (trimmedName.length === 0) {
-    logger.warn('Empty permission name provided after trimming');
+    logger.warn(`Empty permission name provided after trimming (${trimmedName})`);
     throw new Error('Permission name cannot be empty');
   }
 
   if (trimmedName.length < 2) {
-    logger.warn('Permission name too short - Must be at least 2 characters');
+    logger.warn(`Permission name too short (${trimmedName.length} chars) - Must be at least 2 characters`);
     throw new Error('Permission name must be at least 2 characters long');
   }
 
   if (trimmedName.length > 50) {
-    logger.warn('Permission name too long - Exceeds 50 character limit');
+    logger.warn(`Permission name too long (${trimmedName.length} chars) - Exceeds 50 character limit`);
     throw new Error('Permission name cannot exceed 50 characters');
   }
 
   // Character validation
   const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
   if (!nameRegex.test(trimmedName)) {
-    logger.warn('Invalid characters in permission name - Only letters, numbers, spaces, hyphens, and underscores allowed');
+    logger.warn(`Invalid characters in permission name (${trimmedName}) - Only letters, numbers, spaces, hyphens, and underscores allowed`);
     throw new Error('Permission name can only contain letters, numbers, spaces, hyphens, and underscores');
   }
 
@@ -97,14 +97,14 @@ const createPermission = async (name, description) => {
   let trimmedDescription = null;
   if (description) {
     if (typeof description !== 'string') {
-      logger.warn('Invalid permission description format - Must be a string');
+      logger.warn(`Invalid permission description format (${typeof description}) - Must be a string`);
       throw new Error('Description must be a string');
     }
 
     trimmedDescription = description.trim();
 
     if (trimmedDescription.length > 500) {
-      logger.warn('Permission description too long - Exceeds 500 character limit');
+      logger.warn(`Permission description too long (${trimmedDescription.length} chars) - Exceeds 500 character limit`);
       throw new Error('Description cannot exceed 500 characters');
     }
   }
@@ -112,7 +112,7 @@ const createPermission = async (name, description) => {
   // Check for duplicate
   const existingPermission = await Permission.findOne({ where: { name: trimmedName } });
   if (existingPermission) {
-    logger.warn('Permission creation failed - Permission with this name already exists');
+    logger.warn(`Permission creation failed - Permission with name ${trimmedName} already exists`);
     throw new Error('Permission with this name already exists');
   }
 
@@ -139,11 +139,6 @@ const fetchAllUsers = async () => {
         {
           model: Role,
           as: 'role'
-        },
-        {
-          model: UserPAT,
-          as: 'userPats',
-          attributes: ['id', 'pat', 'createdAt']
         }
       ]
     });
@@ -182,11 +177,11 @@ const removePermissionFromRole = async (roleId, permissionId) => {
   try {
     const role = await Role.findByPk(roleId);
     if (!role) {
-      throw { status: 404, message: 'Role not found' };
+      throw { status: 404, message: `Role with id ${roleId} not found` };
     }
     const permission = await Permission.findByPk(permissionId);
     if (!permission) {
-      throw { status: 404, message: 'Permission not found' };
+      throw { status: 404, message: `Permission with id ${permissionId} not found` };
     }
     await role.removePermission(permission);
     return { message: 'Permission removed from role successfully' };
@@ -202,7 +197,7 @@ const addPermissionToRole = async (roleId, permissionIds) => {
 
     const role = await Role.findByPk(roleId);
     if (!role) {
-      throw { status: 404, message: 'Role not found' };
+      throw { status: 404, message: `Role with id ${roleId} not found` };
     }
 
     // Find all permissions at once
@@ -216,7 +211,7 @@ const addPermissionToRole = async (roleId, permissionIds) => {
     if (permissions.length !== permissionIdArray.length) {
       const foundIds = permissions.map(p => p.id);
       const missingIds = permissionIdArray.filter(id => !foundIds.includes(id));
-      throw { status: 404, message: `Permissions not found: ${missingIds.join(', ')}` };
+      throw { status: 404, message: `Permissions with ids ${missingIds.join(', ')} not found` };
     }
 
     // Add all permissions at once
@@ -227,11 +222,11 @@ const addPermissionToRole = async (roleId, permissionIds) => {
     };
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      throw { status: 409, message: 'One or more permissions are already assigned to this role' };
+      throw { status: 409, message: `One or more permissions are already assigned to role with id ${roleId}` };
     }
     throw {
       status: error.status || 500,
-      message: error.message || 'Error adding permissions to role'
+      message: error.message || `Error adding permissions to role with id ${roleId}`
     };
   }
 };
