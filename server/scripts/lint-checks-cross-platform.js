@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// show a log that this script is deprecated and will be removed in the future
+console.log('🚨 This script is deprecated and will be removed in the future. Please use the eslint command instead.');
 
 const fs = require('fs');
 const path = require('path');
@@ -214,14 +216,149 @@ function checkDirectDotenvUsage() {
   return true;
 }
 
+// Check for hardcoded strings in logger calls
+function checkLoggerHardcodedStrings() {
+  log('🔍 Checking for hardcoded strings in logger calls...', 'blue');
+  
+  const violations = [];
+  const jsFiles = findJsFiles(getScriptDir());
+  
+  for (const file of jsFiles) {
+    // Skip the lint scripts themselves
+    if (file.includes('lint-checks') || file.includes('setup-hooks')) {
+      continue;
+    }
+    
+    try {
+      const content = fs.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const lineNumber = i + 1;
+        
+        // Check for logger calls with hardcoded strings (not using variables or template literals)
+        const loggerCallMatch = line.match(/logger\.(info|error|warn|debug|silly|verbose)\s*\(([^)]*)\)/);
+        if (loggerCallMatch) {
+          const args = loggerCallMatch[2].trim();
+          
+          // Skip if it's a template literal (contains ${})
+          if (args.includes('${')) {
+            continue;
+          }
+          
+          // Skip if it's a variable (no quotes around the entire argument)
+          if (!args.match(/^['"]/) || !args.match(/['"]$/)) {
+            continue;
+          }
+          
+          // Check if it's a simple hardcoded string (no variables, no concatenation)
+          const isHardcodedString = /^['"][^'"]*['"]$/.test(args);
+          
+          if (isHardcodedString) {
+            const relativePath = path.relative(getScriptDir(), file);
+            violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
+          }
+        }
+      }
+    } catch (error) {
+      // Skip files we can't read
+    }
+  }
+  
+  if (violations.length > 0) {
+    log('❌ Found logger calls with hardcoded strings that should use variables:', 'red');
+    violations.forEach(violation => log(violation, 'red'));
+    log('\nPlease replace hardcoded strings with variables or template literals:', 'yellow');
+    log('Bad: logger.info("User logged in")', 'yellow');
+    log('Good: logger.info(`User logged in: ${username}`)', 'yellow');
+    log('Good: logger.info(`User ${userId} logged in successfully`)', 'yellow');
+    log('Good: logger.error(`Database error: ${error.message}`)', 'yellow');
+    return false;
+  }
+  
+  log('✅ No hardcoded strings in logger calls found', 'green');
+  return true;
+}
+
+// Check for constants not in constants folder
+function checkConstantsInSingleFolder() {
+  log('🔍 Checking for constants in single folder...', 'blue');
+  
+  const violations = [];
+  const jsFiles = findJsFiles(getScriptDir());
+  
+  for (const file of jsFiles) {
+    // Skip constants files, logger files, and lint scripts
+    if (file.includes('constants') || file.includes('logger.js') || 
+        file.includes('lint-checks') || file.includes('setup-hooks')) {
+      continue;
+    }
+    
+    try {
+      const content = fs.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const lineNumber = i + 1;
+        
+        // Check for const declarations with UPPER_CASE names
+        const constMatch = line.match(/const\s+([A-Z_][A-Z0-9_]*)\s*=/);
+        if (constMatch) {
+          const constantName = constMatch[1];
+          
+          // Skip if it's importing from constants
+          if (line.includes('require(\'./constants\')') || line.includes('from \'../constants\'')) {
+            continue;
+          }
+          
+          // Skip if it's importing from logger
+          if (line.includes('require(\'./logger\')') || line.includes('from \'../logger\'')) {
+            continue;
+          }
+          
+          const relativePath = path.relative(getScriptDir(), file);
+          violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
+        }
+        
+        // Check for object property assignments that look like constants
+        const assignmentMatch = line.match(/([A-Z_][A-Z0-9_]*)\s*:\s*[^,}]/);
+        if (assignmentMatch && !line.includes('require') && !line.includes('import')) {
+          const constantName = assignmentMatch[1];
+          const relativePath = path.relative(getScriptDir(), file);
+          violations.push(`${relativePath}:${lineNumber} ${line.trim()}`);
+        }
+      }
+    } catch (error) {
+      // Skip files we can't read
+    }
+  }
+  
+  if (violations.length > 0) {
+    log('❌ Found constants that should be in constants folder:', 'red');
+    violations.forEach(violation => log(violation, 'red'));
+    log('\nPlease move constants to constants/index.js and import them:', 'yellow');
+    log('Bad: const API_URL = "http://localhost:3000";', 'yellow');
+    log('Good: const { API_URL } = require(\'./constants\');', 'yellow');
+    log('\nConstants should be centralized in constants/index.js for better maintainability.', 'blue');
+    return false;
+  }
+  
+  log('✅ All constants are properly organized in constants folder', 'green');
+  return true;
+}
+
 function main() {
   log('🚀 Running cross-platform pre-commit lint checks...', 'blue');
   
   const consoleCheck = checkConsoleUsage();
   const commaCheck = checkLoggerCommas();
   const dotenvCheck = checkDirectDotenvUsage();
+  const hardcodedStringsCheck = checkLoggerHardcodedStrings();
+  const constantsCheck = checkConstantsInSingleFolder();
   
-  if (consoleCheck && commaCheck && dotenvCheck) {
+  if (consoleCheck && commaCheck && dotenvCheck && hardcodedStringsCheck && constantsCheck) {
     log('✅ All checks passed!', 'green');
     process.exit(0);
   } else {

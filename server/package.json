@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "lint": "node scripts/lint-checks-cross-platform.js",
+    "lint:eslint": "npx eslint .",
+    "lint:fix": "npx eslint . --fix",
+    "lint:legacy": "node scripts/lint-checks-cross-platform.js",
+    "lint:constants": "node scripts/lint-checks-cross-platform.js",
+    "lint": "npm run lint:eslint && npm run lint:legacy",
 
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
@@ -40,6 +44,11 @@
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
   }
 
 }

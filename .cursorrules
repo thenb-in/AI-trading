@@ -26,6 +26,7 @@ server/
 ├── routes/          # API route definitions
 ├── middleware/      # Custom middleware
 ├── config/          # Configuration files
+├── constants/       # Centralized constants (except logger)
 └── utils/           # Utility functions
 
 client/
@@ -34,6 +35,7 @@ client/
 │   ├── pages/       # Route-level components
 │   ├── context/     # State management
 │   ├── services/    # API services
+│   ├── constants/   # Centralized constants
 │   └── utils/       # Utility functions
 ```
 
@@ -69,18 +71,21 @@ client/
 - **Environment**: Use centralized environment config (`config/env.js`), no direct `dotenv` imports
 - **Console Usage**: Block any `console.log`, `console.error`, etc.
 - **Direct Dotenv**: Block direct `require('dotenv')` or `require('dotenv-safe')` imports
+- **Constants**: All constants (except logger) must be defined in `constants/index.js` and imported from there
 
 ### Frontend Pre-Commit Rules
 - **Environment**: Use centralized environment config (`src/config/env.js`)
 - **Console Usage**: Block `console.log` in production builds
 - **API Calls**: Use centralized API service
 - **State Management**: Use context for global state
+- **Constants**: All constants must be defined in `src/constants/index.js` and imported from there
 
 ### Validation Scripts
 ```bash
 # Backend validation
 npm run lint:console      # Check for console usage
 npm run lint:logger-commas # Check logger format
+npm run lint:constants   # Check constants organization
 npm run validate-env      # Validate environment variables
 
 # Frontend validation
