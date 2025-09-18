@@ -72,6 +72,7 @@ client/
 - **Console Usage**: Block any `console.log`, `console.error`, etc.
 - **Direct Dotenv**: Block direct `require('dotenv')` or `require('dotenv-safe')` imports
 - **Constants**: All constants (except logger) must be defined in `constants/index.js` and imported from there
+- **File Length**: Files must be under 500 lines (error), warning over 300 lines (warn), functions under 100 lines (warn), complexity under 10 (warn)
 
 ### Frontend Pre-Commit Rules
 - **Environment**: Use centralized environment config (`src/config/env.js`)
@@ -79,6 +80,7 @@ client/
 - **API Calls**: Use centralized API service
 - **State Management**: Use context for global state
 - **Constants**: All constants must be defined in `src/constants/index.js` and imported from there
+- **File Length**: Files must be under 500 lines (error), warning over 300 lines (warn), functions under 100 lines (warn), complexity under 10 (warn)
 
 ### Validation Scripts
 ```bash

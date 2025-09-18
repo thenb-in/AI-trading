@@ -60,6 +60,12 @@ module.exports = [
       'custom/no-hardcoded-logger-strings': 'error',
       'custom/no-json-stringify-in-logs': 'error',
       'custom/constants-in-single-folder': 'error',
+      'custom/file-length-warning': ['warn', { warningLines: 300 }],
+
+      // File length and complexity rules
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 100 }],
+      'complexity': ['warn', 10],
 
       // Node.js specific rules
       'no-process-exit': 'error',
