@@ -3,6 +3,7 @@
 # Define repository details
 # Get the GitHub remote URL (assumes "origin" remote)
 REMOTE_URL=$(git config --get remote.origin.url)
+REPO_NAME=$(basename -s .git "$REMOTE_URL")
 
 # Strip the .git suffix if present
 REMOTE_URL=${REMOTE_URL%.git}
@@ -59,11 +60,12 @@ curl -L -H "Authorization: token $GITHUB_TOKEN" -o artifact.zip "$ARTIFACT_URL"
 if [ -d "build" ]; then
     sudo rm -rf build
 fi
-sudo mkdir /app/etime_hr
+sudo mkdir /app/$REPO_NAME
 unzip artifact.zip -d build
 rm artifact.zip
 
-npm run deploy
+# npm run deploy
+mv dist/* /app/$REPO_NAME/
 sudo systemctl restart nginx.service
 
 echo "Latest artifact downloaded and extracted successfully!"
