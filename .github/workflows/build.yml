@@ -21,7 +21,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18 # Change if needed
+          node-version: 22  # Change if needed
+
+      - name: Set environment variables
+        run: |
+          cp client/.env.example client/.env
 
       - name: Install dependencies
         run: |
