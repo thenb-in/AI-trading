@@ -117,6 +117,53 @@ const ApiService = {
     return this.request("PATCH", `/users/${userId}/updateDisappearing`, data)
   },
 
+  // Admin - Roles
+  getRoles() {
+    return this.request('GET', '/admin/roles');
+  },
+
+  createRole(data) {
+    return this.request('POST', '/admin/roles', data);
+  },
+
+  updateRole(roleId, data) {
+    return this.request('PUT', `/admin/roles/${roleId}`, data);
+  },
+
+  deleteRole(roleId) {
+    return this.request('DELETE', `/admin/roles/${roleId}`);
+  },
+
+  // Admin - Permissions
+  getPermissions() {
+    return this.request('GET', '/admin/permissions');
+  },
+
+  createPermission(data) {
+    return this.request('POST', '/admin/permissions', data);
+  },
+
+  updatePermission(permissionId, data) {
+    return this.request('PUT', `/admin/permissions/${permissionId}`, data);
+  },
+
+  deletePermission(permissionId) {
+    return this.request('DELETE', `/admin/permissions/${permissionId}`);
+  },
+
+  // Admin - Role Permissions
+  getRolePermissions() {
+    return this.request('GET', '/admin/role-permissions');
+  },
+
+  addRolePermissions(data) {
+    return this.request('POST', '/admin/role-permissions/add', data);
+  },
+
+  removeRolePermission(data) {
+    return this.request('POST', '/admin/role-permissions/remove', data);
+  },
+
 };
 
 

@@ -1,9 +1,9 @@
 import {
   User,
   Building,
-  Settings,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../../context/useDataContext";
@@ -19,6 +19,11 @@ export default function AdminSidebar({
   const location = useLocation();
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
 
+   const requiredPermission = "has_role_permission";
+  const hasPermission = userData?.role?.permissions?.some(
+    (permission) => permission.name === requiredPermission
+  );
+
   const menuItems = [
     { id: "users", label: "User Management", icon: User, path: "/admin/users" },
     {
@@ -27,13 +32,11 @@ export default function AdminSidebar({
       icon: Building,
       path: "/admin/company",
     },
-   
-    userData?.role?.name === "sadmin" && {
+   hasPermission && {
       id: "rolesAndPermissions",
-      label: "Roles & Permission",
-      icon: Settings,
-      path: `${import.meta.env.VITE_API_URL}/admin/role-permissions`,
-      isExternal: true,
+      label: "Roles & Permissions",
+      icon: Shield,
+      path: "/admin/role-permissions",
     },
   ].filter(Boolean);
 
@@ -41,11 +44,7 @@ export default function AdminSidebar({
     if (isMobileView) {
       setHamburgerMenu(false);
     }
-    if (item.isExternal) {
-      window.location.href = item.path; // Open in same tab
-    } else {
-      navigate(item.path);
-    }
+    navigate(item.path);
   };
 
   const isActive = (path) => location.pathname.startsWith(path);

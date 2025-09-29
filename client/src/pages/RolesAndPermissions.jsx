@@ -1,6 +1,5 @@
-//Todo is this compont is used , then keep it else remove it 
+import { RolePermissionsManagement } from '../components/Admin/RoleAndPermissions';
+
 export default function RolesAndPermissions() {
-  return (
-    <div>RolesAndPermissions</div>
-  )
+  return <RolePermissionsManagement />;
 }

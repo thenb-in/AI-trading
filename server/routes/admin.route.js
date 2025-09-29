@@ -3,18 +3,19 @@ const router = express.Router();
 const adminController = require('../controllers/admin.controller');
 
 
-router.get('/roles', adminController.renderRoleForm);
+
+router.get('/roles', adminController.getRoles);
 router.post('/roles', adminController.createRole);
 
-router.get('/permissions', adminController.renderPermissionForm);
+router.get('/permissions', adminController.getPermissions);
 router.post('/permissions', adminController.createPermission);
 
-router.get('/role-permissions', adminController.renderRolePermissionsPage);
+
 
 router.post('/role-permissions/add', adminController.addPermissionToRole);
 router.post('/role-permissions/remove', adminController.removePermissionFromRole);
 
-router.get('/user-management', adminController.renderUserManagementPage);
+
 
 
 module.exports = router;
