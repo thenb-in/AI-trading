@@ -289,13 +289,4 @@ const getAllRoles = async () => {
   return roles;
 };
 //  todo : remove the use rservices from here and add them in use servuce.
-module.exports = {
-  signup,
-  loginUser,
-  resetPassword,
-  approveUser,
-  getAllUsers,
-  getUserById,
-  getCurrentUser,
-  getAllRoles
-};
+module.exports = {signup, loginUser,resetPassword,approveUser,getAllUsers,getUserById,getCurrentUser,getAllRoles};

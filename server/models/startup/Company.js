@@ -23,8 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     roleId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      defaultValue: 3
+      allowNull: true
     }
   }, {
     tableName: 'nbnext_company'

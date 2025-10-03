@@ -10,7 +10,7 @@
     "lint:legacy": "node scripts/lint-checks-cross-platform.js",
     "lint:constants": "node scripts/lint-checks-cross-platform.js",
     "lint": "npm run lint:eslint && npm run lint:legacy",
-
+   "create-new-company":"node create_company_with_role_and_perms.js",
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
     "validate-env": "node scripts/setup-env.js validate",
