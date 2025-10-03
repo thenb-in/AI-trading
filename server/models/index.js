@@ -29,8 +29,9 @@ if (config.use_env_variable) {
   );
 }
 
+const complete_path=path.join(__dirname,'startup');
 // Load all models
-fs.readdirSync(__dirname)
+fs.readdirSync(complete_path)
   .filter(
     file =>
       file.indexOf('.') !== 0 &&
@@ -39,7 +40,7 @@ fs.readdirSync(__dirname)
       !file.includes('.test.js')
   )
   .forEach(file => {
-    const model = require(path.join(__dirname, file))(
+    const model = require(path.join(complete_path, file))(
       sequelize,
       Sequelize.DataTypes
     );

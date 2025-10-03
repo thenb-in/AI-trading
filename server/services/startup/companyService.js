@@ -1,7 +1,7 @@
 // services/companyService.js
-const { Company, User, Room, Message: _Message } = require('../models');
+const { Company, User, Room, Message: _Message } = require('../../models');
 const { Op: _Op } = require('sequelize');
-const logger = require('../logger');
+const logger = require('../../logger');
 
 const companyService = {
   async getCompanySettings(id) {

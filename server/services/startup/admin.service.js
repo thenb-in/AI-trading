@@ -1,5 +1,5 @@
-const { Role, Permission, User, Company } = require('../models');
-const logger = require('../logger');
+const { Role, Permission, User, Company } = require('../../models');
+const logger = require('../../logger');
 
 const checkRoleExists = async (name) => {
   const existingRole = await Role.findOne({ where: { name: name.trim() } });

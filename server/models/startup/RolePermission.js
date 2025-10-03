@@ -23,7 +23,7 @@ module.exports = (sequelize) => {
       onDelete: 'CASCADE'
     }
   }, {
-    tableName: 'role_permission_mapping',
+    tableName: 'nbnext_role_permission_mapping',
     underscored: true,
     timestamps: true,
     createdAt: 'createdAt',

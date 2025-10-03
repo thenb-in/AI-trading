@@ -1,6 +1,6 @@
-const adminService = require('../services/admin.service');
-const _allowedPermissions = require('../utils/allowedPermissions');
-const logger = require('../logger');
+const adminService = require('../../services/startup/admin.service');
+const _allowedPermissions = require('../../utils/startup/allowedPermissions');
+const logger = require('../../logger');
 
 
 const createRole = async (req, res) => {

@@ -1,9 +1,9 @@
-const authService = require('../services/authService');
-const { Message: _Message, Room: _Room } = require('../models');
-const { sequelize: _sequelize } = require('../models');
-const allowedPermissions = require('../utils/allowedPermissions');
-const userService = require('../services/userService');
-const logger = require('../logger');
+const authService = require('../../services/startup/authService');
+const { Message: _Message, Room: _Room } = require('../../models');
+const { sequelize: _sequelize } = require('../../models');
+const allowedPermissions = require('../../utils/startup/allowedPermissions');
+const userService = require('../../services/startup/userService');
+const logger = require('../../logger');
 
 const getAllUsers = async (req, res) => {
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);

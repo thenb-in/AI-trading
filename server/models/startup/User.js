@@ -29,7 +29,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     companyId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
       allowNull: false
     },
     isActive: {
@@ -59,11 +59,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN
     }
   }, {
-    tableName: 'users'
+    tableName: 'nbnext_users'
   });
 
   User.associate = (models) => {
-    User.belongsTo(models.Company, { foreignKey: 'companyId', as: 'company' });
+    User.belongsTo(models.Company, {
+      foreignKey: 'companyId',
+      as: 'company',
+      onUpdate: 'CASCADE',
+      onDelete: 'RESTRICT'
+    });
 
     User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
   };

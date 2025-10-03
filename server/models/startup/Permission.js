@@ -20,14 +20,14 @@ module.exports = (sequelize) => {
       allowNull: true
     }
   }, {
-    tableName: 'permissions',
+    tableName: 'nbnext_permissions',
     timestamps: true
   });
 
   Permission.associate = (models) => {
     // A Permission can belong to many Roles (through role_permission_mapping join table)
     Permission.belongsToMany(models.Role, {
-      through: 'role_permission_mapping',
+      through: 'nbnext_role_permission_mapping',
       as: 'roles',
       foreignKey: 'permissionId'
     });

@@ -1,4 +1,4 @@
-const { getCurrentUser } = require('../services/authService');
+const { getCurrentUser } = require('../../services/startup/authService');
 
 async function allowedPermissions(userId, permittedPermissions) {
   const user = await getCurrentUser(userId);

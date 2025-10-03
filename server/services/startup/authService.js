@@ -1,12 +1,12 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission } = require('../models');
-const logger = require('../logger');
+const { User, Company, Role, Permission } = require('../../models');
+const logger = require('../../logger');
 const { where: _where } = require('sequelize');
 const {
   generateAccessToken,
   generateRefreshToken,
   revokeRefreshToken
-} = require('../utils/authUtils');
+} = require('../../utils/startup/authUtils');
 
 const signup = async ({ phone, username, password, name, companyId, role }) => {
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);

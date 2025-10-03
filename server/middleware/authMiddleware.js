@@ -6,9 +6,9 @@ const {
   generateAccessToken,
   revokeRefreshToken: _revokeRefreshToken,
   generateRefreshToken
-} = require('../utils/authUtils');
+} = require('../utils/startup/authUtils');
 const env = require('../config/env');
-const allowedPermissions = require('../utils/allowedPermissions');
+const allowedPermissions = require('../utils/startup/allowedPermissions');
 
 // In-memory cache to store promises of ongoing refresh token operations
 const refreshTokenPromises = new Map();

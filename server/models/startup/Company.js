@@ -1,9 +1,9 @@
 module.exports = (sequelize, DataTypes) => {
   const Company = sequelize.define('Company', {
     id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true
+      type: DataTypes.UUID,
+      primaryKey: true,
+      defaultValue: DataTypes.UUIDV4
     },
     name: {
       type: DataTypes.STRING,
@@ -27,11 +27,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 3
     }
   }, {
-    tableName: 'companies'
+    tableName: 'nbnext_company'
   });
 
   Company.associate = (models) => {
-    Company.hasMany(models.User, { foreignKey: 'companyId' });
+    Company.hasMany(models.User, { foreignKey: 'companyId', as: 'users' });
     Company.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
   };
 

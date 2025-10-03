@@ -6,10 +6,10 @@ const env = require('./config/env');
 const constants = require('./constants');
 // require('./sheduler/messageDelete')
 const db = require('./models');
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const companyRoutes = require('./routes/compnayRoutes');
-const adminRoutes = require('./routes/admin.route');
+const authRoutes = require('./routes/startup/authRoutes');
+const userRoutes = require('./routes/startup/userRoutes');
+const companyRoutes = require('./routes/startup/companyRoutes');
+const adminRoutes = require('./routes/startup/admin.route');
 const errorMiddleware = require('./middleware/errorMiddleware');
 
 const cookieParser = require('cookie-parser');

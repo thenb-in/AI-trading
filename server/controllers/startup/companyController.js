@@ -1,7 +1,7 @@
 // controllers/companyController.js
-const { get: _get } = require('../routes/authRoutes');
-const companyService = require('../services/companyService');
-const allowedPermissions = require('../utils/allowedPermissions');
+const { get: _get } = require('../../routes/startup/authRoutes');
+const companyService = require('../../services/startup/companyService');
+const allowedPermissions = require('../../utils/startup/allowedPermissions');
 
 const companyController = {
   async getCompanySettings(req, res) {
