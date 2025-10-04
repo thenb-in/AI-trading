@@ -6,7 +6,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext } from "../../context/useDataContext";
+import { useDataContext } from "../../../context/startup/useDataContext";
 import LogoutButton from "../LogoutButton";
 import PropTypes from "prop-types";
 

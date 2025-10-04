@@ -1,5 +1,5 @@
-import AnimatedBackground from '../components/AnimatedBackground';
-import ForgotPassword from '../components/Auth/ForgotPassword';
+import AnimatedBackground from '../../components/startup/AnimatedBackground';
+import ForgotPassword from '../../components/startup/Auth/ForgotPassword';
 import { motion } from 'framer-motion';
 export default function ForgotPasswordPage() {
   return (

@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminLayout from "../components/Admin/AdminLayout";
-import UserManagement from "../components/Admin/UserManagement/UserManagement";
-import CompanySettings from "../components/Admin/CompanySettings";
+import AdminLayout from "../../components/startup/Admin/AdminLayout";
+import UserManagement from "../../components/startup/Admin/UserManagement/UserManagement";
+import CompanySettings from "../../components/startup/Admin/CompanySettings";
 import { 
   RolePermissionsManagement, 
   CreateRoleForm, 
   CreatePermissionForm 
-} from "../components/Admin/RoleAndPermissions";
+} from "../../components/startup/Admin/RoleAndPermissions";
 
 const AdminDashboard = () => {
   return (

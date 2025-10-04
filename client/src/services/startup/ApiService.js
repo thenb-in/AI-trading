@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { API_CONFIG } from '../constants';
+import { API_CONFIG } from '../../constants/startup/';
 
 const API_URL = API_CONFIG.BASE_URL;
 

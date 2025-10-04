@@ -1,9 +1,9 @@
 import { Routes, Route } from 'react-router-dom';
-import { useDataContext } from "./context/useDataContext";
-import Home from './pages/Home';
-import AdminDashboard from './pages/AdminDashboard';
-import SignupPage from './pages/SignupPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import { useDataContext } from "./context/startup/useDataContext";
+import Home from './pages/startup/Home';
+import AdminDashboard from './pages/startup/AdminDashboard';
+import SignupPage from './pages/startup/SignupPage';
+import ForgotPasswordPage from './pages/startup/ForgotPasswordPage';
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 

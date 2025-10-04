@@ -3,7 +3,7 @@ import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import PropTypes from 'prop-types';
-import ApiService from "../services/ApiService";
+import ApiService from "../../services/startup/ApiService";
 
 function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);

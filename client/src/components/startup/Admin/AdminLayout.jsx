@@ -1,7 +1,7 @@
 import { useState } from "react";
 import AdminSidebar from "./AdminSidebar";
 import { Outlet } from "react-router-dom";
-import { useDataContext } from "../../context/useDataContext";
+import { useDataContext } from "../../../context/startup/useDataContext";
 import AccessDenied from "../AccessDenied";
 
 export default function AdminLayout() {

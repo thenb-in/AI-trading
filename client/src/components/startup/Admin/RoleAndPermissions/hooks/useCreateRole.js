@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../../../../services/ApiService';
+import ApiService from '../../../../../services/startup/ApiService';
 
-export const useCreatePermission = () => {
+export const useCreateRole = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -17,13 +17,13 @@ export const useCreatePermission = () => {
     const errors = {};
     
     if (!formData.name.trim()) {
-      errors.name = 'Permission name is required';
+      errors.name = 'Role name is required';
     } else if (formData.name.trim().length < 2) {
-      errors.name = 'Permission name must be at least 2 characters long';
+      errors.name = 'Role name must be at least 2 characters long';
     } else if (formData.name.trim().length > 50) {
-      errors.name = 'Permission name cannot exceed 50 characters';
+      errors.name = 'Role name cannot exceed 50 characters';
     } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(formData.name.trim())) {
-      errors.name = 'Permission name can only contain letters, numbers, spaces, hyphens, and underscores';
+      errors.name = 'Role name can only contain letters, numbers, spaces, hyphens, and underscores';
     }
     
     if (formData.description && formData.description.length > 500) {
@@ -64,14 +64,14 @@ export const useCreatePermission = () => {
     setSuccess('');
 
     try {
-      const response = await ApiService.createPermission({
+      const response = await ApiService.createRole({
         name: formData.name.trim(),
         description: formData.description.trim() || null
       });
-    
+      
       const responseData = response.data || response;
       if (responseData.success !== false) {
-        setSuccess(responseData.message || 'Permission created successfully!');
+        setSuccess(responseData.message || 'Role created successfully!');
         setFormData({ name: '', description: '' });
         
         setTimeout(() => {
@@ -80,11 +80,11 @@ export const useCreatePermission = () => {
         
         return { success: true, message: responseData.message };
       } else {
-        throw new Error(responseData.message || 'Failed to create permission');
+        throw new Error(responseData.message || 'Failed to create role');
       }
     } catch (err) {
-      console.error('Error creating permission:', err);
-      const errorMessage = err.response?.data?.message || err.message || 'An error occurred while creating the permission';
+      console.error('Error creating role:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred while creating the role';
       setError(errorMessage);
       return { success: false, message: errorMessage };
     } finally {

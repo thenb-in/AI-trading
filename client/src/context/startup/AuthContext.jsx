@@ -1,7 +1,7 @@
 import {useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ApiService from "../services/ApiService";
-import { isAllowedDevice } from "../utiles/deviceUtils";
+import ApiService from "../../services/startup/ApiService";
+import { isAllowedDevice } from "../../utiles/startup/deviceUtils";
 import PropTypes from "prop-types";
 import DataContext from "./DataContext";
 

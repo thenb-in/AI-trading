@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import ApiService from '../../services/ApiService';
+import ApiService from '../../../services/startup/ApiService';
 
 const ForgotPassword = () => {
   const [formData, setFormData] = useState({

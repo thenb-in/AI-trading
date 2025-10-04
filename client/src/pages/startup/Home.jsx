@@ -1,6 +1,6 @@
-import Login from '../components/Auth/Login';
+import Login from '../../components/startup/Auth/Login';
 import { motion } from 'framer-motion';
-import AnimatedBackground from '../components/AnimatedBackground';
+import AnimatedBackground from '../../components/startup/AnimatedBackground';
 
 export default function Home() {
   return (
