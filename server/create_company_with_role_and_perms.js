@@ -1,13 +1,13 @@
-'use strict';
-const bcrypt = require('bcrypt');
-const readline = require('readline');
-const db = require('./models'); // Sequelize models index
-const logger = require('./logger');
+"use strict";
+const bcrypt = require("bcrypt");
+const readline = require("readline");
+const db = require("./models"); // Sequelize models index
+const logger = require("./logger");
 
 // Utility to get user input from terminal
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 const askQuestion = (query) =>
   new Promise((resolve) => rl.question(query, resolve));
@@ -18,19 +18,19 @@ const askQuestion = (query) =>
 async function createRoles(transaction) {
   const rolesArray = [
     {
-      name: 'sadmin',
-      description: 'Super Administrator with full system access'
+      name: "sadmin",
+      description: "Super Administrator with full system access",
     },
-    { name: 'admin', description: 'Administrator with elevated permissions' },
-    { name: 'user', description: 'Standard user with basic access' }
+    { name: "admin", description: "Administrator with elevated permissions" },
+    { name: "user", description: "Standard user with basic access" },
   ];
   logger.info(`Creating ${rolesArray.length} roles...' ,`);
 
   const roles = await db.Role.bulkCreate(rolesArray, {
     transaction,
-    returning: true
+    returning: true,
   });
-  logger.info(`Roles created: ${roles.map((r) => r.name).join(', ')}`);
+  logger.info(`Roles created: ${roles.map((r) => r.name).join(", ")}`);
   return roles;
 }
 
@@ -38,15 +38,15 @@ async function createRoles(transaction) {
  * Create a company
  */
 async function createCompany(transaction, userRole) {
-  const companyName = await askQuestion('Enter company name: ');
+  const companyName = await askQuestion("Enter company name: ");
   logger.info(`Creating company: ${companyName}`);
   const company = await db.Company.create(
     {
-      name: companyName || 'default',
+      name: companyName || "default",
       mobileApp: false,
       desktopWeb: true,
       mobileWeb: false,
-      roleId: userRole.id
+      roleId: userRole.id,
     },
     { transaction }
   );
@@ -58,42 +58,46 @@ async function createCompany(transaction, userRole) {
  * Create permissions
  */
 async function createPermissions(transaction) {
-  const permissionsArray=[
-    { name: 'Approve User', description: 'Permission to approve new users' },
+  const permissionsArray = [
+    { name: "Approve User", description: "Permission to approve new users" },
     {
-      name: 'Deactivate User',
-      description: 'Permission to deactivate users'
+      name: "Deactivate User",
+      description: "Permission to deactivate users",
     },
     {
-      name: 'Get Company Settings',
-      description: 'Permission to view company settings'
+      name: "Get Company Settings",
+      description: "Permission to view company settings",
     },
     {
-      name: 'Update Company Settings',
-      description: 'Permission to update company settings'
+      name: "Update Company Settings",
+      description: "Permission to update company settings",
     },
-    { name: 'Add Role', description: 'Permission to add a new role' },
+    { name: "Add Role", description: "Permission to add a new role" },
     {
-      name: 'Link Role Permission',
-      description: 'Permission to map permissions to roles'
+      name: "Link Role Permission",
+      description: "Permission to map permissions to roles",
     },
-    { name: 'isAdmin', description: 'Flag for admin-level access' },
+    { name: "isAdmin", description: "Flag for admin-level access" },
     {
-      name: 'View Company Settings',
-      description: 'Permission to view company settings'
+      name: "View Company Settings",
+      description: "Permission to view company settings",
     },
     {
-      name: 'View AdminLayout',
-      description: 'Permission to access admin layout view'
-    }
+      name: "View AdminLayout",
+      description: "Permission to access admin layout view",
+    },
+    {
+      name: "has_role_permission",
+      description: "Permission for role and permission modules",
+    },
   ];
   logger.info(`Creating ${permissionsArray.length} permissions...`);
-  const permissions = await db.Permission.bulkCreate(
-    permissionsArray,
-    { transaction, returning: true }
-  );
+  const permissions = await db.Permission.bulkCreate(permissionsArray, {
+    transaction,
+    returning: true,
+  });
   logger.info(
-    `Permissions created: ${permissions.map((p) => p.name).join(', ')}`
+    `Permissions created: ${permissions.map((p) => p.name).join(", ")}`
   );
   return permissions;
 }
@@ -103,14 +107,14 @@ async function createPermissions(transaction) {
  */
 async function createUser(transaction, company) {
   const createUserAnswer = await askQuestion(
-    'Do you want to create a user? (yes/no): '
+    "Do you want to create a user? (yes/no): "
   );
-  if (createUserAnswer.toLowerCase() !== 'yes') {
+  if (createUserAnswer.toLowerCase() !== "yes") {
     return null;
   }
 
-  const username = await askQuestion('Enter username: ');
-  const password = await askQuestion('Enter password: ');
+  const username = await askQuestion("Enter username: ");
+  const password = await askQuestion("Enter password: ");
   const hashedPassword = await bcrypt.hash(password, 10);
 
   logger.info(`Creating user: ${username}`);
@@ -118,9 +122,9 @@ async function createUser(transaction, company) {
     {
       username,
       password: hashedPassword,
-      phone: '1234567890',
+      phone: "1234567890",
       name: username,
-      companyId: company.id
+      companyId: company.id,
     },
     { transaction }
   );
@@ -140,14 +144,16 @@ async function main() {
   const transaction = await db.sequelize.transaction();
   try {
     const roles = await createRoles(transaction);
-    const sadminRole = roles.find((r) => r.name === 'sadmin');
-    const userRole = roles.find((r) => r.name === 'user');
+    const sadminRole = roles.find((r) => r.name === "sadmin");
+    const userRole = roles.find((r) => r.name === "user");
 
     const company = await createCompany(transaction, userRole);
     const permissions = await createPermissions(transaction);
 
     // Assign all permissions to sadmin role
-    logger.info(`Assigning ${permissions.length} permissions to sadmin role...`);
+    logger.info(
+      `Assigning ${permissions.length} permissions to sadmin role...`
+    );
     await sadminRole.setPermissions(permissions, { transaction });
 
     await createUser(transaction, company);
