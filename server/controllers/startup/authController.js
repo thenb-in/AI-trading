@@ -85,17 +85,7 @@ const login = async (req, res) => {
       maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
     });
 
-    res.json({
-      user: {
-        id: user.id,
-        phone: user.phone,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        companyId: user.companyId,
-        isActive: user.isActive
-      }
-    });
+    res.json({ user });
   } catch (error) {
     if (error.message === 'User not found' || error.message === 'Invalid credentials') {
       return res.status(401).json({ error: 'Invalid phone or password' });
