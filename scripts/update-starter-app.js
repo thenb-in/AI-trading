@@ -44,7 +44,7 @@ function updateStarterApp() {
       // Starter remote doesn't exist, add it
       console.log('➕ Adding starter remote...');
       // Note: You'll need to update this URL to your actual starter repository
-      const starterUrl = 'https://github.com/your-username/nbnext-starter.git';
+      const starterUrl = 'https://github.com/thenb-in/startup.git';
       runCommand(`git remote add starter ${starterUrl}`);
       console.log('✅ Starter remote added');
     }
