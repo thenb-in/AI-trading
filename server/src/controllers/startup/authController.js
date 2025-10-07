@@ -141,7 +141,8 @@ const approveUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
-    const users = await authService.getAllUsers();
+    const companyId = req.user.company_id;
+    const users = await authService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
     logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);

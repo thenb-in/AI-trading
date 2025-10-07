@@ -195,9 +195,12 @@ const approveUser = async (userId) => {
   await user.save();
 };
 
-const getAllUsers = async () => {
+const getAllUsers = async (companyId) => {
+  if (!companyId) {
+    throw new Error('Company ID is required');
+  }
   const users = await User.findAll({
-    where: { isActive: true },
+    where: { isActive: true, companyId: companyId },
     attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved' ,'mobileApp','desktopWeb','mobileWeb' ],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },

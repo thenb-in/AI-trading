@@ -103,7 +103,7 @@ function validateEnvFile() {
     log('🔍 Validating environment variables...', 'blue');
 
     // This will throw an error if required variables are missing
-    require('../config/env');
+    require('../src/config/env');
 
     log('✅ All required environment variables are present!', 'green');
     return true;

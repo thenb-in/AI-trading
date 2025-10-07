@@ -10,8 +10,10 @@ const getAllUsers = async (req, res) => {
   // if (!hasPermission) {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });
   // }
+  const companyId = req.user.company_id;
+
   try {
-    const users = await authService.getAllUsers();
+    const users = await authService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
     logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);

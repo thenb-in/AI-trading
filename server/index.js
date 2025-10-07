@@ -35,8 +35,10 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+const appRoutes = require('./src/app_routes');
+appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
+// current routes in app route need to manually add /api/v1 prefix
+// todo: automatically add /api/v1 prefix to app routes
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Error handling

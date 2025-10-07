@@ -38,9 +38,9 @@ export default [
     },
   },
 
-  // Node scripts config
+  // Node scripts config and Vite config files
   {
-    files: ['scripts/**/*.js'], // Adjust path to match your Node scripts
+    files: ['scripts/**/*.js', 'vite.config.js', 'vite.config.ts'], // Adjust path to match your Node scripts
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node, // Node globals like process, __dirname
