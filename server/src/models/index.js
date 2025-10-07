@@ -9,7 +9,7 @@ const env = require('../config/env'); // Load environment variables
 const basename = path.basename(__filename);
 const nodeEnv = env.NODE_ENV;
 const config = require('../config/config.js')[nodeEnv];
-const logger = require('../logger');
+const logger = require('../../logger');
 
 const db = {};
 

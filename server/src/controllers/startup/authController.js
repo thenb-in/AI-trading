@@ -2,7 +2,7 @@ const authService = require('../../services/startup/authService');
 const { validationResult } = require('express-validator');
 const { body } = require('express-validator');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
-const logger = require('../../logger');
+const logger = require('../../../logger');
 const env = require('../../config/env');
 
 const signupValidation = [

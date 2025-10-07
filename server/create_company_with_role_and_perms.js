@@ -1,7 +1,7 @@
 'use strict';
 const bcrypt = require('bcrypt');
 const readline = require('readline');
-const db = require('./models'); // Sequelize models index
+const db = require('./src/models'); // Sequelize models index
 const logger = require('./logger');
 
 // Utility to get user input from terminal

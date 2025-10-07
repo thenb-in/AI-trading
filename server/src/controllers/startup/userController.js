@@ -3,7 +3,7 @@ const { Message: _Message, Room: _Room } = require('../../models');
 const { sequelize: _sequelize } = require('../../models');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const userService = require('../../services/startup/userService');
-const logger = require('../../logger');
+const logger = require('../../../logger');
 
 const getAllUsers = async (req, res) => {
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);

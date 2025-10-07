@@ -1,6 +1,6 @@
 const _jwt = require('jsonwebtoken');
 const { User, Company: _Company, Role: _Role, Permission: _Permission } = require('../models');
-const logger = require('../logger');
+const logger = require('../../logger');
 const {
   verifyToken,
   generateAccessToken,

@@ -1,11 +1,6 @@
 // Server constants - centralized location for all constants (except logger)
 // This file exports all constants used throughout the server
 
-// Server Configuration Constants
-const SERVER_CONSTANTS = {
-  DEFAULT_PORT: 5000
-};
-
 // API Response Messages
 const API_MESSAGES = {
   SUCCESS: 'Operation completed successfully',
@@ -61,7 +56,6 @@ const VALIDATION_CONSTANTS = {
 
 // Export all constants
 module.exports = {
-  SERVER_CONSTANTS,
   API_MESSAGES,
   HTTP_STATUS,
   DB_CONSTANTS,
