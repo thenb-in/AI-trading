@@ -63,7 +63,7 @@ exports.protect = async (req, res, next) => {
           phone: user.phone,
           name: user.name,
           role: user.role,
-          companyId: user.companyId,
+          company_id: user.companyId,
           isActive: user.isActive,
           roleId: user.roleId
         };
