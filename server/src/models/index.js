@@ -9,7 +9,6 @@ const env = require('../config/env'); // Load environment variables
 const basename = path.basename(__filename);
 const nodeEnv = env.NODE_ENV;
 const config = require('../config/config.js')[nodeEnv];
-const logger = require('../../logger');
 
 const db = {};
 
@@ -29,9 +28,10 @@ if (config.use_env_variable) {
   );
 }
 
-const complete_path=path.join(__dirname,'startup');
-// Load all models
-fs.readdirSync(complete_path)
+// todo: load models in subdirectories as well
+// Load all models from startup directory
+const startup_path = path.join(__dirname, 'startup');
+fs.readdirSync(startup_path)
   .filter(
     file =>
       file.indexOf('.') !== 0 &&
@@ -40,7 +40,25 @@ fs.readdirSync(complete_path)
       !file.includes('.test.js')
   )
   .forEach(file => {
-    const model = require(path.join(complete_path, file))(
+    const model = require(path.join(startup_path, file))(
+      sequelize,
+      Sequelize.DataTypes
+    );
+    db[model.name] = model;
+  });
+
+// Load all models from main models directory (excluding startup subdirectory)
+fs.readdirSync(__dirname)
+  .filter(
+    file =>
+      file.indexOf('.') !== 0 &&
+      file !== basename &&
+      file.slice(-3) === '.js' &&
+      !file.includes('.test.js') &&
+      file !== 'startup' // Exclude startup directory itself
+  )
+  .forEach(file => {
+    const model = require(path.join(__dirname, file))(
       sequelize,
       Sequelize.DataTypes
     );
@@ -53,29 +71,6 @@ Object.keys(db).forEach(modelName => {
     db[modelName].associate(db);
   }
 });
-
-// Test connection
-sequelize
-  .authenticate()
-  .then(() => {
-    logger.info(`Database connection established successfully at ${new Date().toISOString()}`);
-  })
-  .catch(err => {
-    logger.error(`Unable to connect to the database: ${err.message} - Stack: ${err.stack}`);
-  });
-
-// Synchronize models
-// sync only if not in production
-if (nodeEnv !== 'production') {
-  sequelize
-    .sync()
-    .then(() => {
-      logger.info(`Database tables synchronized successfully at ${new Date().toISOString()}`);
-    })
-    .catch(error => {
-      logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
-    });
-}
 
 db.sequelize = sequelize;
 
