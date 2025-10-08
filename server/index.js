@@ -16,19 +16,33 @@ const app = express();
 const bodyParser = require('body-parser');
 const server = http.createServer(app);
 const logger = require('./logger');
+const httpLogger = require('./src/middleware/httpLogger');
+app.use(httpLogger);
 
 
-// Test database connection
-db.sequelize.authenticate()
-  .then(() => logger.debug(`Database connected successfully at ${new Date().toISOString()}`))
-  .catch(err =>  logger.error(`❌ Database connection error: ${err.message} - Stack: ${err.stack}`));
+// CORS configuration
+const clientUrl = env.FRONTEND_URL;
+if (clientUrl) {
+  logger.info(`Configuring CORS for client origin: ${clientUrl}`);
 
-// Middleware
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+  const corsOptions = {
+    origin: [clientUrl],
+    credentials: true,
+    exposedHeaders: ['Content-Disposition']
+  };
+
+  app.use(cors(corsOptions));
+}
+
+// app.set('trust proxy', true);
+
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use('/static', express.static(path.join(__dirname, 'static')));
 app.use(cookieParser());
+
 // Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
@@ -41,6 +55,7 @@ appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
 // todo: automatically add /api/v1 prefix to app routes
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Error handling
 app.use(errorMiddleware);
 
@@ -48,10 +63,30 @@ app.use(errorMiddleware);
 // Start server after syncing database
 const PORT = env.PORT;
 
-db.sequelize.sync({ force: false }).then(() => {
-  server.listen(PORT, () => {
-    logger.info(`Server running on http://localhost:${PORT} at ${new Date().toISOString()}`);
+// Test DB connection and start server
+const startServer = async () => {
+  // Synchronize models
+  // sync only if not in production
+  const nodeEnv = env.NODE_ENV;
+  const sequelize = db.sequelize;
+  if (nodeEnv !== 'production') {
+    await sequelize
+      .sync()
+      .then(() => {
+        logger.info(`Database tables synchronized successfully at ${new Date().toISOString()}`);
+      })
+      .catch(error => {
+        logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
+      });
+  }
+
+  db.sequelize.authenticate().then(() => {
+    server.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
+    });
+  }).catch(err => {
+    logger.error(`Database sync failed: ${err.message} - Stack: ${err.stack}`);
   });
-}).catch(err => {
-  logger.error(`Database sync failed: ${err.message} - Stack: ${err.stack}`);
-});
+};
+
+startServer();
