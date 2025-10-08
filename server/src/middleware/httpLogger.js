@@ -19,14 +19,14 @@ const httpLogger = (req, res, next) => {
     // Be careful with logging sensitive data in body
     ...(method !== 'GET' && method !== 'DELETE' && { body })
   };
-  logger.debug('Request received', logData);
+  logger.debug(`Request received ${logData}`);
 
   // Capture response finish to log the outcome
   res.on('finish', () => {
     const duration = Date.now() - start;
     const contentLength = res.get('content-length');
 
-    logger.info(`${method} ${originalUrl} ${res.statusCode} ${duration}ms`);
+    logger.info(`${method} ${originalUrl} ${contentLength} ${res.statusCode} ${duration}ms`);
   });
 
   next();
