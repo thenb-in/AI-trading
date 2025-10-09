@@ -1,6 +1,6 @@
 // application routes called by server/index.js
 
-const logger = require('../logger');
+const logger = require('../../logger');
 
 // export a function that takes in app and returns the app with the routes
 const appRoutes = (app, prefix) => {

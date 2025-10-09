@@ -49,7 +49,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
-const appRoutes = require('./src/app_routes');
+const appRoutes = require('./src/routes/app_routes');
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
 // current routes in app route need to manually add /api/v1 prefix
 // todo: automatically add /api/v1 prefix to app routes
