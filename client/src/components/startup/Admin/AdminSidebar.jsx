@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  CopySlash
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
@@ -19,25 +20,27 @@ export default function AdminSidebar({
   const location = useLocation();
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
 
-   const requiredPermission = "has_role_permission";
-  const hasPermission = userData?.role?.permissions?.some(
+const hasPermission = (requiredPermission) => {
+  return userData?.role?.permissions?.some(
     (permission) => permission.name === requiredPermission
   );
+};
 
   const menuItems = [
-    { id: "users", label: "User Management", icon: User, path: "/admin/users" },
-    {
+    hasPermission('view_user_module') && { id: "users", label: "User Management", icon: User, path: "/admin/users" },
+    hasPermission('view_company_module') && {
       id: "company",
       label: "Company Settings",
       icon: Building,
       path: "/admin/company",
     },
-   hasPermission && {
+   hasPermission('view_role_permission_module') && {
       id: "rolesAndPermissions",
       label: "Roles & Permissions",
       icon: Shield,
       path: "/admin/role-permissions",
     },
+    userData?.isSadmin &&   { id: "multiCompanySetup", label: "Multi-Company Setup", icon: CopySlash, path: "/admin/multi-company-setup" },
   ].filter(Boolean);
 
   const handleNavigation = (item) => {

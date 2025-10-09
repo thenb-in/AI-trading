@@ -18,6 +18,10 @@ module.exports = (sequelize) => {
     description: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    type:{
+      type: DataTypes.STRING,
+      allowNull: true
     }
   }, {
     tableName: 'nbnext_permissions',

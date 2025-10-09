@@ -33,8 +33,8 @@ const createPermission = async (req, res) => {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });
   // }
   try {
-    const { name, description } = req.body;
-    const newPermission = await adminService.createPermission(name, description);
+    const { name, description ,type} = req.body;
+    const newPermission = await adminService.createPermission(name, description, type);
     res.json({
       success: true,
       message: `Permission "${newPermission.name}" created successfully!`,

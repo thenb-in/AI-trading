@@ -57,6 +57,11 @@ module.exports = (sequelize, DataTypes) => {
     },
     mobileWeb: {
       type: DataTypes.BOOLEAN
+    },
+    isSadmin: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
     }
   }, {
     tableName: 'nbnext_users'

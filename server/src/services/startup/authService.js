@@ -159,6 +159,7 @@ const loginUser = async (credentials) => {
       name: userData.name,
       isActive: userData.isActive,
       company: userData.company,
+      isSadmin: userData.isSadmin,
       role: userData.role ? {
         id: userData.role.id,
         name: userData.role.name,
@@ -269,7 +270,7 @@ const getCurrentUser = async (userId) => {
       isActive: user.isActive,
       is_approved: user.is_approved,
       company: user.company,
-
+      isSadmin: user.isSadmin,
       role: user.role ? {
         id: user.role.id,
         name: user.role.name,

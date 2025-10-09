@@ -94,6 +94,33 @@ const CreatePermissionForm = () => {
                   {formData.name.length}/50 characters
                 </p>
               </div>
+
+              <div>
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-3">
+                  Type *
+                </label>
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full px-4 py-4 border-2 rounded-xl focus:outline-none focus:bg-white bg-gray-50 transition-all duration-200 text-lg ${
+                    validationErrors.type 
+                      ? 'border-red-300 focus:border-red-500' 
+                      : 'border-gray-200 focus:border-emerald-500'
+                  }`}
+                >
+                  <option value="module">module</option>
+                  <option value="action">action</option>
+                </select>
+                {validationErrors.type && (
+                  <p className="mt-2 text-sm text-red-600 flex items-center">
+                    <X className="h-4 w-4 mr-1" />
+                    {validationErrors.type}
+                  </p>
+                )}
+              </div>
               
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-3">

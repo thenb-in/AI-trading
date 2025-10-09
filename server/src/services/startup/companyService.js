@@ -1,5 +1,5 @@
 // services/companyService.js
-const { Company, User, Room, Message: _Message } = require('../../models');
+const { Company, MultiCompanyModule, User } = require('../../models');
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
 
@@ -40,60 +40,74 @@ const companyService = {
     }
   },
 
-  async createCompany(data) {
+  async createCompanyAndLink(data, userId) {
+    const transaction = await Company.sequelize.transaction();
     try {
-      const { name, messageTimer: _messageTimer = null, hideChat: _hideChat = false, deleteOnSeen: _deleteOnSeen=false } = data;
-      const company = await Company.create({
-        name
-      });
+      const company = await Company.create(
+        {
+          name: data.name,
+          mobileApp: !!data.mobileApp,
+          desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
+          mobileWeb: !!data.mobileWeb
+        },
+        { transaction }
+      );
+
+      await MultiCompanyModule.create(
+        { userId, companyId: company.id },
+        { transaction }
+      );
+
+      await transaction.commit();
       return company;
     } catch (error) {
+      if (!transaction.finished) {
+        await transaction.rollback();
+      }
       throw new Error(`Failed to create company: ${error.message}`);
     }
   },
 
-  async getCompanies() {
-    try {
-      const companies = await Company.findAll({
-        include: [
-          { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
-          { model: Room, as: 'rooms', attributes: ['id', 'name'] }
-        ]
-      });
-      return companies;
-    } catch (error) {
-      throw new Error(`Failed to fetch companies: ${error.message}`);
-    }
+  async getUserCompanies(userId) {
+    const links = await MultiCompanyModule.findAll({
+      where: { userId },
+      include: [{ model: Company, as: 'company', attributes: ['id', 'name'] }],
+      order: [['createdAt', 'ASC']]
+    });
+    return links.map(link => link.company).filter(Boolean);
   },
 
-  async getCompany(id) {
-    try {
-      const company = await Company.findByPk(id, {
-        include: [
-          { model: User, as: 'users', attributes: ['id', 'name', 'role', 'isActive'] },
-          { model: Room, as: 'rooms', attributes: ['id', 'name'] }
-        ]
-      });
-      if (!company) {
-        throw new Error(`Company with id ${id} not found`);
-      }
-      return company;
-    } catch (error) {
-      throw new Error(`Failed to fetch company: ${error.message}`);
+  async switchUserCompany(userId, companyId) {
+    // Ensure the user is linked to the company
+    const link = await MultiCompanyModule.findOne({ where: { userId, companyId } });
+    if (!link) {
+      throw new Error('You are not linked to this company');
     }
-  },
 
-  async deleteCompany(id) {
-    try {
-      const company = await Company.findByPk(id);
-      if (!company) {
-        throw new Error(`Company with id ${id} not found`);
-      }
-      await company.destroy();
-      return { message: 'Company deleted successfully' };
-    } catch (error) {
-      throw new Error(`Failed to delete company: ${error.message}`);
+    const company = await Company.findByPk(companyId);
+    if (!company) {
+      throw new Error('Company not found');
     }
+
+    const user = await User.findByPk(userId);
+    if (!user || !user.isActive) {
+      throw new Error('Invalid or inactive user');
+    }
+
+    user.companyId = companyId;
+    // Inherit device access flags from company when switching
+    user.mobileApp = company.mobileApp;
+    user.desktopWeb = company.desktopWeb;
+    user.mobileWeb = company.mobileWeb;
+    // await user.save();
+    return {
+      ...user.toJSON(),
+      company: {
+        id: company.id,
+        name: company.name
+      }
+    };
+
   }
 };
 

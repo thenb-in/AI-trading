@@ -7,6 +7,7 @@ import {
   CreateRoleForm, 
   CreatePermissionForm 
 } from "../../components/startup/Admin/RoleAndPermissions";
+import MultiCompanyModule from "../../components/startup/Admin/MultiCompanyModule/MultiCompanyModule";
 
 const AdminDashboard = () => {
   return (
@@ -18,6 +19,7 @@ const AdminDashboard = () => {
         <Route path="role-permissions" element={<RolePermissionsManagement />} />
         <Route path="create-role" element={<CreateRoleForm />} />
         <Route path="create-permission" element={<CreatePermissionForm />} />
+        <Route path="multi-company-setup" element={<MultiCompanyModule />} />
       </Route>
     </Routes>
   );

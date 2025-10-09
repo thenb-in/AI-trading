@@ -4,20 +4,18 @@ const env = require('../../config/env');
 
 const generateAccessToken = (user) => {
   return jwt.sign(
-    { id: user.id },
+    { id: user.id, company_id: user.companyId },
     env.JWT_SECRET,
-    { expiresIn: env.JWT_ACCESS_EXPIRATION  }
+    { expiresIn: env.JWT_ACCESS_EXPIRATION }
   );
 };
 
 const generateRefreshToken = async (user) => {
   return jwt.sign(
-    { id: user.id },
+    { id: user.id, company_id: user.companyId },
     env.REFRESH_TOKEN_SECRET,
     { expiresIn: env.JWT_REFRESH_EXPIRATION }
   );
-
-
 };
 
 

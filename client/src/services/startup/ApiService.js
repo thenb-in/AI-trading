@@ -81,6 +81,14 @@ const ApiService = {
     return this.request('PUT', '/company/settings', settings);
   },
 
+  getUserCompanies() {
+    return this.request('GET', '/company/my');
+  },
+
+  switchCompany(companyId) {
+    return this.request('POST', '/company/switch', { companyId });
+  },
+
   getAllRoles() {
     return this.request('GET', '/auth/roles');
   },

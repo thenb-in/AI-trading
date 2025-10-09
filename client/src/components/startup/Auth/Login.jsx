@@ -38,13 +38,8 @@ export default function Login() {
       setUserData(user);
       toast.success('Login successful!');
       
-      // Check if user has admin permissions
-      const isAdmin = user.role?.permissions?.some(
-        permission => permission.name === 'isAdmin'
-      );
-      
-      // Navigate based on admin permission
-      navigate(isAdmin ? '/admin' : '/user-routes');
+      // Navigate to admin route
+      navigate('/admin');
     } catch (err) {
       const message = err.response?.data?.error || err.response?.error || err.error || 'Login failed. Please check your credentials.';
       setError(message);

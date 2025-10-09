@@ -6,7 +6,8 @@ export const useCreatePermission = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
-    description: ''
+    description: '',
+    type: 'module'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +25,10 @@ export const useCreatePermission = () => {
       errors.name = 'Permission name cannot exceed 50 characters';
     } else if (!/^[a-zA-Z0-9\s\-_]+$/.test(formData.name.trim())) {
       errors.name = 'Permission name can only contain letters, numbers, spaces, hyphens, and underscores';
+    }
+    
+    if (!formData.type || !['module', 'action'].includes(formData.type)) {
+      errors.type = 'Permission type is required';
     }
     
     if (formData.description && formData.description.length > 500) {
@@ -66,13 +71,14 @@ export const useCreatePermission = () => {
     try {
       const response = await ApiService.createPermission({
         name: formData.name.trim(),
-        description: formData.description.trim() || null
+        description: formData.description.trim() || null,
+        type: formData.type
       });
     
       const responseData = response.data || response;
       if (responseData.success !== false) {
         setSuccess(responseData.message || 'Permission created successfully!');
-        setFormData({ name: '', description: '' });
+        setFormData({ name: '', description: '', type: 'module' });
         
         setTimeout(() => {
           navigate('/admin/role-permissions');
