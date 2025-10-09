@@ -24,7 +24,7 @@ function LogoutButton({ collapsed }) {
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className="w-full flex items-center p-4 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
+        className="w-full flex items-center p-4 rounded-lg hover:bg-red-100 text-red-500 transition-colors font-bold"
       >
         <LogOut className="w-5 h-5 mr-3 flex-shrink-0" size={20} />
         {!collapsed && <span>Logout</span>}

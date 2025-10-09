@@ -4,117 +4,158 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  CopySlash
+  CopySlash,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
 import LogoutButton from "../LogoutButton";
 import PropTypes from "prop-types";
 
+
 export default function AdminSidebar({
   collapsed,
   setCollapsed,
   isMobileView,
+  additionalMenuItems = [], // Accept additional menu items from app
 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
 
-const hasPermission = (requiredPermission) => {
-  return userData?.role?.permissions?.some(
-    (permission) => permission.name === requiredPermission
-  );
-};
+  const hasPermission = (requiredPermission) => {
+    return userData?.role?.permissions?.some(
+      (permission) => permission.name === requiredPermission
+    );
+  };
 
-  const menuItems = [
-    hasPermission('view_user_module') && { id: "users", label: "User Management", icon: User, path: "/admin/users" },
-    hasPermission('view_company_module') && {
+  // Base menu items
+  const baseMenuItems = [
+    hasPermission("view_user_module") && {
+      id: "users",
+      label: "User Management",
+      icon: User,
+      path: "/admin/users",
+    },
+    hasPermission("view_company_module") && {
       id: "company",
       label: "Company Settings",
       icon: Building,
       path: "/admin/company",
     },
-   hasPermission('view_role_permission_module') && {
+    hasPermission("view_role_permission_module") && {
       id: "rolesAndPermissions",
       label: "Roles & Permissions",
       icon: Shield,
       path: "/admin/role-permissions",
     },
-    userData?.isSadmin &&   { id: "multiCompanySetup", label: "Multi-Company Setup", icon: CopySlash, path: "/admin/multi-company-setup" },
+    userData?.isSadmin && {
+      id: "multiCompanySetup",
+      label: "Multi-Company Setup",
+      icon: CopySlash,
+      path: "/admin/multi-company-setup",
+    },
   ].filter(Boolean);
+
+  // Combine: additional items first, then base items
+  const menuItems = [...additionalMenuItems, ...baseMenuItems];
 
   const handleNavigation = (item) => {
     if (isMobileView) {
       setHamburgerMenu(false);
     }
-    navigate(item.path);
+    if (item.onClick) {
+      item.onClick(item);
+    } else {
+      navigate(item.path);
+    }
   };
 
   const isActive = (path) => location.pathname.startsWith(path);
 
   return (
-    <>
-      <div
-        className={`bg-gray-800 text-white h-screen fixed top-0 left-0 flex flex-col transition-all duration-300 ${
-          collapsed ? "w-20" : "w-64"
-        }`}
-      >
-        {/* Top Header */}
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-          {!collapsed && <h1 className="text-xl font-bold">Admin</h1>}
-          <button
-            onClick={() =>
-              isMobileView
-                ? setHamburgerMenu(!hamburgerMenu)
-                : setCollapsed(!collapsed)
-            }
-            className="p-1 text-gray-400 hover:text-white"
-            title={collapsed ? "Expand" : "Collapse"}
-          >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
-        </div>
+    <div
+      className={`bg-gray-800 text-white h-screen fixed top-0 left-0 flex flex-col transition-all duration-300 z-[99999] ${
+        collapsed ? "w-20" : "w-64"
+      }`}
+    >
+      {/* Top Header */}
+      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+     {!collapsed && (
+      <h1 className="text-xl font-bold flex items-center gap-2 text-white">
+        <Shield className="w-6 h-6 text-blue-500" />
+        <span className="hover:text-blue-600 transition-colors">
+          {userData?.role?.name}
+        </span>
+      </h1>
+    )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.id}>
-                <button
-                  onClick={() => handleNavigation(item)}
-                  className={`w-full flex items-center p-2 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? "bg-blue-600 text-white"
-                      : "hover:bg-gray-700"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {!collapsed && <span>{item.label}</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-700">
-          {!collapsed && (
-            <div className="mb-4 text-sm text-gray-300">
-              <div>
-                <strong>Name:</strong> {userData?.name}
-              </div>
-              <div>
-                <strong>Company:</strong> {userData?.company?.name}
-              </div>
-              <div>
-                <strong>Role:</strong> {userData?.role?.name}
-              </div>
-            </div>
-          )}
-          <LogoutButton collapsed={collapsed} />
-        </div>
+        <button
+          onClick={() =>
+            isMobileView
+              ? setHamburgerMenu(!hamburgerMenu)
+              : setCollapsed(!collapsed)
+          }
+          className="p-1 text-gray-400 hover:text-white"
+          title={collapsed ? "Expand" : "Collapse"}
+        >
+          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+        </button>
       </div>
-    </>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <ul className="space-y-2">
+          {menuItems.map((item) => (
+            <li
+              key={item.id}
+              className={item.hasSubmenu ? "relative" : undefined}
+              onMouseEnter={item.onMouseEnter}
+              onMouseLeave={item.onMouseLeave}
+            >
+              <button
+                onClick={() => handleNavigation(item)}
+                className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                  isActive(item.path)
+                    ? "bg-blue-600 text-white"
+                    : "hover:bg-gray-700"
+                }`}
+              >
+               {item.icon && <item.icon className="w-5 h-5 mr-3" />}
+                {!collapsed && <span>{item.label}</span>}
+              </button>
+
+              {/* Render submenu if provided */}
+              {item.submenu && !collapsed && (
+                <div className="mt-1 ml-8">{item.submenu}</div>
+              )}
+
+              {/* Render flyout if provided */}
+              {item.flyout && collapsed && (
+                <div className="absolute left-full top-0 ml-2">{item.flyout}</div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-700">
+        {!collapsed && (
+          <div className="mb-4 text-sm text-gray-300">
+            <div>
+              <strong>Name:</strong> {userData?.name}
+            </div>
+            <div>
+              <strong>Company:</strong> {userData?.company?.name}
+            </div>
+            <div>
+              <strong>Role:</strong> {userData?.role?.name}
+            </div>
+          </div>
+        )}
+        <LogoutButton collapsed={collapsed} />
+      </div>
+    </div>
   );
 }
 
@@ -122,4 +163,18 @@ AdminSidebar.propTypes = {
   collapsed: PropTypes.bool.isRequired,
   setCollapsed: PropTypes.func.isRequired,
   isMobileView: PropTypes.bool.isRequired,
+  additionalMenuItems: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+      icon: PropTypes.elementType.isRequired,
+      path: PropTypes.string.isRequired,
+      hasSubmenu: PropTypes.bool,
+      submenu: PropTypes.node,
+      flyout: PropTypes.node,
+      onClick: PropTypes.func,
+      onMouseEnter: PropTypes.func,
+      onMouseLeave: PropTypes.func,
+    })
+  ),
 };

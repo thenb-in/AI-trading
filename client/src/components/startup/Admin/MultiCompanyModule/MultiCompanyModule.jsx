@@ -18,7 +18,7 @@ const MultiCompanyModule = () => {
   } = useMultiCompanyModule();
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-5xl flex justify-center flex-col mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Multi Company Module</h1>
         <p className="text-gray-600">Create, view, and switch between companies.</p>
