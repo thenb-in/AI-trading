@@ -8,11 +8,14 @@ import {
   CreatePermissionForm 
 } from "../../components/startup/Admin/RoleAndPermissions";
 import MultiCompanyModule from "../../components/startup/Admin/MultiCompanyModule/MultiCompanyModule";
+// Import extra App routes
+import appRoutes from "../AppDashboard";
 
 const AdminDashboard = () => {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
+        {/* Base startup routes */}
         <Route index element={<Navigate to="users" replace />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="company" element={<CompanySettings />} />
@@ -20,6 +23,11 @@ const AdminDashboard = () => {
         <Route path="create-role" element={<CreateRoleForm />} />
         <Route path="create-permission" element={<CreatePermissionForm />} />
         <Route path="multi-company-setup" element={<MultiCompanyModule />} />
+
+        {/* Add APP extra routes */}
+        {appRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
       </Route>
     </Routes>
   );
