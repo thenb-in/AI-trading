@@ -1,4 +1,3 @@
-const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 const logger = require('../../logger');
 const { verifyToken, generateAccessToken, generateRefreshToken } = require('../utils/startup/authUtils');
