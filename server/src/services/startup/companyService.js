@@ -10,7 +10,7 @@ const companyService = {
         attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb']
       });
       if (!company) {
-        throw new Error('Company not found');
+        throw new Error(`Company not found ${id}.`);
       }
       return company;
     } catch (error) {
@@ -24,7 +24,7 @@ const companyService = {
     try {
       const company = await Company.findByPk(id);
       if (!company) {
-        throw new Error(`Company with id ${id} not found`);
+        throw new Error(`Company with id ${id} not found ${id}.`);
       }
       await company.update({
 

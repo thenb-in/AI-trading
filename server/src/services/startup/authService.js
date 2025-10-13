@@ -26,14 +26,14 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
       return existingUser;
     } else {
       // User is already active, throw error
-      throw new Error('Phone number already exists');
+      throw new Error(`Phone number already exists ${phone}.`);
     }
   }
 
   const company = await Company.findByPk(companyId);
   logger.info(`Looking up company by ID: ${companyId} - Found: ${!!company}`);
   if (!company) {
-    throw new Error('Company not found');
+    throw new Error(`Company not found ${companyId}.`);
   }
 
   let roleInstance = null;
@@ -49,7 +49,7 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
     }
     if (!roleInstance) {
       logger.error(`Invalid role specified: ${role}`);
-      throw new Error('Invalid role');
+      throw new Error(`Invalid role ${role}.`);
     }
   }
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -175,7 +175,7 @@ const loginUser = async (credentials) => {
 const resetPassword = async ({ username, password }) => {
   const user = await User.findOne({ where: { username } });
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(`User not found ${username}.`);
   }
   const hashedPassword = await bcrypt.hash(password, 10);
   user.password = hashedPassword;
@@ -189,7 +189,7 @@ const resetPassword = async ({ username, password }) => {
 const approveUser = async (userId) => {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(`User not found ${userId}.`);
   }
 
   user.is_approved = true;
@@ -198,7 +198,7 @@ const approveUser = async (userId) => {
 
 const getAllUsers = async (companyId) => {
   if (!companyId) {
-    throw new Error('Company ID is required');
+    throw new Error(`Company ID is required ${companyId}.`);
   }
   const users = await User.findAll({
     where: { isActive: true, companyId: companyId },
@@ -222,7 +222,7 @@ const getAllUsers = async (companyId) => {
 const getUserById = async (userId) => {
   const user = await User.findByPk(userId);
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(`User not found ${userId}.`);
   }
   return user;
 };
@@ -251,11 +251,11 @@ const getCurrentUser = async (userId) => {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error(`User not found ${userId}.`);
     }
 
     if (!user.isActive) {
-      throw new Error('User account is deactivated');
+      throw new Error(`User account is deactivated ${userId}.`);
     }
 
     return {
@@ -280,9 +280,9 @@ const getCurrentUser = async (userId) => {
     };
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      throw new Error('Invalid or expired token');
+      throw new Error(`Invalid or expired token ${userId}.`);
     }
-    throw error;
+    throw `Error in getting current user ${userId} ${error.message} ${error.stack}`;
   }
 };
 

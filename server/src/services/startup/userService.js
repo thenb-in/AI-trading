@@ -25,7 +25,7 @@ async function deleteUser(userId) {
     });
 
     if (!adminRoles.length) {
-      throw new Error('Admin role not found in the system');
+      throw new Error(`Admin role not found in the system ${userId}.`);
     }
 
     const options = {
@@ -43,7 +43,7 @@ async function deleteUser(userId) {
         await db.User.destroy({ where: { id: userId } });  // cascade delete messages and rooms
         return;
       }
-      throw new Error('No other admin user found to reassign rooms');
+      throw new Error(`No other admin user found to reassign rooms ${userId}.`);
     }
 
     await db.Room.update(
@@ -72,11 +72,11 @@ async function deleteUser(userId) {
 async function updateUserRole(userId, newRoleId) {
   const user = await db.User.findByPk(userId);
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(`User not found ${userId}.`);
   }
   const role = await db.Role.findByPk(newRoleId);
   if (!role) {
-    throw new Error('Role not found');
+    throw new Error(`Role not found ${newRoleId}.`);
   }
 
   user.roleId = newRoleId;
@@ -85,7 +85,7 @@ async function updateUserRole(userId, newRoleId) {
 async function updateUserDeviceAccess(userId, deviceAccess) {
   const user = await db.User.findByPk(userId);
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(`User not found ${userId}.`);
   }
 
   // Update only fields present in the payload

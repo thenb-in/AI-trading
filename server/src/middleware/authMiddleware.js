@@ -34,14 +34,13 @@ const handleRefreshToken = async (refreshToken) => {
 
   const refreshPromise = (async () => {
     const tx = await User.sequelize.transaction();
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'isActive', 'refresh_token', 'companyId', 'username'],
+      lock: tx.LOCK.UPDATE, transaction: tx
+    });
     try {
-      const user = await User.findByPk(userId, {
-        attributes: ['id', 'isActive', 'refresh_token', 'companyId'],
-        lock: tx.LOCK.UPDATE, transaction: tx
-      });
       if (!user || user.refresh_token !== refreshToken || !user.isActive){
-        throw new Error('Invalid or inactive user');
-
+        throw new Error(`Invalid or inactive user ${user.username}`);  // todo: show username instead of userId
       }
 
       const newAccess = generateAccessToken(user);
@@ -66,7 +65,7 @@ const handleRefreshToken = async (refreshToken) => {
       if (!tx.finished){
         await tx.rollback();
       }
-      throw e;
+      throw `Error in handling refresh token ${userId} ${e.message} ${e.stack}`;
     }
   })();
 
@@ -104,15 +103,15 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
     }
   } catch (error) {
-    logger.error(`Auth middleware error: ${error.message}`);
-    res.status(500).json({ message: 'Internal server error' });
+    logger.error(`Auth middleware error: ${error.message} ${error.stack}`);
+    res.status(500).json({ message: `Internal server error ${error.message}` });
   }
 };
 
 exports.admin = (req, res, next) => {
   const hasPermission = allowedPermissions(req.user.id, ['Admin']);
   if (!hasPermission){
-    return res.status(403).json({ error: 'You are not authorized to access this resource Admin' });
+    return res.status(403).json({ error: `You are not authorized to access this resource Admin ${req.user.id}` });
   }
   next();
 };

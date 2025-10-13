@@ -61,7 +61,7 @@ const addPermissionToRole = async (req, res) => {
     await adminService.addPermissionToRole(roleId, permissionIds);
     res.json({
       success: true,
-      message: 'Permissions added successfully!'
+      message: `${permissionIds.length} Permissions added successfully!`
     });
   } catch (error) {
     logger.error(`Error adding permission to role: ${error.message}`);

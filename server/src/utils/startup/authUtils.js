@@ -18,10 +18,9 @@ const generateRefreshToken = async (user) => {
   );
 };
 
-
 const verifyToken = (token, secret) => {
   if (!token) {
-    throw new Error('No token provided');
+    throw new Error(`No token provided ${token}.`);
   }
   return jwt.verify(token, secret);
 };

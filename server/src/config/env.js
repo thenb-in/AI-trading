@@ -29,5 +29,5 @@ module.exports = {
 
   // Helper functions
   isProduction,
-  isDevelopment: !isProduction,
+  isDevelopment: !isProduction
 };
