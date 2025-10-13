@@ -4,7 +4,8 @@
 const noConsoleUsage = require('./rules/no-console-usage');
 const noLoggerCommas = require('./rules/no-logger-commas');
 const noDirectDotenv = require('./rules/no-direct-dotenv');
-const noHardcodedLoggerStrings = require('./rules/no-hardcoded-logger-strings');
+const noHardcodedStrings = require('./rules/no-hardcoded-strings');
+const warnMixedStrings = require('./rules/warn-mixed-strings');
 const noJsonStringifyInLogs = require('./rules/no-json-stringify-in-logs');
 const constantsInSingleFolder = require('./rules/constants-in-single-folder');
 const fileLengthWarning = require('./rules/file-length-warning');
@@ -15,7 +16,8 @@ const customRules = {
   ...noConsoleUsage,
   ...noLoggerCommas,
   ...noDirectDotenv,
-  ...noHardcodedLoggerStrings,
+  ...noHardcodedStrings,
+  ...warnMixedStrings,
   ...noJsonStringifyInLogs,
   ...constantsInSingleFolder,
   ...fileLengthWarning,

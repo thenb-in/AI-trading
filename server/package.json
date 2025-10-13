@@ -6,14 +6,12 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "kill": "kill -9 $(lsof -t -i:5000)",
-    "lint:eslint": "npx eslint .",
+    "lint": "npx eslint .",
     "lint:fix": "npx eslint . --fix",
-    "lint": "node scripts/lint/index.js",
     "create-new-company":"node create_company_with_role_and_perms.js",
     "setup-env": "node scripts/setup-env.js setup",
     "check-env": "node scripts/setup-env.js check",
     "validate-env": "node scripts/setup-env.js validate",
-
     "generate-secrets": "node scripts/setup-env.js generate-secrets"
   },
   "keywords": [],

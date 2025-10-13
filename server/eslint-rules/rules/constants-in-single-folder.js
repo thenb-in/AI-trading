@@ -88,6 +88,30 @@ module.exports = {
               }
             });
           }
+        },
+
+        // Check for object property assignments in object literals
+        Property(node) {
+          // Skip if it's just a property name (no value)
+          if (!node.value) {
+            return;
+          }
+
+          // Check if property name follows constant naming convention
+          if (node.key.type === 'Identifier' && isConstantName(node.key.name)) {
+            // Skip if it's importing from constants or logger
+            if (node.parent && node.parent.type === 'ObjectPattern') {
+              return; // Skip destructuring assignments
+            }
+
+            context.report({
+              node: node.key,
+              messageId: 'noInlineConstants',
+              data: {
+                constantName: node.key.name
+              }
+            });
+          }
         }
       };
     }
