@@ -54,6 +54,9 @@ const VALIDATION_CONSTANTS = {
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 };
 
+const PARSE_INT_RADIX = 10;
+const PRODUCTION_ENV = 'production';
+
 // Export all constants
 module.exports = {
   API_MESSAGES,
@@ -61,5 +64,7 @@ module.exports = {
   DB_CONSTANTS,
   JWT_CONSTANTS,
   FILE_CONSTANTS,
-  VALIDATION_CONSTANTS
+  VALIDATION_CONSTANTS,
+  PARSE_INT_RADIX,
+  PRODUCTION_ENV
 };

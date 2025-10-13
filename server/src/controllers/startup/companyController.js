@@ -12,7 +12,7 @@ const companyController = {
       const requiredPermission = 'Get Company Settings';
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
-        return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
+        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
       const id = req.user.company_id;
@@ -28,7 +28,7 @@ const companyController = {
       const requiredPermission = 'Update Company Settings';
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
-        return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
+        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
       const id = req.user.company_id;
@@ -55,7 +55,7 @@ const companyController = {
       const requiredPermission = 'create_company';
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
-        return res.status(403).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
+        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
       const { name, mobileApp, desktopWeb, mobileWeb } = req.body;

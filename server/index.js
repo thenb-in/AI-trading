@@ -67,9 +67,8 @@ const PORT = env.PORT;
 const startServer = async () => {
   // Synchronize models
   // sync only if not in production
-  const nodeEnv = env.NODE_ENV;
   const sequelize = db.sequelize;
-  if (nodeEnv !== 'production') {
+  if (env.isProduction) {
     await sequelize
       .sync()
       .then(() => {

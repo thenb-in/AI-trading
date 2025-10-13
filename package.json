@@ -62,10 +62,13 @@
   },
   "lint-staged": {
     "*.js": [
-      "node server/scripts/lint-checks-cross-platform.js"
+      "node server/scripts/lint/index.js cross-platform"
     ],
     "server/**/*.js": [
-      "node server/scripts/lint-checks-cross-platform.js"
+      "node server/scripts/lint/index.js cross-platform"
+    ],
+    "server/src/controllers/**/*.js": [
+      "node server/scripts/lint/index.js services-layer"
     ],
     "client/src/**/*.{js,jsx}": [
       "node scripts/lint-client.js"

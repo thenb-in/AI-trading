@@ -1,4 +1,4 @@
-const customPlugin = require('./eslint-rules/custom-rules.js');
+const customPlugin = require('./eslint-rules/index.js');
 
 module.exports = [
   { ignores: ['node_modules', 'logs', 'migrations'] },
@@ -61,6 +61,7 @@ module.exports = [
       'custom/no-json-stringify-in-logs': 'error',
       'custom/constants-in-single-folder': 'error',
       'custom/file-length-warning': ['warn', { warningLines: 300 }],
+      'custom/no-direct-model-imports': 'error',
 
       // File length and complexity rules
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
