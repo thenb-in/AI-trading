@@ -6,51 +6,51 @@ const logger = require('../../../logger');
 const env = require('../../config/env');
 
 const signupValidation = [
-  body('phone').isMobilePhone().withMessage('Invalid phone number for signup'),
+  body('phone').isMobilePhone().withMessage(`Invalid phone number for signup ${body('phone').value}.`),
   body('password')
     .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
+    .withMessage(`Password must be at least 8 characters ${body('password').value}.`)
     .matches(/[A-Z]/)
-    .withMessage('Password must contain at least one uppercase letter')
+    .withMessage(`Password must contain at least one uppercase letter ${body('password').value}.`)
     .matches(/[0-9]/)
-    .withMessage('Password must contain at least one number'),
+    .withMessage(`Password must contain at least one number ${body('password').value}.`),
   body('name').notEmpty().withMessage('Name is required'),
   body('companyId').isUUID().withMessage('Invalid company ID')
 ];
 
 const loginValidation = [
-  body('password').notEmpty().withMessage('Password is required')
+  body('password').notEmpty().withMessage(`Password is required ${body('password').value}.`)
 ];
 
 if (env.isProduction) {
-  loginValidation.push(body('phone').isMobilePhone().withMessage('Invalid phone number for login'));
+  loginValidation.push(body('phone').isMobilePhone().withMessage(`Invalid phone number for login ${body('phone').value}.`));
 }
 
 const resetPasswordValidation = [
-  body('phone').isMobilePhone().withMessage('Invalid phone number for reset password'),
+  body('phone').isMobilePhone().withMessage(`Invalid phone number for reset password ${body('phone').value}.`),
   body('newPassword')
     .isLength({ min: 8 })
-    .withMessage('New password must be at least 8 characters')
+    .withMessage(`New password must be at least 8 characters ${body('newPassword').value}.`)
     .matches(/[A-Z]/)
-    .withMessage('New password must contain at least one uppercase letter')
+    .withMessage(`New password must contain at least one uppercase letter ${body('newPassword').value}.`)
     .matches(/[0-9]/)
-    .withMessage('New password must contain at least one number')
+    .withMessage(`New password must contain at least one number ${body('newPassword').value}.`)
 ];
 
 const signup = async (req, res) => {
+  const { phone, username, password, name, companyId, role } = req.body;
   try {
-    const { phone, username, password, name, companyId, role } = req.body;
     const user = await authService.signup({ phone, username, password, name, companyId, role });
-    res.status(201).json({ message: 'User registered successfully, awaiting admin approval', userId: user.id });
+    res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
   } catch (error) {
-    if (error.message === 'Phone number already exists') {
+    if (error.message === `Phone number already exists ${phone}.`) {
       return res.status(409).json({ error: error.message });
     }
-    if (error.message === 'Company not found') {
+    if (error.message === `Company not found ${companyId}.`) {
       return res.status(404).json({ error: error.message });
     }
     logger.error(`Signup error: ${error.message} - Stack: ${error.stack}`);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -88,19 +88,19 @@ const login = async (req, res) => {
     res.json({ user });
   } catch (error) {
     if (error.message === 'User not found' || error.message === 'Invalid credentials') {
-      return res.status(401).json({ error: 'Invalid phone or password' });
+      return res.status(401).json({ error: error.message });
     }
     if (error.message === 'Account not found') {
-      return res.status(403).json({ error: 'Account not found' });
+      return res.status(403).json({ error: error.message });
     }
     if (error.message === 'Account not active') {
-      return res.status(403).json({ error: 'Account awaiting admin approval' });
+      return res.status(403).json({ error: `Account awaiting admin approval ${error.message}` });
     }
     if (error.message === 'Your account is pending admin approval. Please try again later.') {
       return res.status(403).json({ error: error.message });
     }
     logger.error('Login error' + error.message + ':' + error.stack);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -108,13 +108,13 @@ const resetPassword = async (req, res) => {
   try {
     const { username, password } = req.body;
     await authService.resetPassword({ username, password });
-    res.status(200).json({ message: 'Password reset successfully, account deactivated pending admin approval' });
+    res.status(200).json({ message: `Password reset successfully, account deactivated, pending admin approval ${username}` });
   } catch (error) {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
     logger.error('Reset password error' + error.message + ':' + error.stack);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -122,20 +122,20 @@ const approveUser = async (req, res) => {
   const requiredPermission = 'Approve User';
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
-    return res.status(404).json({ error: 'You are not authorized to access this resource ' + requiredPermission });
+    return res.status(404).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
   }
 
   try {
     const { userId } = req.params;
 
     await authService.approveUser(userId);
-    res.status(200).json({ message: 'User approved successfully' });
+    res.status(200).json({ message: `User approved successfully ${userId}` });
   } catch (error) {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
     logger.error('Approve user error' + error.message + ':' + error.stack);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -146,7 +146,7 @@ const getAllUsers = async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -156,7 +156,7 @@ const getAllRoles = async (req, res) => {
     res.status(200).json(roles);
   } catch (error) {
     logger.error(`Get all roles error: ${error.message} - Stack: ${error.stack}`);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 
@@ -165,10 +165,10 @@ const logout = async (req, res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.clearCookie('isLoggedIn');
-    res.status(200).json({ message: 'User logged out successfully' });
+    res.status(200).json({ message: `User logged out successfully ${req.user.username}` });
   } catch (error) {
     logger.error(`Logout error: ${error.message} - Stack: ${error.stack}`);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
 

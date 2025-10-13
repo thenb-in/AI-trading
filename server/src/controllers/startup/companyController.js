@@ -3,13 +3,15 @@ const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
+const { GET_COMPANY_SETTINGS, UPDATE_COMPANY_SETTINGS, CREATE_COMPANY } = require('../../constants/permissions');
+const {  } = require('../../constants/permissions');
 const env = require('../../config/env');
 const { User } = require('../../models');
 
 const companyController = {
   async getCompanySettings(req, res) {
     try {
-      const requiredPermission = 'Get Company Settings';
+      const requiredPermission = GET_COMPANY_SETTINGS;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -25,7 +27,7 @@ const companyController = {
 
   async updateCompanySettings(req, res) {
     try {
-      const requiredPermission = 'Update Company Settings';
+      const requiredPermission = UPDATE_COMPANY_SETTINGS;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -52,7 +54,7 @@ const companyController = {
 
   async createCompany(req, res) {
     try {
-      const requiredPermission = 'create_company';
+      const requiredPermission = CREATE_COMPANY;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -83,7 +85,7 @@ const companyController = {
     try {
       const { companyId } = req.body || {};
       if (!companyId) {
-        return res.status(400).json({ error: 'companyId is required' });
+        return res.status(400).json({ error: `companyId is required ${companyId}.` });
       }
 
       const updatedUser = await companyService.switchUserCompany(req.user.id, companyId);
@@ -116,7 +118,7 @@ const companyController = {
         maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
       });
 
-      return res.status(200).json({ updatedUser, message: 'Company switched successfully' });
+      return res.status(200).json({ updatedUser, message: `Company switched successfully to ${companyId}` });
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }

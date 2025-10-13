@@ -40,9 +40,11 @@ function shouldSkipFile(filename) {
  * @returns {boolean} - True if string matches skip patterns
  */
 function matchesSkipPatterns(value) {
+  // todo: check if this is correct
   return value.includes('.') ||
     value.includes('/') ||
     value.includes('_') ||
+    value.includes('-') ||  // Module names with dashes (e.g., 'winston-daily-rotate-file')
     value.match(/^[A-Z_]+$/) || // UPPER_CASE constants
     value.match(/^[a-z]+$/) ||  // simple lowercase words
     value.includes('env') ||

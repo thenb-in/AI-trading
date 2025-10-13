@@ -7,6 +7,7 @@
     "start": "node index.js",
     "kill": "kill -9 $(lsof -t -i:5000)",
     "lint": "npx eslint .",
+    "lint:errors": "npx eslint . --quiet",
     "lint:fix": "npx eslint . --fix",
     "create-new-company":"node create_company_with_role_and_perms.js",
     "setup-env": "node scripts/setup-env.js setup",

@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const readline = require('readline');
 const db = require('./src/models'); // Sequelize models index
 const logger = require('./logger');
+const { ROLE_CONSTANTS, PERMISSION_CONSTANTS, SETUP_CONSTANTS } = require('./src/constants');
 
 // Utility to get user input from terminal
 const rl = readline.createInterface({
@@ -18,13 +19,19 @@ const askQuestion = (query) =>
 async function createRoles(transaction) {
   const rolesArray = [
     {
-      name: 'sadmin',
-      description: 'Super Administrator with full system access'
+      name: ROLE_CONSTANTS.SADMIN,
+      description: ROLE_CONSTANTS.SADMIN_DESCRIPTION
     },
-    { name: 'admin', description: 'Administrator with elevated permissions' },
-    { name: 'user', description: 'Standard user with basic access' }
+    {
+      name: ROLE_CONSTANTS.ADMIN,
+      description: ROLE_CONSTANTS.ADMIN_DESCRIPTION
+    },
+    {
+      name: ROLE_CONSTANTS.USER,
+      description: ROLE_CONSTANTS.USER_DESCRIPTION
+    }
   ];
-  logger.info(`Creating ${rolesArray.length} roles...' ,`);
+  logger.info(`Creating ${rolesArray.length} roles...`);
 
   const roles = await db.Role.bulkCreate(rolesArray, {
     transaction,
@@ -42,7 +49,7 @@ async function createCompany(transaction, userRole) {
   logger.info(`Creating company: ${companyName}`);
   const company = await db.Company.create(
     {
-      name: companyName || 'default',
+      name: companyName || SETUP_CONSTANTS.DEFAULT_COMPANY_NAME,
       mobileApp: false,
       desktopWeb: true,
       mobileWeb: false,
@@ -59,36 +66,45 @@ async function createCompany(transaction, userRole) {
  */
 async function createPermissions(transaction) {
   const permissionsArray = [
-    { name: 'Approve User', description: 'Permission to approve new users' },
     {
-      name: 'Deactivate User',
-      description: 'Permission to deactivate users'
+      name: PERMISSION_CONSTANTS.APPROVE_USER,
+      description: PERMISSION_CONSTANTS.APPROVE_USER_DESC
     },
     {
-      name: 'Get Company Settings',
-      description: 'Permission to view company settings'
+      name: PERMISSION_CONSTANTS.DEACTIVATE_USER,
+      description: PERMISSION_CONSTANTS.DEACTIVATE_USER_DESC
     },
     {
-      name: 'Update Company Settings',
-      description: 'Permission to update company settings'
-    },
-    { name: 'Add Role', description: 'Permission to add a new role' },
-    {
-      name: 'Link Role Permission',
-      description: 'Permission to map permissions to roles'
-    },
-    { name: 'isAdmin', description: 'Flag for admin-level access' },
-    {
-      name: 'View Company Settings',
-      description: 'Permission to view company settings'
+      name: PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS,
+      description: PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS_DESC
     },
     {
-      name: 'View AdminLayout',
-      description: 'Permission to access admin layout view'
+      name: PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS,
+      description: PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS_DESC
     },
     {
-      name: 'has_role_permission',
-      description: 'Permission for role and permission modules'
+      name: PERMISSION_CONSTANTS.ADD_ROLE,
+      description: PERMISSION_CONSTANTS.ADD_ROLE_DESC
+    },
+    {
+      name: PERMISSION_CONSTANTS.LINK_ROLE_PERMISSION,
+      description: PERMISSION_CONSTANTS.LINK_ROLE_PERMISSION_DESC
+    },
+    {
+      name: PERMISSION_CONSTANTS.IS_ADMIN,
+      description: PERMISSION_CONSTANTS.IS_ADMIN_DESC
+    },
+    {
+      name: PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS,
+      description: PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS_DESC
+    },
+    {
+      name: PERMISSION_CONSTANTS.VIEW_ADMIN_LAYOUT,
+      description: PERMISSION_CONSTANTS.VIEW_ADMIN_LAYOUT_DESC
+    },
+    {
+      name: PERMISSION_CONSTANTS.HAS_ROLE_PERMISSION,
+      description: PERMISSION_CONSTANTS.HAS_ROLE_PERMISSION_DESC
     }
   ];
   logger.info(`Creating ${permissionsArray.length} permissions...`);
@@ -109,20 +125,20 @@ async function createUser(transaction, company) {
   const createUserAnswer = await askQuestion(
     'Do you want to create a user? (yes/no): '
   );
-  if (createUserAnswer.toLowerCase() !== 'yes') {
+  if (createUserAnswer.toLowerCase() !== SETUP_CONSTANTS.YES_ANSWER) {
     return null;
   }
 
   const username = await askQuestion('Enter username: ');
   const password = await askQuestion('Enter password: ');
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, SETUP_CONSTANTS.BCRYPT_ROUNDS);
 
   logger.info(`Creating user: ${username}`);
   const user = await db.User.create(
     {
       username,
       password: hashedPassword,
-      phone: '1234567890',
+      phone: SETUP_CONSTANTS.DEFAULT_PHONE,
       name: username,
       companyId: company.id
     },
@@ -144,8 +160,8 @@ async function main() {
   const transaction = await db.sequelize.transaction();
   try {
     const roles = await createRoles(transaction);
-    const sadminRole = roles.find((r) => r.name === 'sadmin');
-    const userRole = roles.find((r) => r.name === 'user');
+    const sadminRole = roles.find((r) => r.name === ROLE_CONSTANTS.SADMIN);
+    const userRole = roles.find((r) => r.name === ROLE_CONSTANTS.USER);
 
     const company = await createCompany(transaction, userRole);
     const permissions = await createPermissions(transaction);

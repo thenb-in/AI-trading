@@ -1,7 +1,7 @@
 const customPlugin = require('./eslint-rules/index.js');
 
 module.exports = [
-  { ignores: ['node_modules', 'logs', 'migrations'] },
+  { ignores: ['node_modules', 'logs', 'migrations', 'eslint.config.js', 'scripts'] },
 
   // Node.js server config
   {

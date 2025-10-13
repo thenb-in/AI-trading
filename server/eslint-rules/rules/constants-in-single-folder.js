@@ -19,9 +19,10 @@ module.exports = {
       const filename = context.getFilename();
       const isConstantsFile = filename.includes('/constants/') || filename.includes('\\constants\\');
       const isLoggerFile = filename.includes('logger.js') || filename.includes('logger.ts');
+      const isEnvFile = filename.includes('env.js') || filename.includes('env.ts');
 
-      // Skip if this is the constants file itself or logger file
-      if (isConstantsFile || isLoggerFile) {
+      // Skip if this is the constants file, logger file, or env config file
+      if (isConstantsFile || isLoggerFile || isEnvFile) {
         return {};
       }
 
@@ -41,13 +42,17 @@ module.exports = {
         if (node.declarations && node.declarations.length === 1) {
           const declaration = node.declarations[0];
           if (declaration.init) {
+            // Skip environment variable access - these are not constants
+            if (declaration.init.type === 'CallExpression' &&
+                declaration.init.callee.type === 'MemberExpression' &&
+                declaration.init.callee.object.name === 'process' &&
+                declaration.init.callee.property.name === 'env') {
+              return false; // Environment variables are not constants
+            }
+
             // Check if it's a literal value or simple expression
             return declaration.init.type === 'Literal' ||
-                   declaration.init.type === 'TemplateLiteral' ||
-                   (declaration.init.type === 'CallExpression' &&
-                    declaration.init.callee.type === 'MemberExpression' &&
-                    declaration.init.callee.object.name === 'process' &&
-                    declaration.init.callee.property.name === 'env');
+                   declaration.init.type === 'TemplateLiteral';
           }
         }
         return false;

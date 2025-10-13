@@ -9,48 +9,48 @@ const checkRoleExists = async (name) => {
 const createRole = async (name, description) => {
   // Input validation
   if (!name || typeof name !== 'string') {
-    throw new Error('Role name is required and must be a string');
+    throw new Error(`Role name is required and must be a string ${name}.`);
   }
 
   const trimmedName = name.trim();
 
   // Length validation
   if (trimmedName.length === 0) {
-    throw new Error('Role name cannot be empty');
+    throw new Error(`Role name cannot be empty ${trimmedName}.`);
   }
 
   if (trimmedName.length < 2) {
-    throw new Error('Role name must be at least 2 characters long');
+    throw new Error(`Role name must be at least 2 characters long ${trimmedName}.`);
   }
 
   if (trimmedName.length > 50) {
-    throw new Error('Role name cannot exceed 50 characters');
+    throw new Error(`Role name cannot exceed 50 characters ${trimmedName.length}.`);
   }
 
   // Character validation - only allow letters, numbers, spaces, and hyphens
   const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
   if (!nameRegex.test(trimmedName)) {
-    throw new Error('Role name can only contain letters, numbers, spaces, hyphens, and underscores');
+    throw new Error(`Role name can only contain letters, numbers, spaces, hyphens, and underscores ${trimmedName}.`);
   }
 
   // Description validation (optional)
   let trimmedDescription = null;
   if (description) {
     if (typeof description !== 'string') {
-      throw new Error('Description must be a string');
+      throw new Error(`Description must be a string ${description}.`);
     }
 
     trimmedDescription = description.trim();
 
     if (trimmedDescription.length > 500) {
-      throw new Error('Description cannot exceed 500 characters');
+      throw new Error(`Description cannot exceed 500 characters ${trimmedDescription}.`);
     }
   }
 
   // Check for duplicate
   const existingRole = await checkRoleExists(trimmedName);
   if (existingRole) {
-    throw new Error(`Role with name ${trimmedName} already exists`);
+    throw new Error(`Role with name already exists ${trimmedName}.`);
   }
 
   // Create the role
@@ -66,31 +66,31 @@ const createPermission = async (name, description,type) => {
   // Input validation
   if (!name || typeof name !== 'string') {
     logger.warn(`Name is invalid (${name}, ${typeof name}) - Must be a string`);
-    throw new Error('Permission name is required and must be a string');
+    throw new Error(`Permission name is required and must be a string ${name}.`);
   }
 
   const trimmedName = name.trim();
 
   if (trimmedName.length === 0) {
     logger.warn(`Empty permission name provided after trimming (${trimmedName})`);
-    throw new Error('Permission name cannot be empty');
+    throw new Error(`Permission name cannot be empty ${trimmedName}.`);
   }
 
   if (trimmedName.length < 2) {
     logger.warn(`Permission name too short (${trimmedName.length} chars) - Must be at least 2 characters`);
-    throw new Error('Permission name must be at least 2 characters long');
+    throw new Error(`Permission name must be at least 2 characters long ${trimmedName}.`);
   }
 
   if (trimmedName.length > 50) {
     logger.warn(`Permission name too long (${trimmedName.length} chars) - Exceeds 50 character limit`);
-    throw new Error('Permission name cannot exceed 50 characters');
+    throw new Error(`Permission name cannot exceed 50 characters ${trimmedName}.`);
   }
 
   // Character validation
   const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
   if (!nameRegex.test(trimmedName)) {
     logger.warn(`Invalid characters in permission name (${trimmedName}) - Only letters, numbers, spaces, hyphens, and underscores allowed`);
-    throw new Error('Permission name can only contain letters, numbers, spaces, hyphens, and underscores');
+    throw new Error(`Permission name can only contain letters, numbers, spaces, hyphens, and underscores ${trimmedName}.`);
   }
 
   // Description validation (optional)
@@ -98,14 +98,14 @@ const createPermission = async (name, description,type) => {
   if (description) {
     if (typeof description !== 'string') {
       logger.warn(`Invalid permission description format (${typeof description}) - Must be a string`);
-      throw new Error('Description must be a string');
+      throw new Error(`Description must be a string ${description}.`);
     }
 
     trimmedDescription = description.trim();
 
     if (trimmedDescription.length > 500) {
       logger.warn(`Permission description too long (${trimmedDescription.length} chars) - Exceeds 500 character limit`);
-      throw new Error('Description cannot exceed 500 characters');
+      throw new Error(`Description cannot exceed 500 characters ${trimmedDescription}.`);
     }
   }
 
@@ -113,7 +113,7 @@ const createPermission = async (name, description,type) => {
   const existingPermission = await Permission.findOne({ where: { name: trimmedName } });
   if (existingPermission) {
     logger.warn(`Permission creation failed - Permission with name ${trimmedName} already exists`);
-    throw new Error('Permission with this name already exists');
+    throw new Error(`Permission with this name already exists ${trimmedName}.`);
   }
 
   // Create the permission

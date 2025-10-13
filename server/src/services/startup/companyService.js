@@ -81,17 +81,17 @@ const companyService = {
     // Ensure the user is linked to the company
     const link = await MultiCompanyModule.findOne({ where: { userId, companyId } });
     if (!link) {
-      throw new Error('You are not linked to this company');
+      throw new Error(`You are not linked to this company ${companyId}.`);
     }
 
     const company = await Company.findByPk(companyId);
     if (!company) {
-      throw new Error('Company not found');
+      throw new Error(`Company not found ${companyId}.`);
     }
 
     const user = await User.findByPk(userId);
     if (!user || !user.isActive) {
-      throw new Error('Invalid or inactive user');
+      throw new Error(`Invalid or inactive user ${userId}.`);
     }
 
     user.companyId = companyId;

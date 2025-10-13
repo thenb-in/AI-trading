@@ -79,10 +79,10 @@ const removePermissionFromRole = async (req, res) => {
   // }
   try {
     const { roleId, permissionId } = req.body;
-    await adminService.removePermissionFromRole(roleId, permissionId);
+    const result = await adminService.removePermissionFromRole(roleId, permissionId);
     res.json({
       success: true,
-      message: 'Permission removed successfully!'
+      message: `${result.message}`
     });
   } catch (error) {
     logger.error(`Error removing permission from role: ${error.message}`);
