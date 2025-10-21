@@ -84,7 +84,7 @@ export default function Signup({ showRoleDropdown }) {
         username: formData.username,
         phone: formData.phone,
         password: formData.password,
-        companyId: parseInt(formData.companyId, 10),
+        companyId: formData.companyId,
         role: formData.role,
       });
       toast.success('Signup successful! Awaiting admin approval.');
@@ -231,7 +231,7 @@ export default function Signup({ showRoleDropdown }) {
           {!hideCompanyIdField && (
             <div className="mb-4">
               <input
-                type="number"
+                type="uuid"
                 name="companyId"
                 id="companyId"
                 placeholder="Company ID"

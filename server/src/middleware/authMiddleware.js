@@ -43,8 +43,8 @@ const handleRefreshToken = async (refreshToken) => {
         throw new Error(`Invalid or inactive user ${user.username}`);  // todo: show username instead of userId
       }
 
-      const newAccess = generateAccessToken(user);
-      const newRefresh = await generateRefreshToken(user);
+      const newAccess = generateAccessToken({ id: user.id, companyId: decoded.company_id });
+      const newRefresh = await generateRefreshToken({ id: user.id, companyId: decoded.company_id });
       user.refresh_token = newRefresh;
       user.last_active = new Date();
       await user.save({ transaction: tx });
@@ -53,7 +53,7 @@ const handleRefreshToken = async (refreshToken) => {
       const accessMax = parseInt(env.MAX_JWT_ACCESS_EXPIRATION_MS || 300000);
       const refreshMax = parseInt(env.MAX_JWT_REFRESH_EXPIRATION_MS || 604800000);
       return {
-        user: { id: user.id, company_id: user.companyId },
+        user: { id: user.id, company_id: decoded.company_id },
         tokens: { access: newAccess, refresh: newRefresh },
         options: {
           access: { httpOnly: true, sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: accessMax },
@@ -100,7 +100,7 @@ exports.protect = async (req, res, next) => {
       return next();
     } catch (err) {
       logger.warn(`Refresh token failed: ${err.message}`);
-      return res.status(401).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
+      return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
     }
   } catch (error) {
     logger.error(`Auth middleware error: ${error.message} ${error.stack}`);

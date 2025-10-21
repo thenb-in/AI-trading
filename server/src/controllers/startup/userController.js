@@ -4,6 +4,7 @@ const userService = require('../../services/startup/userService');
 const logger = require('../../../logger');
 
 const getAllUsers = async (req, res) => {
+
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);
   // if (!hasPermission) {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });

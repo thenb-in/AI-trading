@@ -68,7 +68,7 @@ const startServer = async () => {
   // Synchronize models
   // sync only if not in production
   const sequelize = db.sequelize;
-  if (env.isProduction) {
+  if (!env.isProduction) {
     await sequelize
       .sync()
       .then(() => {

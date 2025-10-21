@@ -36,7 +36,8 @@ CompanyCard.propTypes = {
   loading: PropTypes.bool,
 };
 
-const CompanyList = ({ companies, activeCompanyId, onSwitch, loading }) => {
+const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
+  console.log('activeCompany ID', activeCompanyId);
   if (!companies?.length) {
     return (
       <div className="text-gray-500 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 text-center">
@@ -57,15 +58,17 @@ const CompanyList = ({ companies, activeCompanyId, onSwitch, loading }) => {
   </div>
 
   <ul className="grid gap-3">
-    {companies.map((c) => (
+    {companies.map((c) => {
+      const isActive = (activeCompanyName && c.name === activeCompanyName);
+      return (
       <CompanyCard
         key={c.id}
         company={c}
-        isActive={c.id === activeCompanyId}
+        isActive={isActive}
         onSwitch={onSwitch}
         loading={loading}
       />
-    ))}
+    );})}
   </ul>
 </>
 
@@ -75,6 +78,7 @@ const CompanyList = ({ companies, activeCompanyId, onSwitch, loading }) => {
 CompanyList.propTypes = {
   companies: PropTypes.arrayOf(PropTypes.shape({ id: PropTypes.string, name: PropTypes.string })).isRequired,
   activeCompanyId: PropTypes.string,
+  activeCompanyName: PropTypes.string,
   onSwitch: PropTypes.func.isRequired,
   loading: PropTypes.bool,
 };

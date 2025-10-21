@@ -3,9 +3,9 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   const MultiCompanyModule = sequelize.define('MultiCompanyModule', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
     userId: {
       type: DataTypes.UUID,
@@ -19,22 +19,22 @@ module.exports = (sequelize) => {
     tableName: 'nbnext_multi_company_module',
     timestamps: true,
     indexes: [
-      { unique: true, fields: ['userId', 'companyId'] },
-      { fields: ['userId'] },
-      { fields: ['companyId'] }
+      { unique: true, fields: ['user_id', 'company_id'] },
+      { fields: ['user_id'] },
+      { fields: ['company_id'] }
     ]
   });
 
   MultiCompanyModule.associate = (models) => {
     MultiCompanyModule.belongsTo(models.User, {
-      foreignKey: 'userId',
+      foreignKey: 'user_id',
       as: 'user',
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     });
 
     MultiCompanyModule.belongsTo(models.Company, {
-      foreignKey: 'companyId',
+      foreignKey: 'company_id',
       as: 'company',
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'

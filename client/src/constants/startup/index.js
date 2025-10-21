@@ -32,7 +32,8 @@ const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refreshToken',
   USER_DATA: 'userData',
   THEME: 'theme',
-  LANGUAGE: 'language'
+  LANGUAGE: 'language',
+  ACTIVE_COMPANY_NAME: 'activeCompanyName'
 };
 
 // Route Constants

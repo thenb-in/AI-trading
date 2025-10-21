@@ -22,9 +22,9 @@ const loginValidation = [
   body('password').notEmpty().withMessage(`Password is required ${body('password').value}.`)
 ];
 
-if (env.isProduction) {
-  loginValidation.push(body('phone').isMobilePhone().withMessage(`Invalid phone number for login ${body('phone').value}.`));
-}
+// if (env.isProduction) {
+//   loginValidation.push(body('phone').isMobilePhone().withMessage('Invalid phone number for login'));
+// }
 
 const resetPasswordValidation = [
   body('phone').isMobilePhone().withMessage(`Invalid phone number for reset password ${body('phone').value}.`),

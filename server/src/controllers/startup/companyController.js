@@ -4,7 +4,6 @@ const companyService = require('../../services/startup/companyService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
 const { GET_COMPANY_SETTINGS, UPDATE_COMPANY_SETTINGS, CREATE_COMPANY } = require('../../constants/permissions');
-const {  } = require('../../constants/permissions');
 const env = require('../../config/env');
 const { User } = require('../../models');
 
@@ -17,7 +16,7 @@ const companyController = {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
-      const id = req.user.company_id;
+      const id = req.user;
       const settings = await companyService.getCompanySettings(id);
       res.json(settings);
     } catch (error) {
@@ -33,7 +32,7 @@ const companyController = {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
-      const id = req.user.company_id;
+      const id = req.user;
       const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb } = req.body;
 
       const settings = await companyService.updateCompanySettings(id, {
@@ -75,7 +74,7 @@ const companyController = {
   async myCompanies(req, res) {
     try {
       const companies = await companyService.getUserCompanies(req.user.id);
-      return res.status(200).json({ companies, activeCompanyId: req.user.company_id });
+      return res.status(200).json({ companies, activeCompanyId: req.user });
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }

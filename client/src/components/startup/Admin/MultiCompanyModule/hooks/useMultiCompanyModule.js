@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ApiService from '../../../../../services/startup/ApiService';
+import { STORAGE_KEYS } from '../../../../../constants/startup/index';
 import { useDataContext } from '../../../../../context/startup/useDataContext';
 
 export const useMultiCompanyModule = () => {
@@ -11,6 +12,12 @@ export const useMultiCompanyModule = () => {
   const [createError, setCreateError] = useState(null);
 
   const activeCompanyId = useMemo(() => userData?.companyId || userData?.company?.id || null, [userData]);
+  // Extract localStorage value to a variable for useMemo dependency
+  const activeCompanyNameFromStorage = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME) : null;
+  const activeCompanyName = useMemo(() => {
+    // Prefer server/userData source; fallback to localStorage if missing
+    return activeCompanyNameFromStorage || null;
+  }, [activeCompanyNameFromStorage]);
 
   const fetchCompanies = useCallback(async () => {
     setLoading(true);
@@ -46,7 +53,7 @@ export const useMultiCompanyModule = () => {
   }, [fetchCompanies]);
 
   const handleSwitch = useCallback(async (companyId) => {
-    if (!companyId || companyId === activeCompanyId) return;
+    // if (!companyId || companyId === activeCompanyId) return;
     setLoading(true);
     setError(null);
     try {
@@ -56,6 +63,10 @@ export const useMultiCompanyModule = () => {
         companyId: response.data.updatedUser.companyId,
         company: response.data.updatedUser.company
       }));
+      // Persist active company name for fallback display
+      if (response?.data?.updatedUser?.company?.name && typeof window !== 'undefined') {
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME, response.data.updatedUser.company.name);
+      }
       await fetchCompanies();
     } catch (e) {
       setError(e?.error || 'Failed to switch company');
@@ -67,6 +78,7 @@ export const useMultiCompanyModule = () => {
   return {
     companies,
     activeCompanyId,
+    activeCompanyName,
     loading,
     error,
     creating,

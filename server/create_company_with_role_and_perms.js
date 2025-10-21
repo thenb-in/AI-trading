@@ -78,10 +78,10 @@ async function createPermissions(transaction) {
       name: PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS,
       description: PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS_DESC
     },
-    {
-      name: PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS,
-      description: PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS_DESC
-    },
+    // {
+    //   name: 'View AdminLayout',
+    //   description: 'Permission to access admin layout view'
+    // },
     {
       name: PERMISSION_CONSTANTS.ADD_ROLE,
       description: PERMISSION_CONSTANTS.ADD_ROLE_DESC

@@ -10,6 +10,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
 import LogoutButton from "../LogoutButton";
 import PropTypes from "prop-types";
+import { STORAGE_KEYS } from "../../../constants/startup/index";
+import packageData from '../../../../package.json' ;
 
 
 export default function AdminSidebar({
@@ -75,16 +77,16 @@ export default function AdminSidebar({
   return (
     <div
       className={`bg-gray-800 text-white h-screen fixed top-0 left-0 flex flex-col transition-all duration-300 z-[99999] ${
-        collapsed ? "w-20" : "w-64"
+        collapsed ? "w-14" : "w-64"
       }`}
     >
       {/* Top Header */}
-      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+      <div className={`${collapsed ? "p-2" : "p-4"} border-b border-gray-700 flex justify-between items-center`}>
      {!collapsed && (
       <h1 className="text-xl font-bold flex items-center gap-2 text-white">
         <Shield className="w-6 h-6 text-blue-500" />
         <span className="hover:text-blue-600 transition-colors">
-          {userData?.role?.name}
+          {packageData?.name}
         </span>
       </h1>
     )}
@@ -95,7 +97,7 @@ export default function AdminSidebar({
               ? setHamburgerMenu(!hamburgerMenu)
               : setCollapsed(!collapsed)
           }
-          className="p-1 text-gray-400 hover:text-white"
+          className="p-2 text-gray-400 hover:text-white rounded-md hover:bg-gray-700"
           title={collapsed ? "Expand" : "Collapse"}
         >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
@@ -103,8 +105,8 @@ export default function AdminSidebar({
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <ul className="space-y-2">
+      <nav className={`flex-1 ${collapsed ? "p-2" : "p-3"}`}>
+         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li
               key={item.id}
@@ -114,24 +116,30 @@ export default function AdminSidebar({
             >
               <button
                 onClick={() => handleNavigation(item)}
-                className={`w-full flex items-center p-2 rounded-lg transition-colors ${
+                title={item.label}
+                aria-label={collapsed ? item.label : undefined}
+                className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors ${
                   isActive(item.path)
                     ? "bg-blue-600 text-white"
                     : "hover:bg-gray-700"
-                }`}
+                } ${collapsed ? "justify-center" : "justify-start"}`}
               >
-               {item.icon && <item.icon className="w-5 h-5 mr-3" />}
-                {!collapsed && <span>{item.label}</span>}
+                {item.icon && (
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                )}
+                {!collapsed && <span className="ml-3 truncate">{item.label}</span>}
               </button>
 
               {/* Render submenu if provided */}
               {item.submenu && !collapsed && (
-                <div className="mt-1 ml-8">{item.submenu}</div>
+                < >{item.submenu}</>
               )}
 
               {/* Render flyout if provided */}
               {item.flyout && collapsed && (
-                <div className="absolute left-full top-0 ml-2">{item.flyout}</div>
+                <>
+                  {item.flyout}
+                </>
               )}
             </li>
           ))}
@@ -139,14 +147,20 @@ export default function AdminSidebar({
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-700">
+      <div className={`${collapsed ? "p-2" : "p-4"} border-t border-gray-700`}>
         {!collapsed && (
           <div className="mb-4 text-sm text-gray-300">
             <div>
               <strong>Name:</strong> {userData?.name}
             </div>
             <div>
-              <strong>Company:</strong> {userData?.company?.name}
+              <strong>Company:</strong>{" "}
+                {typeof window !== "undefined"
+                  ? localStorage.getItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME) ||
+                    userData?.company?.name ||
+                    "-"
+                  : userData?.company?.name || "-"}
+
             </div>
             <div>
               <strong>Role:</strong> {userData?.role?.name}

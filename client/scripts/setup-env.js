@@ -56,7 +56,7 @@ function validateEnvFile() {
     const envContent = fs.readFileSync(envPath, 'utf8');
     
     // Check for required Vite environment variables
-    const requiredVars = ['VITE_BACKEND_BASE_URL'];
+    const requiredVars = ['VITE_NODE_URL'];
     const missingVars = [];
     
     requiredVars.forEach(varName => {
@@ -87,7 +87,7 @@ function showSetupInstructions() {
   log('1. Copy .env.example to .env:', 'yellow');
   log('   cp .env.example .env', 'blue');
   log('\n2. Update .env with your values:', 'yellow');
-  log('   - Set VITE_BACKEND_BASE_URL to your backend server URL', 'blue');
+  log('   - Set VITE_NODE_URL to your backend server URL', 'blue');
   log('   - Update PORT if you want to use a different port', 'blue');
   log('\n3. Important notes:', 'yellow');
   log('   - All variables must be prefixed with VITE_ to be accessible in the browser', 'blue');

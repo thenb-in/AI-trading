@@ -7,19 +7,19 @@ const httpLogger = (req, res, next) => {
   }
 
   const start = Date.now();
-  const { method, originalUrl, ip, params, query, body } = req;
+  const { method, originalUrl, ip } = req;  // also gives params, query, body, user-agent etc.
 
   // Log the incoming request
-  const logData = {
-    method,
-    path: originalUrl,
-    ip,
-    ...(Object.keys(params).length && { params }),
-    ...(Object.keys(query).length && { query }),
-    // Be careful with logging sensitive data in body
-    ...(method !== 'GET' && method !== 'DELETE' && { body })
-  };
-  logger.debug(`Request received ${logData}`);
+  // const logData = {
+  //   method,
+  //   path: originalUrl,
+  //   ip,
+  //   ...(Object.keys(params).length && { params }),
+  //   ...(Object.keys(query).length && { query }),
+  //   // Be careful with logging sensitive data in body
+  //   ...(method !== 'GET' && method !== 'DELETE' && { body })
+  // };
+  logger.debug(`Request received method: ${method} path: ${originalUrl} ip: ${ip}`);
 
   // Capture response finish to log the outcome
   res.on('finish', () => {

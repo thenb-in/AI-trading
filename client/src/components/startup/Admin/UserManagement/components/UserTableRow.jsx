@@ -12,7 +12,8 @@ const UserTableRow = ({
   showConfirmation, 
   formatLastActive,
   handleRoleChange,
-  handleDeviceOptionUpdate
+  handleDeviceOptionUpdate,
+  renderDataAccess
 }) => {
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
@@ -86,7 +87,7 @@ const UserTableRow = ({
         <div className="text-sm font-medium text-gray-900">{user.name}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-500">{user.phone}</div>
+        <div className="text-sm text-gray-500">{user.username}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {editingRole ? (
@@ -115,6 +116,15 @@ const UserTableRow = ({
           >
             <RoleBadge role={user.role.name} />
           </div>
+        )}
+      </td>
+
+      {/* Data Access column */}
+      <td className="px-6 py-4 whitespace-nowrap">
+        {typeof renderDataAccess === 'function' ? (
+          renderDataAccess()
+        ) : (
+          <span className="text-sm text-gray-400">Not configured</span>
         )}
       </td>
 
@@ -247,7 +257,8 @@ UserTableRow.propTypes = {
   showConfirmation: PropTypes.func.isRequired,
   formatLastActive: PropTypes.func.isRequired,
   handleRoleChange: PropTypes.func.isRequired,
-  handleDeviceOptionUpdate: PropTypes.func.isRequired
+  handleDeviceOptionUpdate: PropTypes.func.isRequired,
+  renderDataAccess: PropTypes.func
 };
 
 export default memo(UserTableRow);

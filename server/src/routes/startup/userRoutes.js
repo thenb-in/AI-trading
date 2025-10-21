@@ -4,7 +4,7 @@ const userController = require('../../controllers/startup/userController');
 const authMiddleware = require('../../middleware/authMiddleware');
 
 router.get('/', authMiddleware.protect, userController.getAllUsers);
-router.get('/me', authMiddleware.protect,userController.getMe);
+router.get('/me', authMiddleware.protect, userController.getMe);
 router.post('/:userId/deactivate', authMiddleware.protect, userController.deactivateUser);
 router.get('/:userId', authMiddleware.protect, userController.getMe);
 router.delete('/:userId', authMiddleware.protect, userController.deleteUser);

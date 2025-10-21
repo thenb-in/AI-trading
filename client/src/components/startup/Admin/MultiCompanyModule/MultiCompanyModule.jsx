@@ -8,6 +8,7 @@ const MultiCompanyModule = () => {
   const {
     companies,
     activeCompanyId,
+    activeCompanyName,
     loading,
     creating,
     error,
@@ -36,6 +37,7 @@ const MultiCompanyModule = () => {
         <CompanyList
           companies={companies}
           activeCompanyId={activeCompanyId}
+          activeCompanyName={activeCompanyName}
           onSwitch={handleSwitch}
           loading={loading}
         />

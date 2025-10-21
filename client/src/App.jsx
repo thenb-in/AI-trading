@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDataContext } from "./context/startup/useDataContext";
@@ -10,9 +10,13 @@ import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 function ProtectedRoute({ children }) {
-  const { userData } = useDataContext();
-  console.log('check userData from protected Route function', userData);
-  if (!userData) return <Navigate to="/" />;
+  const { userData, loading } = useDataContext();
+  const location = useLocation();
+
+  // Wait for auth 
+  if (loading) return null;
+
+  if (!userData) return <Navigate to="/" replace state={{ from: location }} />;
   return children;
 }
 

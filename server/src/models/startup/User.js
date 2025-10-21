@@ -64,7 +64,8 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false
     }
   }, {
-    tableName: 'nbnext_users'
+    tableName: 'nbnext_users',
+    timestamps: false // Disable automatic created_at/updated_at columns
   });
 
   User.associate = (models) => {
@@ -76,6 +77,9 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
+
+    // Data access configuration per user (same company scope)
+    User.hasOne(models.DataAccess, { foreignKey: 'userId', as: 'dataAccess' });
   };
 
   return User;

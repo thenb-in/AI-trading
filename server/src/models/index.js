@@ -5,6 +5,7 @@ const path = require('path');
 const Sequelize = require('sequelize');
 const process = require('process');
 const env = require('../config/env'); // Load environment variables
+const logger = require('../../logger');
 
 const basename = path.basename(__filename);
 const nodeEnv = env.NODE_ENV;
@@ -13,18 +14,27 @@ const config = require('../config/config.js')[nodeEnv];
 const db = {};
 
 let sequelize;
+const default_config = {
+  logging: false, // Disable SQL logging
+  define: {
+    underscored: true // Use snake_case for automatically added attributes
+  }
+};
 
 if (config.use_env_variable) {
   sequelize = new Sequelize(process.env[config.use_env_variable], {
     dialect: config.dialect,
-    logging: false // Disable SQL logging
+    ...default_config
   });
 } else {
   sequelize = new Sequelize(
     config.database,
     config.username,
     config.password,
-    config
+    {
+      ...config,
+      ...default_config
+    }
   );
 }
 
@@ -40,6 +50,7 @@ fs.readdirSync(startup_path)
       !file.includes('.test.js')
   )
   .forEach(file => {
+    logger.debug(`Loading startup model: ${file}`);
     const model = require(path.join(startup_path, file))(
       sequelize,
       Sequelize.DataTypes
@@ -58,6 +69,7 @@ fs.readdirSync(__dirname)
       file !== 'startup' // Exclude startup directory itself
   )
   .forEach(file => {
+    logger.debug(`Loading app model: ${file}`);
     const model = require(path.join(__dirname, file))(
       sequelize,
       Sequelize.DataTypes

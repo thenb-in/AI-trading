@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../../services/startup/ApiService';
@@ -11,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { setUserData } = useDataContext();
   
   const handleChange = (e) => {
@@ -38,8 +39,9 @@ export default function Login() {
       setUserData(user);
       toast.success('Login successful!');
       
-      // Navigate to admin route
-      navigate('/admin');
+      // Navigate to originally requested route if available (preserve search)
+      const redirectTo = location.state?.from || '/admin';
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       const message = err.response?.data?.error || err.response?.error || err.error || 'Login failed. Please check your credentials.';
       setError(message);

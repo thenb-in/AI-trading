@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission } = require('../../models');
+const { User, Company, Role, Permission, DataAccess ,MultiCompanyModule} = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -68,6 +68,9 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb      // inherits from company
   });
+
+  await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId });
+
   return user;
 };
 
@@ -202,10 +205,11 @@ const getAllUsers = async (companyId) => {
   }
   const users = await User.findAll({
     where: { isActive: true, companyId: companyId },
-    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved' ,'mobileApp','desktopWeb','mobileWeb' ],
+    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved' ,'mobileApp','desktopWeb','mobileWeb','username' ],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
-      { model: Role, as: 'role', attributes: ['name'] }
+      { model: Role, as: 'role', attributes: ['id','name'] },
+      { model: DataAccess, as: 'dataAccess', attributes: ['level','scope'], required: false, where: { companyId } }
     ],
     order: [['last_active', 'DESC']]
   });

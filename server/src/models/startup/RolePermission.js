@@ -26,8 +26,6 @@ module.exports = (sequelize) => {
     tableName: 'nbnext_role_permission_mapping',
     underscored: true,
     timestamps: true,
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
     indexes: [
       {
         unique: true,

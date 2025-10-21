@@ -51,7 +51,8 @@ export const DataProvider = ({ children }) => {
 
         // Redirect from login page if already authenticated
         if (isLoginPage && user) {
-          navigate("/admin");
+          const redirectTo = location.state?.from || "/admin";
+          navigate(redirectTo, { replace: true });
         }
       } catch (err) {
         console.error("Error fetching user:", err);
@@ -60,7 +61,7 @@ export const DataProvider = ({ children }) => {
         
         // Only redirect to login if not on a public path and not already on the login page
         if (!isPublicPath && !isLoginPage) {
-          navigate("/");
+          navigate("/", { state: { from: location }, replace: true });
         }
       } finally {
         setLoading(false);
