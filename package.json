@@ -44,6 +44,7 @@
     "dev-utils:test": "node scripts/dev-utils.js test",
     "dev-utils:build": "node scripts/dev-utils.js build",
     "dev-utils:help": "node scripts/dev-utils.js help",
+    "migrate": "node scripts/migrate.js",
     "prepare": "husky"
   },
   "keywords": [],
