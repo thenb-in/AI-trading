@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission, DataAccess ,MultiCompanyModule} = require('../../models');
+const { User, Company, Role, Permission, UserProfile, MultiCompanyModule } = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -8,11 +8,11 @@ const {
   revokeRefreshToken
 } = require('../../utils/startup/authUtils');
 
-const signup = async ({ phone, username, password, name, companyId, role }) => {
+const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
 
-  const existingUser = await User.findOne({ where: { phone } });
-  logger.info(`Checking if user already exists: ${phone} - Found: ${!!existingUser}`);
+  const existingUser = await User.findOne({ where: { username } });
+  logger.info(`Checking if user already exists: ${username} - Found: ${!!existingUser}`);
 
   if (existingUser) {
     // Check if user is inactive
@@ -60,16 +60,16 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
     password: hashedPassword,
     name,
     companyId,
-    roleId: roleInstance? roleInstance.id : null,
+    roleId: roleInstance ? roleInstance.id : null,
     isActive: true,
     refresh_token: null,
     is_approved: false,
     mobileApp: company.mobileApp,      // inherits from company
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb      // inherits from company
-  });
+  }, { transaction });
 
-  await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId });
+  await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId }, { transaction });
 
   return user;
 };
@@ -205,11 +205,11 @@ const getAllUsers = async (companyId) => {
   }
   const users = await User.findAll({
     where: { isActive: true, companyId: companyId },
-    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved' ,'mobileApp','desktopWeb','mobileWeb','username' ],
+    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
-      { model: Role, as: 'role', attributes: ['id','name'] },
-      { model: DataAccess, as: 'dataAccess', attributes: ['level','scope'], required: false, where: { companyId } }
+      { model: Role, as: 'role', attributes: ['id', 'name'] },
+      { model: UserProfile, as: 'userProfile', attributes: ['level', 'scope'], required: false, where: { companyId } }
     ],
     order: [['last_active', 'DESC']]
   });
@@ -220,7 +220,7 @@ const getAllUsers = async (companyId) => {
     order: [['name', 'ASC']]
   });
 
-  return { users, roles  };
+  return { users, roles };
 };
 
 const getUserById = async (userId) => {
@@ -297,4 +297,4 @@ const getAllRoles = async () => {
   return roles;
 };
 //  todo : remove the use rservices from here and add them in use servuce.
-module.exports = {signup, loginUser,resetPassword,approveUser,getAllUsers,getUserById,getCurrentUser,getAllRoles};
+module.exports = { signup, loginUser, resetPassword, approveUser, getAllUsers, getUserById, getCurrentUser, getAllRoles };

@@ -40,7 +40,7 @@ const resetPasswordValidation = [
 const signup = async (req, res) => {
   const { phone, username, password, name, companyId, role } = req.body;
   try {
-    const user = await authService.signup({ phone, username, password, name, companyId, role });
+    const user = await authService.signup(username, password, companyId, { phone, name, role });
     res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
   } catch (error) {
     if (error.message === `Phone number already exists ${phone}.`) {

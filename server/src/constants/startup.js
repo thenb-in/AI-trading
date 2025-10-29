@@ -57,22 +57,12 @@ const VALIDATION_CONSTANTS = {
 const PARSE_INT_RADIX = 10;
 const PRODUCTION_ENV = 'production';
 
-// Role Constants
-const ROLE_CONSTANTS = {
-  SADMIN: 'sadmin',
-  ADMIN: 'admin',
-  USER: 'user',
-  SADMIN_DESCRIPTION: 'Super Administrator with full system access',
-  ADMIN_DESCRIPTION: 'Administrator with elevated permissions',
-  USER_DESCRIPTION: 'Standard user with basic access'
-};
+
 
 
 // Setup Script Constants
 const SETUP_CONSTANTS = {
   DEFAULT_COMPANY_NAME: 'default',
-  DEFAULT_PHONE: '1234567890',
-  YES_ANSWER: 'yes',
   BCRYPT_ROUNDS: 10
 };
 
@@ -86,6 +76,5 @@ module.exports = {
   VALIDATION_CONSTANTS,
   PARSE_INT_RADIX,
   PRODUCTION_ENV,
-  ROLE_CONSTANTS,
   SETUP_CONSTANTS
 };

@@ -1,58 +1,67 @@
-const APPROVE_USER = 'Approve User';
-const APPROVE_USER_DESC = 'Permission to approve new users';
+const MODULE_PERMISSION_CONSTANTS = {
+  APPROVE_USER: {
+    name: 'Approve User',
+    description: 'Permission to approve new users'
+  },
+  DEACTIVATE_USER: {
+    name: 'Deactivate User',
+    description: 'Permission to deactivate users'
+  },
+  GET_COMPANY_SETTINGS: {
+    name: 'Get Company Settings',
+    description: 'Permission to view company settings'
+  },
+  ADD_ROLE: {
+    name: 'Add Role',
+    description: 'Permission to add a new role'
+  },
+  LINK_ROLE_PERMISSION: {
+    name: 'Link Role Permission',
+    description: 'Permission to map permissions to roles'
+  },
+  IS_ADMIN: {
+    name: 'isAdmin',
+    description: 'Flag for admin-level access'
+  },
+  VIEW_COMPANY_SETTINGS: {
+    name: 'View Company Settings',
+    description: 'Permission to view company settings'
+  },
+  VIEW_ADMIN_LAYOUT: {
+    name: 'View AdminLayout',
+    description: 'Permission to access admin layout view'
+  },
+  HAS_ROLE_PERMISSION: {
+    name: 'Has Role Permission',
+    description: 'Permission for role and permission modules'
+  }
+};
 
-const DEACTIVATE_USER = 'Deactivate User';
-const DEACTIVATE_USER_DESC = 'Permission to deactivate users';
 
-const GET_COMPANY_SETTINGS = 'Get Company Settings';
-const GET_COMPANY_SETTINGS_DESC = 'Permission to view company settings';
-
-const UPDATE_COMPANY_SETTINGS = 'Update Company Settings';
-const UPDATE_COMPANY_SETTINGS_DESC = 'Permission to update company settings';
-
-const CREATE_COMPANY = 'Create Company';
-const CREATE_COMPANY_DESC = 'Permission to create a new company';
-
-const ADD_ROLE = 'Add Role';
-const ADD_ROLE_DESC = 'Permission to add a new role';
-
-const LINK_ROLE_PERMISSION = 'Link Role Permission';
-const LINK_ROLE_PERMISSION_DESC = 'Permission to map permissions to roles';
-
-const IS_ADMIN = 'isAdmin';
-const IS_ADMIN_DESC = 'Flag for admin-level access';
-
-const VIEW_COMPANY_SETTINGS = 'View Company Settings';
-const VIEW_COMPANY_SETTINGS_DESC = 'Permission to view company settings';
-
-const VIEW_ADMIN_LAYOUT = 'View AdminLayout';
-const VIEW_ADMIN_LAYOUT_DESC = 'Permission to access admin layout view';
-
-const HAS_ROLE_PERMISSION = 'has_role_permission';
-const HAS_ROLE_PERMISSION_DESC = 'Permission for role and permission modules';
-
+const SYSTEM_ROLE_CONSTANTS = {
+  SUPER_ADMIN: {
+    name: 'Super Admin',
+    description: 'Super Admin role'
+  },
+  ADMIN: {
+    name: 'Admin',
+    description: 'Admin role'
+  },
+  USER: {
+    name: 'User',
+    description: 'User role'
+  },
+  COMPANY_ADMIN: {
+    name: 'Company Admin',
+    description: 'Company Admin role'
+  },
+  COMPANY_USER: {
+    name: 'Company User',
+    description: 'Company User role'
+  }
+};
 
 module.exports = {
-  APPROVE_USER,
-  APPROVE_USER_DESC,
-  DEACTIVATE_USER,
-  DEACTIVATE_USER_DESC,
-  CREATE_COMPANY,
-  CREATE_COMPANY_DESC,
-  GET_COMPANY_SETTINGS,
-  GET_COMPANY_SETTINGS_DESC,
-  UPDATE_COMPANY_SETTINGS,
-  UPDATE_COMPANY_SETTINGS_DESC,
-  ADD_ROLE,
-  ADD_ROLE_DESC,
-  LINK_ROLE_PERMISSION,
-  LINK_ROLE_PERMISSION_DESC,
-  IS_ADMIN,
-  IS_ADMIN_DESC,
-  VIEW_COMPANY_SETTINGS,
-  VIEW_COMPANY_SETTINGS_DESC,
-  VIEW_ADMIN_LAYOUT,
-  VIEW_ADMIN_LAYOUT_DESC,
-  HAS_ROLE_PERMISSION,
-  HAS_ROLE_PERMISSION_DESC
+  MODULE_PERMISSION_CONSTANTS,
+  SYSTEM_ROLE_CONSTANTS
 };

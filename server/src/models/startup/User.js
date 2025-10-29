@@ -8,8 +8,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     phone: {
       type: DataTypes.STRING,
-      unique: true,
-      allowNull: false
+      // unique: true,
+      allowNull: true
     },
     username: {
       type: DataTypes.STRING,
@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     refresh_token: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true
     },
     is_approved: {
@@ -79,7 +79,7 @@ module.exports = (sequelize, DataTypes) => {
     User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
 
     // Data access configuration per user (same company scope)
-    User.hasOne(models.DataAccess, { foreignKey: 'userId', as: 'dataAccess' });
+    User.hasOne(models.UserProfile, { foreignKey: 'userId', as: 'userProfile' });
   };
 
   return User;

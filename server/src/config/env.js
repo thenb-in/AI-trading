@@ -1,5 +1,5 @@
 // Centralized environment configuration
-const { PARSE_INT_RADIX, PRODUCTION_ENV } = require('../constants');
+const { PARSE_INT_RADIX, PRODUCTION_ENV } = require('../constants/startup');
 // This file sets up dotenv-safe once and exports the configuration
 require('dotenv-safe').config({
   allowEmptyValues: true,
@@ -26,6 +26,8 @@ module.exports = {
   JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION,
   MAX_JWT_ACCESS_EXPIRATION_MS: parseInt(process.env.MAX_JWT_ACCESS_EXPIRATION_MS, PARSE_INT_RADIX),
   MAX_JWT_REFRESH_EXPIRATION_MS: parseInt(process.env.MAX_JWT_REFRESH_EXPIRATION_MS, PARSE_INT_RADIX),
+
+  DEFAULT_COMPANY_NAME: process.env.DEFAULT_COMPANY_NAME,
 
   // Helper functions
   isProduction,
