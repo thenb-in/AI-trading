@@ -8,6 +8,10 @@ module.exports = (sequelize, DataTypes) => {
     userId: {
       type: DataTypes.UUID,
       allowNull: false
+    },
+    currentCompany: {
+      type: DataTypes.UUID,
+      allowNull: false
     }
   }, {
     tableName: 'nbnext_user_profiles',

@@ -3,14 +3,14 @@ const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
-const { GET_COMPANY_SETTINGS, UPDATE_COMPANY_SETTINGS, CREATE_COMPANY } = require('../../constants/permissions');
+const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 const env = require('../../config/env');
 const { User } = require('../../models');
 
 const companyController = {
   async getCompanySettings(req, res) {
     try {
-      const requiredPermission = GET_COMPANY_SETTINGS;
+      const requiredPermission = MODULE_PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -26,7 +26,7 @@ const companyController = {
 
   async updateCompanySettings(req, res) {
     try {
-      const requiredPermission = UPDATE_COMPANY_SETTINGS;
+      const requiredPermission = MODULE_PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -53,7 +53,7 @@ const companyController = {
 
   async createCompany(req, res) {
     try {
-      const requiredPermission = CREATE_COMPANY;
+      const requiredPermission = MODULE_PERMISSION_CONSTANTS.CREATE_COMPANY.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });

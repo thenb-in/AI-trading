@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission, MultiCompanyModule } = require('../../models');
+const { User, Company, Role, Permission, MultiCompanyModule,UserProfile } = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -68,92 +68,77 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb      // inherits from company
   }, { transaction });
-
+  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId }, { transaction });
   await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId }, { transaction });
 
   return user;
 };
 
-const loginUser = async (credentials) => {
-  const { username, password } = credentials;
-  logger.info(`User login attempt: ${username}`);
-
-  // Fetch user with relations including role and permissions
-  logger.info(`Looking up user by username: ${username}`);
-  const user = await User.findOne({
+const findUserWithRole = async (username) => {
+  return await User.findOne({
     where: { username },
     include: [
-      {
-        model: Company,
-        as: 'company',
-        attributes: ['id', 'name']
-      },
       {
         model: Role,
         as: 'role',
         include: [{
           model: Permission,
           as: 'permissions',
-          through: { attributes: [] }, // Exclude join table attributes
+          through: { attributes: [] },
           attributes: ['id', 'name', 'description']
         }]
       }
     ],
-    attributes: {
-      exclude: ['refresh_token'] // Exclude sensitive fields
-    }
+    attributes: { exclude: ['refresh_token'] }
   });
+};
+
+const validateUserStatusAndPassword = async (user, password, username) => {
   if (!user) {
     logger.warn(`Login failed: User not found: ${username}`);
     throw { status: 401, message: 'User not found' };
   }
-
   logger.info(`Verifying user password: ${user.id}`);
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     logger.warn(`Login failed: Invalid password: ${username}`);
     throw { status: 401, message: 'Invalid credentials' };
   }
-
   if (!user.isActive) {
     logger.warn(`Login failed: Account not found: ${user.id}`);
-    throw {
-      status: 403,
-      message: 'Account not found'
-    };
+    throw { status: 403, message: 'Account not found' };
   }
-
   if (!user.is_approved) {
     logger.warn(`Login failed: Account not approved: ${user.id}`);
-    throw {
-      status: 403,
-      message: 'Your account is pending admin approval. Please try again later.'
-    };
+    throw { status: 403, message: 'Your account is pending admin approval. Please try again later.' };
   }
+};
 
-  logger.info(`User login successful: ${user.id}`);
-
-  // Generate tokens using utility functions
+const issueTokensAndPersist = async (user) => {
   const accessToken = generateAccessToken(user);
   logger.info(`Access token generated: ${accessToken}`);
-
-
   const refreshToken = await generateRefreshToken(user);
   logger.info(`Refresh token generated: ${refreshToken}`);
-
-  // Update user with refresh token
   await User.update(
     { refresh_token: refreshToken, last_active: new Date() },
     { where: { id: user.id } }
   );
-  // Prepare user data for response
-  const userData = user.get({ plain: true });
+  return { accessToken, refreshToken };
+};
 
-  // Remove sensitive data
+const getActiveCompanyForUser = async (user) => {
+  const profile = await UserProfile.findOne({ where: { userId: user.id } });
+  const activeCompanyId = profile?.currentCompany || user.companyId;
+  if (!activeCompanyId) {
+    return null;
+  }
+  return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] });
+};
+
+const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
+  const userData = user.get({ plain: true });
   delete userData.password;
   delete userData.refresh_token;
-
-  // Structure the response
   return {
     user: {
       id: userData.id,
@@ -161,7 +146,7 @@ const loginUser = async (credentials) => {
       username: userData.username,
       name: userData.name,
       isActive: userData.isActive,
-      company: userData.company,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
       isSadmin: userData.isSadmin,
       role: userData.role ? {
         id: userData.role.id,
@@ -173,6 +158,18 @@ const loginUser = async (credentials) => {
     accessToken,
     refreshToken
   };
+};
+
+const loginUser = async (credentials) => {
+  const { username, password } = credentials;
+  logger.info(`User login attempt: ${username}`);
+  logger.info(`Looking up user by username: ${username}`);
+  const user = await findUserWithRole(username);
+  await validateUserStatusAndPassword(user, password, username);
+  logger.info(`User login successful: ${user.id}`);
+  const { accessToken, refreshToken } = await issueTokensAndPersist(user);
+  const activeCompany = await getActiveCompanyForUser(user);
+  return buildLoginPayload(user, activeCompany, accessToken, refreshToken);
 };
 
 
@@ -206,11 +203,6 @@ const getCurrentUser = async (userId) => {
     const user = await User.findByPk(userId, {
       include: [
         {
-          model: Company,
-          as: 'company',
-          attributes: ['id', 'name']
-        },
-        {
           model: Role,
           as: 'role',
           include: [{
@@ -231,6 +223,12 @@ const getCurrentUser = async (userId) => {
       throw new Error(`User account is deactivated ${userId}.`);
     }
 
+    const profile = await UserProfile.findOne({ where: { userId } });
+    const activeCompanyId = profile?.currentCompany || user.companyId;
+    const activeCompany = activeCompanyId
+      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] })
+      : null;
+
     return {
       id: user.id,
       mobileApp: user.mobileApp,
@@ -238,11 +236,11 @@ const getCurrentUser = async (userId) => {
       mobileWeb: user.mobileWeb,
       phone: user.phone,
       name: user.name,
-      companyId: user.companyId,
+      companyId: activeCompanyId || null,
       roleId: user.roleId,
       isActive: user.isActive,
       is_approved: user.is_approved,
-      company: user.company,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
       isSadmin: user.isSadmin,
       role: user.role ? {
         id: user.role.id,

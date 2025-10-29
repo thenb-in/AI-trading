@@ -1,5 +1,5 @@
 // services/companyService.js
-const { Company, MultiCompanyModule, User } = require('../../models');
+const { Company, MultiCompanyModule, User,UserProfile } = require('../../models');
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
 
@@ -100,6 +100,10 @@ const companyService = {
     user.desktopWeb = company.desktopWeb;
     user.mobileWeb = company.mobileWeb;
     // await user.save();
+    await UserProfile.update(
+      { currentCompany: companyId },
+      { where: { userId } }
+    );
     return {
       ...user.toJSON(),
       company: {
