@@ -9,6 +9,7 @@ const CompanyCard = ({ company, isActive, onSwitch, loading }) => {
         </div>
         <div>
           <div className="font-semibold text-gray-900">{company.name}</div>
+          <div className="text-xs text-gray-500 mt-0.5">{company.id}</div>
           {isActive ? (
             <span className="inline-flex items-center text-xs mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
           ) : null}
@@ -37,7 +38,6 @@ CompanyCard.propTypes = {
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
-  console.log('activeCompanyId', activeCompanyId);
   if (!companies?.length) {
     return (
       <div className="text-gray-500 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 text-center">
@@ -59,7 +59,7 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
 
   <ul className="grid gap-3">
     {companies.map((c) => {
-      const isActive = (activeCompanyName && c.name === activeCompanyName);
+      const isActive = (activeCompanyId && c.id === activeCompanyId) || (activeCompanyName && c.name === activeCompanyName);
       return (
       <CompanyCard
         key={c.id}
