@@ -34,7 +34,7 @@ const createPermission = async (req, res) => {
   // }
   try {
     const { name, description ,type} = req.body;
-    const newPermission = await adminService.createPermission(name, description, type);
+    const newPermission = await adminService.createPermission(name, name, description, type);
     res.json({
       success: true,
       message: `Permission "${newPermission.name}" created successfully!`,

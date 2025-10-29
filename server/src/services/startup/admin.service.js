@@ -62,7 +62,7 @@ const createRole = async (name, description) => {
   return newRole;
 };
 
-const createPermission = async (name, description,type) => {
+const createPermission = async (name, display_name, description,type) => {
   // Input validation
   if (!name || typeof name !== 'string') {
     logger.warn(`Name is invalid (${name}, ${typeof name}) - Must be a string`);
@@ -119,6 +119,7 @@ const createPermission = async (name, description,type) => {
   // Create the permission
   const newPermission = await Permission.create({
     name: trimmedName,
+    display_name: display_name,
     description: trimmedDescription,
     type: type
   });

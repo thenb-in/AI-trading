@@ -68,6 +68,7 @@ async function createCompany(transaction, userRole) {
 async function createPermissions(transaction) {
   const permissionsArray = Object.values(MODULE_PERMISSION_CONSTANTS).map((permission) => ({
     name: permission.name,
+    display_name: permission.display_name,
     description: permission.description,
     type: 'module'
   }));
@@ -75,7 +76,8 @@ async function createPermissions(transaction) {
   // find permissions which are not already created
   const existingPermissions = await db.Permission.findAll({ where: { name: { [Op.in]: permissionsArray.map((p) => p.name) } } });
   const existingPermissionsNames = existingPermissions.map((p) => p.name);
-  const permissionsToCreate = permissionsArray.filter((p) => !existingPermissionsNames.includes(p.name));
+  const permissionsToCreate = permissionsArray.filter((p) => !existingPermissionsNames.includes(p.name)).filter((p) => !!p.name);
+  logger.info(`Permissions to create: ${permissionsToCreate.map((p) => p.name).join(', ')}`);
   if (permissionsToCreate.length > 0) {
     const permissions = await db.Permission.bulkCreate(permissionsToCreate, {
       transaction,
