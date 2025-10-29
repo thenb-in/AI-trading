@@ -178,7 +178,7 @@ async function main() {
     logger.info(`Setup completed successfully for ${company.name}!`);
     rl.close();
   } catch (err) {
-    logger.error(`Error occurred during setup: ${err}`);
+    logger.error(`Error occurred during setup: ${err.message} - Stack: ${err.stack}`);
     await transaction.rollback();
     rl.close();
   }

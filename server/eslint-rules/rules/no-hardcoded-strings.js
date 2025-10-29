@@ -12,7 +12,7 @@
  */
 
 const { isConstantsFile, shouldSkipFile, shouldSkipString } = require('../utils/fileUtils');
-const { analyzeStringContent, isLoggerCall, isErrorConstructorCall } = require('../utils/stringUtils');
+const { analyzeStringContent, isLoggerCall, isErrorConstructorCall, convertBinaryExpressionToTemplateLiteral, isStringConcatenation } = require('../utils/stringUtils');
 
 /**
  * Check if a string literal should be reported as hardcoded
@@ -74,7 +74,12 @@ function checkLoggerCall(node, context) {
     if (analysis.type === 'literal') {
       context.report({
         node,
-        messageId: 'loggerOnlyLiteral'
+        messageId: 'loggerOnlyLiteral',
+        fix(fixer) {
+          // Convert string literal to template literal
+          const templateLiteral = '`' + analysis.value + '`';
+          return fixer.replaceText(arg, templateLiteral);
+        }
       });
     } else if (analysis.type === 'variable') {
       context.report({
@@ -99,7 +104,12 @@ function checkErrorConstructorCall(node, context) {
     if (analysis.type === 'literal') {
       context.report({
         node,
-        messageId: 'hardcodedString'
+        messageId: 'hardcodedString',
+        fix(fixer) {
+          // Convert string literal to template literal
+          const templateLiteral = '`' + analysis.value + '`';
+          return fixer.replaceText(arg, templateLiteral);
+        }
       });
     }
     // Variables and mixed strings are allowed in error constructors
@@ -113,15 +123,63 @@ function checkErrorConstructorCall(node, context) {
  */
 function checkThrowStatement(node, context) {
   if (node.argument) {
+    // If throwing a new Error() call, let the CallExpression handler deal with it
+    if (node.argument.type === 'NewExpression' &&
+        node.argument.callee &&
+        node.argument.callee.name === 'Error') {
+      // Let the CallExpression handler process this Error constructor call
+      return;
+    }
+
     const analysis = analyzeStringContent(node.argument, context);
 
     if (analysis.type === 'literal') {
       context.report({
         node,
-        messageId: 'hardcodedString'
+        messageId: 'hardcodedString',
+        fix(fixer) {
+          // Convert string literal to template literal
+          const templateLiteral = '`' + analysis.value + '`';
+          return fixer.replaceText(node.argument, templateLiteral);
+        }
       });
     }
     // Variables and mixed strings are allowed in throw statements
+  }
+}
+
+/**
+ * Check binary expressions for string concatenation that can be converted to template literals
+ * @param {Object} node - The AST node to check
+ * @param {string} filename - The filename being checked
+ * @param {Object} context - ESLint context
+ */
+function checkBinaryExpression(node, filename, context) {
+  // Skip if in constants folder or file should be skipped
+  if (isConstantsFile(filename) || shouldSkipFile(filename)) {
+    return;
+  }
+
+  // Only check binary expressions with + operator
+  if (node.type === 'BinaryExpression' && node.operator === '+') {
+    // First check if this is actually string concatenation
+    if (!isStringConcatenation(node, context)) {
+      return; // Skip mathematical operations
+    }
+
+    const analysis = analyzeStringContent(node, context);
+
+    // If it's a mixed expression or has any string content, offer to convert to template literal
+    if (analysis.type === 'mixed' || analysis.type === 'variable') {
+      context.report({
+        node,
+        messageId: 'convertToTemplateLiteral',
+        fix(fixer) {
+          const templateLiteral = convertBinaryExpressionToTemplateLiteral(node, context);
+          return fixer.replaceText(node, templateLiteral);
+        }
+      });
+    }
   }
 }
 
@@ -134,12 +192,13 @@ module.exports = {
         category: 'Best Practices',
         recommended: true
       },
-      fixable: null,
+      fixable: 'code',
       schema: [],
       messages: {
         hardcodedString: 'Hardcoded string detected. Move to constants folder or use variables.',
         loggerOnlyLiteral: 'Logger/error calls must include variables. Use template literals with variables.',
-        loggerOnlyVariable: 'Logger/error calls must include literals. Use template literals with both literals and variables.'
+        loggerOnlyVariable: 'Logger/error calls must include literals. Use template literals with both literals and variables.',
+        convertToTemplateLiteral: 'Convert string concatenation to template literal for better readability.'
       }
     },
     create(context) {
@@ -162,9 +221,19 @@ module.exports = {
           checkErrorConstructorCall(node, context);
         },
 
+        // Check new Error() constructor calls
+        NewExpression(node) {
+          checkErrorConstructorCall(node, context);
+        },
+
         // Check throw statements
         ThrowStatement(node) {
           checkThrowStatement(node, context);
+        },
+
+        // Check binary expressions for string concatenation
+        BinaryExpression(node) {
+          checkBinaryExpression(node, filename, context);
         }
       };
     }

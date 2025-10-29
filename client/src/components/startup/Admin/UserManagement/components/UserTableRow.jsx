@@ -13,7 +13,7 @@ const UserTableRow = ({
   formatLastActive,
   handleRoleChange,
   handleDeviceOptionUpdate,
-  renderDataAccess
+  extraColumns = []
 }) => {
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
@@ -119,14 +119,12 @@ const UserTableRow = ({
         )}
       </td>
 
-      {/* Data Access column */}
-      <td className="px-6 py-4 whitespace-nowrap">
-        {typeof renderDataAccess === 'function' ? (
-          renderDataAccess()
-        ) : (
-          <span className="text-sm text-gray-400">Not configured</span>
-        )}
-      </td>
+      {/* Extra columns injected from app level */}
+      {extraColumns.map((col) => (
+        <td key={col.key || col.header} className="px-6 py-4 whitespace-nowrap">
+          {col.render(user)}
+        </td>
+      ))}
 
       {/* Device access column - boolean flags */}
       <td className="px-6 py-4 whitespace-nowrap" ref={deviceRef}>
@@ -258,7 +256,7 @@ UserTableRow.propTypes = {
   formatLastActive: PropTypes.func.isRequired,
   handleRoleChange: PropTypes.func.isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
-  renderDataAccess: PropTypes.func
+  extraColumns: PropTypes.array
 };
 
 export default memo(UserTableRow);

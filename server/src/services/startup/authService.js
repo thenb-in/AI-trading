@@ -26,7 +26,7 @@ const signup = async ({ phone, username, password, name, companyId, role }) => {
       return existingUser;
     } else {
       // User is already active, throw error
-      throw new Error(`Phone number already exists ${phone}.`);
+      // throw new Error(`Phone number already exists ${phone}.`);
     }
   }
 
@@ -286,7 +286,7 @@ const getCurrentUser = async (userId) => {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       throw new Error(`Invalid or expired token ${userId}.`);
     }
-    throw `Error in getting current user ${userId} ${error.message} ${error.stack}`;
+    throw new Error(`Error in getting current user ${userId} ${error.message} ${error.stack}`);
   }
 };
 

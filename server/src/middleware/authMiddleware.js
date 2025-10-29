@@ -52,6 +52,7 @@ const handleRefreshToken = async (refreshToken) => {
 
       const accessMax = parseInt(env.MAX_JWT_ACCESS_EXPIRATION_MS || 300000);
       const refreshMax = parseInt(env.MAX_JWT_REFRESH_EXPIRATION_MS || 604800000);
+      logger.debug(`Cid:${decoded.company_id}`);
       return {
         user: { id: user.id, company_id: decoded.company_id },
         tokens: { access: newAccess, refresh: newRefresh },
@@ -65,7 +66,7 @@ const handleRefreshToken = async (refreshToken) => {
       if (!tx.finished){
         await tx.rollback();
       }
-      throw `Error in handling refresh token ${userId} ${e.message} ${e.stack}`;
+      throw new Error(`Error in handling refresh token ${userId} ${e.message} ${e.stack}`);
     }
   })();
 

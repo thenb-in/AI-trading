@@ -16,7 +16,8 @@ const UserTable = ({
   deselectAllUsersFromTable,
   handleRoleChange,
   // deviceAccessOptions,
-  handleDeviceOptionUpdate
+  handleDeviceOptionUpdate,
+  extraColumns = []
 }) => {
   const allUsersInTableSelected = users.length > 0 && users.every(user => selectedUsers.includes(user.id));
 
@@ -63,6 +64,9 @@ const UserTable = ({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                {extraColumns.map((col) => (
+                  <th key={col.key || col.header} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{col.header}</th>
+                ))}
                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Access</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
@@ -83,6 +87,7 @@ const UserTable = ({
                   handleRoleChange={handleRoleChange}
                   // deviceAccessOptions={deviceAccessOptions}
                   handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+                  extraColumns={extraColumns}
                 />
               ))}
             </tbody>
@@ -122,7 +127,12 @@ UserTable.propTypes = {
   deselectAllUsersFromTable: PropTypes.func.isRequired,
   handleRoleChange: PropTypes.func.isRequired,
   // deviceAccessOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
-  handleDeviceOptionUpdate: PropTypes.func.isRequired
+  handleDeviceOptionUpdate: PropTypes.func.isRequired,
+  extraColumns: PropTypes.arrayOf(PropTypes.shape({
+    key: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    header: PropTypes.string.isRequired,
+    render: PropTypes.func.isRequired
+  }))
 };
 
 export default UserTable;

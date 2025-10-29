@@ -99,7 +99,7 @@ const login = async (req, res) => {
     if (error.message === 'Your account is pending admin approval. Please try again later.') {
       return res.status(403).json({ error: error.message });
     }
-    logger.error('Login error' + error.message + ':' + error.stack);
+    logger.error(`Login error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -113,7 +113,7 @@ const resetPassword = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error('Reset password error' + error.message + ':' + error.stack);
+    logger.error(`Reset password error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -134,7 +134,7 @@ const approveUser = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error('Approve user error' + error.message + ':' + error.stack);
+    logger.error(`Approve user error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };

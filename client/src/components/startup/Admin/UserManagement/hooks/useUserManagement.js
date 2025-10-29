@@ -4,7 +4,6 @@ import ApiService from "../../../../../services/startup/ApiService";
 export const useUserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
-  // const [deviceAccessOptions, setDeviceAccessOptions] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +25,6 @@ export const useUserManagement = () => {
         const usersResponse = await ApiService.getAllUsers();
         setUsers(usersResponse.data.users);
         setRoles(usersResponse.data.roles);
-        // setDeviceAccessOptions(usersResponse.data.deviceAccessOptions);
         setError("");
       } catch (err) {
         setError(err.message || "Failed to load users");
@@ -34,6 +32,7 @@ export const useUserManagement = () => {
         setLoading(false);
       }
     };
+
 
   useEffect(() => {
     fetchData();
@@ -214,10 +213,10 @@ const handleDeviceOptionUpdate = async (userId, field, value) => {
     [filteredUsers]
   );
 
+
   return {
     users,
     roles,
-    // deviceAccessOptions,
     error,
     loading,
     searchQuery,
@@ -242,6 +241,6 @@ const handleDeviceOptionUpdate = async (userId, field, value) => {
     deselectAllUsersFromTable,
     showConfirmation,
     showBulkDeleteConfirmation,
-    handleDeviceOptionUpdate
+    handleDeviceOptionUpdate,
   };
 };

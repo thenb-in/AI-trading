@@ -25,7 +25,13 @@ export const useMultiCompanyModule = () => {
     try {
       const res = await ApiService.getUserCompanies();
       const list = res?.data?.companies || [];
-      setCompanies(list);
+      // Sort companies alphabetically by name
+      const sortedCompanies = list.sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      setCompanies(sortedCompanies);
     } catch (e) {
       console.log(e)
       setError(e?.message || 'Failed to load companies');

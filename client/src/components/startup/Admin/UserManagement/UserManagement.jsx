@@ -3,6 +3,7 @@ import { UserPlus, UserMinus, Search, Users, Menu, Trash2 } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '../../../../context/startup/useDataContext';
 import UserTable from './components/UserTable';
+import { getUserManagementExtraColumns } from '../../../userManagementExtraColumns';
 import ConfirmationDialog from './components/ConfirmationDialog';
 import BulkDeleteConfirmationDialog from './components/BulkDeleteConfirmationDialog';
 
@@ -132,6 +133,7 @@ export default function UserManagement() {
         handleRoleChange={handleRoleChange}
       //  deviceAccessOptions ={deviceAccessOptions}
         handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+        extraColumns={getUserManagementExtraColumns()}
       />
 
       <div className="mb-4">
@@ -142,7 +144,7 @@ export default function UserManagement() {
         {showInactive && (
           <UserTable
             users={inactiveUsers}
-              roles={roles}
+            roles={roles}
             title="Inactive Users"
             emptyMessage="No inactive users found."
             statusColor="bg-red-100"
@@ -155,6 +157,7 @@ export default function UserManagement() {
             handleRoleChange={handleRoleChange}
             // deviceAccessOptions={deviceAccessOptions}
             handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+            extraColumns={getUserManagementExtraColumns()}
           />
         )}
       </div>
@@ -167,7 +170,7 @@ export default function UserManagement() {
         {showAllUsers && (
           <UserTable
             users={filteredUsers}
-              roles={roles}
+            roles={roles}
             title="All Users"
             emptyMessage="No users found."
             statusColor="bg-gray-100"
@@ -180,6 +183,7 @@ export default function UserManagement() {
             handleRoleChange={handleRoleChange}
             // deviceAccessOptions={deviceAccessOptions}
             handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+            extraColumns={getUserManagementExtraColumns()}
           />
         )}
       </div>

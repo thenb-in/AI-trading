@@ -33,7 +33,8 @@ const STORAGE_KEYS = {
   USER_DATA: 'userData',
   THEME: 'theme',
   LANGUAGE: 'language',
-  ACTIVE_COMPANY_NAME: 'activeCompanyName'
+  ACTIVE_COMPANY_NAME: 'activeCompanyName',
+  REPORT_FILTERS_DEBUG: 'reportFiltersDebug'
 };
 
 // Route Constants

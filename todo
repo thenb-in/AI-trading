@@ -24,3 +24,6 @@
 optional: no console for browser
 pre-commit hook: to not be in pre-push hook
 - Remove ability to push changes to startup files
+
+- clear multi-company setup when logging in, and logging out as well
+

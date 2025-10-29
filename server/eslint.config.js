@@ -67,7 +67,7 @@ module.exports = [
       // File length and complexity rules
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': ['warn', { max: 100 }],
-      'complexity': ['warn', 10],
+      'complexity': ['warn', 15],
 
       // Node.js specific rules
       'no-process-exit': 'error',

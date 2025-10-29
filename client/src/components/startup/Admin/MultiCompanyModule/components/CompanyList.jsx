@@ -37,7 +37,7 @@ CompanyCard.propTypes = {
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
-  console.log('activeCompany ID', activeCompanyId);
+  console.log('activeCompanyId', activeCompanyId);
   if (!companies?.length) {
     return (
       <div className="text-gray-500 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 text-center">

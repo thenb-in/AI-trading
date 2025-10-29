@@ -2,14 +2,17 @@ import { useState } from "react";
 import AppSideBar from "../../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
+import { useDebugMode } from "../../../hooks/useDebugMode";
 
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { hamburgerMenu } = useDataContext();
   const [isMobileView] = useState(window.innerWidth < 768);
-
- 
+  
+  // Initialize global debug mode to ensure Alt+D keyboard handler is always active
+  const debugMode = useDebugMode();
+  console.log('[ADMIN LAYOUT] Debug mode initialized:', debugMode);
 
   const renderOutlet = () => (
     <div className="min-h-screen bg-gray-50" style={{ overflowX: "auto" }}>
