@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const logger = require('../../../logger');
 const env = require('../../config/env');
+const userService = require('../../services/startup/userService');
 
 const signupValidation = [
   body('phone').isMobilePhone().withMessage(`Invalid phone number for signup ${body('phone').value}.`),
@@ -142,7 +143,7 @@ const approveUser = async (req, res) => {
 const getAllUsers = async (req, res) => {
   try {
     const companyId = req.user.company_id;
-    const users = await authService.getAllUsers(companyId);
+    const users = await userService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
     logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);

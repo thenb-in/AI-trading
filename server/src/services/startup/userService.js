@@ -1,5 +1,6 @@
 const db = require('../../models');
 const { Op } = require('sequelize');
+const { User, Company, Role, UserProfile } = require('../../models');
 
 
 async function deleteUser(userId) {
@@ -82,6 +83,7 @@ async function updateUserRole(userId, newRoleId) {
   user.roleId = newRoleId;
   await user.save();
 }
+
 async function updateUserDeviceAccess(userId, deviceAccess) {
   const user = await db.User.findByPk(userId);
   if (!user) {
@@ -105,7 +107,41 @@ async function updateUserDeviceAccess(userId, deviceAccess) {
 
 
 
+const getAllUsers = async (companyId) => {
+  if (!companyId) {
+    throw new Error(`Company ID is required ${companyId}.`);
+  }
+  const users = await User.findAll({
+    where: { isActive: true, companyId: companyId },
+    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
+    include: [
+      { model: Company, as: 'company', attributes: ['name'] },
+      { model: Role, as: 'role', attributes: ['id', 'name'] },
+      { model: UserProfile, as: 'userProfile', required: false }
+    ],
+    order: [['last_active', 'DESC']]
+  });
+
+  // Fetch all roles separately
+  const roles = await Role.findAll({
+    attributes: ['id', 'name'],
+    order: [['name', 'ASC']]
+  });
+
+  return { users, roles };
+};
+
+const getUserById = async (userId) => {
+  const user = await User.findByPk(userId);
+  if (!user) {
+    throw new Error(`User not found ${userId}.`);
+  }
+  return user;
+};
+
 module.exports = {
+  getAllUsers,
+  getUserById,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess

@@ -12,7 +12,7 @@ const getAllUsers = async (req, res) => {
   const companyId = req.user.company_id;
 
   try {
-    const users = await authService.getAllUsers(companyId);
+    const users = await userService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
     logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);
@@ -27,7 +27,7 @@ const deactivateUser = async (req, res) => {
     return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
   }
   const { userId } = req.params;
-  const user = await authService.getUserById(userId);
+  const user = await userService.getUserById(userId);
   try {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

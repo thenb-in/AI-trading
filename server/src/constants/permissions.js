@@ -34,6 +34,22 @@ const MODULE_PERMISSION_CONSTANTS = {
   HAS_ROLE_PERMISSION: {
     name: 'Has Role Permission',
     description: 'Permission for role and permission modules'
+  },
+  VIEW_USER_MODULE: {
+    name: 'View User Module',
+    description: 'Permission to view user module'
+  },
+  VIEW_COMPANY_MODULE: {
+    name: 'View Company Module',
+    description: 'Permission to view company module'
+  },
+  VIEW_ROLE_PERMISSION_MODULE: {
+    name: 'View Role Permission Module',
+    description: 'Permission to view role permission module'
+  },
+  CREATE_COMPANY: {
+    name: 'Create Company',
+    description: 'Permission to create a new company'
   }
 };
 

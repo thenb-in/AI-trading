@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission, UserProfile, MultiCompanyModule } = require('../../models');
+const { User, Company, Role, Permission, MultiCompanyModule } = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -175,19 +175,6 @@ const loginUser = async (credentials) => {
   };
 };
 
-const resetPassword = async ({ username, password }) => {
-  const user = await User.findOne({ where: { username } });
-  if (!user) {
-    throw new Error(`User not found ${username}.`);
-  }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  user.password = hashedPassword;
-  user.is_approved = false;
-  // Revoke all active refresh tokens
-  await revokeRefreshToken(user.id);
-  await user.save();
-  return user;
-};
 
 const approveUser = async (userId) => {
   const user = await User.findByPk(userId);
@@ -199,35 +186,17 @@ const approveUser = async (userId) => {
   await user.save();
 };
 
-const getAllUsers = async (companyId) => {
-  if (!companyId) {
-    throw new Error(`Company ID is required ${companyId}.`);
-  }
-  const users = await User.findAll({
-    where: { isActive: true, companyId: companyId },
-    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
-    include: [
-      { model: Company, as: 'company', attributes: ['name'] },
-      { model: Role, as: 'role', attributes: ['id', 'name'] },
-      { model: UserProfile, as: 'userProfile', attributes: ['level', 'scope'], required: false, where: { companyId } }
-    ],
-    order: [['last_active', 'DESC']]
-  });
-
-  // Fetch all roles separately
-  const roles = await Role.findAll({
-    attributes: ['id', 'name'],
-    order: [['name', 'ASC']]
-  });
-
-  return { users, roles };
-};
-
-const getUserById = async (userId) => {
-  const user = await User.findByPk(userId);
+const resetPassword = async ({ username, password }) => {
+  const user = await User.findOne({ where: { username } });
   if (!user) {
-    throw new Error(`User not found ${userId}.`);
+    throw new Error(`User not found ${username}.`);
   }
+  const hashedPassword = await bcrypt.hash(password, 10);
+  user.password = hashedPassword;
+  user.is_approved = false;
+  // Revoke all active refresh tokens
+  await revokeRefreshToken(user.id);
+  await user.save();
   return user;
 };
 
@@ -297,4 +266,11 @@ const getAllRoles = async () => {
   return roles;
 };
 //  todo : remove the use rservices from here and add them in use servuce.
-module.exports = { signup, loginUser, resetPassword, approveUser, getAllUsers, getUserById, getCurrentUser, getAllRoles };
+module.exports = {
+  signup,
+  loginUser,
+  resetPassword,
+  approveUser,
+  getCurrentUser,
+  getAllRoles
+};
