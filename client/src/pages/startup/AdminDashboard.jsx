@@ -21,7 +21,7 @@ const AdminDashboard = () => {
         {/* Base startup routes */}
         <Route index element={<Navigate to="users" replace />} />
         <Route path="reports" element={<ReportContent />} />
-        {/* <Route path="report/*" element={<ReportContent />} /> */}
+        <Route path="report/*" element={<ReportContent />} />
 
         <Route path="masters" element={<MasterContent />} />
         <Route path="master/*" element={<MasterContent />} />
