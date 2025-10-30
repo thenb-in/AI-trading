@@ -4,17 +4,28 @@ import {
 
 const getMasterModules = (handleOpenMaster) => [
   {
-    title: "Employee Master",
+    title: "Test master 1",
     description:
-      "Comprehensive employee database management including personal details, salary administration, leave policies, and performance tracking with advanced reporting capabilities.",
+      "Test master module 1.",
     icon: PeopleIcon,
     color: "primary",
-    onClick: () => handleOpenMaster("employee"),
-    buttonText: "Manage Employees",
-    tags: ["Employee", "Database", "Salary", "Leave", "Performance"],
+    onClick: () => handleOpenMaster("test-master-1"),
+    buttonText: "Test Master 1",
+    tags: ["Test", "Master", "Module"],
     keywords:
-      "employee staff personnel database management salary leave performance tracking HR human resources",
+      "test master module",
     category: "Common Masters",
+  },
+  {
+    title: "Test master 2",
+    description: "Test master module 2.",
+    icon: PeopleIcon,
+    color: "primary",
+    onClick: () => handleOpenMaster("test-master-2"),
+    buttonText: "Open Test",
+    tags: ["Test"],
+    keywords: "test master module",
+    category: "Other master categories",
   },
 ];
 
