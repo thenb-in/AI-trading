@@ -59,6 +59,11 @@ const MODULE_PERMISSION_CONSTANTS = {
     display_name: 'View Role Permission Module',
     description: 'Permission to view role permission module'
   },
+  VIEW_REPORT_MODULE: {
+    name: 'view_report_module',
+    display_name: 'View Reports Module',
+    description: 'Permission to view reports module'
+  },
   VIEW_MASTER_MODULE: {
     name: 'view_master_module',
     display_name: 'View Masters Module',

@@ -137,11 +137,19 @@ async function main() {
     const company = await createCompany(transaction, userRole);
     const permissions = await createPermissions(transaction);
 
-    // Assign all permissions to sadmin role
+    // Assign permissions to sadmin role without removing existing ones
     logger.info(
-      `Assigning ${permissions.length} permissions to sadmin role...`
+      `Ensuring ${permissions.length} permissions are assigned to sadmin role (non-destructive merge)...`
     );
-    await sadminRole.setPermissions(permissions, { transaction });
+    const existingRolePermissions = await sadminRole.getPermissions({ transaction });
+    const existingPermissionNames = new Set(existingRolePermissions.map((p) => p.name));
+    const permissionsToAdd = permissions.filter((p) => !existingPermissionNames.has(p.name));
+    if (permissionsToAdd.length > 0) {
+      await sadminRole.addPermissions(permissionsToAdd, { transaction });
+      logger.info(`Added permissions to sadmin: ${permissionsToAdd.map((p) => p.name).join(', ')}`);
+    } else {
+      logger.info(`No new permissions to add to sadmin role: ${existingPermissionNames.join(', ')}`);
+    }
 
     await transaction.commit();
 
