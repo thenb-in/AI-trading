@@ -30,6 +30,7 @@ const MODULE_PERMISSION_CONSTANTS = {
     description: 'Flag for admin-level access'
   },
   VIEW_COMPANY_SETTINGS: {
+    name: 'view_company_settings',
     display_name: 'View Company Settings',
     description: 'Permission to view company settings'
   },
