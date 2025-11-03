@@ -2,6 +2,7 @@
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define('User', {
     id: {
+      // type UUID because this is a important field and can have security implications from frontend as well. normally, id should be just a number.
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
@@ -29,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     companyId: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
       allowNull: false
     },
     isActive: {

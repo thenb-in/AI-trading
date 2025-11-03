@@ -8,11 +8,11 @@ module.exports = (sequelize) => {
       autoIncrement: true
     },
     userId: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
       allowNull: false
     },
     companyId: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
       allowNull: false
     }
   }, {

@@ -1,16 +1,16 @@
 module.exports = (sequelize, DataTypes) => {
   const UserProfile = sequelize.define('UserProfile', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
     },
     userId: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
       allowNull: false
     },
     currentCompany: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
       allowNull: false
     }
   }, {
