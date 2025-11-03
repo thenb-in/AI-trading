@@ -10,10 +10,10 @@
     "lint:errors": "npx eslint . --quiet",
     "lint:fix": "npx eslint . --fix",
     "create-new-company":"node create_company_with_role_and_perms.js",
-    "setup-env": "node scripts/setup-env.js setup",
-    "check-env": "node scripts/setup-env.js check",
-    "validate-env": "node scripts/setup-env.js validate",
-    "generate-secrets": "node scripts/setup-env.js generate-secrets"
+    "setup-env": "node scripts/setup-env/index.js setup",
+    "check-env": "node scripts/setup-env/index.js check",
+    "validate-env": "node scripts/setup-env/index.js validate",
+    "generate-secrets": "node scripts/setup-env/index.js generate-secrets"
   },
   "keywords": [],
   "author": "",
