@@ -51,8 +51,8 @@ function setupHuskyHooks() {
     // Write commit-msg hook file
     fs.writeFileSync(commitMsgPath, commitMsgContent);
     
-    // Create pre-push hook for additional validation
-    const prePushContent = 'npm run validate:quick\n';
+    // Create pre-push hook for additional validation and version check
+    const prePushContent = 'npm run validate:quick\nnode scripts/check-version-bump.js\n';
     const prePushPath = path.join(huskyDir, 'pre-push');
     
     // Write pre-push hook file
@@ -186,7 +186,7 @@ function main() {
     log('\n🔒 Git hooks are now active:', 'blue');
     log('   - Pre-commit: Runs lint-staged', 'cyan');
     log('   - Commit-msg: Validates commit messages with commitlint', 'cyan');
-    log('   - Pre-push: Runs quick validation', 'cyan');
+    log('   - Pre-push: Runs quick validation and checks client/server version bumps', 'cyan');
     log('   - Prepare-commit-msg: Interactive commit prompts', 'cyan');
     process.exit(0);
   } else {

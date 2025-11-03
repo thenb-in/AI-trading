@@ -25,15 +25,10 @@ export default function Login() {
     setError(null);
 
     try {
-      console.log('Attempting login with:', { username: formData.username });
-      
       const response = await ApiService.login({
         username: formData.username,
         password: formData.password
       });
-      
-      console.log('Login response:', response);
-      console.log('Current cookies:', document.cookie);
       
       const { user } = response.data;
       setUserData(user);
@@ -160,6 +155,17 @@ export default function Login() {
                 Sign up
               </button>
             </p>
+          </div>
+
+          {/* Version display */}
+          <div className="text-center mt-4 pt-4 border-t border-gray-200">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-gray-400">
+                Startup: {import.meta.env.VITE_APP_VERSION_STARTUP || '0.0.0'} | 
+                Client: {import.meta.env.VITE_APP_VERSION_CLIENT || '0.0.0'} | 
+                Server: {import.meta.env.VITE_APP_VERSION_SERVER || '0.0.0'}
+              </p>
+            </div>
           </div>
         </form>
       </div>

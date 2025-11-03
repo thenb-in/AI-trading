@@ -1,1 +1,2 @@
 npm run validate:quick
+node scripts/check-version-bump.js
