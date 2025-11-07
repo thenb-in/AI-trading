@@ -4,6 +4,7 @@ import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../../services/startup/ApiService';
 import { useDataContext } from '../../../context/startup/useDataContext';
+import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 export default function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -24,10 +25,13 @@ export default function Login() {
     setIsLoading(true);
     setError(null);
 
+    // Clean form data: trim all fields and remove spaces from username and password
+    const cleanedData = cleanFormData(formData);
+
     try {
       const response = await ApiService.login({
-        username: formData.username,
-        password: formData.password
+        username: cleanedData.username,
+        password: cleanedData.password
       });
       
       const { user } = response.data;
@@ -38,7 +42,22 @@ export default function Login() {
       const redirectTo = location.state?.from || '/admin';
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const message = err.response?.data?.error || err.response?.error || err.error || 'Login failed. Please check your credentials.';
+      const errorData = err || {};
+      console.log('Error Data:', errorData);
+      const message = errorData.error || err.error || 'Login failed. Please check your credentials.';
+      
+      // If password change is required, redirect to forgot password page
+      if (errorData.requiresPasswordChange) {
+        toast.warning('Please change your password on first login');
+        navigate('/forgot-password', { 
+          state: { 
+            username: cleanedData.username,
+            isFirstLogin: true 
+          } 
+        });
+        return;
+      }
+      
       setError(message);
       toast.error(message);
     } finally {

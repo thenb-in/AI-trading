@@ -1,12 +1,18 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../../services/startup/ApiService';
+import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 const ForgotPassword = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isFirstLogin = location.state?.isFirstLogin || false;
+  const prefillUsername = location.state?.username || '';
+
   const [formData, setFormData] = useState({
-    username: '',
+    username: prefillUsername,
     newPassword: '',
     confirmPassword: '',
   });
@@ -14,7 +20,12 @@ const ForgotPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (prefillUsername) {
+      setFormData(prev => ({ ...prev, username: prefillUsername }));
+    }
+  }, [prefillUsername]);
 
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
@@ -29,7 +40,10 @@ const ForgotPassword = () => {
     setIsLoading(true);
     setError(null);
 
-    if (formData.newPassword !== formData.confirmPassword) {
+    // Clean form data: trim all fields and remove spaces from username and password
+    const cleanedData = cleanFormData(formData);
+
+    if (cleanedData.newPassword !== cleanedData.confirmPassword) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
@@ -37,8 +51,9 @@ const ForgotPassword = () => {
 
     try {
       await ApiService.request('POST', '/auth/reset-password', {
-        username: formData.username,
-        password: formData.newPassword,
+        username: cleanedData.username,
+        password: cleanedData.newPassword,
+        isFirstLogin: isFirstLogin || false,
       });
       toast.success('Password reset successful! Please log in.');
       setTimeout(() => navigate('/'), 1000);
@@ -67,7 +82,16 @@ const ForgotPassword = () => {
         >
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Reset Password</h2>
-            <p className="text-gray-600">Enter your username and new password</p>
+            <p className="text-gray-600">
+              {isFirstLogin 
+                ? 'Please set a new password to continue' 
+                : 'Enter your username and new password'}
+            </p>
+            {isFirstLogin && (
+              <p className="text-sm text-amber-600 mt-2 bg-amber-50 py-2 rounded-lg">
+                You must reset your password before accessing the application
+              </p>
+            )}
           </div>
 
           {error && (
@@ -90,9 +114,11 @@ const ForgotPassword = () => {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg 
+                readOnly={isFirstLogin}
+                className={`w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg 
                            focus:outline-none focus:ring-2 focus:ring-blue-500 
-                           focus:border-transparent transition duration-200"
+                           focus:border-transparent transition duration-200
+                           ${isFirstLogin ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>

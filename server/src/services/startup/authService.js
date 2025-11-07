@@ -112,6 +112,11 @@ const validateUserStatusAndPassword = async (user, password, username) => {
     logger.warn(`Login failed: Account not approved: ${user.id}`);
     throw { status: 403, message: 'Your account is pending admin approval. Please try again later.' };
   }
+  // Check if this is first login (last_active is null)
+  if (user.last_active === null) {
+    logger.info(`First time login detected: ${user.id} - Password change required`);
+    throw { status: 403, message: 'Please change your password', requiresPasswordChange: true };
+  }
 };
 
 const issueTokensAndPersist = async (user) => {
@@ -183,7 +188,7 @@ const approveUser = async (userId) => {
   await user.save();
 };
 
-const resetPassword = async ({ username, password }) => {
+const resetPassword = async ({ username, password, isFirstLogin }) => {
   const user = await User.findOne({ where: { username } });
   if (!user) {
     throw new Error(`User not found ${username}.`);
@@ -191,6 +196,14 @@ const resetPassword = async ({ username, password }) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   user.password = hashedPassword;
   user.is_approved = false;
+
+  // If this is first login password reset, update last_active to now
+  if (isFirstLogin === true) {
+    user.last_active = new Date();
+    user.is_approved = true;
+    logger.info(`First login password reset: ${user.id} - Setting last_active to now`);
+  }
+
   // Revoke all active refresh tokens
   await revokeRefreshToken(user.id);
   await user.save();

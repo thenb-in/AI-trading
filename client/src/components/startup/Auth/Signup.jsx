@@ -4,6 +4,7 @@ import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import ApiService from '../../../services/startup/ApiService';
 import PropTypes from "prop-types";
+import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 
 export default function Signup({ showRoleDropdown }) {
@@ -29,7 +30,6 @@ export default function Signup({ showRoleDropdown }) {
 
     if (companyParam) {
       const id = companyParam.substring(companyParam.lastIndexOf('_') + 1);
-    console.log('Company ID:', id);
       setFormData(prev => ({
         ...prev,
         companyId: id || '',
@@ -50,8 +50,7 @@ export default function Signup({ showRoleDropdown }) {
               role: response.data.find(role => role.name === 'user')?.id || response.data[0].id
             }));
           }
-        } catch (error) {
-          console.error('Error fetching roles:', error);
+        } catch {
           toast.error('Failed to load roles. Please try again later.');
         } finally {
           setLoading(false);
@@ -66,26 +65,28 @@ export default function Signup({ showRoleDropdown }) {
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
-    console.log('Form Data:', formData);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
+    // Clean form data: trim all fields and remove spaces from username and password
+    const cleanedData = cleanFormData(formData);
+
+    if (cleanedData.password !== cleanedData.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
     try {
       await ApiService.signup({
-        name: formData.name,
-        username: formData.username,
-        phone: formData.phone,
-        password: formData.password,
-        companyId: formData.companyId,
-        role: formData.role,
+        name: cleanedData.name,
+        username: cleanedData.username,
+        phone: cleanedData.phone,
+        password: cleanedData.password,
+        companyId: cleanedData.companyId,
+        role: cleanedData.role,
       });
       toast.success('Signup successful! Awaiting admin approval.');
       navigate('/');

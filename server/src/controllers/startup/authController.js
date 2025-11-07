@@ -100,6 +100,9 @@ const login = async (req, res) => {
     if (error.message === 'Your account is pending admin approval. Please try again later.') {
       return res.status(403).json({ error: error.message });
     }
+    if (error.requiresPasswordChange) {
+      return res.status(403).json({ error: error.message, requiresPasswordChange: true });
+    }
     logger.error(`Login error: ${error.message} - Stack: ${error.stack}`);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
@@ -107,8 +110,8 @@ const login = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { username, password } = req.body;
-    await authService.resetPassword({ username, password });
+    const { username, password, isFirstLogin } = req.body;
+    await authService.resetPassword({ username, password, isFirstLogin });
     res.status(200).json({ message: `Password reset successfully, account deactivated, pending admin approval ${username}` });
   } catch (error) {
     if (error.message === 'User not found') {
