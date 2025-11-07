@@ -16,7 +16,7 @@ const companyController = {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
-      const id = req.user;
+      const id = req.user.company_id;
       const settings = await companyService.getCompanySettings(id);
       res.json(settings);
     } catch (error) {
@@ -32,7 +32,7 @@ const companyController = {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
-      const id = req.user;
+      const id = req.user.company_id;
       const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb } = req.body;
 
       const settings = await companyService.updateCompanySettings(id, {
@@ -74,7 +74,7 @@ const companyController = {
   async myCompanies(req, res) {
     try {
       const companies = await companyService.getUserCompanies(req.user.id);
-      return res.status(200).json({ companies, activeCompanyId: req.user });
+      return res.status(200).json({ companies, activeCompanyId: req.user.company_id });
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }

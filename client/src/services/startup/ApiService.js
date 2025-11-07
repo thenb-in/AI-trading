@@ -23,6 +23,7 @@ const ApiService = {
         method,
         url: `${API_URL}${url}`,
         ...(data && { data }),
+        ...(config.params && { params: config.params }),
         headers,
         withCredentials: true,
         ...config,

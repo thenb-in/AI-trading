@@ -9,6 +9,11 @@ const MODULE_PERMISSION_CONSTANTS = {
     display_name: 'Deactivate User',
     description: 'Permission to deactivate users'
   },
+  DELETE_USER: {
+    name: 'delete_user',
+    display_name: 'Delete User',
+    description: 'Permission to delete users'
+  },
   GET_COMPANY_SETTINGS: {
     name: 'get_company_settings',
     display_name: 'Get Company Settings',

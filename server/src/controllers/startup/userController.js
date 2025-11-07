@@ -2,9 +2,9 @@ const authService = require('../../services/startup/authService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const userService = require('../../services/startup/userService');
 const logger = require('../../../logger');
+const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 
 const getAllUsers = async (req, res) => {
-
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);
   // if (!hasPermission) {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });
@@ -21,7 +21,7 @@ const getAllUsers = async (req, res) => {
 };
 
 const deactivateUser = async (req, res) => {
-  const requiredPermission = 'Deactivate User';
+  const requiredPermission = MODULE_PERMISSION_CONSTANTS.DEACTIVATE_USER.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -32,15 +32,6 @@ const deactivateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    // Delete messages
-    // await Message.destroy({ where: { senderId: userId } });
-
-    // // Remove from room participants
-    // await sequelize.models.RoomParticipants.destroy({ where: { userId } });
-
-    // // Delete rooms created by user
-    // await Room.destroy({ where: { creatorId: userId } });
 
     // Deactivate user
     user.is_approved = false;
@@ -68,7 +59,7 @@ const getMe = async (req, res) => {
 
 
 const deleteUser = async (req, res) => {
-  const requiredPermission = 'Delete User';
+  const requiredPermission = MODULE_PERMISSION_CONSTANTS.DELETE_USER.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });

@@ -54,7 +54,7 @@ export default function CompanySettings() {
     fetchSettings();
   }, []);
 
-  const requiredPermission = "View Company Settings";
+  const requiredPermission = "view_company_settings";
   const hasPermission = userData?.role?.permissions?.some(
     (permission) => permission.name === requiredPermission
   );

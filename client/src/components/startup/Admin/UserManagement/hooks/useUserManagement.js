@@ -33,7 +33,6 @@ export const useUserManagement = () => {
       }
     };
 
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -130,11 +129,13 @@ export const useUserManagement = () => {
   };
 
  const handleRoleChange = async (userId, newRoleId) => {
-
   try {
-  
-    await ApiService.updateUserRole(userId, newRoleId);
-    const newRole = roles.find((role) => role.id == newRoleId);
+    // Convert empty string to null for backend
+    const roleIdToUpdate = newRoleId === '' ? null : newRoleId;
+    await ApiService.updateUserRole(userId, roleIdToUpdate);
+    
+    // Find the new role object, or set to null if no role
+    const newRole = roleIdToUpdate ? roles.find((role) => role.id == roleIdToUpdate) : null;
 
     setUsers((prevUsers) => {
       const updatedUsers = prevUsers.map((user) =>

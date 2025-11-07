@@ -21,7 +21,7 @@ const UserTableRow = ({
   const roleSelectRef = useRef(null);
   const deviceRef = useRef(null);
 
-  const isSelected = selectedUsers.includes(user.id);
+  const isSelected = selectedUsers?.includes(user.id);
 
   const handleRowClick = () => {
     if (bulkDeleteMode) {
@@ -93,14 +93,14 @@ const UserTableRow = ({
         {editingRole ? (
           <select
             ref={roleSelectRef}
-            value={user.role.id}
+            value={user?.role?.id || ''}
             onChange={onRoleChange}
             onBlur={() => setEditingRole(false)} 
             onClick={(e) => e.stopPropagation()}
             className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="" disabled>
-              Select Role
+            <option value="">
+              No Role
             </option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>{r.name}</option>
@@ -114,7 +114,7 @@ const UserTableRow = ({
               setEditingRole(true);
             }}
           >
-            <RoleBadge role={user.role.name} />
+            <RoleBadge role={user?.role?.name || 'No Role'} />
           </div>
         )}
       </td>

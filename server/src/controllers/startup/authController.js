@@ -5,6 +5,7 @@ const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const logger = require('../../../logger');
 const env = require('../../config/env');
 const userService = require('../../services/startup/userService');
+const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 
 const signupValidation = [
   body('phone').isMobilePhone().withMessage(`Invalid phone number for signup ${body('phone').value}.`),
@@ -123,7 +124,7 @@ const resetPassword = async (req, res) => {
 };
 
 const approveUser = async (req, res) => {
-  const requiredPermission = 'Approve User';
+  const requiredPermission = MODULE_PERMISSION_CONSTANTS.APPROVE_USER.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(404).json({ error: `You are not authorized to access this resource ${requiredPermission}` });

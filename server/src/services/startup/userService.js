@@ -1,72 +1,15 @@
 const db = require('../../models');
-const { Op } = require('sequelize');
 const { User, Company, Role, UserProfile } = require('../../models');
 
 
 async function deleteUser(userId) {
-  // Find rooms where the user is admin or creator
-  const userRooms = await db.Room.findAll({
-    where: {
-      [Op.or]: [
-        { adminId: userId },
-        { creatorId: userId }
-      ]
-    }
-  });
+  // Delete user profile
+  await UserProfile.destroy({ where: { userId: userId } });
 
-  // If user is admin/creator of any rooms, reassign to another admin
-  if (userRooms.length > 0) {
-    const adminRoles = await db.Role.findAll({
-      // name = admin or sadmin
-      where: {
-        name: {
-          [Op.in]: ['admin', 'sadmin']
-        }
-      } // todo: make this dynamic if needed
-    });
+  // Delete multi-company module associations if they exist
+  await db.MultiCompanyModule.destroy({ where: { user_id: userId } });
 
-    if (!adminRoles.length) {
-      throw new Error(`Admin role not found in the system ${userId}.`);
-    }
-
-    const options = {
-      roleId: { [Op.in]: adminRoles.map(role => role.id) },
-      id: { [Op.ne]: userId }
-    };
-    const adminUser = await db.User.findOne({
-      where: options
-    });
-
-    if (!adminUser) {
-      // if only 1 user, delete it instead of error
-      const userCount = await db.User.count();
-      if (userCount === 1) {
-        await db.User.destroy({ where: { id: userId } });  // cascade delete messages and rooms
-        return;
-      }
-      throw new Error(`No other admin user found to reassign rooms ${userId}.`);
-    }
-
-    await db.Room.update(
-      {
-        adminId: adminUser.id,
-        creatorId: adminUser.id
-      },
-      {
-        where: {
-          [Op.or]: [
-            { adminId: userId },
-            { creatorId: userId }
-          ]
-        }
-      }
-    );
-  }
-
-  await db.Message.destroy({ where: { senderId: userId } });
-
-  await db.RoomParticipants.destroy({ where: { userId } });
-
+  // Finally, delete the user
   await db.User.destroy({ where: { id: userId } });
 }
 
@@ -75,12 +18,19 @@ async function updateUserRole(userId, newRoleId) {
   if (!user) {
     throw new Error(`User not found ${userId}.`);
   }
-  const role = await db.Role.findByPk(newRoleId);
-  if (!role) {
-    throw new Error(`Role not found ${newRoleId}.`);
+
+  // Allow null roleId (no role assigned)
+  if (newRoleId) {
+    const role = await db.Role.findByPk(newRoleId);
+    if (!role) {
+      throw new Error(`Role not found ${newRoleId}.`);
+    }
+
+    user.roleId = newRoleId;
+  } else {
+    user.roleId = null;
   }
 
-  user.roleId = newRoleId;
   await user.save();
 }
 

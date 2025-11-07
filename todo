@@ -26,4 +26,7 @@ pre-commit hook: to not be in pre-push hook
 - Remove ability to push changes to startup files
 
 - clear multi-company setup when logging in, and logging out as well
+- Merge with startup
 
+- If more than 3? in same variable, show error to rule out that before-hand
+- Error listener/catcher across the application? instead of function specific try-catch.

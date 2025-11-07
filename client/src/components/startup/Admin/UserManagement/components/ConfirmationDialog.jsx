@@ -13,7 +13,7 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel }) => {
     },
     deactivate: {
       title: 'Deactivate User',
-      message: `Are you sure you want to deactivate ${dialog.username}? This will also clean up their messages and rooms.`,
+      message: `Are you sure you want to deactivate ${dialog.username}? This will also clean up their transactions.`,
       buttonText: 'Deactivate',
       buttonClass: 'bg-yellow-600 hover:bg-yellow-700',
     },
