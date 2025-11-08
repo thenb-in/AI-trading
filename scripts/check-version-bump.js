@@ -74,6 +74,32 @@ function getRemoteVersion(packageJsonPath, branch = 'origin/main') {
   }
 }
 
+/**
+ * Check if there are any changes in a folder compared to remote branch
+ * @param {string} folderPath - Path to the folder to check
+ * @param {string} branch - Remote branch to compare against
+ * @returns {boolean} - True if there are changes in the folder
+ */
+function hasFolderChanges(folderPath, branch = 'origin/main') {
+  try {
+    // Normalize the folder path (ensure it ends with / for git diff)
+    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    
+    // Check if there are any changes in the folder
+    // Use --name-only to just get file names, and check if output is non-empty
+    const diffOutput = execSync(
+      `git diff --name-only ${branch} HEAD -- ${normalizedPath}`,
+      { encoding: 'utf8', cwd: process.cwd(), stdio: 'pipe' }
+    ).trim();
+    
+    return diffOutput.length > 0;
+  } catch (error) {
+    // If git diff fails (e.g., branch doesn't exist), assume no changes
+    // This allows the script to proceed without blocking
+    return false;
+  }
+}
+
 function checkSingleVersion(packageJsonPath, packageName) {
   const currentVersion = getCurrentVersion(packageJsonPath);
   const remoteBranch = process.env.GIT_REMOTE_BRANCH || 'origin/main';
@@ -106,22 +132,46 @@ function checkSingleVersion(packageJsonPath, packageName) {
 
 function checkVersionBump() {
   try {
-    log('🔍 Checking version bumps for client and server...', 'blue');
+    log('🔍 Checking version bumps for changed folders...', 'blue');
     log('', 'reset');
     
-    // Check client version
-    const clientPath = 'client/package.json';
-    log('📱 Checking Client Version:', 'blue');
-    const clientOk = checkSingleVersion(clientPath, 'Client');
+    const remoteBranch = process.env.GIT_REMOTE_BRANCH || 'origin/main';
+    let clientOk = true;
+    let serverOk = true;
+    let clientChecked = false;
+    let serverChecked = false;
     
-    log('', 'reset');
+    // Check if client folder has changes
+    const clientHasChanges = hasFolderChanges('client', remoteBranch);
+    if (clientHasChanges) {
+      const clientPath = 'client/package.json';
+      log('📱 Checking Client Version (folder has changes):', 'blue');
+      clientOk = checkSingleVersion(clientPath, 'Client');
+      clientChecked = true;
+      log('', 'reset');
+    } else {
+      log('📱 Client: No changes detected, skipping version check', 'blue');
+      log('', 'reset');
+    }
     
-    // Check server version
-    const serverPath = 'server/package.json';
-    log('🖥️  Checking Server Version:', 'blue');
-    const serverOk = checkSingleVersion(serverPath, 'Server');
+    // Check if server folder has changes
+    const serverHasChanges = hasFolderChanges('server', remoteBranch);
+    if (serverHasChanges) {
+      const serverPath = 'server/package.json';
+      log('🖥️  Checking Server Version (folder has changes):', 'blue');
+      serverOk = checkSingleVersion(serverPath, 'Server');
+      serverChecked = true;
+      log('', 'reset');
+    } else {
+      log('🖥️  Server: No changes detected, skipping version check', 'blue');
+      log('', 'reset');
+    }
     
-    log('', 'reset');
+    // If no folders were checked, that's fine (no changes)
+    if (!clientChecked && !serverChecked) {
+      log('✅ No changes in client or server folders. No version checks needed.', 'green');
+      return true;
+    }
     
     if (clientOk && serverOk) {
       log('✅ All required versions have been bumped!', 'green');
@@ -144,5 +194,5 @@ if (require.main === module) {
   process.exit(success ? 0 : 1);
 }
 
-module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion };
+module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion, hasFolderChanges };
 
