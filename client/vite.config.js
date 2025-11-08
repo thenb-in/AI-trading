@@ -21,6 +21,7 @@ export default ({ mode }) => {
   const startupVersion = rootPackageJson.version || '0.0.0';
   const clientVersion = clientPackageJson.version || '0.0.0';
   const serverVersion = serverPackageJson.version || '0.0.0';
+  const clientName = clientPackageJson.name;
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -28,6 +29,7 @@ export default ({ mode }) => {
       'import.meta.env.VITE_APP_VERSION_STARTUP': JSON.stringify(startupVersion),
       'import.meta.env.VITE_APP_VERSION_CLIENT': JSON.stringify(clientVersion),
       'import.meta.env.VITE_APP_VERSION_SERVER': JSON.stringify(serverVersion),
+      'import.meta.env.VITE_APP_NAME_CLIENT': JSON.stringify(clientName),
     },
     server: {
       proxy: {

@@ -11,7 +11,6 @@ import { useDataContext } from "../../../context/startup/useDataContext";
 import LogoutButton from "../LogoutButton";
 import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "../../../constants/startup/index";
-import packageData from '../../../../package.json' ;
 
 
 export default function AdminSidebar({
@@ -86,7 +85,7 @@ export default function AdminSidebar({
       <h1 className="text-xl font-bold flex items-center gap-2 text-white">
         <Shield className="w-6 h-6 text-blue-500" />
         <span className="hover:text-blue-600 transition-colors">
-          {packageData?.name}
+          {import.meta.env.VITE_APP_NAME_CLIENT}
         </span>
       </h1>
     )}

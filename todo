@@ -40,3 +40,6 @@ pre-commit hook: to not be in pre-push hook
 
 - auto-calculated should be disabled by default, they will always be calculated.
 - error should be a toast. anything else is easily missed.
+
+- in create-new-app, should we ask for app name, and mark name accordingly in whole application. more of create a command change-app-name
+- add pepper to passowrds to make passwords secure

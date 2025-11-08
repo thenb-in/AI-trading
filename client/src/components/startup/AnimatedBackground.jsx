@@ -42,7 +42,7 @@ const AnimatedBackground = ({ setShowRoleDropdown }) => {
         transition={{ duration: 1 }}
         className="text-4xl font-bold mb-4"
       >
-        Welcome to Your App
+        Welcome to {import.meta.env.VITE_APP_NAME_CLIENT}
       </motion.h1>
       <motion.p
         initial={{ opacity: 0, y: 20 }}
