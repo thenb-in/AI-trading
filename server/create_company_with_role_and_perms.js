@@ -5,7 +5,7 @@ const logger = require('./logger');
 const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
 const env = require('./src/config/env');
 const { YES } = require('./src/constants/standard_constants');
-const { signup } = require('./src/services/startup/authService');
+const { signup, approveUser } = require('./src/services/startup/authService');
 const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
 const { createStartingAppData } = require('./scripts/default_data/app');
 
@@ -119,7 +119,11 @@ async function main() {
     await transaction.commit();
     transactionCommitted = true;
 
-    await createUser(company, null); // No transaction needed after commit
+    const user = await createUser(company, null); // No transaction needed after commit
+
+    // approve user
+    await approveUser(user.id);
+    logger.info(`User ${user.username} approved successfully ${user.id}`);
 
     // Always run createStartingAppData to ensure all default data exists
     // This will skip any data that already exists and only create new data
