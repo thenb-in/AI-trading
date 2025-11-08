@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Layers,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   People as PeopleIcon,
@@ -177,6 +178,12 @@ export function useAppMenuItems() {
   );
 
   return [
+    hasPermission("view_dashboard_module") && {
+      id: "dashboard",
+      label: "Dashboards",
+      icon: LayoutDashboard,
+      path: "/admin/dashboard",
+    },
     hasPermission("view_report_module") && {
       id: "report",
       label: "Reports",

@@ -74,6 +74,11 @@ const MODULE_PERMISSION_CONSTANTS = {
     display_name: 'View Masters Module',
     description: 'Permission to view masters module'
   },
+  VIEW_DASHBOARD_MODULE: {
+    name: 'view_dashboard_module',
+    display_name: 'View Dashboards Module',
+    description: 'Permission to view dashboards module'
+  },
   CREATE_COMPANY: {
     name: 'create_company',
     display_name: 'Create Company',

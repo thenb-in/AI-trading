@@ -12,6 +12,7 @@ import MultiCompanyModule from "../../components/startup/Admin/MultiCompanyModul
 import appRoutes from "../AppDashboard";
 import ReportContent from "./Reports";
 import MasterContent from "./Masters";
+import DashboardContent from "./Dashboards";
 
 
 const AdminDashboard = () => {
@@ -20,6 +21,8 @@ const AdminDashboard = () => {
       <Route element={<AdminLayout />}>
         {/* Base startup routes */}
         <Route index element={<Navigate to="users" replace />} />
+        <Route path="dashboards" element={<DashboardContent />} />
+        <Route path="dashboard/*" element={<DashboardContent />} />
         <Route path="reports" element={<ReportContent />} />
         <Route path="report/*" element={<ReportContent />} />
 
