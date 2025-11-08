@@ -17,8 +17,17 @@ use sequelize
   - Context: State management in `/client/src/context/`
   - Services: API calls in `/client/src/services/`
 
+
+- UUID is only for auth-related or secure models. For regular models, prefer integer based primary key.
+
+
+
 ### File Structure Standards
 ```
+
+Startup folders are only for generic parts, which can be used irrespetive of context of the application. Anything which is not generic and is specific to this app use-case goes outside startup folder.
+
+
 server/
 ├── models/          # Database models and schemas
 ├── controllers/     # Request handlers (MVC Controllers)
