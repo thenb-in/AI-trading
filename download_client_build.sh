@@ -57,11 +57,16 @@ curl -L -H "Authorization: token $GITHUB_TOKEN" -o artifact.zip "$ARTIFACT_URL"
 
 # Extract the artifact
 # try to remove build directory if it exists
-if [ -d "build" ]; then
-    sudo rm -rf build
+if [ -d "dist" ]; then
+    sudo rm -rf dist
 fi
-sudo mkdir /app/$REPO_NAME
-unzip artifact.zip -d build
+# try to remove /app/$REPO_NAME directory if it exists
+if [ -d "/app/$REPO_NAME" ]; then
+    sudo rm -rf /app/$REPO_NAME
+fi
+
+mkdir /app/$REPO_NAME
+unzip artifact.zip -d dist
 rm artifact.zip
 
 # npm run deploy
