@@ -47,6 +47,18 @@ export default ({ mode }) => {
         },
       },
     },
-    plugins: [react()], // Enable React plugin for Vite
+    plugins: [
+      react(), // Enable React plugin for Vite
+      {
+        name: 'html-transform',
+        transformIndexHtml(html) {
+          // Replace title with app name from package.json
+          return html.replace(
+            /<title>.*?<\/title>/,
+            `<title>${clientName || 'NB Next'}</title>`
+          );
+        },
+      },
+    ],
   });
 };
