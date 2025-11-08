@@ -127,12 +127,12 @@ async function main() {
     logger.info(`Setup completed successfully for ${company.name}!`);
     rl.close();
   } catch (err) {
-    logger.error(`Error occurred during setup`, err);
+    logger.error('Error occurred during setup', err);
     if (!transactionCommitted) {
       try {
         await transaction.rollback();
       } catch (rollbackErr) {
-        logger.error(`Error rolling back transaction: ${rollbackErr.message}`);
+        logger.error('Error rolling back transaction', rollbackErr);
       }
     }
     rl.close();

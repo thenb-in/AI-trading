@@ -66,7 +66,7 @@ const handleRefreshToken = async (refreshToken) => {
       if (!tx.finished){
         await tx.rollback();
       }
-      throw new Error(`Error in handling refresh token ${userId} ${e.message} ${e.stack}`);
+      throw new Error(`Error in handling refresh token ${userId}`, e);
     }
   })();
 
@@ -100,11 +100,11 @@ exports.protect = async (req, res, next) => {
       logger.info(`Tokens refreshed for user ${result.user.id}`);
       return next();
     } catch (err) {
-      logger.warn(`Refresh token failed: ${err.message}`);
+      logger.error('Refresh token failed', err);
       return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
     }
   } catch (error) {
-    logger.error(`Auth middleware error: ${error.message} ${error.stack}`);
+    logger.error('Auth middleware error', error);
     res.status(500).json({ message: `Internal server error ${error.message}` });
   }
 };

@@ -13,173 +13,168 @@
 
 const { isConstantsFile, shouldSkipFile, shouldSkipString } = require('../utils/fileUtils');
 const { analyzeStringContent, isLoggerCall, isErrorConstructorCall, convertBinaryExpressionToTemplateLiteral, isStringConcatenation } = require('../utils/stringUtils');
+const { createCatchBlockTracker } = require('../utils/catchBlockTracker');
 
 /**
- * Check if a string literal should be reported as hardcoded
- * @param {Object} node - The AST node to check
- * @param {string} filename - The filename being checked
- * @param {Object} context - ESLint context
+ * Check if file should be skipped for hardcoded string checks
  */
-function checkStringLiteral(node, filename, context) {
-  if (typeof node.value === 'string' && node.value.length >= 3) {
-    // Skip if in constants folder or file should be skipped
-    if (isConstantsFile(filename) || shouldSkipFile(filename)) {
-      return;
-    }
-
-    // Skip strings that match common patterns
-    if (shouldSkipString(node.value)) {
-      return;
-    }
-
-    context.report({
-      node,
-      messageId: 'hardcodedString'
-    });
-  }
+function shouldSkip(filename) {
+  return isConstantsFile(filename) || shouldSkipFile(filename);
 }
 
 /**
- * Check if a template literal should be reported as hardcoded
- * @param {Object} node - The AST node to check
- * @param {string} filename - The filename being checked
- * @param {Object} context - ESLint context
+ * Report hardcoded string with optional fix
  */
-function checkTemplateLiteral(node, filename, context) {
-  // Skip if in constants folder or file should be skipped
-  if (isConstantsFile(filename) || shouldSkipFile(filename)) {
+function reportHardcoded(node, context, fixerFn = null) {
+  const report = { node, messageId: 'hardcodedString' };
+  if (fixerFn) {
+    report.fix = fixerFn;
+  }
+  context.report(report);
+}
+
+/**
+ * Check if a string literal is an argument to logger.error inside a catch block
+ */
+function isLoggerErrorArgInCatch(node, catchTracker) {
+  const parent = node.parent;
+  if (parent && parent.type === 'CallExpression') {
+    if (isLoggerCall(parent)) {
+      const methodName = parent.callee.property?.name;
+      if (methodName === 'error' && catchTracker.isInsideCatchBlock()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Check string literals and template literals for hardcoded content
+ */
+function checkHardcodedString(node, filename, context, catchTracker) {
+  if (shouldSkip(filename)) {
     return;
   }
 
-  const analysis = analyzeStringContent(node, context);
+  // Skip string literals that are arguments to logger.error inside catch blocks
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    if (isLoggerErrorArgInCatch(node, catchTracker)) {
+      return;
+    }
+  }
 
+  const analysis = analyzeStringContent(node, context);
+  const isLiteral = node.type === 'Literal' && typeof node.value === 'string';
+
+  // For string literals, also check skip patterns
+  if (isLiteral) {
+    if (node.value.length < 3 || shouldSkipString(node.value)) {
+      return;
+    }
+  }
+
+  // Report if it's a literal-only string
   if (analysis.type === 'literal') {
-    context.report({
-      node,
-      messageId: 'hardcodedString'
+    reportHardcoded(node, context, (fixer) => {
+      const templateLiteral = '`' + analysis.value + '`';
+      return fixer.replaceText(node, templateLiteral);
     });
   }
 }
 
 /**
  * Check logger calls for proper content requirements
- * @param {Object} node - The AST node to check
- * @param {Object} context - ESLint context
+ * Skip logger.error inside catch blocks (handled by logger-args-checker rule)
  */
-function checkLoggerCall(node, context) {
-  if (isLoggerCall(node) && node.arguments.length === 1) {
-    const arg = node.arguments[0];
-    const analysis = analyzeStringContent(arg, context);
+function checkLoggerCall(node, context, catchTracker) {
+  if (!isLoggerCall(node)) {
+    return;
+  }
 
-    if (analysis.type === 'literal') {
-      context.report({
-        node,
-        messageId: 'loggerOnlyLiteral',
-        fix(fixer) {
-          // Convert string literal to template literal
-          const templateLiteral = '`' + analysis.value + '`';
-          return fixer.replaceText(arg, templateLiteral);
-        }
-      });
-    } else if (analysis.type === 'variable') {
-      context.report({
-        node,
-        messageId: 'loggerOnlyVariable'
-      });
-    }
-    // Mixed strings are allowed in logger calls
+  // Skip logger.error inside catch blocks - handled by catchBlockTracker rule
+  const methodName = node.callee.property?.name;
+  if (methodName === 'error' && catchTracker.isInsideCatchBlock()) {
+    return;
+  }
+
+  // Only check single-argument logger calls (logger.error in catch blocks already skipped above)
+  if (node.arguments.length !== 1) {
+    return;
+  }
+
+  const arg = node.arguments[0];
+  const analysis = analyzeStringContent(arg, context);
+
+  if (analysis.type === 'literal') {
+    context.report({
+      node,
+      messageId: 'loggerOnlyLiteral',
+      fix(fixer) {
+        return fixer.replaceText(arg, '`' + analysis.value + '`');
+      }
+    });
+  } else if (analysis.type === 'variable') {
+    context.report({ node, messageId: 'loggerOnlyVariable' });
   }
 }
 
 /**
  * Check error constructor calls for hardcoded strings
- * @param {Object} node - The AST node to check
- * @param {Object} context - ESLint context
  */
 function checkErrorConstructorCall(node, context) {
-  if (isErrorConstructorCall(node) && node.arguments.length === 1) {
-    const arg = node.arguments[0];
-    const analysis = analyzeStringContent(arg, context);
+  if (!isErrorConstructorCall(node) || node.arguments.length !== 1) {
+    return;
+  }
 
-    if (analysis.type === 'literal') {
-      context.report({
-        node,
-        messageId: 'hardcodedString',
-        fix(fixer) {
-          // Convert string literal to template literal
-          const templateLiteral = '`' + analysis.value + '`';
-          return fixer.replaceText(arg, templateLiteral);
-        }
-      });
-    }
-    // Variables and mixed strings are allowed in error constructors
+  const arg = node.arguments[0];
+  const analysis = analyzeStringContent(arg, context);
+
+  if (analysis.type === 'literal') {
+    reportHardcoded(node, context, (fixer) => {
+      return fixer.replaceText(arg, '`' + analysis.value + '`');
+    });
   }
 }
 
 /**
  * Check throw statements for hardcoded strings
- * @param {Object} node - The AST node to check
- * @param {Object} context - ESLint context
  */
 function checkThrowStatement(node, context) {
-  if (node.argument) {
-    // If throwing a new Error() call, let the CallExpression handler deal with it
-    if (node.argument.type === 'NewExpression' &&
-        node.argument.callee &&
-        node.argument.callee.name === 'Error') {
-      // Let the CallExpression handler process this Error constructor call
-      return;
-    }
+  if (!node.argument) {
+    return;
+  }
 
-    const analysis = analyzeStringContent(node.argument, context);
+  // Skip Error constructor calls - handled by NewExpression
+  if (node.argument.type === 'NewExpression' && node.argument.callee?.name === 'Error') {
+    return;
+  }
 
-    if (analysis.type === 'literal') {
-      context.report({
-        node,
-        messageId: 'hardcodedString',
-        fix(fixer) {
-          // Convert string literal to template literal
-          const templateLiteral = '`' + analysis.value + '`';
-          return fixer.replaceText(node.argument, templateLiteral);
-        }
-      });
-    }
-    // Variables and mixed strings are allowed in throw statements
+  const analysis = analyzeStringContent(node.argument, context);
+  if (analysis.type === 'literal') {
+    reportHardcoded(node, context, (fixer) => {
+      return fixer.replaceText(node.argument, '`' + analysis.value + '`');
+    });
   }
 }
 
 /**
- * Check binary expressions for string concatenation that can be converted to template literals
- * @param {Object} node - The AST node to check
- * @param {string} filename - The filename being checked
- * @param {Object} context - ESLint context
+ * Check binary expressions for string concatenation
  */
 function checkBinaryExpression(node, filename, context) {
-  // Skip if in constants folder or file should be skipped
-  if (isConstantsFile(filename) || shouldSkipFile(filename)) {
+  if (shouldSkip(filename) || node.operator !== '+' || !isStringConcatenation(node, context)) {
     return;
   }
 
-  // Only check binary expressions with + operator
-  if (node.type === 'BinaryExpression' && node.operator === '+') {
-    // First check if this is actually string concatenation
-    if (!isStringConcatenation(node, context)) {
-      return; // Skip mathematical operations
-    }
-
-    const analysis = analyzeStringContent(node, context);
-
-    // If it's a mixed expression or has any string content, offer to convert to template literal
-    if (analysis.type === 'mixed' || analysis.type === 'variable') {
-      context.report({
-        node,
-        messageId: 'convertToTemplateLiteral',
-        fix(fixer) {
-          const templateLiteral = convertBinaryExpressionToTemplateLiteral(node, context);
-          return fixer.replaceText(node, templateLiteral);
-        }
-      });
-    }
+  const analysis = analyzeStringContent(node, context);
+  if (analysis.type === 'mixed' || analysis.type === 'variable') {
+    context.report({
+      node,
+      messageId: 'convertToTemplateLiteral',
+      fix(fixer) {
+        return fixer.replaceText(node, convertBinaryExpressionToTemplateLiteral(node, context));
+      }
+    });
   }
 }
 
@@ -203,35 +198,58 @@ module.exports = {
     },
     create(context) {
       const filename = context.getFilename();
+      const catchTracker = createCatchBlockTracker();
+
+      /**
+       * Check if node is a Promise .catch() call
+       */
+      function isPromiseCatch(node) {
+        return node.type === 'CallExpression' &&
+               node.callee.type === 'MemberExpression' &&
+               node.callee.property &&
+               node.callee.property.name === 'catch';
+      }
 
       return {
-        // Check string literals
-        Literal(node) {
-          checkStringLiteral(node, filename, context);
+        CatchClause(node) {
+          catchTracker.pushCatchBlock(node.param);
         },
-
-        // Check template literals
-        TemplateLiteral(node) {
-          checkTemplateLiteral(node, filename, context);
+        'CatchClause:exit'() {
+          catchTracker.popCatchBlock();
         },
-
-        // Check logger and error calls
         CallExpression(node) {
-          checkLoggerCall(node, context);
-          checkErrorConstructorCall(node, context);
-        },
+          // Track Promise .catch() callbacks
+          if (isPromiseCatch(node) && node.arguments.length > 0) {
+            const callback = node.arguments[0];
+            if (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression') {
+              const errorParam = callback.params && callback.params[0];
+              catchTracker.pushCatchBlock(errorParam);
+            }
+          }
 
-        // Check new Error() constructor calls
+          checkLoggerCall(node, context, catchTracker);
+        },
+        'CallExpression:exit'(node) {
+          // Pop Promise .catch() callback from stack
+          if (isPromiseCatch(node) && node.arguments.length > 0) {
+            const callback = node.arguments[0];
+            if (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression') {
+              catchTracker.popCatchBlock();
+            }
+          }
+        },
+        Literal(node) {
+          checkHardcodedString(node, filename, context, catchTracker);
+        },
+        TemplateLiteral(node) {
+          checkHardcodedString(node, filename, context, catchTracker);
+        },
         NewExpression(node) {
           checkErrorConstructorCall(node, context);
         },
-
-        // Check throw statements
         ThrowStatement(node) {
           checkThrowStatement(node, context);
         },
-
-        // Check binary expressions for string concatenation
         BinaryExpression(node) {
           checkBinaryExpression(node, filename, context);
         }

@@ -2,7 +2,7 @@
 // This file imports and exports all custom rules for better organization
 
 const noConsoleUsage = require('./rules/no-console-usage');
-const noLoggerCommas = require('./rules/no-logger-commas');
+const loggerArgsChecker = require('./rules/logger-args-checker');
 const noDirectDotenv = require('./rules/no-direct-dotenv');
 const noHardcodedStrings = require('./rules/no-hardcoded-strings');
 const warnMixedStrings = require('./rules/warn-mixed-strings');
@@ -14,7 +14,7 @@ const noDirectModelImports = require('./rules/no-direct-model-imports');
 // Combine all rules into a single object
 const customRules = {
   ...noConsoleUsage,
-  ...noLoggerCommas,
+  ...loggerArgsChecker,
   ...noDirectDotenv,
   ...noHardcodedStrings,
   ...warnMixedStrings,

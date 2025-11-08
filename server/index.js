@@ -75,7 +75,7 @@ const startServer = async () => {
         logger.info(`Database tables synchronized successfully at ${new Date().toISOString()}`);
       })
       .catch(error => {
-        logger.error(`Error synchronizing database tables: ${error.message} - Stack: ${error.stack}`);
+        logger.error('Error synchronizing database tables', error);
       });
   }
 
@@ -84,7 +84,7 @@ const startServer = async () => {
       logger.info(`Server running on port ${PORT}`);
     });
   }).catch(err => {
-    logger.error(`Database sync failed: ${err.message} - Stack: ${err.stack}`);
+    logger.error('Database sync failed', err);
   });
 };
 

@@ -17,7 +17,7 @@ const createRole = async (req, res) => {
       data: newRole
     });
   } catch (error) {
-    logger.error(`Error creating role: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Error creating role', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -41,7 +41,7 @@ const createPermission = async (req, res) => {
       data: newPermission
     });
   } catch (error) {
-    logger.error(`Error creating permission: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Error creating permission', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -64,7 +64,7 @@ const addPermissionToRole = async (req, res) => {
       message: `${permissionIds.length} Permissions added successfully!`
     });
   } catch (error) {
-    logger.error(`Error adding permission to role: ${error.message}`);
+    logger.error('Error adding permission to role', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -85,7 +85,7 @@ const removePermissionFromRole = async (req, res) => {
       message: `${result.message}`
     });
   } catch (error) {
-    logger.error(`Error removing permission from role: ${error.message}`);
+    logger.error('Error removing permission from role', error);
     res.status(400).json({
       success: false,
       message: error.message
@@ -103,7 +103,7 @@ const getRoles = async (req, res) => {
       data: roles
     });
   } catch (error) {
-    logger.error(`Error fetching roles: ${error.message}`);
+    logger.error('Error fetching roles', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -119,7 +119,7 @@ const getPermissions = async (req, res) => {
       data: permissions
     });
   } catch (error) {
-    logger.error(`Error fetching permissions: ${error.message}`);
+    logger.error('Error fetching permissions', error);
     res.status(500).json({
       success: false,
       message: error.message

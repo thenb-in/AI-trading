@@ -1,5 +1,7 @@
 const winston = require('winston');
 require('winston-daily-rotate-file');
+const { ValidationError } = require('sequelize');
+
 
 const { combine, timestamp, printf, colorize, json } = winston.format;
 
@@ -113,6 +115,50 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+// Save the original error method
+const originalError = logger.error.bind(logger);
+
+// Override logger.error
+logger.error = (message, meta = {}) => {
+  // Handle ValidationError before converting to object
+  if (meta && meta instanceof ValidationError) {
+    // Extract validation error messages
+    const validationMessages = `${message} - Validation errors: ${meta.errors && meta.errors.length > 0
+      ? meta.errors.map(error => error.message).join(', ')
+      : meta.message}`;
+    meta = {
+      error: {
+        message: validationMessages,
+        stack: meta.stack,
+        validationErrors: meta.errors ? meta.errors.map(err => ({
+          message: err.message,
+          type: err.type,
+          path: err.path,
+          value: err.value
+        })) : []
+      }
+    };
+  } else if (meta && meta instanceof Error) {
+    meta = { error: { message: meta.message, stack: meta.stack } };
+  }
+  // Add extra context automatically
+  const extendedMeta = {
+    ...meta,
+    timestamp: new Date().toISOString()
+    // environment: process.env.NODE_ENV || 'development'
+  };
+
+  // Call the original Winston method
+  return originalError(meta.error.message, extendedMeta);
+};
+
+
+
+
+
+
+
 
 // If we're not in production, also log to console with colors
 if (process.env.NODE_ENV !== 'production') {

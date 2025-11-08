@@ -15,7 +15,7 @@ const getAllUsers = async (req, res) => {
     const users = await userService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
-    logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Get all users error', error);
     res.status(500).json({ error: `Error in getting all users from company ${companyId} ${error.message}` });
   }
 };
@@ -41,7 +41,7 @@ const deactivateUser = async (req, res) => {
 
     res.status(200).json({ message: `User deactivated successfully ${user.username}` });  // todo: show username instead of userId
   } catch (error) {
-    logger.error(`Deactivate user error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Deactivate user error', error);
     res.status(500).json({ error: `Error in deactivating user ${user.username} ${error.message}` });
   }
 };
@@ -52,7 +52,7 @@ const getMe = async (req, res) => {
     const user = await authService.getCurrentUser(userData.id);
     res.status(200).json(user);
   } catch (error) {
-    logger.error(`Error in getMe: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Error in getMe', error);
     res.status(401).json({ error: error.message });
   }
 };
@@ -69,7 +69,7 @@ const deleteUser = async (req, res) => {
     await userService.deleteUser(userId);
     res.status(200).json({ message: `User deleted successfully ${userId}` });  // todo: show username instead of userId
   } catch (error) {
-    logger.error(`Delete user error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Delete user', error);
     res.status(500).json({ error: `Error in deleting user ${userId} ${error.message}` });
   }
 };
@@ -81,7 +81,7 @@ const updateUserRole=async(req,res)=>{
     await userService.updateUserRole(userId, role);
     res.status(200).json({ message: `User role updated successfully ${userId}` });  // todo: show username instead of userId
   } catch (error) {
-    logger.error(`Update user role error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Update user role', error);
     res.status(500).json({ error: `Error in updating user role ${error.message}` });
   }
 };
@@ -92,7 +92,7 @@ const updateUserDeviceAccess=async(req,res)=>{
     await userService.updateUserDeviceAccess(userId, deviceAccess);
     res.status(200).json({ message: `User device access updated successfully ${userId}` });  // todo: show username instead of userId
   } catch (error) {
-    logger.error(`Update user device access error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Update user device access', error);
     res.status(500).json({ error: `Error in updating user device access ${error.message}` });
   }
 };

@@ -55,7 +55,7 @@ module.exports = [
 
       // Custom project-specific rules (migrated from legacy checks)
       'custom/no-console-usage': 'error',
-      'custom/no-logger-commas': 'error',
+      'custom/logger-args-checker': 'error',
       'custom/no-direct-dotenv': 'error',
       'custom/no-hardcoded-strings': 'error',
       'custom/warn-mixed-strings': 'warn',
@@ -116,7 +116,7 @@ module.exports = [
 
       // Relaxed custom rules for scripts
       'custom/no-console-usage': 'off', // Allow console in scripts
-      'custom/no-logger-commas': 'off', // Relaxed for scripts
+      // 'custom/logger-args-checker': 'off', // Relaxed for scripts
       'custom/no-direct-dotenv': 'off', // Allow direct dotenv in setup scripts
       'custom/no-hardcoded-logger-strings': 'off', // Relaxed for scripts
       'custom/no-json-stringify-in-logs': 'off' // Relaxed for scripts

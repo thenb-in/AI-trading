@@ -51,7 +51,7 @@ const signup = async (req, res) => {
     if (error.message === `Company not found ${companyId}.`) {
       return res.status(404).json({ error: error.message });
     }
-    logger.error(`Signup error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Signup error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -104,7 +104,7 @@ const login = async (req, res) => {
     if (error.requiresPasswordChange) {
       return res.status(403).json({ error: error.message, requiresPasswordChange: true });
     }
-    logger.error(`Login error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Login error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -118,7 +118,7 @@ const resetPassword = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error(`Reset password error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Reset password error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -139,7 +139,7 @@ const approveUser = async (req, res) => {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    logger.error(`Approve user error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Approve user error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -150,7 +150,7 @@ const getAllUsers = async (req, res) => {
     const users = await userService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
-    logger.error(`Get all users error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Get all users error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -160,7 +160,7 @@ const getAllRoles = async (req, res) => {
     const roles = await authService.getAllRoles();
     res.status(200).json(roles);
   } catch (error) {
-    logger.error(`Get all roles error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Get all roles error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
@@ -172,7 +172,7 @@ const logout = async (req, res) => {
     res.clearCookie('isLoggedIn');
     res.status(200).json({ message: `User logged out successfully ${req.user.username}` });
   } catch (error) {
-    logger.error(`Logout error: ${error.message} - Stack: ${error.stack}`);
+    logger.error('Logout error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 };
