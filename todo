@@ -30,3 +30,13 @@ pre-commit hook: to not be in pre-push hook
 
 - If more than 3? in same variable, show error to rule out that before-hand
 - Error listener/catcher across the application? instead of function specific try-catch.
+
+- Frontend to create a company for first setup, default admin credentials
+- scrolling in admin bar for lots of masters
+- Excel based default data import on company creation
+- Log stack in case of errors
+- Remove HR and safe-chat specific things from startup (using AI)
+
+
+- auto-calculated should be disabled by default, they will always be calculated.
+- error should be a toast. anything else is easily missed.

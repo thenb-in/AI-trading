@@ -138,7 +138,7 @@ const MasterContent = () => {
                 textShadow: "none",
               }}
             >
-              HR Management System (Master Modules)
+              Master Modules
             </Typography>
             <Typography
               variant="subtitle1"
@@ -150,7 +150,7 @@ const MasterContent = () => {
                 fontWeight: 400,
               }}
             >
-              Streamline HR operations with our comprehensive management tools
+              Streamline organization data management with our comprehensive master modules
             </Typography>
           </Box>
 
