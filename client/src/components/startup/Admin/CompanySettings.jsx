@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDataContext } from "../../../context/startup/useDataContext";
 import ApiService from "../../../services/startup/ApiService";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import AccessDenied from "../AccessDenied";
 import ToggleSwitch from "./ToggleSwitch";
+import CompanyProfile from "../../CompanyProfile";
+import { toast } from "react-toastify";
 
 export default function CompanySettings() {
 
@@ -31,6 +33,7 @@ export default function CompanySettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const companyProfileRef = useRef(null);
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -46,7 +49,6 @@ export default function CompanySettings() {
 
         setIsLoading(false);
       } catch (err) {
-        console.log(err)
         setError(err.error || "Failed to load company settings");
         setIsLoading(false);
       }
@@ -75,10 +77,12 @@ export default function CompanySettings() {
     setSuccess("");
   };
 
-  const handleUpdateSettings = async () => {
+  const handleSaveAll = async () => {
     try {
       setIsLoading(true);
       setShowFeedback(true);
+      setError("");
+      setSuccess("");
 
       if (!companySettings.name.trim()) {
         setError("Company name cannot be empty");
@@ -86,27 +90,39 @@ export default function CompanySettings() {
         return;
       }
 
-      const dataToSend = {
+      const companyData = {
         name: companySettings.name,
         mobileApp: companySettings.mobileApp,
         desktopWeb: companySettings.desktopWeb,
         mobileWeb: companySettings.mobileWeb,
       };
 
-      await ApiService.updateCompanySettings(dataToSend);
+      await ApiService.updateCompanySettings(companyData);
+
+      if (companyProfileRef.current?.save) {
+        await companyProfileRef.current.save();
+      }
+
       setSuccess("Settings updated successfully");
-      setError("");
       setIsDirty(false);
+      toast.success("Settings updated successfully");
 
       setTimeout(() => {
         setSuccess("");
         setShowFeedback(false);
       }, 3000);
     } catch (err) {
-      setError(err.message || "Failed to update company settings");
-      setSuccess("");
+      const errorMessage = err.error || err.message || "Failed to update settings";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProfileDirtyChange = (isProfileDirty) => {
+    if (isProfileDirty) {
+      setIsDirty(true);
     }
   };
 
@@ -123,7 +139,7 @@ export default function CompanySettings() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-white p-6 sm:p-8 rounded-xl shadow-xl max-w-lg w-full border border-gray-100"
+        className="bg-white p-6 sm:p-8 rounded-xl shadow-xl max-w-2xl w-full border border-gray-100"
       >
         <div className="flex mb-6">
           <Building className="text-indigo-500 mr-2" size={24} />
@@ -161,14 +177,20 @@ export default function CompanySettings() {
           <label className="flex items-center text-gray-700 font-medium mb-2">
             <Building size={16} className="mr-2 text-gray-500" />
             Company Name
+            {!userData?.isSadmin && (
+              <span className="ml-2 text-xs text-gray-500">(Read-only)</span>
+            )}
           </label>
           <motion.input
             type="text"
             value={companySettings.name}
             onChange={(e) => handleInputChange("name", e.target.value)}
             placeholder="Enter company name"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-            whileFocus={{ scale: 1.01 }}
+            readOnly={!userData?.isSadmin}
+            className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+              !userData?.isSadmin ? 'bg-gray-100 cursor-not-allowed' : ''
+            }`}
+            whileFocus={userData?.isSadmin ? { scale: 1.01 } : {}}
           />
         </div>
 
@@ -217,13 +239,20 @@ export default function CompanySettings() {
           />
         </div>
 
+        {/* Company Profile - App-specific settings */}
+        <CompanyProfile
+          ref={companyProfileRef}
+          isLoading={isLoading}
+          onDirtyChange={handleProfileDirtyChange}
+        />
+
         <motion.button
-          onClick={handleUpdateSettings}
-          disabled={isLoading || !isDirty}
+          onClick={handleSaveAll}
+          disabled={isLoading || (!isDirty && !(companyProfileRef.current?.isDirty?.() || false))}
           className={`w-full p-3 rounded-lg text-white font-semibold transition-all flex items-center justify-center ${
             isLoading
               ? "bg-indigo-300 cursor-not-allowed"
-              : !isDirty
+              : !isDirty && !(companyProfileRef.current?.isDirty?.() || false)
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
           }`}

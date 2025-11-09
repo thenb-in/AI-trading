@@ -1,5 +1,5 @@
 // services/companyService.js
-const { Company, MultiCompanyModule, User,UserProfile } = require('../../models');
+const { Company, MultiCompanyModule, User, UserProfile, CompanyProfile } = require('../../models');
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
 
@@ -49,6 +49,13 @@ const companyService = {
           mobileApp: !!data.mobileApp,
           desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
           mobileWeb: !!data.mobileWeb
+        },
+        { transaction }
+      );
+
+      await CompanyProfile.create(
+        {
+          companyId: company.id
         },
         { transaction }
       );
