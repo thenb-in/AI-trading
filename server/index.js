@@ -9,6 +9,7 @@ const authRoutes = require('./src/routes/startup/authRoutes');
 const userRoutes = require('./src/routes/startup/userRoutes');
 const companyRoutes = require('./src/routes/startup/companyRoutes');
 const adminRoutes = require('./src/routes/startup/admin.route');
+const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 
 const cookieParser = require('cookie-parser');
@@ -48,6 +49,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/company-profile', companyProfileRoutes);
 
 const appRoutes = require('./src/routes/app_routes');
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
