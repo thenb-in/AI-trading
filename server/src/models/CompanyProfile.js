@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'company_profiles',
-    timestamps: true
+    timestamps: true,
+    underscored: true
   });
 
   CompanyProfile.associate = (models) => {

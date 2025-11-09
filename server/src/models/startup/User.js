@@ -66,7 +66,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'nbnext_users',
-    timestamps: false // Disable automatic created_at/updated_at columns
+    timestamps: false, // Disable automatic created_at/updated_at columns
+    underscored: true
   });
 
   User.associate = (models) => {

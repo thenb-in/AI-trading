@@ -28,7 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     }
   }, {
-    tableName: 'nbnext_company'
+    tableName: 'nbnext_company',
+    underscored: true
   });
 
   Company.associate = (models) => {

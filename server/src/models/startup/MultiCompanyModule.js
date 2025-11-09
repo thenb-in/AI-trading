@@ -18,6 +18,7 @@ module.exports = (sequelize) => {
   }, {
     tableName: 'nbnext_multi_company_module',
     timestamps: true,
+    underscored: true,
     indexes: [
       { unique: true, fields: ['user_id', 'company_id'] },
       { fields: ['user_id'] },
