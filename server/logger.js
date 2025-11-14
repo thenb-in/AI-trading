@@ -141,7 +141,10 @@ logger.error = (message, meta = {}) => {
     };
   } else if (meta && meta instanceof Error) {
     meta = { error: { message: meta.message, stack: meta.stack } };
+  } else if (!meta.error) {
+    meta = { error: { message: message } };
   }
+
   // Add extra context automatically
   const extendedMeta = {
     ...meta,

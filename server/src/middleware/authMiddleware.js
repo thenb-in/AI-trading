@@ -28,7 +28,7 @@ const handleRefreshToken = async (refreshToken) => {
   const decoded = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
   const userId = decoded.id;
 
-  if (refreshTokenLocks.has(userId)){
+  if (refreshTokenLocks.has(userId)) {
     return refreshTokenLocks.get(userId);
   }
 
@@ -39,7 +39,7 @@ const handleRefreshToken = async (refreshToken) => {
       lock: tx.LOCK.UPDATE, transaction: tx
     });
     try {
-      if (!user || user.refresh_token !== refreshToken || !user.isActive){
+      if (!user || user.refresh_token !== refreshToken || !user.isActive) {
         throw new Error(`Invalid or inactive user ${user.username}`);  // todo: show username instead of userId
       }
 
@@ -63,7 +63,7 @@ const handleRefreshToken = async (refreshToken) => {
         }
       };
     } catch (e) {
-      if (!tx.finished){
+      if (!tx.finished) {
         await tx.rollback();
       }
       throw new Error(`Error in handling refresh token ${userId}`, e);
@@ -78,7 +78,7 @@ const handleRefreshToken = async (refreshToken) => {
 exports.protect = async (req, res, next) => {
   try {
     const { accessToken, refreshToken } = req.cookies || {};
-    if (!accessToken && !refreshToken){
+    if (!accessToken && !refreshToken) {
       return res.status(401).json({ message: 'No token found', requiresLogin: true });
     }
 
@@ -88,7 +88,7 @@ exports.protect = async (req, res, next) => {
       return next();
     }
 
-    if (!refreshToken){
+    if (!refreshToken) {
       return res.status(401).json({ message: 'Session expired', requiresLogin: true });
     }
 
@@ -109,9 +109,9 @@ exports.protect = async (req, res, next) => {
   }
 };
 
-exports.admin = (req, res, next) => {
-  const hasPermission = allowedPermissions(req.user.id, ['Admin']);
-  if (!hasPermission){
+exports.admin = async (req, res, next) => {
+  const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
+  if (!hasPermission) {
     return res.status(403).json({ error: `You are not authorized to access this resource Admin ${req.user.id}` });
   }
   next();

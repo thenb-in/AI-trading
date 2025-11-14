@@ -19,7 +19,7 @@ const httpLogger = (req, res, next) => {
     // Be careful with logging sensitive data in body
     ...(method !== 'GET' && method !== 'DELETE' && { body })
   };
-  logger.debug(`Request received ${logData.method} ${logData.path} from ${logData.ip}`);
+  logger.info(`[HTTP] ${logData.method} ${logData.path} from ${logData.ip}`);
 
   // Capture response finish to log the outcome
   res.on('finish', () => {

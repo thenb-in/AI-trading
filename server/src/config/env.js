@@ -1,4 +1,5 @@
 // Centralized environment configuration
+const path = require('path');
 const { PARSE_INT_RADIX, PRODUCTION_ENV } = require('../constants/startup');
 // This file sets up dotenv-safe once and exports the configuration
 require('dotenv-safe').config({
@@ -8,6 +9,20 @@ require('dotenv-safe').config({
 
 // Export the configuration for use in other files
 const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
+
+// Calculate default uploads directory relative to server root
+// env.js is at server/src/config/env.js, so we go up 3 levels to base root
+const defaultUploadsDir = path.resolve(__dirname, '../../../uploads');
+
+// Handle UPLOADS_DIR: if set, use it (resolve if relative), otherwise use default
+let uploadsDir = process.env.UPLOADS_DIR;
+if (uploadsDir) {
+  // If provided, resolve to absolute path (handles both absolute and relative)
+  uploadsDir = path.isAbsolute(uploadsDir) ? uploadsDir : path.resolve(__dirname, uploadsDir);
+} else {
+  // Use default path
+  uploadsDir = defaultUploadsDir;
+}
 module.exports = {
   // Server configuration
   NODE_ENV: process.env.NODE_ENV,
@@ -28,6 +43,9 @@ module.exports = {
   MAX_JWT_REFRESH_EXPIRATION_MS: parseInt(process.env.MAX_JWT_REFRESH_EXPIRATION_MS, PARSE_INT_RADIX),
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
+
+  // File upload configuration
+  UPLOADS_DIR: uploadsDir,
 
   // Helper functions
   isProduction,

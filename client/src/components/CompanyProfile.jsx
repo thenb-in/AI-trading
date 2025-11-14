@@ -1,7 +1,11 @@
 import { forwardRef } from 'react';
 import PropTypes from 'prop-types';
 
-const CompanyProfile = forwardRef(({ isLoading: _isLoading, onDirtyChange: _onDirtyChange }, _ref) => {
+const CompanyProfile = forwardRef((props, ref) => {
+  const { isLoading, onDirtyChange } = props;
+  console.log("CompanyProfile: isLoading", isLoading);
+  console.log("CompanyProfile: onDirtyChange", onDirtyChange);
+  console.log("CompanyProfile: ref", ref);
   return (
     <>
       {/* Separator */}

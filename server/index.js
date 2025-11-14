@@ -3,7 +3,8 @@ const http = require('http');
 const path = require('path');
 const cors = require('cors');
 const env = require('./src/config/env');
-// require('./sheduler/messageDelete')
+
+// Load database models
 const db = require('./src/models');
 const authRoutes = require('./src/routes/startup/authRoutes');
 const userRoutes = require('./src/routes/startup/userRoutes');
@@ -13,6 +14,7 @@ const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 
 const cookieParser = require('cookie-parser');
+
 const app = express();
 const bodyParser = require('body-parser');
 const server = http.createServer(app);
@@ -20,6 +22,11 @@ const logger = require('./logger');
 const httpLogger = require('./src/middleware/httpLogger');
 app.use(httpLogger);
 
+// // Debug middleware to log all requests before routing
+app.use((req, res, next) => {
+  logger.debug(`[ROUTE DEBUG] ${req.method} ${req.originalUrl} - Path: ${req.path}`);
+  next();
+});
 
 // CORS configuration
 const clientUrl = env.FRONTEND_URL;
@@ -51,14 +58,15 @@ app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/company-profile', companyProfileRoutes);
 
+// App routes (custom routes)
 const appRoutes = require('./src/routes/app_routes');
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
 // current routes in app route need to manually add /api/v1 prefix
 // todo: automatically add /api/v1 prefix to app routes
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(env.UPLOADS_DIR));
 
-// Error handling
+// Error handling middleware - must be last
 app.use(errorMiddleware);
 
 

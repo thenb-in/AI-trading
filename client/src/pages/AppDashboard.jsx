@@ -1,5 +1,11 @@
+// App Dashboard Routes
+// Add custom application routes here that should be accessible from the admin dashboard
+// Each route should have: { path: string, element: JSX.Element }
+
 const appRoutes = [
-    // Example additional routes
+  // Example:
+  // { path: "custom-route", element: <CustomComponent /> },
 ];
 
 export default appRoutes;
+
