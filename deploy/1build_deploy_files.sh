@@ -17,14 +17,37 @@ set -e  # Exit on any error
 set -u  # Exit on undefined variables
 set -o pipefail  # Exit on pipe failures
 
-# Function to log messages with timestamp
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Function to log messages with timestamp and color
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo -e "${CYAN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+# Function to log info messages
+log_info() {
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] INFO:${NC} $1"
+}
+
+# Function to log success messages
+log_success() {
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] ✓${NC} $1"
+}
+
+# Function to log warning messages
+log_warning() {
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
 }
 
 # Function to log errors and exit
 error_exit() {
-    log "ERROR: $1" >&2
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1" >&2
     exit 1
 }
 
@@ -33,7 +56,7 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-log "Starting deployment file generation..."
+log_info "Starting deployment file generation..."
 
 # Check required commands
 if ! command_exists git; then
@@ -45,7 +68,7 @@ if ! command_exists npm; then
 fi
 
 # Get the GitHub remote URL (assumes "origin" remote)
-log "Getting Git remote URL..."
+log_info "Getting Git remote URL..."
 REMOTE_URL=$(git config --get remote.origin.url) || error_exit "Failed to get Git remote URL. Make sure you're in a Git repository with an 'origin' remote."
 
 if [ -z "$REMOTE_URL" ]; then
@@ -55,7 +78,7 @@ fi
 # Replace nbnext_app_name with the name of the app
 # app name is the github repository name
 app_name=$(basename -s .git "$REMOTE_URL")
-log "App name: $app_name"
+log_info "App name: $app_name"
 
 # Replace 3.110.76.178 with the IP address of the server
 # ask as input from user
@@ -81,7 +104,7 @@ nvm_path=$(dirname $(dirname $nvm_path))
 npm_path="$nvm_path/bin/npm"
 
 # console log the values
-log "Configuration:"
+log_info "Configuration:"
 log "  app_name: $app_name"
 log "  ip_address: $ip_address"
 log "  app_path: $app_path"
@@ -99,7 +122,7 @@ files_to_replace=(
 )
 
 # Create the target directory if it doesn't exist
-log "Creating target directory: $app_name/deploy"
+log_info "Creating target directory: $app_name/deploy"
 mkdir -p "$app_name/deploy" || error_exit "Failed to create directory $app_name/deploy"
 
 # copy the files to app_name instead of base
@@ -115,7 +138,7 @@ for file in ${files_to_replace[@]}; do
     target_filename="${file#base.}"
     target_file="$app_name/deploy/$app_name.$target_filename"
     
-    log "Processing $file -> $target_filename"
+    log_info "Processing $file -> $target_filename"
     
     # Read the file content and perform replacements in memory (no temp files)
     log "  Reading $source_file and replacing placeholders"
@@ -142,7 +165,8 @@ for file in ${files_to_replace[@]}; do
     log "  Writing $target_file"
     printf '%s' "$content" > "$target_file" || error_exit "Failed to write $target_file"
     
-    log "  ✓ Successfully created $target_file"
+    log_success "Successfully created $target_file"
 done
 
-log "You can now copy these files to your server for deployment."
+log_success "Deployment files generated successfully!"
+log_info "You can now copy these files to your server for deployment."
