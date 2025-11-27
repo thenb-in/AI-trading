@@ -3,8 +3,15 @@ name: Build and Upload Artifact
 on:
   push:
     branches:
-      - main  # Change if needed
+      - main
       - master
+      - test-ci
+  pull_request:
+    branches:
+      - main
+      - master
+  release:
+    types: [published]
 
 jobs:
   build:
