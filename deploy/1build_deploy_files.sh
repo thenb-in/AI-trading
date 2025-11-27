@@ -121,10 +121,6 @@ files_to_replace=(
     "base.service"
 )
 
-# Create the target directory if it doesn't exist
-log_info "Creating target directory: $app_name/deploy"
-mkdir -p "$app_name/deploy" || error_exit "Failed to create directory $app_name/deploy"
-
 # copy the files to app_name instead of base
 for file in ${files_to_replace[@]}; do
     source_file="$script_dir/$file"
@@ -136,7 +132,7 @@ for file in ${files_to_replace[@]}; do
     
     # Remove 'base.' prefix and replace with app_name
     target_filename="${file#base.}"
-    target_file="$app_name/deploy/$app_name.$target_filename"
+    target_file="$script_dir/$app_name.$target_filename"
     
     log_info "Processing $file -> $target_filename"
     
