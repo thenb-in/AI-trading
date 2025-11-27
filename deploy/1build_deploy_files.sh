@@ -1,5 +1,17 @@
 #!/bin/bash
 
+replace_in_var() {
+    local var_name="$1"
+    local search="$2"
+    local replace="$3"
+
+    # Indirect expansion
+    local value="${!var_name}"
+    value="${value//$search/$replace}"
+    printf -v "$var_name" '%s' "$value"
+}
+
+
 # Enable error handling
 set -e  # Exit on any error
 set -u  # Exit on undefined variables
@@ -101,40 +113,36 @@ for file in ${files_to_replace[@]}; do
     
     # Remove 'base.' prefix and replace with app_name
     target_filename="${file#base.}"
-    target_file="$app_name.$target_filename"
+    target_file="$app_name/deploy/$app_name.$target_filename"
     
     log "Processing $file -> $target_filename"
-    log "  Copying $source_file to $target_file"
     
-    # Copy the file
-    cp "$source_file" "$target_file" || error_exit "Failed to copy $source_file to $target_file"
+    # Read the file content and perform replacements in memory (no temp files)
+    log "  Reading $source_file and replacing placeholders"
     
-    # Use proper sed syntax for macOS (BSD sed)
-    log "  Replacing placeholders in $target_file"
+    # Read source file and perform all replacements using bash string substitution
+    content=$(cat "$source_file")
     
-    sed -i '' "s/nbnext_app_name/$app_name/g" "$target_file" || error_exit "Failed to replace nbnext_app_name in $target_file"
-    sed -i '' "s/public_ip_address/$ip_address/g" "$target_file" || error_exit "Failed to replace public_ip_address in $target_file"
-    sed -i '' "s|nbnext_app_name_path|$app_path|g" "$target_file" || error_exit "Failed to replace nbnext_app_name_path in $target_file"
-    sed -i '' "s|server_path|$server_path|g" "$target_file" || error_exit "Failed to replace server_path in $target_file"
-    sed -i '' "s|nvm_path|$nvm_path|g" "$target_file" || error_exit "Failed to replace nvm_path in $target_file"
-    sed -i '' "s|npm_path|$npm_path|g" "$target_file" || error_exit "Failed to replace npm_path in $target_file"
+    # Perform all replacements using bash parameter expansion
+    replace_in_var "content" "nbnext_app_name" "$app_name"
+    replace_in_var "content" "public_ip_address" "$ip_address"
+    replace_in_var "content" "nbnext_app_name_path" "$app_path"
+    replace_in_var "content" "server_path" "$server_path"
+    replace_in_var "content" "nvm_path" "$nvm_path"
+    replace_in_var "content" "npm_path" "$npm_path"
     
     # Additional replacements for service file
     if [[ "$file" == "base.service" ]]; then
         log "  Applying service-specific replacements"
-        sed -i '' "s|/home/ubuntu/etime-payroll/server|$server_path|g" "$target_file" || error_exit "Failed to replace etime-payroll path in $target_file"
-        sed -i '' "s|/home/ubuntu/.nvm/versions/node/v22.19.0|$nvm_path|g" "$target_file" || error_exit "Failed to replace nvm path in $target_file"
+        replace_in_var "content" "/home/ubuntu/etime-payroll/server" "$server_path"
+        replace_in_var "content" "/home/ubuntu/.nvm/versions/node/v22.19.0" "$nvm_path"
     fi
     
-    log "  ✓ Successfully processed $target_file"
-done
-
-log "✓ Deployment files generated successfully!"
-log "Generated files:"
-for file in ${files_to_replace[@]}; do
-    target_filename="${file#base.}"
-    target_file="$app_name.$target_filename"
-    log "  - $target_file"
+    # Write the modified content directly to the target file
+    log "  Writing $target_file"
+    printf '%s' "$content" > "$target_file" || error_exit "Failed to write $target_file"
+    
+    log "  ✓ Successfully created $target_file"
 done
 
 log "You can now copy these files to your server for deployment."

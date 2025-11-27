@@ -1,0 +1,19 @@
+[Unit]
+Description=nbnext_app_name App
+After=network.target
+
+[Service]
+Environment=PATH=nvm_path/bin:/usr/bin:/bin
+WorkingDirectory=server_path
+ExecStart=npm_path start
+Restart=always
+RestartSec=5
+User=ubuntu
+Environment=NODE_ENV=production
+# Optional logging
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=nbnext_app_name
+
+[Install]
+WantedBy=multi-user.target
