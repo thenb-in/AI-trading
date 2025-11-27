@@ -63,6 +63,9 @@ module.exports = [
       'custom/constants-in-single-folder': 'error',
       'custom/file-length-warning': ['warn', { warningLines: 300 }],
       'custom/no-direct-model-imports': 'error',
+      'custom/named-exports-only': ['error', { 
+        excludePatterns: ['eslint-rules', 'scripts', 'migrations']
+      }],
 
       // File length and complexity rules
       'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],

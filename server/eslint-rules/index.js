@@ -10,6 +10,7 @@ const noJsonStringifyInLogs = require('./rules/no-json-stringify-in-logs');
 const constantsInSingleFolder = require('./rules/constants-in-single-folder');
 const fileLengthWarning = require('./rules/file-length-warning');
 const noDirectModelImports = require('./rules/no-direct-model-imports');
+const namedExportsOnly = require('./rules/named-exports-only');
 
 // Combine all rules into a single object
 const customRules = {
@@ -21,7 +22,8 @@ const customRules = {
   ...noJsonStringifyInLogs,
   ...constantsInSingleFolder,
   ...fileLengthWarning,
-  ...noDirectModelImports
+  ...noDirectModelImports,
+  ...namedExportsOnly
 };
 
 module.exports = {
