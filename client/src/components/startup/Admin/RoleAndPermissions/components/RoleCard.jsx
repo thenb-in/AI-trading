@@ -60,4 +60,4 @@ RoleCard.propTypes = {
   onRemovePermission: PropTypes.func.isRequired
 };
 
-export default RoleCard;
+export { RoleCard };

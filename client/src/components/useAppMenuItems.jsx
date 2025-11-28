@@ -18,7 +18,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../context/startup/useDataContext";
 import { useMemo, useState, useRef } from "react";
-import getMasterModules from "../data/getMasterModules";
+import { getMasterModules } from "../data/getMasterModules";
 
 // Hook to get App-specific menu items
 export function useAppMenuItems() {
@@ -113,35 +113,49 @@ export function useAppMenuItems() {
   const activeCategory = searchParams.get("category") || (isMasterPage ? "Common Masters" : null);
 
   // Master Categories Submenu Component
-  const MasterSubmenu = () => (
-    <ul className="mt-1 ml-8 space-y-1">
-      {categories.map((category) => {
-        const path = `/admin/master?category=${encodeURIComponent(category.name)}`;
-        const isCatActive = activeCategory === category.name;
-        return (
-          <li key={category.name}>
-            <button
-              onClick={() => navigate(path)}
-              className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${
-                isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
-              }`}
-              title={`${category.name} (${category.count})`}
-            >
-              <span className="mr-2">{getCategoryIcon(category.name)}</span>
-              <span className="flex-1 truncate">{category.name}</span>
-              <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
-                {category.count}
-              </span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  const MasterSubmenu = () => {
+    const handleCategoryClick = (categoryName) => {
+      const path = `/admin/master?category=${encodeURIComponent(categoryName)}`;
+      navigate(path);
+    };
+
+    return (
+      <ul className="mt-1 ml-8 space-y-1">
+        {categories.map((category) => {
+          const isCatActive = activeCategory === category.name;
+          return (
+            <li key={category.name}>
+              <button
+                onClick={() => handleCategoryClick(category.name)}
+                className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${
+                  isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
+                }`}
+                title={`${category.name} (${category.count})`}
+              >
+                <span className="mr-2">{getCategoryIcon(category.name)}</span>
+                <span className="flex-1 truncate">{category.name}</span>
+                <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
+                  {category.count}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
 
   // Master Categories Flyout Component
-  const MasterFlyout = () => (
-    showMasterFlyout && (
+  const MasterFlyout = () => {
+    const handleCategoryClick = (categoryName) => {
+      const path = `/admin/master?category=${encodeURIComponent(categoryName)}`;
+      navigate(path);
+      closeFlyoutImmediate();
+    };
+
+    if (!showMasterFlyout) return null;
+
+    return (
       <div
         className="absolute left-full top-0 ml-2 w-64 bg-gray-800 text-white rounded-lg shadow-lg border border-gray-700 z-[2147483647] p-2 pointer-events-auto"
         onMouseEnter={openFlyout}
@@ -149,15 +163,11 @@ export function useAppMenuItems() {
       >
         <ul className="space-y-1 max-h-[70vh] overflow-auto pr-1">
           {categories.map((category) => {
-            const path = `/admin/master?category=${encodeURIComponent(category.name)}`;
             const isCatActive = activeCategory === category.name;
             return (
               <li key={category.name}>
                 <button
-                  onClick={() => {
-                    navigate(path);
-                    closeFlyoutImmediate();
-                  }}
+                  onClick={() => handleCategoryClick(category.name)}
                   className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${
                     isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
                   }`}
@@ -174,8 +184,8 @@ export function useAppMenuItems() {
           })}
         </ul>
       </div>
-    )
-  );
+    );
+  };
 
   return [
     hasPermission("view_dashboard_module") && {

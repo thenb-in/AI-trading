@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import ApiService from '../../../services/startup/ApiService';
+import { ApiService } from '../../../services/startup/ApiService';
 import { useDataContext } from '../../../context/startup/useDataContext';
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
-export default function Login() {
+export function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -69,18 +69,24 @@ export default function Login() {
     setShowPassword(!showPassword);
   };
 
+  const handleFormSubmit = (e) => {
+    handleSubmit(e);
+  };
+
+  const handleForgotPasswordClick = () => {
+    navigate('/forgot-password');
+  };
+
   return (
     <div
-      className="flex items-center justify-center mt-4"
+      className="flex items-center justify-center mt-4 bg-cover bg-center"
       style={{
         backgroundImage: "url('/auth.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
       }}
     >
       <div className="w-full max-w-md">
         <form
-         onSubmit={(e) => handleSubmit(e)}
+         onSubmit={handleFormSubmit}
 
           className="bg-white shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4 transform transition-all duration-300 hover:scale-[1.01]"
         >
@@ -144,7 +150,7 @@ export default function Login() {
           <div className="mb-4 text-right">
             <button
               type="button"
-              onClick={() => navigate('/forgot-password')}
+              onClick={handleForgotPasswordClick}
               className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
             >
               Forgot Password?

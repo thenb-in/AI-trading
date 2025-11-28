@@ -31,4 +31,4 @@ LoadingState.propTypes = {
   onRetry: PropTypes.func
 };
 
-export default LoadingState;
+export { LoadingState };

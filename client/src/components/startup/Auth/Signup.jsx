@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import ApiService from '../../../services/startup/ApiService';
+import { ApiService } from '../../../services/startup/ApiService';
 import PropTypes from "prop-types";
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 
-export default function Signup({ showRoleDropdown }) {
+export function Signup({ showRoleDropdown }) {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -100,18 +100,32 @@ export default function Signup({ showRoleDropdown }) {
   const params = new URLSearchParams(location.search);
   const hideCompanyIdField = params.has('company_id');
 
+  const handleFormSubmit = (e) => {
+    handleSubmit(e);
+  };
+
+  const handleTogglePassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleToggleConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleNavigateToLogin = () => {
+    navigate('/');
+  };
+
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-center justify-center bg-cover bg-center"
       style={{
         backgroundImage: "url('/auth.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
       }}
     >
       <div className="w-full max-w-md">
         <form
-          onSubmit={(e) => handleSubmit(e)}
+          onSubmit={handleFormSubmit}
           className="bg-white shadow-2xl rounded-2xl px-8 pt-6 pb-8 mb-4 transform transition-all duration-300 hover:scale-[1.01]"
         >
           <div className="text-center mb-6">
@@ -194,7 +208,7 @@ export default function Signup({ showRoleDropdown }) {
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={handleTogglePassword}
                 className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition"
               >
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -220,7 +234,7 @@ export default function Signup({ showRoleDropdown }) {
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                onClick={handleToggleConfirmPassword}
                 className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition"
               >
                 {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
@@ -289,7 +303,7 @@ export default function Signup({ showRoleDropdown }) {
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <button
-                onClick={() => navigate('/')}
+                onClick={handleNavigateToLogin}
                 className="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition"
               >
                 Log in

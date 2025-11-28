@@ -1,11 +1,11 @@
 import { useState } from "react";
-import AppSideBar from "../../AppSideBar";
+import { AppSideBar } from "../../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
 import { useDebugMode } from "../../../hooks/useDebugMode";
 
 
-export default function AdminLayout() {
+export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { hamburgerMenu } = useDataContext();
   const [isMobileView] = useState(window.innerWidth < 768);
@@ -15,7 +15,7 @@ export default function AdminLayout() {
   console.log('[ADMIN LAYOUT] Debug mode initialized:', debugMode);
 
   const renderOutlet = () => (
-    <div className="min-h-screen bg-gray-50" style={{ overflowX: "auto" }}>
+    <div className="min-h-screen bg-gray-50 overflow-x-auto">
       <div className="max-w-full">
         <Outlet />
       </div>
@@ -39,10 +39,9 @@ export default function AdminLayout() {
     <div className="flex overflow-x-hidden">
       {renderSidebar()}
       <div
-        className={`flex-1 transition-all duration-300 ${
+        className={`flex-1 transition-all duration-300 overflow-x-auto ${
           collapsed ? "ml-14" : "ml-64"
         } min-h-screen bg-gray-50`}
-        style={{ overflowX: "auto" }}
       >
         <div className="max-w-full">
           <Outlet />

@@ -13,6 +13,7 @@
     "setup-env:validate": "node scripts/setup-env.js validate",
     "validate-env": "node scripts/setup-env.js validate",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "preview": "vite preview"
   },
   "dependencies": {

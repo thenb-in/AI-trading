@@ -1,6 +1,6 @@
 import { Save, ArrowLeft, Loader2, X } from 'lucide-react';
 import { useCreateRole } from './hooks/useCreateRole';
-import AlertMessage from './components/AlertMessage';
+import { AlertMessage } from './components/AlertMessage';
 
 const CreateRoleForm = () => {
   const {
@@ -150,4 +150,4 @@ const CreateRoleForm = () => {
   );
 };
 
-export default CreateRoleForm;
+export { CreateRoleForm };

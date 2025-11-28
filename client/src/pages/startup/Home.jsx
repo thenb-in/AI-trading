@@ -1,8 +1,8 @@
-import Login from '../../components/startup/Auth/Login';
+import { Login } from '../../components/startup/Auth/Login';
 import { motion } from 'framer-motion';
-import AnimatedBackground from '../../components/startup/AnimatedBackground';
+import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
 
-export default function Home() {
+export function Home() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side: Animated Section */}

@@ -8,12 +8,12 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
-import LogoutButton from "../LogoutButton";
+import { LogoutButton } from "../LogoutButton";
 import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "../../../constants/startup/index";
 
 
-export default function AdminSidebar({
+export function AdminSidebar({
   collapsed,
   setCollapsed,
   isMobileView,
@@ -73,6 +73,18 @@ export default function AdminSidebar({
 
   const isActive = (path) => location.pathname.startsWith(path);
 
+  const handleToggleClick = () => {
+    if (isMobileView) {
+      setHamburgerMenu(!hamburgerMenu);
+    } else {
+      setCollapsed(!collapsed);
+    }
+  };
+
+  const handleItemClick = (item) => () => {
+    handleNavigation(item);
+  };
+
   return (
     <div
       className={`bg-gray-800 text-white h-screen fixed top-0 left-0 flex flex-col transition-all duration-300 z-[99999] ${
@@ -91,11 +103,7 @@ export default function AdminSidebar({
     )}
 
         <button
-          onClick={() =>
-            isMobileView
-              ? setHamburgerMenu(!hamburgerMenu)
-              : setCollapsed(!collapsed)
-          }
+          onClick={handleToggleClick}
           className="p-2 text-gray-400 hover:text-white rounded-md hover:bg-gray-700"
           title={collapsed ? "Expand" : "Collapse"}
         >
@@ -114,7 +122,7 @@ export default function AdminSidebar({
               onMouseLeave={item.onMouseLeave}
             >
               <button
-                onClick={() => handleNavigation(item)}
+                onClick={handleItemClick(item)}
                 title={item.label}
                 aria-label={collapsed ? item.label : undefined}
                 className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors ${

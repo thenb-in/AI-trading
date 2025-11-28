@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
-import UserTableRow from './UserTableRow';
+import { UserTableRow } from './UserTableRow';
 
 const UserTable = ({
   users,
@@ -33,6 +33,14 @@ const UserTable = ({
     };
     return date.toLocaleDateString('en-GB', options).replace(',', '');
   }, []);
+
+  const handleSelectAllClick = () => {
+    if (allUsersInTableSelected) {
+      deselectAllUsersFromTable(users);
+    } else {
+      selectAllUsersFromTable(users);
+    }
+  };
   
 
 
@@ -51,11 +59,7 @@ const UserTable = ({
               <tr>
                    {bulkDeleteMode && users.length > 0 && (
                     <button
-                      onClick={() =>
-                        allUsersInTableSelected
-                          ? deselectAllUsersFromTable(users)
-                          : selectAllUsersFromTable(users)
-                      }
+                      onClick={handleSelectAllClick}
                       className="px-3 py-1 mt-2 ml-2 text-xs font-semibold rounded-md bg-gray-200 hover:bg-gray-300 transition-colors"
                     >
                       {allUsersInTableSelected ? 'Deselect All' : 'Select All'}
@@ -135,4 +139,4 @@ UserTable.propTypes = {
   }))
 };
 
-export default UserTable;
+export { UserTable };

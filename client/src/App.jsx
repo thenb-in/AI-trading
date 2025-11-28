@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Home from './pages/startup/Home';
-import AdminDashboard from './pages/startup/AdminDashboard';
-import SignupPage from './pages/startup/SignupPage';
-import ForgotPasswordPage from './pages/startup/ForgotPasswordPage';
+import { Home } from './pages/startup/Home';
+import { AdminDashboard } from './pages/startup/AdminDashboard';
+import { SignupPage } from './pages/startup/SignupPage';
+import { ForgotPasswordPage } from './pages/startup/ForgotPasswordPage';
 import PropTypes from 'prop-types';
-import ProtectedRoute from './components/startup/ProtectedRoute';
+import { ProtectedRoute } from './components/startup/ProtectedRoute';
 
 
-export default function App() {
+export function App() {
   return (
     <>
       <Routes>

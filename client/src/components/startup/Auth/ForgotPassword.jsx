@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
-import ApiService from '../../../services/startup/ApiService';
+import { ApiService } from '../../../services/startup/ApiService';
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 const ForgotPassword = () => {
@@ -68,11 +68,9 @@ const ForgotPassword = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-center justify-center bg-cover bg-center"
       style={{
         backgroundImage: "url('/auth.png')",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
       }}
     >
       <div className="w-full max-w-md">
@@ -213,4 +211,4 @@ const ForgotPassword = () => {
   );
 };
 
-export default ForgotPassword;
+export { ForgotPassword };

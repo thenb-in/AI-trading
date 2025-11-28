@@ -1,13 +1,24 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import ReportList from './ReportComponents/ReportList';
+import PropTypes from 'prop-types';
+import { ReportList } from './ReportComponents/ReportList';
 // import PastReportPage from './ReportComponents/PastReportPage';
 import { reports, categories } from '../../data/getReportModules';
 
 const staticPages = ['past-report'];
 
+const DummyReportComponent = ({ report }) => (
+  <div className="p-6 bg-white rounded-xl border border-gray-200">
+    <h2 className="text-xl font-semibold text-gray-800 mb-2">{report.title}</h2>
+    <p className="text-gray-600">This report does not have a view yet.</p>
+  </div>
+);
 
-
+DummyReportComponent.propTypes = {
+  report: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 const ReportContent = () => {
   const location = useLocation();
@@ -31,15 +42,7 @@ const ReportContent = () => {
       {/* <Route path="past-report" element={<PastReportPage />} /> */}
 
       {reports.map((report) => {
-        const DummyReportComponent = () => (
-          <div className="p-6 bg-white rounded-xl border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">{report.title}</h2>
-            <p className="text-gray-600">This report does not have a view yet.</p>
-          </div>
-        );
-
         const Component = report.component || DummyReportComponent;
-
         return (
           <Route
             key={report.slug}
@@ -55,4 +58,4 @@ const ReportContent = () => {
   );
 };
 
-export default ReportContent;
+export { ReportContent };

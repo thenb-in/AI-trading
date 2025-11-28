@@ -2,11 +2,11 @@ import { Plus, Shield, Users, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRolePermissions } from './hooks/useRolePermissions';
 import { usePermissionAssignment } from './hooks/usePermissionAssignment';
-import RoleCard from './components/RoleCard';
-import EmptyState from './components/EmptyState';
-import PermissionSelector from './components/PermissionSelector';
-import AlertMessage from './components/AlertMessage';
-import LoadingState from './components/LoadingState';
+import { RoleCard } from './components/RoleCard';
+import { EmptyState } from './components/EmptyState';
+import { PermissionSelector } from './components/PermissionSelector';
+import { AlertMessage } from './components/AlertMessage';
+import { LoadingState } from './components/LoadingState';
 
 const RolePermissionsManagement = () => {
   const navigate = useNavigate();
@@ -228,4 +228,4 @@ const RolePermissionsManagement = () => {
   );
 };
 
-export default RolePermissionsManagement;
+export { RolePermissionsManagement };

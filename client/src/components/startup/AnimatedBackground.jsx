@@ -72,4 +72,4 @@ AnimatedBackground.propTypes = {
   setShowRoleDropdown: PropTypes.func.isRequired,
 };
 
-export default AnimatedBackground;
+export { AnimatedBackground };

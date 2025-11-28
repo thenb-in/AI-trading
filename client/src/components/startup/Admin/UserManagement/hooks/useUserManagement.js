@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import ApiService from "../../../../../services/startup/ApiService";
+import { ApiService } from "../../../../../services/startup/ApiService";
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState([]);

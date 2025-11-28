@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import ApiService from '../../../../../services/startup/ApiService';
+import { ApiService } from '../../../../../services/startup/ApiService';
 import { STORAGE_KEYS } from '../../../../../constants/startup/index';
 import { useDataContext } from '../../../../../context/startup/useDataContext';
 

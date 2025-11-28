@@ -36,4 +36,4 @@ EmptyState.propTypes = {
   onAction: PropTypes.func
 };
 
-export default EmptyState;
+export { EmptyState };

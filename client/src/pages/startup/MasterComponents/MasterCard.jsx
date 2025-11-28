@@ -188,8 +188,6 @@ const MasterCard = ({
   );
 };
 
-export default MasterCard;
-
 MasterCard.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
@@ -201,3 +199,5 @@ MasterCard.propTypes = {
   isVisible: PropTypes.bool,
   fullWidth: PropTypes.bool,
 };
+
+export { MasterCard };

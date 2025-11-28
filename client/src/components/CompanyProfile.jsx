@@ -38,4 +38,4 @@ CompanyProfile.propTypes = {
   onDirtyChange: PropTypes.func,
 };
 
-export default CompanyProfile;
+export { CompanyProfile };

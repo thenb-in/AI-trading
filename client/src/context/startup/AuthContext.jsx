@@ -1,9 +1,9 @@
 import {useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ApiService from "../../services/startup/ApiService";
+import { ApiService } from "../../services/startup/ApiService";
 import { isAllowedDevice } from "../../utils/startup/deviceUtils";
 import PropTypes from "prop-types";
-import DataContext from "./DataContext";
+import { DataContext } from "./DataContext";
 
 export const DataProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);

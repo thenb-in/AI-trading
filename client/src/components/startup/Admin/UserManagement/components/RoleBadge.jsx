@@ -21,4 +21,4 @@ RoleBadge.propTypes = {
   role: PropTypes.string,
 };
 
-export default RoleBadge;
+export { RoleBadge };

@@ -48,4 +48,4 @@ PermissionSelector.propTypes = {
   onPermissionToggle: PropTypes.func.isRequired
 };
 
-export default PermissionSelector;
+export { PermissionSelector };

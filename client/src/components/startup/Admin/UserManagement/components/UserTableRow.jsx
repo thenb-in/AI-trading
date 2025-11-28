@@ -1,7 +1,7 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe } from 'lucide-react';
-import RoleBadge from './RoleBadge';
+import { RoleBadge } from './RoleBadge';
 
 const UserTableRow = ({ 
   user, 
@@ -37,6 +37,60 @@ const UserTableRow = ({
 
   const onDeviceChange = async (key, value) => {
     await handleDeviceOptionUpdate(user.id, key, value);
+  };
+
+  const handleCheckboxClick = (e) => {
+    e.stopPropagation();
+  };
+
+  const handleCheckboxChange = () => {
+    toggleUserSelection(user.id);
+  };
+
+  const handleStopPropagation = (e) => {
+    e.stopPropagation();
+  };
+
+  const handleEditRoleClick = (e) => {
+    e.stopPropagation();
+    setEditingRole(true);
+  };
+
+  const handleToggleSelection = () => {
+    toggleUserSelection(user.id);
+  };
+
+  const handleRoleBlur = () => {
+    setEditingRole(false);
+  };
+
+  const handleMobileAppChange = (e) => {
+    onDeviceChange('mobileApp', e.target.checked);
+  };
+
+  const handleDesktopWebChange = (e) => {
+    onDeviceChange('desktopWeb', e.target.checked);
+  };
+
+  const handleMobileWebChange = (e) => {
+    onDeviceChange('mobileWeb', e.target.checked);
+  };
+
+  const handleDeactivateClick = () => {
+    showConfirmation(user.id, 'deactivate', user.name);
+  };
+
+  const handleApproveClick = () => {
+    showConfirmation(user.id, 'approve', user.name);
+  };
+
+  const handleDeleteClick = () => {
+    showConfirmation(user.id, 'delete', user.name);
+  };
+
+  const handleDeviceClick = (e) => {
+    e.stopPropagation();
+    setEditingDevice(true);
   };
 
   // Collect active device access
@@ -77,8 +131,8 @@ const UserTableRow = ({
           <input
             type="checkbox"
             checked={isSelected}
-            onClick={(e) => e.stopPropagation()}
-            onChange={() => toggleUserSelection(user.id)}
+            onClick={handleCheckboxClick}
+            onChange={handleCheckboxChange}
             className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
           />
         </td>
@@ -95,8 +149,8 @@ const UserTableRow = ({
             ref={roleSelectRef}
             value={user?.role?.id || ''}
             onChange={onRoleChange}
-            onBlur={() => setEditingRole(false)} 
-            onClick={(e) => e.stopPropagation()}
+            onBlur={handleRoleBlur} 
+            onClick={handleStopPropagation}
             className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">
@@ -109,10 +163,7 @@ const UserTableRow = ({
         ) : (
           <div
             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 transition-colors duration-150"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingRole(true);
-            }}
+            onClick={handleEditRoleClick}
           >
             <RoleBadge role={user?.role?.name || 'No Role'} />
           </div>
@@ -134,8 +185,8 @@ const UserTableRow = ({
               <input
                 type="checkbox"
                 checked={!!user.mobileApp}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => onDeviceChange('mobileApp', e.target.checked)}
+                onClick={handleStopPropagation}
+                onChange={handleMobileAppChange}
               />
               <Smartphone size={14} className="text-blue-500" /> Mobile App
             </label>
@@ -143,8 +194,8 @@ const UserTableRow = ({
               <input
                 type="checkbox"
                 checked={!!user.desktopWeb}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => onDeviceChange('desktopWeb', e.target.checked)}
+                onClick={handleStopPropagation}
+                onChange={handleDesktopWebChange}
               />
               <Monitor size={14} className="text-green-500" /> Desktop Web
             </label>
@@ -152,8 +203,8 @@ const UserTableRow = ({
               <input
                 type="checkbox"
                 checked={!!user.mobileWeb}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => onDeviceChange('mobileWeb', e.target.checked)}
+                onClick={handleStopPropagation}
+                onChange={handleMobileWebChange}
               />
               <MonitorSmartphone size={14} className="text-purple-500" /> Mobile Web
             </label>
@@ -161,10 +212,7 @@ const UserTableRow = ({
         ) : (
           <div
             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 transition-colors duration-150 min-w-[120px]"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingDevice(true);
-            }}
+            onClick={handleDeviceClick}
           >
             {activeDevices.length > 0 ? (
               activeDevices.map((d, i) => (
@@ -201,14 +249,14 @@ const UserTableRow = ({
       
       <td
         className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleStopPropagation}
       >
         <div className="flex items-center justify-end space-x-3">
           {!bulkDeleteMode ? (
             <>
               {user.is_approved ? (
                 <button
-                  onClick={() => showConfirmation(user.id, 'deactivate', user.name)}
+                  onClick={handleDeactivateClick}
                   className="text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 p-1 rounded transition-colors duration-150"
                   title="Deactivate user"
                 >
@@ -216,7 +264,7 @@ const UserTableRow = ({
                 </button>
               ) : (
                 <button
-                  onClick={() => showConfirmation(user.id, 'approve', user.name)}
+                  onClick={handleApproveClick}
                   className="text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded transition-colors duration-150"
                   title="Approve user"
                 >
@@ -224,7 +272,7 @@ const UserTableRow = ({
                 </button>
               )}
               <button
-                onClick={() => showConfirmation(user.id, 'delete', user.name)}
+                onClick={handleDeleteClick}
                 className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors duration-150"
                 title="Delete user"
               >
@@ -233,7 +281,7 @@ const UserTableRow = ({
             </>
           ) : (
             <button 
-              onClick={() => toggleUserSelection(user.id)} 
+              onClick={handleToggleSelection} 
               className="text-red-600 hover:text-red-800 hover:bg-red-50 p-1 rounded transition-colors duration-150"
               title="Select for deletion"
             >
@@ -259,4 +307,5 @@ UserTableRow.propTypes = {
   extraColumns: PropTypes.array
 };
 
-export default memo(UserTableRow);
+export const UserTableRowMemo = memo(UserTableRow);
+export { UserTableRowMemo as UserTableRow };

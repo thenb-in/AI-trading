@@ -1,7 +1,7 @@
-import AnimatedBackground from '../../components/startup/AnimatedBackground';
-import ForgotPassword from '../../components/startup/Auth/ForgotPassword';
+import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
+import { ForgotPassword } from '../../components/startup/Auth/ForgotPassword';
 import { motion } from 'framer-motion';
-export default function ForgotPasswordPage() {
+export function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
     {/* Left Side: Animated Section */}

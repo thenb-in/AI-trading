@@ -57,4 +57,4 @@ AlertMessage.propTypes = {
   onDismiss: PropTypes.func
 };
 
-export default AlertMessage;
+export { AlertMessage };

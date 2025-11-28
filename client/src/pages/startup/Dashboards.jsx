@@ -9,5 +9,5 @@ const DashboardContent = () => {
   );
 };
 
-export default DashboardContent;
+export { DashboardContent };
 

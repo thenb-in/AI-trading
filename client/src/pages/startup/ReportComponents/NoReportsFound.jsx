@@ -25,4 +25,4 @@ NoReportsFound.propTypes = {
   onReset: PropTypes.func.isRequired,
 };
 
-export default NoReportsFound;
+export { NoReportsFound };

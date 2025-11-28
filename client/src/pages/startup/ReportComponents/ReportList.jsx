@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Search } from 'lucide-react';
-import ReportCard from './ReportCard';
-import NoReportsFound from './NoReportsFound';
+import { ReportCard } from './ReportCard';
+import { NoReportsFound } from './NoReportsFound';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,6 +21,14 @@ const ReportList = ({ reports, categories }) => {
     setActiveFilter('all');
   };
 
+  const handleCategoryFilterClick = (categoryId) => () => {
+    setActiveFilter(categoryId);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   return (
  <div className="w-full mx-auto ">
       <div className="mb-8 ">
@@ -33,7 +41,7 @@ const ReportList = ({ reports, categories }) => {
           {categories.map(category => (
             <button
               key={category.id}
-              onClick={() => setActiveFilter(category.id)}
+              onClick={handleCategoryFilterClick(category.id)}
               className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 activeFilter === category.id
                   ? 'bg-gray-900 text-white'
@@ -49,7 +57,7 @@ const ReportList = ({ reports, categories }) => {
             type="text"
             placeholder="Search reports..."
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
           />
         </div>
@@ -81,4 +89,4 @@ ReportList.propTypes = {
   categories: PropTypes.array.isRequired,
 };
 
-export default ReportList;
+export { ReportList };

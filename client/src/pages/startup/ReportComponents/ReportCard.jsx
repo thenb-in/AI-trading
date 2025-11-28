@@ -45,4 +45,4 @@ ReportCard.propTypes = {
   }).isRequired,
 };
 
-export default ReportCard;
+export { ReportCard };

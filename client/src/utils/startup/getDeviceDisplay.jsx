@@ -38,6 +38,6 @@ const getDeviceDisplay = (deviceAccess) => {
     }
   };
 
-  export default getDeviceDisplay;
+export { getDeviceDisplay };
 
 

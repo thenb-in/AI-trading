@@ -9,9 +9,9 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import MasterCard from "./MasterComponents/MasterCard";
-import SearchFilter from "./MasterComponents/SearchFilter";
-import getMasterModules from "../../data/getMasterModules";
+import { MasterCard } from "./MasterComponents/MasterCard";
+import { SearchFilter } from "./MasterComponents/SearchFilter";
+import { getMasterModules } from "../../data/getMasterModules";
 
 const MasterContent = () => {
   const navigate = useNavigate();
@@ -118,6 +118,10 @@ const MasterContent = () => {
     }
   };
 
+  const handleCategorySelectChange = (e) => {
+    handleCategoryChange(e.target.value);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Main Content */}
@@ -162,7 +166,7 @@ const MasterContent = () => {
               </label>
               <select
                 value={selectedCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
+                onChange={handleCategorySelectChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="All">All Categories</option>
@@ -256,4 +260,4 @@ const MasterContent = () => {
   );
 };
 
-export default MasterContent;
+export { MasterContent };

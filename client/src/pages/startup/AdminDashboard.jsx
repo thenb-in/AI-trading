@@ -1,18 +1,18 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminLayout from "../../components/startup/Admin/AdminLayout";
-import UserManagement from "../../components/startup/Admin/UserManagement/UserManagement";
-import CompanySettings from "../../components/startup/Admin/CompanySettings";
+import { AdminLayout } from "../../components/startup/Admin/AdminLayout";
+import { UserManagement } from "../../components/startup/Admin/UserManagement/UserManagement";
+import { CompanySettings } from "../../components/startup/Admin/CompanySettings";
 import { 
   RolePermissionsManagement, 
   CreateRoleForm, 
   CreatePermissionForm 
 } from "../../components/startup/Admin/RoleAndPermissions";
-import MultiCompanyModule from "../../components/startup/Admin/MultiCompanyModule/MultiCompanyModule";
+import { MultiCompanyModule } from "../../components/startup/Admin/MultiCompanyModule/MultiCompanyModule";
 // Import extra App routes
-import appRoutes from "../AppDashboard";
-import ReportContent from "./Reports";
-import MasterContent from "./Masters";
-import DashboardContent from "./Dashboards";
+import { appRoutes } from "../AppDashboard";
+import { ReportContent } from "./Reports";
+import { MasterContent } from "./Masters";
+import { DashboardContent } from "./Dashboards";
 
 
 const AdminDashboard = () => {
@@ -46,4 +46,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export { AdminDashboard };

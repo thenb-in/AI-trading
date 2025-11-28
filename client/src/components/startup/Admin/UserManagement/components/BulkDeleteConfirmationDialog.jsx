@@ -42,4 +42,4 @@ BulkDeleteConfirmationDialog.propTypes = {
   onCancel: PropTypes.func.isRequired,
 };
 
-export default BulkDeleteConfirmationDialog;
+export { BulkDeleteConfirmationDialog };

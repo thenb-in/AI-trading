@@ -1,6 +1,6 @@
 import { Save, ArrowLeft, Loader2, X } from 'lucide-react';
 import { useCreatePermission } from './hooks/useCreatePermission';
-import AlertMessage from './components/AlertMessage';
+import { AlertMessage } from './components/AlertMessage';
 
 const CreatePermissionForm = () => {
   const {
@@ -177,4 +177,4 @@ const CreatePermissionForm = () => {
   );
 };
 
-export default CreatePermissionForm;
+export { CreatePermissionForm };

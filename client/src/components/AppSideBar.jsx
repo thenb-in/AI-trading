@@ -1,4 +1,4 @@
-import AdminSidebar from "./startup/Admin/AdminSidebar";
+import { AdminSidebar } from "./startup/Admin/AdminSidebar";
 import { useAppMenuItems } from "./useAppMenuItems"; //app-specific menu items
 import PropTypes from "prop-types";
 
@@ -21,4 +21,4 @@ AppSideBar.propTypes = {
   isMobileView: PropTypes.bool.isRequired,
 };
 
-export default AppSideBar;
+export { AppSideBar };

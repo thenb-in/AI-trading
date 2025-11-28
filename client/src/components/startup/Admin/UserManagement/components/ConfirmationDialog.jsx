@@ -64,4 +64,4 @@ ConfirmationDialog.propTypes = {
   onCancel: PropTypes.func.isRequired,
 };
 
-export default ConfirmationDialog;
+export { ConfirmationDialog };

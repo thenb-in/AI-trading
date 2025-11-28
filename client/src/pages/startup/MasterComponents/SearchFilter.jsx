@@ -23,6 +23,10 @@ const SearchFilter = ({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const handleTextFieldChange = (e) => {
+    onSearchChange(e.target.value);
+  };
+
   return (
     <Box sx={{ mb: 1 }}>
       <Stack
@@ -35,7 +39,7 @@ const SearchFilter = ({
           placeholder="Search modules..."
           variant="outlined"
           value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
+          onChange={handleTextFieldChange}
           sx={{
             width: isMobile ? "100%" : 500,
             "& .MuiOutlinedInput-root": {
@@ -82,8 +86,6 @@ const SearchFilter = ({
   );
 };
 
-export default SearchFilter;
-
 SearchFilter.propTypes = {
   searchTerm: PropTypes.string.isRequired,
   onSearchChange: PropTypes.func.isRequired,
@@ -91,3 +93,5 @@ SearchFilter.propTypes = {
   totalCards: PropTypes.number.isRequired,
   filteredCount: PropTypes.number.isRequired,
 };
+
+export { SearchFilter };

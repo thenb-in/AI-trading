@@ -1,5 +1,5 @@
 import { CreatePermissionForm } from '../../components/startup/Admin/RoleAndPermissions';
 
-export default function CreatePermissionPage() {
+export function CreatePermissionPage() {
   return <CreatePermissionForm />;
 }

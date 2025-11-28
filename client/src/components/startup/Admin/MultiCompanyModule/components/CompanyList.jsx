@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 
-const CompanyCard = ({ company, isActive, onSwitch, loading }) => {
+const CompanyCard = ({ company, isActive, loading, handleSwitchClick }) => {
   return (
     <li className={`flex items-center justify-between p-4 border rounded-xl shadow-sm ${isActive ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
       <div className="flex items-center gap-3">
@@ -17,7 +17,7 @@ const CompanyCard = ({ company, isActive, onSwitch, loading }) => {
       </div>
       <div>
         <button
-          onClick={() => onSwitch(company.id)}
+          onClick={handleSwitchClick(company.id)}
           disabled={isActive || loading}
           className={`px-3 py-2 rounded-lg text-sm text-white ${
             isActive ? 'bg-gray-400' : 'bg-gray-900 hover:bg-black'
@@ -33,11 +33,14 @@ const CompanyCard = ({ company, isActive, onSwitch, loading }) => {
 CompanyCard.propTypes = {
   company: PropTypes.shape({ id: PropTypes.string, name: PropTypes.string }).isRequired,
   isActive: PropTypes.bool.isRequired,
-  onSwitch: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  handleSwitchClick: PropTypes.func.isRequired,
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
+  const handleSwitchClick = (companyId) => () => {
+    onSwitch(companyId);
+  };
   if (!companies?.length) {
     return (
       <div className="text-gray-500 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 text-center">
@@ -67,6 +70,7 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
         isActive={isActive}
         onSwitch={onSwitch}
         loading={loading}
+        handleSwitchClick={handleSwitchClick}
       />
     );})}
   </ul>
@@ -83,6 +87,6 @@ CompanyList.propTypes = {
   loading: PropTypes.bool,
 };
 
-export default CompanyList;
+export { CompanyList };
 
 

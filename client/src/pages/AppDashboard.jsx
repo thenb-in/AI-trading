@@ -7,5 +7,5 @@ const appRoutes = [
   // { path: "custom-route", element: <CustomComponent /> },
 ];
 
-export default appRoutes;
+export { appRoutes };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import ApiService from '../../../../../services/startup/ApiService';
+import { ApiService } from '../../../../../services/startup/ApiService';
 
 export const useRolePermissions = () => {
   const [roles, setRoles] = useState([]);

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { UserPlus, UserMinus, Search, Users, Menu, Trash2 } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '../../../../context/startup/useDataContext';
-import UserTable from './components/UserTable';
+import { UserTable } from './components/UserTable';
 import { getUserManagementExtraColumns } from '../../../userManagementExtraColumns';
-import ConfirmationDialog from './components/ConfirmationDialog';
-import BulkDeleteConfirmationDialog from './components/BulkDeleteConfirmationDialog';
+import { ConfirmationDialog } from './components/ConfirmationDialog';
+import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 
-export default function UserManagement() {
+export function UserManagement() {
   const {
     error,
     loading,
@@ -49,6 +49,34 @@ export default function UserManagement() {
     if (action === 'delete') handleDelete(userId);
   };
 
+  const handleToggleInactive = () => {
+    setShowInactive((prev) => !prev);
+  };
+
+  const handleToggleAllUsers = () => {
+    setShowAllUsers((prev) => !prev);
+  };
+
+  const handleCancelConfirmDialog = () => {
+    setConfirmDialog({ ...confirmDialog, show: false });
+  };
+
+  const handleCancelBulkDeleteDialog = () => {
+    setBulkDeleteDialog({ ...bulkDeleteDialog, show: false });
+  };
+
+  const handleToggleBulkDeleteMode = () => {
+    setBulkDeleteMode(!bulkDeleteMode);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleHamburgerMenuClick = () => {
+    setHamburgerMenu(!hamburgerMenu);
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -56,7 +84,7 @@ export default function UserManagement() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 flex items-center cursor-pointer" onClick={() => setHamburgerMenu(!hamburgerMenu)}>
+      <h1 className="text-2xl font-bold mb-4 flex items-center cursor-pointer" onClick={handleHamburgerMenuClick}>
         {isMobileView ? <Menu className="mr-3" /> : <Users className="mr-3 text-blue-600" />}
         <span>User Management</span>
       </h1>
@@ -92,7 +120,7 @@ export default function UserManagement() {
         placeholder="Search users Name or Phone Number.."
         className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={handleSearchChange}
       />
     </div>
     <div className="w-full sm:w-auto flex gap-2">
@@ -106,7 +134,7 @@ export default function UserManagement() {
         </button>
       )}
       <button
-        onClick={() => setBulkDeleteMode(!bulkDeleteMode)}
+        onClick={handleToggleBulkDeleteMode}
         className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs sm:text-base"
       >
         {bulkDeleteMode ? <UserMinus size={16} className="mr-1" /> : <UserPlus size={16} className="mr-1" />}
@@ -137,7 +165,7 @@ export default function UserManagement() {
       />
 
       <div className="mb-4">
-        <button onClick={() => setShowInactive((prev) => !prev)} className="w-full flex justify-between items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-md font-semibold mb-2 focus:outline-none">
+        <button onClick={handleToggleInactive} className="w-full flex justify-between items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-md font-semibold mb-2 focus:outline-none">
           <span>Inactive Users</span>
           <span>{showInactive ? '▲' : '▼'}</span>
         </button>
@@ -163,7 +191,7 @@ export default function UserManagement() {
       </div>
 
       <div className="mb-4">
-        <button onClick={() => setShowAllUsers((prev) => !prev)} className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-semibold mb-2 focus:outline-none">
+        <button onClick={handleToggleAllUsers} className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-semibold mb-2 focus:outline-none">
           <span>All Users</span>
           <span>{showAllUsers ? '▲' : '▼'}</span>
         </button>
@@ -191,13 +219,13 @@ export default function UserManagement() {
       <ConfirmationDialog
         dialog={confirmDialog}
         onConfirm={confirmAction}
-        onCancel={() => setConfirmDialog({ ...confirmDialog, show: false })}
+        onCancel={handleCancelConfirmDialog}
       />
 
       <BulkDeleteConfirmationDialog
         dialog={bulkDeleteDialog}
         onConfirm={handleBulkDelete}
-        onCancel={() => setBulkDeleteDialog({ ...bulkDeleteDialog, show: false })}
+        onCancel={handleCancelBulkDeleteDialog}
       />
     </div>
   );

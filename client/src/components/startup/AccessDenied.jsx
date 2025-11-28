@@ -5,6 +5,10 @@ const AccessDenied = ({ requiredPermission }) => {
   console.log(requiredPermission,'3223232323')
   const navigate = useNavigate();
 
+  const handleGoHome = () => {
+    navigate("/");
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="p-8 bg-white rounded-lg shadow-md text-center">
@@ -18,7 +22,7 @@ const AccessDenied = ({ requiredPermission }) => {
           </p>
         )}
         <button
-          onClick={() => navigate("/")}
+          onClick={handleGoHome}
           className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
         >
           Go to Home
@@ -32,4 +36,4 @@ AccessDenied.propTypes = {
   requiredPermission: PropTypes.string,
 };
 
-export default AccessDenied;
+export { AccessDenied };

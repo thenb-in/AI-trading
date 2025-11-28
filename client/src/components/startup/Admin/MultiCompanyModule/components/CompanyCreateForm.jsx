@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import ToggleSwitch from '../../ToggleSwitch';
-import AlertMessage from '../../RoleAndPermissions/components/AlertMessage';
+import { ToggleSwitch } from '../../ToggleSwitch';
+import { AlertMessage } from '../../RoleAndPermissions/components/AlertMessage';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 
@@ -18,6 +18,22 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
     await onCreate(form);
     setForm({ name: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
     setTouched(false);
+  };
+
+  const handleNameChange = (e) => {
+    setForm((f) => ({ ...f, name: sanitizeName(e.target.value) }));
+  };
+
+  const handleMobileAppChange = (e) => {
+    setForm((f) => ({ ...f, mobileApp: e.target.checked }));
+  };
+
+  const handleDesktopWebChange = (e) => {
+    setForm((f) => ({ ...f, desktopWeb: e.target.checked }));
+  };
+
+  const handleMobileWebChange = (e) => {
+    setForm((f) => ({ ...f, mobileWeb: e.target.checked }));
   };
 
   return (
@@ -37,7 +53,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
             type="text"
             placeholder="Company name"
             value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: sanitizeName(e.target.value) }))}
+            onChange={handleNameChange}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               touched && !isValid ? 'border-red-300' : 'border-gray-300'
             }`}
@@ -51,19 +67,19 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
           <ToggleSwitch
             label="Mobile App"
             checked={form.mobileApp}
-            onChange={(e) => setForm((f) => ({ ...f, mobileApp: e.target.checked }))}
+            onChange={handleMobileAppChange}
             description="Allow access via native mobile app."
           />
           <ToggleSwitch
             label="Desktop Web"
             checked={form.desktopWeb}
-            onChange={(e) => setForm((f) => ({ ...f, desktopWeb: e.target.checked }))}
+            onChange={handleDesktopWebChange}
             description="Allow access via desktop browser."
           />
           <ToggleSwitch
             label="Mobile Web"
             checked={form.mobileWeb}
-            onChange={(e) => setForm((f) => ({ ...f, mobileWeb: e.target.checked }))}
+            onChange={handleMobileWebChange}
             description="Allow access via mobile browser."
           />
         </div>
@@ -88,6 +104,6 @@ CompanyCreateForm.propTypes = {
   createError: PropTypes.any,
 };
 
-export default CompanyCreateForm;
+export { CompanyCreateForm };
 
 

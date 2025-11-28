@@ -176,4 +176,4 @@ const ApiService = {
 };
 
 
-export default ApiService;
+export { ApiService };

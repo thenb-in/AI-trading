@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ApiService from '../../../../../services/startup/ApiService';
+import { ApiService } from '../../../../../services/startup/ApiService';
 
 export const useCreateRole = () => {
   const navigate = useNavigate();

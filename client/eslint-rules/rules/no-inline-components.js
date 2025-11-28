@@ -94,6 +94,22 @@ export default {
             }
             componentStack.push(node);
           }
+        },
+        // Track when we exit a component
+        'FunctionDeclaration:exit'(node) {
+          if (isComponent(node) && returnsJSX(node)) {
+            componentStack.pop();
+          }
+        },
+        'ArrowFunctionExpression:exit'(node) {
+          if (isComponent(node) && returnsJSX(node)) {
+            componentStack.pop();
+          }
+        },
+        'FunctionExpression:exit'(node) {
+          if (isComponent(node) && returnsJSX(node)) {
+            componentStack.pop();
+          }
         }
       };
     }

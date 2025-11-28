@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useDataContext } from "../../../context/startup/useDataContext";
-import ApiService from "../../../services/startup/ApiService";
+import { ApiService } from "../../../services/startup/ApiService";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building,
@@ -13,12 +13,12 @@ import {
   Monitor,
   Globe,
 } from "lucide-react";
-import AccessDenied from "../AccessDenied";
-import ToggleSwitch from "./ToggleSwitch";
-import CompanyProfile from "../../CompanyProfile";
+import { AccessDenied } from "../AccessDenied";
+import { ToggleSwitch } from "./ToggleSwitch";
+import { CompanyProfile } from "../../CompanyProfile";
 import { toast } from "react-toastify";
 
-export default function CompanySettings() {
+export function CompanySettings() {
 
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
   const [isMobileView] = useState(window.innerWidth < 768);
@@ -126,13 +126,33 @@ export default function CompanySettings() {
     }
   };
 
+  const handleMenuClick = () => {
+    setHamburgerMenu(!hamburgerMenu);
+  };
+
+  const handleNameChange = (e) => {
+    handleInputChange("name", e.target.value);
+  };
+
+  const handleMobileAppChange = (e) => {
+    handleInputChange("mobileApp", e.target.checked);
+  };
+
+  const handleDesktopWebChange = (e) => {
+    handleInputChange("desktopWeb", e.target.checked);
+  };
+
+  const handleMobileWebChange = (e) => {
+    handleInputChange("mobileWeb", e.target.checked);
+  };
+
   return (
     <div className="p-4 sm:p-6 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center relative">
       {isMobileView ? (
         <Menu
           className="text-black-600 mr-2 absolute top-4 left-4"
           size={24}
-          onClick={() => setHamburgerMenu(!hamburgerMenu)}
+          onClick={handleMenuClick}
         />
       ) : null}
       <motion.div
@@ -184,7 +204,7 @@ export default function CompanySettings() {
           <motion.input
             type="text"
             value={companySettings.name}
-            onChange={(e) => handleInputChange("name", e.target.value)}
+            onChange={handleNameChange}
             placeholder="Enter company name"
             readOnly={!userData?.isSadmin}
             className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
@@ -209,7 +229,7 @@ export default function CompanySettings() {
                 </span>
               }
               checked={companySettings.mobileApp}
-              onChange={(e) => handleInputChange("mobileApp", e.target.checked)}
+              onChange={handleMobileAppChange}
             />
 
             <ToggleSwitch
@@ -220,9 +240,7 @@ export default function CompanySettings() {
                 </span>
               }
               checked={companySettings.desktopWeb}
-              onChange={(e) =>
-                handleInputChange("desktopWeb", e.target.checked)
-              }
+              onChange={handleDesktopWebChange}
             />
           </div>
 
@@ -235,7 +253,7 @@ export default function CompanySettings() {
               </span>
             }
             checked={companySettings.mobileWeb}
-            onChange={(e) => handleInputChange("mobileWeb", e.target.checked)}
+            onChange={handleMobileWebChange}
           />
         </div>
 

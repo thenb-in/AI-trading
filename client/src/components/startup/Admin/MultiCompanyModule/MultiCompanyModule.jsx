@@ -1,8 +1,8 @@
 import { useMultiCompanyModule } from './hooks/useMultiCompanyModule';
-import CompanyCreateForm from './components/CompanyCreateForm';
-import CompanyList from './components/CompanyList';
+import { CompanyCreateForm } from './components/CompanyCreateForm';
+import { CompanyList } from './components/CompanyList';
 // import AlertMessage from '../RoleAndPermissions/components/AlertMessage';
-import AlertMessage from '../RoleAndPermissions/components/AlertMessage'
+import { AlertMessage } from '../RoleAndPermissions/components/AlertMessage'
 
 const MultiCompanyModule = () => {
   const {
@@ -46,4 +46,4 @@ const MultiCompanyModule = () => {
   );
 };
 
-export default MultiCompanyModule;
+export { MultiCompanyModule };

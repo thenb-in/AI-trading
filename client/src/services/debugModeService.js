@@ -141,4 +141,4 @@ export const toggleDebugMode = () => debugModeService.toggleDebugMode();
 export const setDebugMode = (value) => debugModeService.setDebugMode(value);
 export const subscribeToDebugMode = (callback) => debugModeService.subscribe(callback);
 
-export default debugModeService;
+export { debugModeService };
