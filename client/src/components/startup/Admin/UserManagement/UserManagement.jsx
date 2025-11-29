@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus, Search, Users, Menu, Trash2 } from 'lucide-react';
+import { UserPlus, UserMinus, Search, Users, Menu, Trash2, Link as LinkIcon } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '../../../../context/startup/useDataContext';
 import { UserTable } from './components/UserTable';
 import { getUserManagementExtraColumns } from '../../../userManagementExtraColumns';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
+import { toast } from 'react-toastify';
 
 export function UserManagement() {
   const {
@@ -22,6 +23,7 @@ export function UserManagement() {
     setBulkDeleteDialog,
     activeUsers,
     inactiveUsers,
+    newUsers,
     filteredUsers,
     handleApprove,
     handleDeactivate,
@@ -38,8 +40,9 @@ export function UserManagement() {
     handleDeviceOptionUpdate
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
+  const [showNewUsers, setShowNewUsers] = useState(false);
   const [showAllUsers, setShowAllUsers] = useState(false);
-  const { setHamburgerMenu, hamburgerMenu } = useDataContext();
+  const { setHamburgerMenu, hamburgerMenu, userData } = useDataContext();
   const isMobileView = window.innerWidth < 768;
 
   const confirmAction = () => {
@@ -51,6 +54,10 @@ export function UserManagement() {
 
   const handleToggleInactive = () => {
     setShowInactive((prev) => !prev);
+  };
+
+  const handleToggleNewUsers = () => {
+    setShowNewUsers((prev) => !prev);
   };
 
   const handleToggleAllUsers = () => {
@@ -77,6 +84,23 @@ export function UserManagement() {
     setHamburgerMenu(!hamburgerMenu);
   };
 
+  const handleCopySignupLink = async () => {
+    try {
+      const companyId = userData?.companyId || userData?.company?.id;
+      if (!companyId) {
+        toast.error('Company ID not found. Please try again.');
+        return;
+      }
+
+      const signupUrl = `${window.location.origin}/signup?company_id=${companyId}`;
+      
+      await navigator.clipboard.writeText(signupUrl);
+      toast.success('Sign-up link copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy link. Please try again.');
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -95,7 +119,7 @@ export function UserManagement() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm text-center">
           <p className="text-sm text-gray-500">Total Users</p>
           <p className="text-xl font-semibold text-blue-700">{filteredUsers.length}</p>
@@ -107,6 +131,10 @@ export function UserManagement() {
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm text-center">
           <p className="text-sm text-gray-500">Inactive Users</p>
           <p className="text-xl font-semibold text-red-700">{inactiveUsers.length}</p>
+        </div>
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg shadow-sm text-center">
+          <p className="text-sm text-gray-500">New Users</p>
+          <p className="text-xl font-semibold text-purple-700">{newUsers.length}</p>
         </div>
       </div>
 
@@ -124,6 +152,14 @@ export function UserManagement() {
       />
     </div>
     <div className="w-full sm:w-auto flex gap-2">
+      <button
+        onClick={handleCopySignupLink}
+        className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"
+        title="Copy sign-up link for current company"
+      >
+        <LinkIcon size={16} className="mr-1" />
+        Copy Sign-up Link
+      </button>
       {bulkDeleteMode && selectedUsers.length > 0 && (
         <button
           onClick={showBulkDeleteConfirmation}
@@ -163,6 +199,32 @@ export function UserManagement() {
         handleDeviceOptionUpdate={handleDeviceOptionUpdate}
         extraColumns={getUserManagementExtraColumns()}
       />
+
+      <div className="mb-4">
+        <button onClick={handleToggleNewUsers} className="w-full flex justify-between items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-md font-semibold mb-2 focus:outline-none">
+          <span>New Users (Never Signed In)</span>
+          <span>{showNewUsers ? '▲' : '▼'}</span>
+        </button>
+        {showNewUsers && (
+          <UserTable
+            users={newUsers}
+            roles={roles}
+            title="New Users (Never Signed In)"
+            emptyMessage="No new users found."
+            statusColor="bg-purple-100"
+            bulkDeleteMode={bulkDeleteMode}
+            selectedUsers={selectedUsers}
+            toggleUserSelection={toggleUserSelection}
+            showConfirmation={showConfirmation}
+            selectAllUsersFromTable={selectAllUsersFromTable}
+            deselectAllUsersFromTable={deselectAllUsersFromTable}
+            handleRoleChange={handleRoleChange}
+            // deviceAccessOptions={deviceAccessOptions}
+            handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+            extraColumns={getUserManagementExtraColumns()}
+          />
+        )}
+      </div>
 
       <div className="mb-4">
         <button onClick={handleToggleInactive} className="w-full flex justify-between items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-md font-semibold mb-2 focus:outline-none">

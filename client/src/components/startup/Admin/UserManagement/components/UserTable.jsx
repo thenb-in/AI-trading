@@ -111,13 +111,14 @@ UserTable.propTypes = {
     phone: PropTypes.string,
     email: PropTypes.string,
     role: PropTypes.shape({
+      id: PropTypes.number,
       name: PropTypes.string
     }),
     is_approved: PropTypes.bool,
     last_active: PropTypes.string,
   })).isRequired,
   roles: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    id: PropTypes.number.isRequired,
     name: PropTypes.string.isRequired
   })).isRequired,
   title: PropTypes.string.isRequired,

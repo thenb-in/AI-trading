@@ -30,7 +30,7 @@ const UserTableRow = ({
   };
 
   const onRoleChange = async (e) => {
-    const newRoleId = e.target.value;
+    const newRoleId = e.target.value === '' ? null : parseInt(e.target.value, 10);
     await handleRoleChange(user.id, newRoleId);
     setEditingRole(false);
   };
@@ -157,7 +157,7 @@ const UserTableRow = ({
               No Role
             </option>
             {roles.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
+              <option key={r.id} value={String(r.id)}>{r.name}</option>
             ))}
           </select>
         ) : (

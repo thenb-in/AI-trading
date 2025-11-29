@@ -130,12 +130,11 @@ export const useUserManagement = () => {
 
  const handleRoleChange = async (userId, newRoleId) => {
   try {
-    // Convert empty string to null for backend
-    const roleIdToUpdate = newRoleId === '' ? null : newRoleId;
-    await ApiService.updateUserRole(userId, roleIdToUpdate);
+    // newRoleId is already converted to integer or null in UserTableRow
+    await ApiService.updateUserRole(userId, newRoleId);
     
     // Find the new role object, or set to null if no role
-    const newRole = roleIdToUpdate ? roles.find((role) => role.id == roleIdToUpdate) : null;
+    const newRole = newRoleId ? roles.find((role) => role.id === newRoleId) : null;
 
     setUsers((prevUsers) => {
       const updatedUsers = prevUsers.map((user) =>
@@ -213,6 +212,10 @@ const handleDeviceOptionUpdate = async (userId, field, value) => {
     () => filteredUsers.filter((user) => !user.is_approved),
     [filteredUsers]
   );
+  const newUsers = useMemo(
+    () => filteredUsers.filter((user) => user.last_active === null),
+    [filteredUsers]
+  );
 
 
   return {
@@ -231,6 +234,7 @@ const handleDeviceOptionUpdate = async (userId, field, value) => {
     setBulkDeleteDialog,
     activeUsers,
     inactiveUsers,
+    newUsers,
     filteredUsers,
     handleApprove,
     handleDeactivate,
