@@ -38,27 +38,34 @@ if (config.use_env_variable) {
   );
 }
 
-// todo: load models in subdirectories as well
-// Load all models from startup directory
-const startup_path = path.join(__dirname, 'startup');
-fs.readdirSync(startup_path)
-  .filter(
-    file =>
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      !file.includes('.test.js')
-  )
-  .forEach(file => {
-    logger.debug(`Loading startup model: ${file}`);
-    const model = require(path.join(startup_path, file))(
-      sequelize,
-      Sequelize.DataTypes
-    );
-    db[model.name] = model;
-  });
+// Helper function to load models from a directory
+const loadModelsFromDirectory = (dirPath, dirName) => {
+  fs.readdirSync(dirPath)
+    .filter(
+      file =>
+        file.indexOf('.') !== 0 &&
+        file !== basename &&
+        file.slice(-3) === '.js' &&
+        !file.includes('.test.js')
+    )
+    .forEach(file => {
+      logger.debug(`Loading ${dirName} model: ${file}`);
+      const model = require(path.join(dirPath, file))(
+        sequelize,
+        Sequelize.DataTypes
+      );
+      db[model.name] = model;
+    });
+};
 
-// Load all models from main models directory (excluding startup subdirectory)
+// load all directories from the models directory
+const directories = fs.readdirSync(__dirname).filter(file => fs.statSync(path.join(__dirname, file)).isDirectory());
+directories.forEach(directory => {
+  const directoryPath = path.join(__dirname, directory);
+  loadModelsFromDirectory(directoryPath, directory);
+});
+
+// Load all models from main models directory (excluding subdirectories)
 fs.readdirSync(__dirname)
   .filter(
     file =>
@@ -66,7 +73,7 @@ fs.readdirSync(__dirname)
       file !== basename &&
       file.slice(-3) === '.js' &&
       !file.includes('.test.js') &&
-      file !== 'startup' // Exclude startup directory itself
+      !directories.includes(file)
   )
   .forEach(file => {
     logger.debug(`Loading app model: ${file}`);
