@@ -1,6 +1,9 @@
 name: Build and Upload Artifact
 
 on:
+  paths:
+    - 'client/**'  # Only trigger if files in the client directory change
+
   push:
     branches:
       - main
@@ -12,6 +15,7 @@ on:
       - master
   release:
     types: [published]
+
 
 jobs:
   build:
