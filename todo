@@ -48,4 +48,7 @@ pre-commit hook: to not be in pre-push hook
 - heirarchy based user management (will be used for data management)
 - Lint: Do not allow adding global variables
 - Add a health API point to startup
-- 
+- Refresh page when update is recieved.
+- Show what build is being deployed in CICD pipeline when using `download_client_build.sh` script
+- permission controls in divyafoods. only allow create and view for users.
+- Change port when building server deployment in both .env and nginx

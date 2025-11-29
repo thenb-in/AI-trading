@@ -136,6 +136,38 @@ function checkVersionBump() {
     log('', 'reset');
     
     const remoteBranch = process.env.GIT_REMOTE_BRANCH || 'origin/main';
+    
+    // First, check if base package.json has changes and if its version is bumped
+    const basePath = 'package.json';
+    let baseHasChanges = false;
+    try {
+      const diffOutput = execSync(`git diff --name-only ${remoteBranch} HEAD -- ${basePath}`, 
+                                   { encoding: 'utf8', cwd: process.cwd(), stdio: 'pipe' }).trim();
+      baseHasChanges = diffOutput.length > 0;
+    } catch (error) {
+      // If git diff fails, assume no changes
+      baseHasChanges = false;
+    }
+    
+    if (baseHasChanges) {
+      log('📦 Checking Base Package Version (package.json has changes):', 'blue');
+      const baseVersionBumped = checkSingleVersion(basePath, 'Base Package');
+      log('', 'reset');
+      
+      // If base version is bumped, skip individual client/server checks
+      if (baseVersionBumped) {
+        log('✅ Base package version has been bumped. Skipping individual client/server checks.', 'green');
+        return true;
+      }
+      
+      // If base has changes but version is not bumped, continue with individual checks
+      log('📦 Base package version not bumped. Checking client/server individually...', 'blue');
+      log('', 'reset');
+    } else {
+      log('📦 Base package.json: No changes detected, proceeding with client/server checks', 'blue');
+      log('', 'reset');
+    }
+    
     let clientOk = true;
     let serverOk = true;
     let clientChecked = false;
