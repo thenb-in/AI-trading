@@ -101,8 +101,13 @@ log_success "All required files found"
 
 # link the nginx config file from this file to the internal system
 log_info "Linking nginx config file..."
-sudo ln -s $nginx_config_file /etc/nginx/sites-available/$app_name.conf || error_exit "Failed to link nginx config file"
-log_success "Nginx config linked to /etc/nginx/sites-available/$app_name.conf"
+sites_available_dir="/etc/nginx/sites-available"
+sudo ln -s $nginx_config_file $sites_available_dir/$app_name.conf || error_exit "Failed to link nginx config file"
+log_success "Nginx config linked to $sites_available_dir/$app_name.conf"
+
+sites_enabled_dir="/etc/nginx/sites-enabled"
+sudo ln -s $sites_available_dir/$app_name.conf $sites_enabled_dir/$app_name.conf || error_exit "Failed to link nginx config file to sites-enabled"
+log_success "Nginx config linked to $sites_enabled_dir/$app_name.conf"
 
 log_info "Linking systemd service file..."
 sudo ln -s $app_name_service_file /etc/systemd/system/$app_name.service || error_exit "Failed to link systemd service file"
