@@ -13,6 +13,7 @@ import { MasterCard } from "./MasterComponents/MasterCard";
 import { SearchFilter } from "./MasterComponents/SearchFilter";
 import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
 import { spacing } from "../../utils/theme";
+import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
 
 
 const MasterContent = () => {
@@ -22,7 +23,7 @@ const MasterContent = () => {
   const [selectedCategory, setSelectedCategory] = useState("Common Masters");
   const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
-
+  const dataContext = useDataContext();
   const handleOpenMaster = (path) => {
     navigate(path);
   };
@@ -41,7 +42,7 @@ const MasterContent = () => {
     }
   }, [searchParams, selectedCategory]);
 
-  const filteredModules = useMemo(() => {
+  const filteredMasterModules = useMemo(() => {
     let filtered = masterModules;
 
     // Filter by search term first (search across all categories)
@@ -160,7 +161,7 @@ const MasterContent = () => {
             onSearchChange={handleSearchChange}
             onClear={handleClearSearch}
             totalCards={masterModules.length}
-            filteredCount={filteredModules.length}
+            filteredCount={filteredMasterModules.length}
           />
 
           <Divider
@@ -182,7 +183,7 @@ const MasterContent = () => {
                 mx: "auto",
               }}
             >
-              {filteredModules.map((module, index) => (
+              {filteredMasterModules.map((master, index) => (
                 <Grid
                   item
                   xs={12}
@@ -191,28 +192,31 @@ const MasterContent = () => {
                   key={index}
                   sx={{ display: "flex", justifyContent: "center" }}
                 >
-                  <MasterCard
-                    title={module.title}
-                    description={module.description}
-                    icon={module.icon}
-                    color={module.color}
-                    onClick={module.onClick}
-                    buttonText={module.buttonText}
-                    tags={module.tags}
-                    isVisible={true}
-                    fullWidth={isLargeScreen}
-                  />
+                  
+                  {hasPermission(master.permissionName || `read_${master.title.toLowerCase().replace(/ /g, "_")}`, dataContext) && (
+                    <MasterCard
+                      title={master.title}
+                      description={master.description}
+                      icon={master.icon}
+                      color={master.color}
+                      onClick={master.onClick}
+                      buttonText={master.buttonText}
+                      tags={master.tags}
+                      isVisible={true}
+                      fullWidth={isLargeScreen}
+                    />
+                  )}
                 </Grid>
               ))}
             </Grid>
 
-            {filteredModules.length === 0 && (
+            {filteredMasterModules.length === 0 && (
               <Box sx={{ textAlign: "center", py: spacing.xl }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No modules found
+                  No masters found
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Try searching with different keywords or clear your search to see all modules
+                  Try searching with different keywords or clear your search to see all masters
                 </Typography>
               </Box>
             )}

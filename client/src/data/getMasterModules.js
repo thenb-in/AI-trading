@@ -15,6 +15,7 @@ const getMasterModules = (handleOpenMaster) => [
     keywords:
       "test master module",
     category: "Common Masters",
+    permissionName: "read_test_master_1",
   },
   {
     title: "Test master 2",

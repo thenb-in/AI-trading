@@ -11,7 +11,7 @@ import {
   Build as CommonMastersIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext } from "../context/startup/useDataContext";
+import { useDataContext, hasPermission } from "../context/startup/useDataContext";
 import { useState, useRef } from "react";
 import { getMasterCategories } from "../data/getMasterModules";
 
@@ -20,14 +20,8 @@ import { getMasterCategories } from "../data/getMasterModules";
 export function useAppMenuItems() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userData } = useDataContext();
-
-  const hasPermission = (requiredPermission) => {
-    return userData?.role?.permissions?.some(
-      (permission) => permission.name === requiredPermission
-    );
-  };
-
+  
+  const dataContext = useDataContext();
   const categories = getMasterCategories();
 
   const [showMasterFlyout, setShowMasterFlyout] = useState(false);
@@ -152,19 +146,19 @@ export function useAppMenuItems() {
   };
 
   return [
-    hasPermission("view_dashboard_module") && {
+    hasPermission("view_dashboard_module", dataContext) && {
       id: "dashboard",
       label: "Dashboards",
       icon: LayoutDashboard,
       path: "/admin/dashboard",
     },
-    hasPermission("view_report_module") && {
+    hasPermission("view_report_module", dataContext) && {
       id: "report",
       label: "Reports",
       icon: BarChart3,
       path: "/admin/report",
     },
-    hasPermission("view_master_module") && {
+    hasPermission("view_master_module", dataContext) && {
       id: "master",
       label: "Masters",
       icon: Layers,
