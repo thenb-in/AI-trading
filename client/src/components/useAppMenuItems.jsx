@@ -4,11 +4,6 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import {
-  People as PeopleIcon,
-  Calculate as CalculateIcon,
-  AccessTime as TimeIcon,
-  Business as BusinessIcon,
-  BeachAccess as LeaveIcon,
   Category as CategoryIcon,
   Settings as SettingsIcon,
   Storage as StorageIcon,
@@ -17,8 +12,9 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "../context/startup/useDataContext";
-import { useMemo, useState, useRef } from "react";
-import { getMasterModules } from "../data/getMasterModules";
+import { useState, useRef } from "react";
+import { getMasterCategories } from "../data/getMasterModules";
+
 
 // Hook to get App-specific menu items
 export function useAppMenuItems() {
@@ -32,27 +28,7 @@ export function useAppMenuItems() {
     );
   };
 
-  const masterModules = useMemo(() => getMasterModules(() => {}), []);
-
-  const categories = useMemo(() => {
-    const categoryCounts = {};
-    masterModules.forEach((module) => {
-      const category = module.category || "Uncategorized";
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    });
-
-    const categoryOrder = ["Common Masters", "Management", "Raw Data", "Setup"];
-
-    const orderedCategories = categoryOrder
-      .filter((category) => categoryCounts[category])
-      .map((name) => ({ name, count: categoryCounts[name] }));
-
-    const remainingCategories = Object.entries(categoryCounts)
-      .filter(([name]) => !categoryOrder.includes(name))
-      .map(([name, count]) => ({ name, count }));
-
-    return [...orderedCategories, ...remainingCategories];
-  }, [masterModules]);
+  const categories = getMasterCategories();
 
   const [showMasterFlyout, setShowMasterFlyout] = useState(false);
   const flyoutHideTimeoutRef = useRef(null);
@@ -85,16 +61,6 @@ export function useAppMenuItems() {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case "Employee Management":
-        return <PeopleIcon className="h-4 w-4" />;
-      case "Payroll & Calculations":
-        return <CalculateIcon className="h-4 w-4" />;
-      case "Attendance & Time":
-        return <TimeIcon className="h-4 w-4" />;
-      case "Organization Structure":
-        return <BusinessIcon className="h-4 w-4" />;
-      case "Leave Management":
-        return <LeaveIcon className="h-4 w-4" />;
       case "Setup":
         return <SettingsIcon className="h-4 w-4" />;
       case "Raw Data":
@@ -127,9 +93,8 @@ export function useAppMenuItems() {
             <li key={category.name}>
               <button
                 onClick={() => handleCategoryClick(category.name)}
-                className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${
-                  isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
-                }`}
+                className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
+                  }`}
                 title={`${category.name} (${category.count})`}
               >
                 <span className="mr-2">{getCategoryIcon(category.name)}</span>
@@ -168,9 +133,8 @@ export function useAppMenuItems() {
               <li key={category.name}>
                 <button
                   onClick={() => handleCategoryClick(category.name)}
-                  className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${
-                    isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
-                  }`}
+                  className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
+                    }`}
                   title={`${category.name} (${category.count})`}
                 >
                   <span className="mr-2">{getCategoryIcon(category.name)}</span>

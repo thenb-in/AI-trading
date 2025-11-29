@@ -11,7 +11,9 @@ import {
 } from "@mui/material";
 import { MasterCard } from "./MasterComponents/MasterCard";
 import { SearchFilter } from "./MasterComponents/SearchFilter";
-import { getMasterModules } from "../../data/getMasterModules";
+import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
+import { spacing } from "../../utils/theme";
+
 
 const MasterContent = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const MasterContent = () => {
   };
 
   const masterModules = getMasterModules(handleOpenMaster);
+  const categories = getMasterCategories();
 
   // Sync selectedCategory with URL query param `category`
   useEffect(() => {
@@ -37,33 +40,6 @@ const MasterContent = () => {
       // keep default if no param
     }
   }, [searchParams, selectedCategory]);
-
-  // Calculate categories and their counts
-  const categories = useMemo(() => {
-    const categoryCounts = {};
-    masterModules.forEach((module) => {
-      const category = module.category || "Uncategorized";
-      categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-    });
-
-    // Define the desired order
-    const categoryOrder = ["Common Masters", "Management", "Raw Data", "Setup"];
-    
-    // Create ordered categories array
-    const orderedCategories = categoryOrder
-      .filter(category => categoryCounts[category])
-      .map(name => ({
-        name,
-        count: categoryCounts[name],
-      }));
-
-    // Add any remaining categories not in the order
-    const remainingCategories = Object.entries(categoryCounts)
-      .filter(([name]) => !categoryOrder.includes(name))
-      .map(([name, count]) => ({ name, count }));
-
-    return [...orderedCategories, ...remainingCategories];
-  }, [masterModules]);
 
   const filteredModules = useMemo(() => {
     let filtered = masterModules;
@@ -231,7 +207,7 @@ const MasterContent = () => {
             </Grid>
 
             {filteredModules.length === 0 && (
-              <Box sx={{ textAlign: "center", py: 4 }}>
+              <Box sx={{ textAlign: "center", py: spacing.xl }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   No modules found
                 </Typography>
@@ -259,5 +235,6 @@ const MasterContent = () => {
     </div>
   );
 };
+
 
 export { MasterContent };

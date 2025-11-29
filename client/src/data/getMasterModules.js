@@ -29,4 +29,30 @@ const getMasterModules = (handleOpenMaster) => [
   },
 ];
 
-export { getMasterModules };
+
+const getMasterCategories = () => {
+  const categoryCounts = {};
+  const masterModules = getMasterModules(() => { });
+
+  masterModules.forEach((module) => {
+    const category = module.category || "Uncategorized";
+    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+  });
+
+  const categoryOrder = ["Common Masters", "Management", "Raw Data"];
+
+  const orderedCategories = categoryOrder
+    .filter((category) => categoryCounts[category])
+    .map((name) => ({ name, count: categoryCounts[name] }));
+
+  const remainingCategories = Object.entries(categoryCounts)
+    .filter(([name]) => !categoryOrder.includes(name))
+    .map(([name, count]) => ({ name, count }));
+
+  // order remaining categories by name
+  const orderedRemainingCategories = remainingCategories.sort((a, b) => a.name.localeCompare(b.name));
+  return [...orderedCategories, ...orderedRemainingCategories];
+};
+
+
+export { getMasterModules, getMasterCategories };
