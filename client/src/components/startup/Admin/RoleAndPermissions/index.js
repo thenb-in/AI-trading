@@ -17,4 +17,14 @@ export { useCreatePermission } from './hooks/useCreatePermission';
 export { usePermissionAssignment } from './hooks/usePermissionAssignment';
 
 // Utils
-export * from './utils/rolePermissionUtils';
+export {
+  formatRoleName,
+  formatPermissionName,
+  getRolePermissionCount,
+  getTotalPermissionCount,
+  validateRoleName,
+  validatePermissionName,
+  validateDescription,
+  sanitizeFormData,
+  getEmptyStateMessage
+} from './utils/rolePermissionUtils';

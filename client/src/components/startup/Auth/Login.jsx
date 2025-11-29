@@ -78,12 +78,7 @@ export function Login() {
   };
 
   return (
-    <div
-      className="flex items-center justify-center mt-4 bg-cover bg-center"
-      style={{
-        backgroundImage: "url('/auth.png')",
-      }}
-    >
+    <div className="flex items-center justify-center mt-4 auth-background">
       <div className="w-full max-w-md">
         <form
          onSubmit={handleFormSubmit}

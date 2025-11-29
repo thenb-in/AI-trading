@@ -23,3 +23,33 @@
       transform: translateX(-100%);
     }
   }
+
+.auth-background {
+  background-image: url('/auth.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Ensure ToastContainer appears above all other elements */
+#root .Toastify__toast-container {
+  z-index: 9999 !important;
+}
+
+#root .Toastify__toast {
+  z-index: 10000 !important;
+}
+
+#root .Toastify__toast-container--top-right {
+  z-index: 9999 !important;
+}
+
+/* Ensure toast is visible */
+.Toastify__toast-container {
+  position: fixed !important;
+  z-index: 9999 !important;
+}
+
+.Toastify__toast {
+  z-index: 10000 !important;
+}

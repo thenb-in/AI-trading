@@ -9,6 +9,7 @@ import {
   Chip,
   Fade,
 } from "@mui/material";
+import { spacing, fontSize } from "../../../utils/theme";
 
 const MasterCard = ({
   title,
@@ -77,7 +78,7 @@ const MasterCard = ({
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            p: 4,
+            p: spacing.xl,
             textAlign: "center",
             position: "relative",
             zIndex: 1,
@@ -99,7 +100,7 @@ const MasterCard = ({
               transition: "transform 0.3s ease-in-out",
               boxShadow: 4,
               "& svg": {
-                fontSize: "2.5rem",
+                fontSize: fontSize['4xl'],
               },
             }}
           >
@@ -147,7 +148,7 @@ const MasterCard = ({
                   size="small"
                   variant="outlined"
                   sx={{
-                    fontSize: "0.75rem",
+                    fontSize: fontSize.xs,
                     height: 24,
                     borderColor: `${color}.main`,
                     color: `${color}.main`,
@@ -166,9 +167,9 @@ const MasterCard = ({
             size="large"
             sx={{
               alignSelf: "center",
-              px: 4,
+              px: spacing.xl,
               py: 1.5,
-              fontSize: "1rem",
+              fontSize: fontSize.base,
               fontWeight: 600,
               borderRadius: 3,
               textTransform: "none",

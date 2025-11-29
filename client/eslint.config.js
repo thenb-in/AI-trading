@@ -6,7 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import customPlugin from './eslint-rules/index.js'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', '.vite/**', 'node_modules/**'] },
 
   // React/browser config
   {

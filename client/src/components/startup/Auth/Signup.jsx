@@ -117,12 +117,7 @@ export function Signup({ showRoleDropdown }) {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center"
-      style={{
-        backgroundImage: "url('/auth.png')",
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center auth-background">
       <div className="w-full max-w-md">
         <form
           onSubmit={handleFormSubmit}

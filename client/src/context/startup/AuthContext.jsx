@@ -1,4 +1,4 @@
-import {useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiService } from "../../services/startup/ApiService";
 import { isAllowedDevice } from "../../utils/startup/deviceUtils";
@@ -82,7 +82,7 @@ export const DataProvider = ({ children }) => {
       // For protected paths, always check auth
       fetchUser();
     }
-  }, [location.pathname, navigate]);
+  }, [location, navigate]);
   const value = {
     userData,
     setUserData,
