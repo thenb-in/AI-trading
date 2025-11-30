@@ -36,7 +36,21 @@ export function App() {
           }
         />
       </Routes>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+      <ToastContainer 
+        position="top-right" 
+        className="toast-container"
+        autoClose={3000} 
+        hideProgressBar={false} 
+        newestOnTop={true} 
+        closeOnClick 
+        rtl={false}
+        pauseOnFocusLoss 
+        draggable 
+        pauseOnHover 
+        theme="light"
+        // eslint-disable-next-line custom/no-inline-styles
+        style={{ zIndex: 9999 }}
+      />
     </>
   );
 }

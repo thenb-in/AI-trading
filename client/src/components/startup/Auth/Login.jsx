@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import { ApiService } from '../../../services/startup/ApiService';
 import { useDataContext } from '../../../context/startup/useDataContext';
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
@@ -189,7 +189,6 @@ export function Login() {
           </div>
         </form>
       </div>
-      <ToastContainer />
     </div>
   );
 }

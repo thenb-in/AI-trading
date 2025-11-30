@@ -1,19 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppSideBar } from "../../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDataContext } from "../../../context/startup/useDataContext";
 import { useDebugMode } from "../../../hooks/useDebugMode";
-import { ToastContainer } from "react-toastify";
 
 
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { hamburgerMenu } = useDataContext();
-  const [isMobileView] = useState(window.innerWidth < 768);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
+
+  // Responsive handler
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   // Initialize global debug mode to ensure Alt+D keyboard handler is always active
-  const debugMode = useDebugMode();
-  console.log('[ADMIN LAYOUT] Debug mode initialized:', debugMode);
+  useDebugMode();
 
   const renderOutlet = () => (
     <div className="min-h-screen bg-gray-50 overflow-x-auto">
@@ -35,16 +42,6 @@ export function AdminLayout() {
     return (
       <>
         {hamburgerMenu ? renderSidebar() : renderOutlet()}
-        <ToastContainer 
-          position="top-right" 
-          autoClose={3000} 
-          hideProgressBar={false} 
-          newestOnTop={false} 
-          closeOnClick 
-          pauseOnFocusLoss 
-          draggable 
-          pauseOnHover
-        />
       </>
     );
   }
@@ -64,16 +61,6 @@ export function AdminLayout() {
           </div>
         </div>
       </div>
-      <ToastContainer 
-        position="top-right" 
-        autoClose={3000} 
-        hideProgressBar={false} 
-        newestOnTop={false} 
-        closeOnClick 
-        pauseOnFocusLoss 
-        draggable 
-        pauseOnHover
-      />
     </>
   );
 }
