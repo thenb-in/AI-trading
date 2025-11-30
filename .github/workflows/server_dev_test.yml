@@ -21,7 +21,7 @@ on:
   
 
 jobs:
-  build:
+  server_dev_run:
     runs-on: ubuntu-latest
     
     permissions:

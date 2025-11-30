@@ -24,7 +24,7 @@ on:
 
 
 jobs:
-  build:
+  client_prod_build:
     runs-on: ubuntu-latest
     
     permissions:
