@@ -11,7 +11,16 @@ const setAuthCookies = (res, tokens, options) => {
   res.cookie('refreshToken', tokens.refresh, options.refresh);
   res.cookie('isLoggedIn', 'true', options.isLoggedIn);
 };
-
+const checkUserActive = async (userId) => {
+  const user = await User.findByPk(userId, {
+    attributes: ['is_approved', 'username']
+  });
+  if (!user || !user.is_approved) {
+    logger.error(`User inactive or not found ${user ? user.username : userId}`);
+    return false;
+  }
+  return true;
+};
 const validateAccessToken = (accessToken) => {
   if (!accessToken) {
     return null;
@@ -25,24 +34,84 @@ const validateAccessToken = (accessToken) => {
 };
 
 const handleRefreshToken = async (refreshToken) => {
-  const decoded = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
-  const userId = decoded.id;
-
-  if (refreshTokenLocks.has(userId)) {
-    return refreshTokenLocks.get(userId);
+  // verify refresh token first
+  let decoded;
+  try {
+    decoded = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
+  } catch (err) {
+    logger.warn(`Refresh token verification failed: ${err.message}`);
+    throw new Error(`Invalid refresh token received: ${err.message}`);
   }
 
-  const refreshPromise = (async () => {
+  // Use the raw refresh token string as the lock key so callers using the same token collide.
+  const tokenKey = refreshToken;
+
+  // If a refresh for THIS exact token is already running, reuse its promise.
+  if (refreshTokenLocks.has(tokenKey)) {
+    logger.debug(`Reusing in-flight refresh for tokenKey (user:${decoded.id})`);
+    return refreshTokenLocks.get(tokenKey);
+  }
+
+  // Create a deferred placeholder and set it immediately so concurrent requests will await it.
+  let resolveDeferred, rejectDeferred;
+  const deferredPromise = new Promise((resolve, reject) => {
+    resolveDeferred = resolve; rejectDeferred = reject;
+  });
+  refreshTokenLocks.set(tokenKey, deferredPromise);
+  logger.debug(`Placed placeholder for tokenKey (user:${decoded.id})`);
+
+  (async () => {
     const tx = await User.sequelize.transaction();
-    const user = await User.findByPk(userId, {
-      attributes: ['id', 'isActive', 'refresh_token', 'companyId', 'username'],
-      lock: tx.LOCK.UPDATE, transaction: tx
-    });
     try {
-      if (!user || user.refresh_token !== refreshToken || !user.isActive) {
-        throw new Error(`Invalid or inactive user ${user.username}`);  // todo: show username instead of userId
+      const user = await User.findByPk(decoded.id, {
+        attributes: ['id', 'isActive', 'refresh_token', 'companyId', 'username'],
+        lock: tx.LOCK.UPDATE,
+        transaction: tx
+      });
+
+      if (!user) {
+        logger.error(`User not found ${decoded.id}`);
+        if (!tx.finished) {
+          await tx.rollback();
+        }
+        return rejectDeferred(new Error(`User not found ${decoded.id}`));
       }
 
+      if (!user.isActive) {
+        logger.error(`User inactive ${user.username || decoded.id}`);
+        if (!tx.finished) {
+          await tx.rollback();
+        }
+        return rejectDeferred(new Error(`User inactive ${user.username || decoded.id}`));
+      }
+
+      // If stored refresh token doesn't match the presented one, it was rotated earlier.
+      if (user.refresh_token !== refreshToken) {
+        logger.info(`Refresh token mismatch for user ${user.username || decoded.id}. Possible concurrent rotation.`);
+
+        if (!tx.finished) {
+          await tx.rollback();
+        }
+
+        // Try to reuse another existing promise keyed by tokenKey (someone else might be handling it).
+        const other = refreshTokenLocks.get(tokenKey);
+        if (other && other !== deferredPromise) {
+          // another promise exists — await and propagate its result
+          try {
+            const res = await other;
+            resolveDeferred(res);
+            return;
+          } catch (err) {
+            rejectDeferred(err);
+            return;
+          }
+        }
+        // No other promise to reuse—fail
+        logger.error(`Invalid or rotated refresh token for user ${user.username || decoded.id}`);
+        return rejectDeferred(new Error(`Invalid or rotated refresh token for user ${user.username || decoded.id}`));
+      }
+
+      // Token matches and user active — rotate token
       const newAccess = generateAccessToken({ id: user.id, companyId: decoded.company_id });
       const newRefresh = await generateRefreshToken({ id: user.id, companyId: decoded.company_id });
       user.refresh_token = newRefresh;
@@ -52,27 +121,47 @@ const handleRefreshToken = async (refreshToken) => {
 
       const accessMax = parseInt(env.MAX_JWT_ACCESS_EXPIRATION_MS || 300000);
       const refreshMax = parseInt(env.MAX_JWT_REFRESH_EXPIRATION_MS || 604800000);
-      logger.debug(`Cid:${decoded.company_id}`);
-      return {
+      logger.debug(`Cid:${decoded.company_id} - Refreshed tokens for user ${user.id}`);
+
+      const result = {
         user: { id: user.id, company_id: decoded.company_id },
         tokens: { access: newAccess, refresh: newRefresh },
         options: {
-          access: { httpOnly: true, sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: accessMax },
+          access:  { httpOnly: true, sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: accessMax },
           refresh: { httpOnly: true, sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: refreshMax },
           isLoggedIn: { sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: refreshMax }
         }
       };
+
+      // Resolve deferred so all waiters receive same result
+      resolveDeferred(result);
+      return;
     } catch (e) {
-      if (!tx.finished) {
-        await tx.rollback();
+      try {
+        if (!tx.finished) {
+          await tx.rollback();
+        }
+      } catch (rb) {
+        logger.error(`Rollback failed: ${rb.message}`, rb);
       }
-      throw new Error(`Error in handling refresh token ${userId}`, e);
+
+      logger.error(`Error in handling refresh token (user:${decoded.id}): ${e.message || e}`,e);
+      rejectDeferred(new Error(`Error in handling refresh token ${decoded.id}: ${e.message || e}`));
+      return;
+    } finally {
+      // keep the lock present for a short grace window to let near-simultaneous requests reuse it.
+      setTimeout(() => {
+        // Only delete if the current map entry is our deferredPromise
+        if (refreshTokenLocks.get(tokenKey) === deferredPromise) {
+          refreshTokenLocks.delete(tokenKey);
+          logger.debug(`Cleared refreshTokenLocks for tokenKey (user:${decoded.id})`);
+        }
+      }, 1500); // 1.5s grace period — tune as needed
     }
   })();
 
-  refreshTokenLocks.set(userId, refreshPromise);
-  const result = await refreshPromise.finally(() => refreshTokenLocks.delete(userId));
-  return result;
+  // return the deferred promise so callers will await the resolution
+  return deferredPromise;
 };
 
 exports.protect = async (req, res, next) => {
@@ -84,6 +173,10 @@ exports.protect = async (req, res, next) => {
 
     const decoded = validateAccessToken(accessToken);
     if (decoded) {
+      const isApproved = await checkUserActive(decoded.id);
+      if (!isApproved) {
+        return res.status(401).json({ message: 'User is not approved', requiresLogin: true });
+      }
       req.user = { id: decoded.id, company_id: decoded.company_id };
       return next();
     }
@@ -92,9 +185,12 @@ exports.protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Session expired', requiresLogin: true });
     }
 
-
     try {
       const result = await handleRefreshToken(refreshToken);
+      const isApproved = await checkUserActive(result.user.id);
+      if (!isApproved) {
+        return res.status(401).json({ message: 'User is not approved', requiresLogin: true });
+      }
       req.user = result.user;
       setAuthCookies(res, result.tokens, result.options);
       logger.info(`Tokens refreshed for user ${result.user.id}`);
