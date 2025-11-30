@@ -2,14 +2,16 @@ import { motion } from 'framer-motion';
 import { FaUser, FaLock } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 
-const AnimatedBackground = ({ setShowRoleDropdown }) => {
+const AnimatedBackground = ({ setShowRoleDropdown = () => {} }) => {
   let clickCount = 0;
   let clickTimeout = null;
 
   const handleLockClick = () => {
     clickCount++;
     if (clickCount === 3) {
-      setShowRoleDropdown(true);
+      if (setShowRoleDropdown) {
+        setShowRoleDropdown(true);
+      }
       clickCount = 0;
       clearTimeout(clickTimeout);
     } else {
@@ -69,7 +71,7 @@ const AnimatedBackground = ({ setShowRoleDropdown }) => {
 };
 
 AnimatedBackground.propTypes = {
-  setShowRoleDropdown: PropTypes.func.isRequired,
+  setShowRoleDropdown: PropTypes.func,
 };
 
 export { AnimatedBackground };
