@@ -1,0 +1,13 @@
+// Permission name constants
+const PERMISSION_USER_MANAGEMENT = 'user_management';
+const PERMISSION_ROLE_MANAGEMENT = 'role_management';
+const PERMISSION_COMPANY_SETTINGS = 'company_settings';
+const PERMISSION_SYSTEM_ADMIN = 'system_admin';
+
+export {
+  PERMISSION_USER_MANAGEMENT,
+  PERMISSION_ROLE_MANAGEMENT,
+  PERMISSION_COMPANY_SETTINGS,
+  PERMISSION_SYSTEM_ADMIN
+};
+

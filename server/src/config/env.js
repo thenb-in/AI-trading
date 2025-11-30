@@ -1,6 +1,8 @@
 // Centralized environment configuration
 const path = require('path');
-const { PARSE_INT_RADIX, PRODUCTION_ENV } = require('../constants/startup');
+const { PARSE_INT_RADIX } = require('../constants/startup/standard_constants');
+const { PRODUCTION_ENV } = require('../constants/startup/standard_constants');
+
 // This file sets up dotenv-safe once and exports the configuration
 require('dotenv-safe').config({
   allowEmptyValues: true,
@@ -9,6 +11,7 @@ require('dotenv-safe').config({
 
 // Export the configuration for use in other files
 const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
+const isDevelopment = !isProduction;
 
 // Calculate default uploads directory relative to server root
 // env.js is at server/src/config/env.js, so we go up 3 levels to base root
@@ -49,5 +52,5 @@ module.exports = {
 
   // Helper functions
   isProduction,
-  isDevelopment: !isProduction
+  isDevelopment
 };
