@@ -26,6 +26,16 @@ pre-commit hook: to not be in pre-push hook
 - Remove ability to push changes to startup files
 
 - clear multi-company setup when logging in, and logging out as well
+- Frontend to create a company for first setup, default admin credentials
+- scrolling in admin bar for lots of masters
+- Excel based default data import on company creation
+- Log stack in case of errors
+- Remove HR and safe-chat specific things from startup (using AI)
+
+
+- auto-calculated should be disabled by default, they will always be calculated.
+- error should be a toast. anything else is easily missed.
+- Husky: If model changes, add a check that you should push to DB scripts folder as well.
 - Merge with startup
 
 - If more than 3? in same variable, show error to rule out that before-hand
@@ -48,7 +58,12 @@ pre-commit hook: to not be in pre-push hook
 - heirarchy based user management (will be used for data management)
 - Lint: Do not allow adding global variables
 - Add a health API point to startup
+- 
+
+
+- Not able to add salary structure to certain employees (Saloni Khatri in GJK)
 - Refresh page when update is recieved.
 - Show what build is being deployed in CICD pipeline when using `download_client_build.sh` script
 - permission controls in divyafoods. only allow create and view for users.
 - Change port when building server deployment in both .env and nginx
+- Show best possible page based on permissions

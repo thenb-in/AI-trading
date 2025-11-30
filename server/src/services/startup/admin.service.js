@@ -156,7 +156,8 @@ const getRolesAndPermissions = async () => {
       include: {
         model: Permission,
         as: 'permissions',
-        through: { attributes: [] } // Don't include the join table attributes
+        through: { attributes: [] }, // Don't include the join table attributes
+        attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
       },
       order: [['name', 'ASC']]
     });
@@ -168,7 +169,10 @@ const getRolesAndPermissions = async () => {
 
 const getAllPermissions = async () => {
   try {
-    const permissions = await Permission.findAll({ order: [['name', 'ASC']] });
+    const permissions = await Permission.findAll({
+      attributes: ['id', 'name', 'description', 'type'], // Explicitly specify attributes that exist
+      order: [['name', 'ASC']]
+    });
     return permissions;
   } catch (error) {
     throw { status: 500, message: error.message };

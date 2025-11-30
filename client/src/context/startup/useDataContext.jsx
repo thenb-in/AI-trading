@@ -5,7 +5,10 @@ const useDataContext = () => useContext(DataContext);
 
 
 const hasPermission = (requiredPermission, dataContext) => {
-    return dataContext?.userData?.role?.permissions?.some(
+    if (!dataContext) {
+        throw new Error("Data context not found");
+    }
+    return dataContext.userData?.role?.permissions?.some(
         (permission) => permission.name === requiredPermission
     );
 };
