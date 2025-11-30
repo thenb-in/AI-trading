@@ -129,6 +129,16 @@ export function useAppMenuItems() {
 
   // Master Categories Flyout Component
   const MasterFlyout = () => {
+    const flyoutRef = useRef(null);
+
+    useEffect(() => {
+      if (flyoutRef.current && showMasterFlyout) {
+        flyoutRef.current.style.top = `${flyoutPosition.top}px`;
+        flyoutRef.current.style.left = `${flyoutPosition.left}px`;
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flyoutPosition.top, flyoutPosition.left, showMasterFlyout]);
+
     const handleCategoryClick = (categoryName) => {
       const path = `/admin/master?category=${encodeURIComponent(categoryName)}`;
       navigate(path);
@@ -139,11 +149,8 @@ export function useAppMenuItems() {
 
     return (
       <div
-        className="fixed w-64 bg-gray-800 text-white rounded-lg shadow-lg border border-gray-700 z-[2147483647] p-2 pointer-events-auto"
-        style={{
-          top: `${flyoutPosition.top}px`,
-          left: `${flyoutPosition.left}px`
-        }}
+        ref={flyoutRef}
+        className="flyout-positioned w-64 bg-gray-800 text-white rounded-lg shadow-lg border border-gray-700 z-[2147483647] p-2 pointer-events-auto"
         onMouseEnter={openFlyout}
         onMouseLeave={scheduleCloseFlyout}
       >

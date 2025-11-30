@@ -113,17 +113,12 @@ export function AdminSidebar({
 
       <div
         className={`
-          bg-gray-800 text-white fixed top-0 left-0 flex flex-col z-[99999]
+          bg-gray-800 text-white fixed top-0 left-0 flex flex-col z-[99999] sidebar-container
           ${isMobileView
-            ? "max-w-[80%] w-[80%] shadow-lg h-full"
+            ? "max-w-[80%] w-[80%] shadow-lg h-full max-h-screen"
             : (collapsed ? "w-14" : "w-64") + " h-screen"}
           ${isMobileView ? (hamburgerMenu ? "translate-x-0" : "-translate-x-full") : "translate-x-0"}
         `}
-        style={{
-          maxHeight: isMobileView ? '100vh' : undefined,
-          backfaceVisibility: 'hidden',
-          willChange: 'transform',
-        }}
         aria-hidden={isMobileView ? !hamburgerMenu : undefined}
         tabIndex={isMobileView && !hamburgerMenu ? -1 : 0}
         role="navigation"
@@ -157,7 +152,7 @@ export function AdminSidebar({
 
         {/* Navigation - Scrollable Section */}
         <div className={`flex-1 min-h-0 ${collapsed ? "px-2 py-2" : "px-3 py-3"}`}>
-          <div className="h-full overflow-y-auto custom-scrollbar" style={{ paddingRight: '4px' }}>
+          <div className="h-full overflow-y-auto custom-scrollbar pr-1">
             <nav>
               <ul className="space-y-2">
                 {menuItems.length === 0 && (
@@ -185,13 +180,8 @@ export function AdminSidebar({
                         <item.icon className="w-5 h-5 flex-shrink-0" />
                       )}
                       <span
-                        className={`ml-3 truncate transition-all duration-300
-                          ${collapsed ? 'opacity-0 -translate-x-3 pointer-events-none' : 'opacity-100 translate-x-0 pointer-events-auto'}`}
-                        style={{
-                          willChange: 'opacity, transform',
-                          transitionProperty: 'opacity, transform',
-                          display: collapsed ? 'none' : 'inline',
-                        }}
+                        className={`ml-3 truncate transition-all duration-300 sidebar-label-transition
+                          ${collapsed ? 'opacity-0 -translate-x-3 pointer-events-none hidden' : 'opacity-100 translate-x-0 pointer-events-auto inline'}`}
                       >
                         {item.label}
                       </span>

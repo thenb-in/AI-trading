@@ -79,7 +79,7 @@ export const useMultiCompanyModule = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeCompanyId, fetchCompanies, setUserData]);
+  }, [fetchCompanies, setUserData]);
 
   return {
     companies,
