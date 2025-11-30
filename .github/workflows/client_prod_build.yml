@@ -9,10 +9,16 @@ on:
       - main
       - master
       - test-ci
+    paths:
+      - 'client/**'  # Only trigger if files in the client directory change
+
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'client/**'  # Only trigger if files in the client directory change
+
   release:
     types: [published]
 

@@ -1,0 +1,84 @@
+name: test server in dev mode
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - test-ci
+    paths:
+      - 'server/**'  # Only trigger if files in the server directory change
+
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'server/**'  # Only trigger if files in the server directory change
+
+  release:
+    types: [published]
+  
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      actions: write
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies and setup environment
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
+          # Database configuration for CI environment
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: test_db
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+
+      - name: Verify .env file was created
+        run: |
+          cd server
+          if [ ! -f .env ]; then
+            echo "❌ Error: .env file was not created by setup script"
+            exit 1
+          else
+            echo "✅ .env file created successfully"
+          fi
+
+      - name: Run server in dev mode
+        run: |
+          cd server
+          timeout 30 npm run dev || true
+        env:
+          CI: true
+

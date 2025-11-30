@@ -138,6 +138,36 @@ async function configureDatabase() {
   logger.info('🗄️  Database Configuration');
   logger.info('Let\'s set up your database connection...');
 
+  // Check if we're in CI environment - use environment variables instead of prompts
+  const isCI = process.env.CI === 'true' || process.env.CI === true;
+  
+  if (isCI) {
+    logger.info('🔧 CI environment detected, using environment variables...');
+    const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT || '5432';
+    const dbName = process.env.DB_NAME || 'test_db';
+    const dbUser = process.env.DB_USER || 'postgres';
+    const dbPassword = process.env.DB_PASSWORD || 'postgres';
+
+    // Validate and setup database
+    const validation = await validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbName);
+
+    if (validation.success) {
+      const encodedUser = encodeURIComponent(dbUser);
+      const encodedPassword = encodeURIComponent(dbPassword);
+      const encodedDbName = encodeURIComponent(dbName);
+      const databaseUrl = `postgresql://${encodedUser}:${encodedPassword}@${dbHost}:${dbPort}/${encodedDbName}`;
+
+      logger.info('✅ Database configuration completed!');
+      logger.info(`📊 Connection string: ${dbHost}:${dbPort}/${dbName}`);
+
+      return { databaseUrl, dbHost, dbPort, dbName, dbUser, dbPassword };
+    } else {
+      logger.error(`❌ ${validation.error}`);
+      return null;
+    }
+  }
+
   let prompt = null;
 
   while (true) {
