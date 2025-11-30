@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission, MultiCompanyModule,UserProfile } = require('../../models');
+const { User, Company, Role, Permission, MultiCompanyModule, UserProfile } = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -9,6 +9,8 @@ const {
 } = require('../../utils/startup/authUtils');
 
 const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
+  username = username?.trim();
+  password = password?.trim();
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
 
   const existingUser = await User.findOne({ where: { username } });
@@ -75,6 +77,7 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
 };
 
 const findUserWithRole = async (username) => {
+  username = username?.trim();
   return await User.findOne({
     where: { username },
     include: [
@@ -85,7 +88,7 @@ const findUserWithRole = async (username) => {
           model: Permission,
           as: 'permissions',
           through: { attributes: [] },
-          attributes: ['id', 'name', 'description']
+          attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
         }]
       }
     ],
@@ -167,10 +170,12 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
 
 const loginUser = async (credentials) => {
   const { username, password } = credentials;
-  logger.info(`User login attempt: ${username}`);
-  logger.info(`Looking up user by username: ${username}`);
-  const user = await findUserWithRole(username);
-  await validateUserStatusAndPassword(user, password, username);
+  const trimmedUsername = username?.trim();
+  const trimmedPassword = password?.trim();
+  logger.info(`User login attempt: ${trimmedUsername}`);
+  logger.info(`Looking up user by username: ${trimmedUsername}`);
+  const user = await findUserWithRole(trimmedUsername);
+  await validateUserStatusAndPassword(user, trimmedPassword, trimmedUsername);
   logger.info(`User login successful: ${user.id}`);
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);
   const activeCompany = await getActiveCompanyForUser(user);
@@ -189,6 +194,8 @@ const approveUser = async (userId) => {
 };
 
 const resetPassword = async ({ username, password, isFirstLogin }) => {
+  username = username?.trim();
+  password = password?.trim();
   const user = await User.findOne({ where: { username } });
   if (!user) {
     throw new Error(`User not found ${username}.`);
@@ -222,7 +229,7 @@ const getCurrentUser = async (userId) => {
             model: Permission,
             as: 'permissions',
             through: { attributes: [] },
-            attributes: ['id', 'name', 'description']
+            attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
           }]
         }
       ]
