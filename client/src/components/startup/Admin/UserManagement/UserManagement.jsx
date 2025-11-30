@@ -37,7 +37,8 @@ export function UserManagement() {
     showBulkDeleteConfirmation,
     roles,
     // deviceAccessOptions ,
-    handleDeviceOptionUpdate
+    handleDeviceOptionUpdate,
+    updateUserProfileInState,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(false);
@@ -197,7 +198,7 @@ export function UserManagement() {
         handleRoleChange={handleRoleChange}
       //  deviceAccessOptions ={deviceAccessOptions}
         handleDeviceOptionUpdate={handleDeviceOptionUpdate}
-        extraColumns={getUserManagementExtraColumns()}
+        extraColumns={getUserManagementExtraColumns(updateUserProfileInState)}
       />
 
       <div className="mb-4">

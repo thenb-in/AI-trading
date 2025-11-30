@@ -20,30 +20,30 @@ export const useUserManagement = () => {
     selectedUsers: [],
   });
   const fetchData = async () => {
-      try {
-        setLoading(true);
-        const usersResponse = await ApiService.getAllUsers();
-        setUsers(usersResponse.data.users);
-        setRoles(usersResponse.data.roles);
-        setError("");
-      } catch (err) {
-        setError(err.message || "Failed to load users");
-      } finally {
-        setLoading(false);
-      }
-    };
+    try {
+      setLoading(true);
+      const usersResponse = await ApiService.getAllUsers();
+      setUsers(usersResponse.data.users);
+      setRoles(usersResponse.data.roles);
+      setError("");
+    } catch (err) {
+      setError(err.message || "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
-  
+
   useEffect(() => {
     if (error) {
       const timeout = setTimeout(() => {
         setError("");
       }, 3000); // 3 seconds
 
-      return () => clearTimeout(timeout); 
+      return () => clearTimeout(timeout);
     }
   }, [error]);
   const handleApprove = async (userId) => {
@@ -128,44 +128,61 @@ export const useUserManagement = () => {
     }
   };
 
- const handleRoleChange = async (userId, newRoleId) => {
-  try {
-    // newRoleId is already converted to integer or null in UserTableRow
-    await ApiService.updateUserRole(userId, newRoleId);
-    
-    // Find the new role object, or set to null if no role
-    const newRole = newRoleId ? roles.find((role) => role.id === newRoleId) : null;
+  const handleRoleChange = async (userId, newRoleId) => {
+    try {
+      // newRoleId is already converted to integer or null in UserTableRow
+      await ApiService.updateUserRole(userId, newRoleId);
 
-    setUsers((prevUsers) => {
-      const updatedUsers = prevUsers.map((user) =>
-        user.id === userId ? { ...user, role: newRole } : user
+      // Find the new role object, or set to null if no role
+      const newRole = newRoleId ? roles.find((role) => role.id === newRoleId) : null;
+
+      setUsers((prevUsers) => {
+        const updatedUsers = prevUsers.map((user) =>
+          user.id === userId ? { ...user, role: newRole } : user
+        );
+        return [...updatedUsers];
+      });
+
+      setError('');
+    } catch (err) {
+      console.error('❌ Failed to update role:', err);
+      setError(err.message || 'Failed to update role');
+    }
+  };
+
+  const handleDeviceOptionUpdate = async (userId, field, value) => {
+    try {
+      await ApiService.updateUserDevice(userId, { [field]: value });
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === userId ? { ...user, [field]: value } : user
+        )
       );
-      return [...updatedUsers];
-    });
 
-    setError('');
-  } catch (err) {
-    console.error('❌ Failed to update role:', err);
-    setError(err.message || 'Failed to update role');
-  }
-};
+      setError('');
+    } catch (err) {
+      console.error('❌ Failed to update device access:', err);
+      setError(err.message || 'Failed to update device access');
+    }
+  };
 
-const handleDeviceOptionUpdate = async (userId, field, value) => {
-  try {
-    await ApiService.updateUserDevice(userId, { [field]: value });
-
+  const updateUserProfileInState = (userId, userProfileData) => {
     setUsers((prevUsers) =>
-      prevUsers.map((user) =>
-        user.id === userId ? { ...user, [field]: value } : user
-      )
+      prevUsers.map((user) => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            userProfile: {
+              ...(user.userProfile || {}),
+              ...userProfileData
+            }
+          };
+        }
+        return user;
+      })
     );
-
-    setError('');
-  } catch (err) {
-    console.error('❌ Failed to update device access:', err);
-    setError(err.message || 'Failed to update device access');
-  }
-};
+  };
 
 
   const toggleUserSelection = (userId) => {
@@ -247,5 +264,6 @@ const handleDeviceOptionUpdate = async (userId, field, value) => {
     showConfirmation,
     showBulkDeleteConfirmation,
     handleDeviceOptionUpdate,
+    updateUserProfileInState,
   };
 };

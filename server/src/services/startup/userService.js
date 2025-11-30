@@ -89,10 +89,48 @@ const getUserById = async (userId) => {
   return user;
 };
 
+const updateUserProfile = async (userId, userProfile) => {
+  const user = await User.findByPk(userId, {
+    include: [
+      { model: UserProfile, as: 'userProfile', required: false }
+    ]
+  });
+
+  if (!user) {
+    throw new Error(`User not found ${userId}.`);
+  }
+
+  try {
+    if (user.userProfile) {
+      // UserProfile exists, update it
+      await user.userProfile.update(userProfile);
+    } else {
+      // UserProfile doesn't exist, create it
+      await UserProfile.create({
+        userId: user.id,
+        currentCompany: user.companyId,
+        ...userProfile
+      });
+    }
+
+    // Reload user with updated userProfile
+    const updatedUser = await User.findByPk(userId, {
+      include: [
+        { model: UserProfile, as: 'userProfile', required: false }
+      ]
+    });
+
+    return updatedUser;
+  } catch (error) {
+    throw new Error(`Error updating user profile: ${error.message}`);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   deleteUser,
   updateUserRole,
-  updateUserDeviceAccess
+  updateUserDeviceAccess,
+  updateUserProfile
 };

@@ -69,6 +69,10 @@ const ApiService = {
     return this.request('POST', '/auth/logout');
   },
 
+  updateUserProfile(userId, userProfile) {
+    return this.request('POST', `/users/userProfile`, { userId, userProfile });
+  },
+
   // Company
   getCompany() {
     return this.request('GET', '/company');

@@ -96,11 +96,25 @@ const updateUserDeviceAccess=async(req,res)=>{
     res.status(500).json({ error: `Error in updating user device access ${error.message}` });
   }
 };
+
+const updateUserProfile=async(req,res)=>{
+  try {
+
+    const { userId,userProfile } = req.body;
+    await userService.updateUserProfile(userId, userProfile);
+    res.status(200).json({ message: `User profile updated successfully ${userId}` });  // todo: show username instead of userId
+  } catch (error) {
+    logger.error('Update user profile error', error);
+    res.status(500).json({ error: `Error in updating user profile ${error.message}` });
+  }
+};
+
 module.exports = {
   getAllUsers,
   deactivateUser,
   getMe,
   deleteUser,
   updateUserRole,
-  updateUserDeviceAccess
+  updateUserDeviceAccess,
+  updateUserProfile
 };

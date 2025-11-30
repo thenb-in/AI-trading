@@ -10,5 +10,5 @@ router.get('/:userId', authMiddleware.protect, userController.getMe);
 router.delete('/:userId', authMiddleware.protect, userController.deleteUser);
 router.put('/:userId/role', authMiddleware.protect, userController.updateUserRole);
 router.put('/:userId/deviceAccess', authMiddleware.protect, userController.updateUserDeviceAccess);
-
+router.post('/userProfile', authMiddleware.protect, userController.updateUserProfile);
 module.exports = router;
