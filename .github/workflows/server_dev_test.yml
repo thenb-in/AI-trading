@@ -1,4 +1,4 @@
-name: test server in dev mode
+name: Smoke test server startup
 
 on:
   push:
@@ -78,7 +78,23 @@ jobs:
       - name: Run server in dev mode
         run: |
           cd server
-          timeout 30 npm run dev || true
+          npm run dev &
+          DEV_PID=$!
+          sleep 15
+
+          if ! kill -0 $DEV_PID 2>/dev/null; then
+            echo "❌ Server failed to start."
+            exit 1
+          fi
+
+          echo "✅ Server started successfully, no startup errors."
+          kill $DEV_PID
         env:
           CI: true
 
+      - name: Create new company
+        run: |
+          cd server
+          echo "this command needs to be setup: \`npm run create-new-company\`"
+        env:
+          CI: true
