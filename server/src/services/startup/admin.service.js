@@ -170,7 +170,7 @@ const getRolesAndPermissions = async () => {
 const getAllPermissions = async () => {
   try {
     const permissions = await Permission.findAll({
-      attributes: ['id', 'name', 'description', 'type'], // Explicitly specify attributes that exist
+      attributes: ['id', 'name', 'display_name', 'description', 'type'], // Explicitly specify attributes that exist
       order: [['name', 'ASC']]
     });
     return permissions;

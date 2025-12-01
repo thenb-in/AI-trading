@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2, Link2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import {
   groupMasterPermissionsByOperation,
@@ -25,7 +25,28 @@ export function PermissionTable({
     const operationGroups = groupFunction(groupPermissions);
     Object.keys(operationGroups).forEach((op) => allOperations.add(op));
   });
-  const operations = Array.from(allOperations).sort();
+  
+  // Sort operations: CRUD first (create, read, update, delete), then others alphabetically
+  const crudOrder = ['create', 'read', 'update', 'delete'];
+  const operations = Array.from(allOperations).sort((a, b) => {
+    const aIndex = crudOrder.indexOf(a);
+    const bIndex = crudOrder.indexOf(b);
+    
+    // If both are CRUD operations, sort by CRUD order
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    // If only 'a' is CRUD, it comes first
+    if (aIndex !== -1) {
+      return -1;
+    }
+    // If only 'b' is CRUD, it comes first
+    if (bIndex !== -1) {
+      return 1;
+    }
+    // Both are non-CRUD, sort alphabetically
+    return a.localeCompare(b);
+  });
 
   // Handler functions for toggle operations
   const handleOperationToggle = (operationPermissions, allOperationAssigned) => {
@@ -101,19 +122,39 @@ export function PermissionTable({
                       className="p-1 text-center border-r border-gray-200 last:border-r-0"
                     >
                       {hasPermissions ? (
-                        <div className="flex items-center justify-center gap-1">
-                          {operationPermissions.map((permission) => {
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {operationPermissions.map((permission, index) => {
                             const assigned = isPermissionAssigned(selectedRole, permission.id);
+                            const isLinked = permission._isLinked;
+                            const displayName = permission.display_name 
+                              ? permission.display_name 
+                              : (permission.name || 'Unknown Permission');
+                            const tooltipText = isLinked 
+                              ? `${displayName} (Linked to Module Permission - toggling this will also toggle the module permission)`
+                              : displayName;
+                            
+                            // Use a unique key that includes the linked context to avoid React key conflicts
+                            const uniqueKey = permission._linkedContext 
+                              ? `${permission.id}-${permission._linkedContext}-${index}`
+                              : `${permission.id}-${index}`;
+                            
                             return (
-                              <input
-                                key={permission.id}
-                                type="checkbox"
-                                checked={assigned}
-                                onChange={() => onTogglePermission(permission.id, assigned)}
-                                disabled={updating || !selectedRole}
-                                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
-                                title={permission.display_name || permission.name}
-                              />
+                              <div key={uniqueKey} className="flex items-center gap-0.5">
+                                <input
+                                  type="checkbox"
+                                  checked={assigned}
+                                  onChange={() => onTogglePermission(permission.id, assigned)}
+                                  disabled={updating || !selectedRole}
+                                  className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
+                                  title={tooltipText}
+                                />
+                                {isLinked && (
+                                  <Link2 
+                                    className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" 
+                                    title="This permission is linked to a module permission"
+                                  />
+                                )}
+                              </div>
                             );
                           })}
                           {operationPermissions.length > 1 && (

@@ -1,6 +1,7 @@
 /**
  * Organizes permissions by type (module, report, master)
  * and groups master permissions by entity
+ * Also includes linked permissions (duplicates) in master section
  */
 export function organizePermissions(permissions) {
   if (!Array.isArray(permissions)) {
@@ -8,6 +9,7 @@ export function organizePermissions(permissions) {
       module: [],
       report: {},
       master: {},
+      other: [],
     };
   }
 
@@ -15,26 +17,69 @@ export function organizePermissions(permissions) {
     module: [],
     report: {},
     master: {},
+    other: [],
   };
 
   permissions.forEach((permission) => {
     const type = permission.type?.toLowerCase();
     const name = permission.name.toLowerCase();
 
-    // Infer type from name if not set
+    // Infer type from name - prioritize name pattern over type field
+    // This ensures permissions like "create_company" are always categorized as master
     let inferredType = type;
-    if (!inferredType) {
-      if (name.includes('_module') || (name.startsWith('view_') && !name.includes('report'))) {
-        inferredType = 'module';
-      } else if (name.includes('report') || name.startsWith('read_report') || name.startsWith('download_report') || name.startsWith('view_report') || name.startsWith('export_report')) {
-        inferredType = 'report';
-      } else if (name.match(/^(create|read|update|delete|approve|deactivate)_/)) {
-        inferredType = 'master';
-      }
+    
+    // Always check name patterns first, regardless of type field
+    if (name.includes('_module') || (name.startsWith('view_') && !name.includes('report'))) {
+      inferredType = 'module';
+    } else if (name.includes('report') || name.startsWith('read_report') || name.startsWith('download_report') || name.startsWith('view_report') || name.startsWith('export_report')) {
+      inferredType = 'report';
+    } else if (name.match(/^(create|read|update|delete|approve|deactivate)_/)) {
+      inferredType = 'master';
+    } else {
+      // If no pattern matches, categorize as "other"
+      inferredType = 'other';
     }
 
     if (inferredType === 'module') {
       organized.module.push(permission);
+      
+      // If this module permission is also used in master permissions, add it to master section
+      if (isLinkedPermission(permission)) {
+        const linkedContexts = LINKED_PERMISSIONS_MAP[name];
+        linkedContexts.forEach((context) => {
+          // Extract entity from context like "USER.read" -> "User" or "ROLE_PERMISSION.read" -> "Role Permission"
+          // Convert the entity name to match the format used by extractEntityFromPermission
+          const entity = context.split('.')[0];
+          // Convert "ROLE_PERMISSION" to "role_permission" then use extractEntityFromPermission logic
+          const entityLower = entity.toLowerCase();
+          // Use the same logic as extractEntityFromPermission to ensure consistent entity names
+          const entityDisplay = entityLower
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          if (!organized.master[entityDisplay]) {
+            organized.master[entityDisplay] = [];
+          }
+          
+          // Check if this permission is already in the master section for this entity
+          // We want to add it as a separate entry for the "read" operation
+          const existingIndex = organized.master[entityDisplay].findIndex(
+            (p) => p.id === permission.id && p._linkedContext === context
+          );
+          
+          if (existingIndex === -1) {
+            // Create a copy with metadata to indicate it's a linked permission
+            const linkedPermission = {
+              ...permission,
+              _linkedContext: context,
+              _isLinked: true,
+              _originalDisplayName: permission.display_name || permission.name,
+            };
+            organized.master[entityDisplay].push(linkedPermission);
+          }
+        });
+      }
     } else if (inferredType === 'report') {
       // Group report permissions by report identifier
       const reportId = extractReportId(permission.name);
@@ -50,19 +95,26 @@ export function organizePermissions(permissions) {
         organized.master[entity] = [];
       }
       organized.master[entity].push(permission);
+    } else if (inferredType === 'other') {
+      // Handle "other" type permissions - store with full details for investigation
+      // Store complete permission object with all available fields
+      organized.other.push({
+        id: permission.id,
+        name: permission.name,
+        display_name: permission.display_name || permission.name,
+        description: permission.description || null,
+        type: permission.type || 'other',
+        originalType: type, // Store the original type field if it was set
+        // Include any other fields that might be useful for investigation
+        ...permission,
+      });
     } else {
-      // If we can't determine type, try to infer from name patterns
-      // Check if it looks like a master permission
-      if (name.match(/^(create|read|update|delete|approve|deactivate)_/)) {
-        const entity = extractEntityFromPermission(permission.name);
-        if (!organized.master[entity]) {
-          organized.master[entity] = [];
-        }
-        organized.master[entity].push(permission);
-      } else {
-        // Default to module for unknown types
-        organized.module.push(permission);
+      // Fallback: if type is set but doesn't match any pattern, categorize as master with extracted entity
+      const entity = extractEntityFromPermission(permission.name);
+      if (!organized.master[entity]) {
+        organized.master[entity] = [];
       }
+      organized.master[entity].push(permission);
     }
   });
 
@@ -76,8 +128,16 @@ export function organizePermissions(permissions) {
 
   // Sort master entities and their permissions
   Object.keys(organized.master).forEach((entity) => {
-    organized.master[entity].sort((a, b) => a.name.localeCompare(b.name));
+    organized.master[entity].sort((a, b) => {
+      // Sort linked permissions to appear after regular permissions
+      if (a._isLinked && !b._isLinked) return 1;
+      if (!a._isLinked && b._isLinked) return -1;
+      return a.name.localeCompare(b.name);
+    });
   });
+
+  // Sort other permissions by name
+  organized.other.sort((a, b) => a.name.localeCompare(b.name));
 
   return organized;
 }
@@ -277,5 +337,64 @@ export function getOperationDisplayName(operation) {
 export function isPermissionAssigned(role, permissionId) {
   if (!role || !role.permissions) return false;
   return role.permissions.some((p) => p.id === permissionId);
+}
+
+/**
+ * Maps permission names that are used in both module and master permissions
+ * Key: module permission name, Value: array of master permission contexts where it appears
+ */
+const LINKED_PERMISSIONS_MAP = {
+  'view_user_module': ['USER.read'],
+  'view_company_settings': ['COMPANY.read'],
+  'view_role_permission_module': ['ROLE_PERMISSION.read'],
+};
+
+/**
+ * Gets linked permission IDs for a given permission
+ * Returns an array of permission IDs that should be synced together
+ */
+// export function getLinkedPermissionIds(permission, allPermissions) {
+//   if (!permission || !allPermissions) return [];
+  
+//   const permissionName = permission.name?.toLowerCase();
+//   if (!permissionName) return [];
+  
+//   // Check if this permission is in the linked permissions map
+//   const linkedContexts = LINKED_PERMISSIONS_MAP[permissionName];
+//   if (!linkedContexts || linkedContexts.length === 0) return [];
+  
+//   // Find all permissions with the same name (they should have the same ID)
+//   const linkedPermissions = allPermissions.filter(
+//     (p) => p.name?.toLowerCase() === permissionName
+//   );
+  
+//   return linkedPermissions.map((p) => p.id);
+// }
+
+/**
+ * Checks if a permission is linked to other permissions
+ */
+export function isLinkedPermission(permission) {
+  if (!permission) return false;
+  const permissionName = permission.name?.toLowerCase();
+  return permissionName && LINKED_PERMISSIONS_MAP[permissionName];
+}
+
+/**
+ * Gets the display context for a linked permission in master section
+ * e.g., "view_user_module" in USER.read context should show as "User - Read"
+ */
+export function getLinkedPermissionDisplayContext(permissionName) {
+  const name = permissionName?.toLowerCase();
+  if (!name) return null;
+  
+  const linkedContexts = LINKED_PERMISSIONS_MAP[name];
+  if (!linkedContexts || linkedContexts.length === 0) return null;
+  
+  // Return the first context (there should typically be only one)
+  const context = linkedContexts[0];
+  // Extract entity name from context like "USER.read" -> "User"
+  const entity = context.split('.')[0];
+  return entity.charAt(0) + entity.slice(1).toLowerCase();
 }
 

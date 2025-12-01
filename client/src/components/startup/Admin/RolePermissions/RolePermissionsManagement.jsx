@@ -108,9 +108,23 @@ export function RolePermissionsManagement() {
             />
           )}
 
+          {/* Other Permissions - For Investigation */}
+          {organizedPermissions.other && organizedPermissions.other.length > 0 && (
+            <PermissionCategorySection
+              title="Other Permissions (Investigation Needed)"
+              permissions={organizedPermissions.other}
+              category="other"
+              selectedRole={selectedRole}
+              onTogglePermission={togglePermission}
+              onToggleOperation={toggleMultiplePermissions}
+              updating={updating}
+            />
+          )}
+
           {organizedPermissions.module.length === 0 &&
             Object.keys(organizedPermissions.report).length === 0 &&
-            Object.keys(organizedPermissions.master).length === 0 && (
+            Object.keys(organizedPermissions.master).length === 0 &&
+            (!organizedPermissions.other || organizedPermissions.other.length === 0) && (
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-center">
                 <p className="text-xs text-gray-600">No permissions found.</p>
               </div>
