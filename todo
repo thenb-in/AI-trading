@@ -1,25 +1,14 @@
 1. pre-commit hook: where emp_code and emp_id is banned from backend
 2. pre-commit hook: where company_id is compulsory in all functions in services
 3. Test and Fix toggle attendance api
-4. Find out how emp data is coming in checkin_checkout_mapping
-5. inline css is bad!
 6. pre-commit or post-push: same code copy-paste, or similar code identify
-9. pre-commit hook: all constants should be in single folder (except logger)
-
 
 
 10. punch pairs: when time is single minute, it should have a 0. punch pairs being shown in text doesn't consider timezone
-11. if no shift associated with punch, atleast show it in calendar date - Done
-12. Have a shift assigned to every transaction before-hand. this will help to find compound shifts, since we can see how if there are 2 shifts in between - Done
 13. 6:59 don't have shift assigned due to that 1 min leave slot
-14. Show factor of P,P or P,HD. also show 0.7 or 1.3 or 2.0
-15. add manual attendance
-16. ID is being stored even when data is being updated. implement DSA and fix this 
 17. add gatepass master to first screen
 18. remove the need for _computed key. that is increasing memory usage by ~50 MBs :(
-19. show P,P or P,HD for given statuses
 20. add a manual flag to show manual punches or original ones 
-21. in quick testing for formula master, use the employee filter choices.js component for effortless input
 
 optional: no console for browser
 pre-commit hook: to not be in pre-push hook
@@ -30,13 +19,10 @@ pre-commit hook: to not be in pre-push hook
 - scrolling in admin bar for lots of masters
 - Excel based default data import on company creation
 - Log stack in case of errors
-- Remove HR and safe-chat specific things from startup (using AI)
 
 
 - auto-calculated should be disabled by default, they will always be calculated.
-- error should be a toast. anything else is easily missed.
 - Husky: If model changes, add a check that you should push to DB scripts folder as well.
-- Merge with startup
 
 - If more than 3? in same variable, show error to rule out that before-hand
 - Error listener/catcher across the application? instead of function specific try-catch.
@@ -48,9 +34,6 @@ pre-commit hook: to not be in pre-push hook
 - Remove HR and safe-chat specific things from startup (using AI)
 
 
-- auto-calculated should be disabled by default, they will always be calculated.
-- error should be a toast. anything else is easily missed.
-
 - in create-new-app, should we ask for app name, and mark name accordingly in whole application. more of create a command change-app-name
 - add pepper to passowrds to make passwords secure
 
@@ -58,15 +41,12 @@ pre-commit hook: to not be in pre-push hook
 - heirarchy based user management (will be used for data management)
 - Lint: Do not allow adding global variables
 - Add a health API point to startup
-- 
-
 
 - Not able to add salary structure to certain employees (Saloni Khatri in GJK)
 - Refresh page when update is recieved.
 - Show what build is being deployed in CICD pipeline when using `download_client_build.sh` script
 - permission controls in divyafoods. only allow create and view for users.
 - Change port when building server deployment in both .env and nginx
-- Show best possible page based on permissions
 
 - use vite-tsconfig-paths so VS Code understand @ path aliases in a Vite project (so IntelliSense, Go-to-Definition, auto-imports, etc. work).
 - ROLEPERMISSIONS: click on the master/module/report to show which all roles & users have those permissions.
