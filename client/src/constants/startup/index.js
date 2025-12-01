@@ -70,8 +70,8 @@ export const PERMISSIONS = {
 };
 
 // Theme
-export { THEME_LIGHT, THEME_DARK, THEME_SYSTEM } from './theme';
-import { THEME_LIGHT, THEME_DARK, THEME_SYSTEM } from './theme';
+// export { THEME_LIGHT, THEME_DARK, THEME_SYSTEM } from '@theme';
+import { THEME_LIGHT, THEME_DARK, THEME_SYSTEM } from '@theme';
 export const THEME_CONSTANTS = {
   LIGHT: THEME_LIGHT,
   DARK: THEME_DARK,

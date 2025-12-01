@@ -52,6 +52,8 @@ export default ({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        '@data': path.resolve(__dirname, 'src/data'),
+        '@theme': path.resolve(__dirname, 'src/constants/startup/theme'),
       }
     },
     plugins: [

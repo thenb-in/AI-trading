@@ -12,7 +12,7 @@ import {
 import { MasterCard } from "./MasterComponents/MasterCard";
 import { SearchFilter } from "./MasterComponents/SearchFilter";
 import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
-import { spacing } from "../../utils/theme";
+import { spacing } from "@theme";
 import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
 
 

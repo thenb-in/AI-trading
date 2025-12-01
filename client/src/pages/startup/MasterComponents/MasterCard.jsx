@@ -9,7 +9,7 @@ import {
   Chip,
   Fade,
 } from "@mui/material";
-import { spacing, fontSize } from "../../../utils/theme";
+import { spacing, fontSize } from "@theme";
 
 const MasterCard = ({
   title,

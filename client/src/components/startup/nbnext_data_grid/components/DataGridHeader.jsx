@@ -1,0 +1,215 @@
+import PropTypes from "prop-types";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pin, PinOff } from "lucide-react";
+import {
+  headerCellBaseStyle,
+  getSortedHeaderStyle,
+} from "../utils/styles.js";
+import { getColumnWidthWithIcons } from "../utils/helpers.js";
+
+import { useRef } from "react";
+
+function DataGridHeader({
+  headerRef,
+  frozenColumns,
+  nonFrozenColumns,
+  cumulativeFrozenLeftOffsets,
+  sortModel,
+  frozenState,
+  handleHeaderClick,
+  toggleFrozen,
+  columnWidths,
+  handleColumnResize,
+}) {
+  // Optimized column resizing refs (shared across all columns)
+  const resizeStateRef = useRef({});
+  const rafRef = useRef();
+
+  const handleToggleFrozen = (field) => (e) => {
+    e.stopPropagation();
+    toggleFrozen(field);
+  };
+
+  const onResizeStart = (field, e) => {
+    e.preventDefault();
+    const th = e.target.closest('th');
+    if (!th) return;
+    const startX = e.clientX;
+    const startWidth = th.offsetWidth;
+    resizeStateRef.current = { field, startX, startWidth, th };
+
+    const onMouseMove = (moveEvent) => {
+      if (!resizeStateRef.current) return;
+      const { startX, startWidth, th } = resizeStateRef.current;
+      const deltaX = moveEvent.clientX - startX;
+      let newWidth = Math.max(40, startWidth + deltaX);
+      // Throttle DOM update with rAF
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(() => {
+          th.style.width = newWidth + 'px';
+          th.style.minWidth = newWidth + 'px';
+          th.style.maxWidth = newWidth + 'px';
+          rafRef.current = null;
+        });
+      }
+      resizeStateRef.current.latestWidth = newWidth;
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      // Commit to React state
+      if (resizeStateRef.current && resizeStateRef.current.latestWidth) {
+        handleColumnResize(field, resizeStateRef.current.latestWidth);
+      }
+      resizeStateRef.current = {};
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const renderHeaderCell = (col, isFrozen) => {
+    const isSorted = sortModel.field === col.field ? sortModel.sort : null;
+    const sortedStyle = getSortedHeaderStyle(isSorted);
+    const left = isFrozen ? cumulativeFrozenLeftOffsets[col.field] || 0 : undefined;
+
+    // Use server-provided width and add icon space
+    // Use columnWidths if present, else fallback
+    const totalWidth = columnWidths && columnWidths[col.field]
+      ? columnWidths[col.field]
+      : getColumnWidthWithIcons(col);
+
+    const cellStyle = {
+      ...headerCellBaseStyle,
+      ...(sortedStyle || {}),
+      width: totalWidth,
+      minWidth: totalWidth,
+      maxWidth: totalWidth,
+      ...(isFrozen && {
+        position: "sticky",
+        left,
+        zIndex: 3,
+      }),
+    };
+
+    // // --- Column resizing logic ---
+    // // Optimized column resizing
+    // const resizeStateRef = useRef({});
+    // const rafRef = useRef();
+
+    // const onResizeStart = (field, e) => {
+    //   e.preventDefault();
+    //   const th = e.target.closest('th');
+    //   if (!th) return;
+    //   const startX = e.clientX;
+    //   const startWidth = th.offsetWidth;
+    //   resizeStateRef.current = { field, startX, startWidth, th };
+
+    //   const onMouseMove = (moveEvent) => {
+    //     if (!resizeStateRef.current) return;
+    //     const { startX, startWidth, th } = resizeStateRef.current;
+    //     const deltaX = moveEvent.clientX - startX;
+    //     let newWidth = Math.max(40, startWidth + deltaX);
+    //     // Throttle DOM update with rAF
+    //     if (!rafRef.current) {
+    //       rafRef.current = requestAnimationFrame(() => {
+    //         th.style.width = newWidth + 'px';
+    //         th.style.minWidth = newWidth + 'px';
+    //         th.style.maxWidth = newWidth + 'px';
+    //         rafRef.current = null;
+    //       });
+    //     }
+    //     resizeStateRef.current.latestWidth = newWidth;
+    //   };
+    //   const onMouseUp = () => {
+    //     window.removeEventListener('mousemove', onMouseMove);
+    //     window.removeEventListener('mouseup', onMouseUp);
+    //     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    //     // Commit to React state
+    //     if (resizeStateRef.current && resizeStateRef.current.latestWidth) {
+    //       handleColumnResize(field, resizeStateRef.current.latestWidth);
+    //     }
+    //     resizeStateRef.current = {};
+    //   };
+    //   window.addEventListener('mousemove', onMouseMove);
+    //   window.addEventListener('mouseup', onMouseUp);
+    // };
+    // // End optimized column resizing 
+
+    return (
+      <th key={col.field} style={cellStyle}>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => handleHeaderClick(col)}
+            className="bg-transparent border-none p-0 m-0 font-inherit text-inherit cursor-pointer inline-flex items-center gap-2"
+            title={col.headerName}
+            aria-label={`Sort by ${col.headerName}`}
+          >
+            <span>{col.headerName}</span>
+            {col.sortable && (
+              <span className="inline-flex items-center ml-1.5">
+                {isSorted === "asc" ? (
+                  <ArrowUp size={16} color="#93c5fd" strokeWidth={2.8} />
+                ) : isSorted === "desc" ? (
+                  <ArrowDown size={16} color="#93c5fd" strokeWidth={2.8} />
+                ) : (
+                  <ArrowUpDown size={15} color="rgba(255,255,255,0.6)" strokeWidth={2} />
+                )}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleFrozen(col.field)}
+            className={`p-1 ml-2 cursor-pointer rounded-md border inline-flex items-center justify-center transition-all duration-120 ${
+              frozenState[col.field] 
+                ? 'bg-red-100 border-red-500' 
+                : 'bg-transparent border-white/20'
+            }`}
+            title={frozenState[col.field] ? "Unfreeze column" : "Freeze column"}
+            aria-label={frozenState[col.field] ? `Unfreeze ${col.headerName}` : `Freeze ${col.headerName}`}
+          >
+            {frozenState[col.field] ? (
+              <Pin size={14} color="#ef4444" fill="#ef4444" strokeWidth={2.5} />
+            ) : (
+              <PinOff size={14} color="#e2e8f0" strokeWidth={2} />
+            )}
+          </button>
+          <div
+            className="absolute right-0 top-0 h-full w-2 cursor-col-resize z-10 column-resizer"
+            data-field={col.field}
+            onMouseDown={e => onResizeStart(col.field, e)}
+          />
+        </div>
+      </th>
+    );
+  };
+
+  return (
+    <thead>
+      <tr ref={headerRef}>
+        {frozenColumns.map((col) => renderHeaderCell(col, true))}
+        {nonFrozenColumns.map((col) => renderHeaderCell(col, false))}
+      </tr>
+    </thead>
+  );
+}
+
+DataGridHeader.propTypes = {
+  columnWidths: PropTypes.object,
+  handleColumnResize: PropTypes.func,
+  headerRef: PropTypes.object.isRequired,
+  frozenColumns: PropTypes.array.isRequired,
+  nonFrozenColumns: PropTypes.array.isRequired,
+  cumulativeFrozenLeftOffsets: PropTypes.object.isRequired,
+  sortModel: PropTypes.shape({
+    field: PropTypes.string,
+    sort: PropTypes.string,
+  }).isRequired,
+  frozenState: PropTypes.object.isRequired,
+  handleHeaderClick: PropTypes.func.isRequired,
+  toggleFrozen: PropTypes.func.isRequired,
+};
+
+export { DataGridHeader };
+
