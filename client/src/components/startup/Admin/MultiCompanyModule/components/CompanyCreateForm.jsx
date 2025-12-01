@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../../ToggleSwitch';
-import { AlertMessage } from '../../RoleAndPermissions/components/AlertMessage';
+import { AlertMessage } from '../../RolePermissions/components/AlertMessage';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 
