@@ -32,7 +32,7 @@ export function AdminSidebar({
       icon: User,
       path: "/admin/users",
     },
-    hasPermission("view_company_module", dataContext) && {
+    hasPermission("view_company_settings", dataContext) && {
       id: "company",
       label: "Company Settings",
       icon: Building,

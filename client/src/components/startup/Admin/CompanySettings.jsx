@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useDataContext } from "../../../context/startup/useDataContext";
+import { useDataContext, hasPermission } from "../../../context/startup/useDataContext";
 import { ApiService } from "../../../services/startup/ApiService";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -57,11 +57,9 @@ export function CompanySettings() {
   }, []);
 
   const requiredPermission = "view_company_settings";
-  const hasPermission = userData?.role?.permissions?.some(
-    (permission) => permission.name === requiredPermission
-  );
+  const canViewCompanySettings = hasPermission(requiredPermission, useDataContext());
 
-  if (!hasPermission) {
+  if (!canViewCompanySettings) {
       return <AccessDenied requiredPermission={requiredPermission} />;
   }
 

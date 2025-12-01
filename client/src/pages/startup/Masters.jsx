@@ -53,14 +53,14 @@ const MasterContent = () => {
         if (!module.title || !module.description || !module.keywords || !Array.isArray(module.tags)) {
           console.warn('Module with missing data:', module);
         }
-        
+
         if (!module) return false;
-        
+
         const title = module.title || '';
         const description = module.description || '';
         const keywords = module.keywords || '';
         const tags = Array.isArray(module.tags) ? module.tags : [];
-        
+
         return (
           title.toLowerCase().includes(term) ||
           description.toLowerCase().includes(term) ||
@@ -183,31 +183,44 @@ const MasterContent = () => {
                 mx: "auto",
               }}
             >
-              {filteredMasterModules.map((master, index) => (
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  lg={4}
-                  key={index}
-                  sx={{ display: "flex", justifyContent: "center" }}
-                >
-                  
-                  {hasPermission(master.permissionName || `read_${master.title.toLowerCase().replace(/ /g, "_")}`, dataContext) && (
-                    <MasterCard
-                      title={master.title}
-                      description={master.description}
-                      icon={master.icon}
-                      color={master.color}
-                      onClick={master.onClick}
-                      buttonText={master.buttonText}
-                      tags={master.tags}
-                      isVisible={true}
-                      fullWidth={isLargeScreen}
-                    />
-                  )}
-                </Grid>
-              ))}
+              {filteredMasterModules.map((master, index) => {
+                // if permissionName is used, use it
+                // else if master id is present in the permission name, then use it,
+                //  otherwise use the title to generate the permission name
+                let permission = master.permissionName;
+                if (!permission) {
+                  if (master.id) {
+                    permission = `read_${master.id}`;
+                  } else {
+                    permission = `read_${master.title.toLowerCase().replace(/ /g, "_")}`;
+                  }
+                }
+                const hasMasterPermission = hasPermission(permission, dataContext);
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    lg={4}
+                    key={index}
+                    sx={{ display: "flex", justifyContent: "center" }}
+                  >
+                    {hasMasterPermission && (
+                      <MasterCard
+                        title={master.title}
+                        description={master.description}
+                        icon={master.icon}
+                        color={master.color}
+                        onClick={master.onClick}
+                        buttonText={master.buttonText}
+                        tags={master.tags}
+                        isVisible={true}
+                        fullWidth={isLargeScreen}
+                      />
+                    )}
+                  </Grid>
+                );
+              })}
             </Grid>
 
             {filteredMasterModules.length === 0 && (

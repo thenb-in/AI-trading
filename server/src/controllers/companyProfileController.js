@@ -5,7 +5,7 @@ const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const companyProfileController = {
   async getCompanyProfile(req, res) {
     try {
-      const requiredPermission = MODULE_PERMISSION_CONSTANTS.GET_COMPANY_SETTINGS.name;
+      const requiredPermission = MODULE_PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });

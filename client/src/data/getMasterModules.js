@@ -4,6 +4,7 @@ import {
 
 const getMasterModules = (handleOpenMaster) => [
   {
+    id: "test_master_1",
     title: "Test master 1",
     description:
       "Test master module 1.",
@@ -15,9 +16,10 @@ const getMasterModules = (handleOpenMaster) => [
     keywords:
       "test master module",
     category: "Common Masters",
-    permissionName: "read_test_master_1",
+    permissionName: "read_master_1",
   },
   {
+    id: "test_master_2",
     title: "Test master 2",
     description: "Test master module 2.",
     icon: PeopleIcon,

@@ -67,3 +67,5 @@ pre-commit hook: to not be in pre-push hook
 - permission controls in divyafoods. only allow create and view for users.
 - Change port when building server deployment in both .env and nginx
 - Show best possible page based on permissions
+
+- use vite-tsconfig-paths so VS Code understand @ path aliases in a Vite project (so IntelliSense, Go-to-Definition, auto-imports, etc. work).
