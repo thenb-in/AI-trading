@@ -45,18 +45,9 @@ export function organizePermissions(permissions) {
       
       // If this module permission is also used in master permissions, add it to master section
       if (isLinkedPermission(permission)) {
-        const linkedContexts = LINKED_PERMISSIONS_MAP[name];
+        const linkedContexts = getLinkedContexts(name);
         linkedContexts.forEach((context) => {
-          // Extract entity from context like "USER.read" -> "User" or "ROLE_PERMISSION.read" -> "Role Permission"
-          // Convert the entity name to match the format used by extractEntityFromPermission
-          const entity = context.split('.')[0];
-          // Convert "ROLE_PERMISSION" to "role_permission" then use extractEntityFromPermission logic
-          const entityLower = entity.toLowerCase();
-          // Use the same logic as extractEntityFromPermission to ensure consistent entity names
-          const entityDisplay = entityLower
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
+          const entityDisplay = convertContextToEntityDisplay(context);
           
           if (!organized.master[entityDisplay]) {
             organized.master[entityDisplay] = [];
@@ -69,13 +60,7 @@ export function organizePermissions(permissions) {
           );
           
           if (existingIndex === -1) {
-            // Create a copy with metadata to indicate it's a linked permission
-            const linkedPermission = {
-              ...permission,
-              _linkedContext: context,
-              _isLinked: true,
-              _originalDisplayName: permission.display_name || permission.name,
-            };
+            const linkedPermission = createLinkedPermissionObject(permission, context);
             organized.master[entityDisplay].push(linkedPermission);
           }
         });
@@ -350,51 +335,70 @@ const LINKED_PERMISSIONS_MAP = {
 };
 
 /**
- * Gets linked permission IDs for a given permission
- * Returns an array of permission IDs that should be synced together
+ * Gets linked contexts for a permission name
+ * @param {string} permissionName - The permission name (case-insensitive)
+ * @returns {string[]} Array of linked contexts, or empty array if not linked
  */
-// export function getLinkedPermissionIds(permission, allPermissions) {
-//   if (!permission || !allPermissions) return [];
-  
-//   const permissionName = permission.name?.toLowerCase();
-//   if (!permissionName) return [];
-  
-//   // Check if this permission is in the linked permissions map
-//   const linkedContexts = LINKED_PERMISSIONS_MAP[permissionName];
-//   if (!linkedContexts || linkedContexts.length === 0) return [];
-  
-//   // Find all permissions with the same name (they should have the same ID)
-//   const linkedPermissions = allPermissions.filter(
-//     (p) => p.name?.toLowerCase() === permissionName
-//   );
-  
-//   return linkedPermissions.map((p) => p.id);
-// }
+function getLinkedContexts(permissionName) {
+  if (!permissionName) return [];
+  const name = permissionName.toLowerCase();
+  return LINKED_PERMISSIONS_MAP[name] || [];
+}
+
+/**
+ * Converts a linked context to entity display name
+ * @param {string} context - Context like "USER.read" or "ROLE_PERMISSION.read"
+ * @returns {string} Entity display name like "User" or "Role Permission"
+ */
+function convertContextToEntityDisplay(context) {
+  if (!context) return null;
+  const entity = context.split('.')[0];
+  const entityLower = entity.toLowerCase();
+  // Convert "ROLE_PERMISSION" to "Role Permission" format
+  return entityLower
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
+ * Creates a linked permission object with metadata
+ * @param {Object} permission - The original permission object
+ * @param {string} context - The linked context (e.g., "USER.read")
+ * @returns {Object} Linked permission object with metadata
+ */
+function createLinkedPermissionObject(permission, context) {
+  return {
+    ...permission,
+    _linkedContext: context,
+    _isLinked: true,
+    _originalDisplayName: permission.display_name || permission.name,
+  };
+}
 
 /**
  * Checks if a permission is linked to other permissions
+ * @param {Object} permission - The permission object to check
+ * @returns {boolean} True if the permission is linked
  */
 export function isLinkedPermission(permission) {
   if (!permission) return false;
   const permissionName = permission.name?.toLowerCase();
-  return permissionName && LINKED_PERMISSIONS_MAP[permissionName];
+  return permissionName ? getLinkedContexts(permissionName).length > 0 : false;
 }
 
 /**
  * Gets the display context for a linked permission in master section
  * e.g., "view_user_module" in USER.read context should show as "User - Read"
+ * @param {string} permissionName - The permission name
+ * @returns {string|null} The display context or null if not linked
  */
 export function getLinkedPermissionDisplayContext(permissionName) {
-  const name = permissionName?.toLowerCase();
-  if (!name) return null;
-  
-  const linkedContexts = LINKED_PERMISSIONS_MAP[name];
-  if (!linkedContexts || linkedContexts.length === 0) return null;
+  const linkedContexts = getLinkedContexts(permissionName);
+  if (linkedContexts.length === 0) return null;
   
   // Return the first context (there should typically be only one)
   const context = linkedContexts[0];
-  // Extract entity name from context like "USER.read" -> "User"
-  const entity = context.split('.')[0];
-  return entity.charAt(0) + entity.slice(1).toLowerCase();
+  return convertContextToEntityDisplay(context);
 }
 

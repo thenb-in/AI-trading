@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { ApiService } from '../../../../../services/startup/ApiService';
-// import { getLinkedPermissionIds } from '../utils/permissionUtils';
 
 export function useRolePermissions() {
   const [roles, setRoles] = useState([]);
@@ -54,15 +53,8 @@ export function useRolePermissions() {
 
       setUpdating(true);
       try {
-        // Find the permission to check for linked permissions
-        // const permission = permissions.find((p) => p.id === permissionId);
-        // const linkedIds = permission ? getLinkedPermissionIds(permission, permissions) : [];
-        
-        // Include the original permission ID and all linked IDs
-        // Since linked permissions have the same ID, we'll just use the original ID
-        // But we need to ensure the UI updates correctly for all instances
-        // const allPermissionIds = [permissionId, ...linkedIds.filter(id => id !== permissionId)];
-        
+        // Note: Linked permissions share the same ID (they're the same permission object
+        // displayed in multiple places), so toggling by ID automatically syncs all instances
         if (isAssigned) {
           // Remove permission (linked permissions have the same ID, so removing one removes all)
           await ApiService.removeRolePermission({
@@ -88,7 +80,7 @@ export function useRolePermissions() {
         setUpdating(false);
       }
     },
-    [selectedRoleId, fetchData, permissions]
+    [selectedRoleId, fetchData]
   );
 
   const toggleMultiplePermissions = useCallback(
