@@ -41,9 +41,9 @@ const MODULE_PERMISSION_CONSTANTS = {
 
 const REPORT_PERMISSION_CONSTANTS = {
   USER_REPORT: {
-    name: 'read_report_1',
-    display_name: 'Read Report 1',
-    description: 'Permission to read report 1'
+    name: 'read_user_report',
+    display_name: 'Read User Report',
+    description: 'Permission to read user report'
   }
 };
 

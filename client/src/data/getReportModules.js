@@ -7,7 +7,7 @@ import { UserReport } from '../components/Reports/userReport/UserReport';
 
 export const reports = [
     {
-        id: 1,
+        id: 'user_report',
         title: 'User Report',
         slug: 'user-report',
         desc: 'User details report',

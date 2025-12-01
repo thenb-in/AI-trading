@@ -3,16 +3,20 @@ import PropTypes from 'prop-types';
 import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
+import { hasPermission, useDataContext } from '../../../context/startup/useDataContext';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
+  const dataContext = useDataContext();
 
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       const matchesFilter = activeFilter === 'all' || report.category === activeFilter;
       const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesFilter && matchesSearch;
+      const permissionName = "read_" + report.id;
+      const isPermissionGranted = hasPermission(permissionName, dataContext);
+      return matchesFilter && matchesSearch && isPermissionGranted;
     });
   }, [reports, searchTerm, activeFilter]);
 

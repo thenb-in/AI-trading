@@ -138,6 +138,18 @@ export function organizePermissions(permissions) {
 function extractReportId(permissionName) {
   if (!permissionName) return 'Other Reports';
   
+  // Pattern: read_user_report, read_company_report (entity between operation and _report)
+  const entityBeforeReportPattern = /(?:read|download|view|export)_([a-z_]+)_report/i;
+  const entityBeforeMatch = permissionName.match(entityBeforeReportPattern);
+  
+  if (entityBeforeMatch && entityBeforeMatch[1]) {
+    const reportName = entityBeforeMatch[1];
+    return reportName
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') + ' Report';
+  }
+  
   // Pattern: read_report_1, download_report_1, view_report_1, export_report_1
   const reportPattern = /(?:read|download|view|export)_report[_\s]?(\d+|[a-z_]+)/i;
   const match = permissionName.match(reportPattern);
@@ -280,7 +292,7 @@ export function groupReportPermissionsByOperation(permissions) {
     
     if (name.startsWith('view_report') || name.includes('view_report')) {
       grouped.view.push(permission);
-    } else if (name.startsWith('read_report') || name.includes('read_report')) {
+    } else if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) {
       grouped.read.push(permission);
     } else if (name.startsWith('download_report') || name.includes('download_report')) {
       grouped.download.push(permission);
