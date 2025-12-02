@@ -50,4 +50,5 @@ pre-commit hook: to not be in pre-push hook
 
 - use vite-tsconfig-paths so VS Code understand @ path aliases in a Vite project (so IntelliSense, Go-to-Definition, auto-imports, etc. work).
 - ROLEPERMISSIONS: click on the master/module/report to show which all roles & users have those permissions.
-- ROLEPERMISSIONS: dynamically generate headers from permissions.js so that actions like approve and deactivate also get a column
+- ROLEPERMISSIONS: Route and data should be blocked if permission not present
+- company wise roles
