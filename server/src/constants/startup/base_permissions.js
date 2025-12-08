@@ -37,18 +37,60 @@ const MODULE_PERMISSION_CONSTANTS = {
 };
 
 
+const create_report_permission = (report) => {
+  report = report.toLowerCase();
+  return {
+    name: `read_${report}`,
+    display_name: `Read ${report}`,
+    description: `Permission to read ${report}`
+  };
+};
 
 
 const REPORT_PERMISSION_CONSTANTS = {
-  USER_REPORT: {
-    name: 'read_user_report',
-    display_name: 'Read User Report',
-    description: 'Permission to read user report'
-  }
+  USER_REPORT: create_report_permission('user_report')
 };
 
 
 
+const create_master_permission = (master, approval_required = false) => {
+  master = master.toLowerCase();
+  const permissions = {
+    create: {
+      name: `create_${master}`,
+      display_name: `Create ${master}`,
+      description: `Permission to create ${master}`
+    },
+    read: {
+      name: `read_${master}`,
+      display_name: `Read ${master}`,
+      description: `Permission to read ${master}`
+    },
+    update: {
+      name: `update_${master}`,
+      display_name: `Update ${master}`,
+      description: `Permission to update ${master}`
+    },
+    delete: {
+      name: `delete_${master}`,
+      display_name: `Delete ${master}`,
+      description: `Permission to delete ${master}`
+    }
+  };
+  if (approval_required) {
+    permissions.approve = {
+      name: `approve_${master}`,
+      display_name: `Approve ${master}`,
+      description: `Permission to approve ${master}`
+    };
+    permissions.reject = {
+      name: `reject_${master}`,
+      display_name: `Reject ${master}`,
+      description: `Permission to reject ${master}`
+    };
+  }
+  return permissions;
+};
 
 
 const MASTER_PERMISSION_CONSTANTS = {
@@ -100,51 +142,9 @@ const MASTER_PERMISSION_CONSTANTS = {
     }
   },
 
-  ROLE: {
-    create: {
-      name: 'create_role',
-      display_name: 'Create Role',
-      description: 'Permission to create roles'
-    },
-    read: {
-      name: 'read_role',
-      display_name: 'Read Role',
-      description: 'Permission to read roles'
-    },
-    update: {
-      name: 'update_role',
-      display_name: 'Update Role',
-      description: 'Permission to update roles'
-    },
-    delete: {
-      name: 'delete_role',
-      display_name: 'Delete Role',
-      description: 'Permission to delete role'
-    }
-  },
+  ROLE: create_master_permission('role'),
 
-  PERMISSION: {
-    create: {
-      name: 'create_permission',
-      display_name: 'Create Permission',
-      description: 'Permission to create permissions'
-    },
-    read: {
-      name: 'read_permission',
-      display_name: 'Read Permission',
-      description: 'Permission to read permissions'
-    },
-    update: {
-      name: 'update_permission',
-      display_name: 'Update Permission',
-      description: 'Permission to update permissions'
-    },
-    delete: {
-      name: 'delete_permission',
-      display_name: 'Delete Permission',
-      description: 'Permission to delete permission'
-    }
-  },
+  PERMISSION: create_master_permission('permission'),
 
   ROLE_PERMISSION: {
     create: {
@@ -170,5 +170,7 @@ const MASTER_PERMISSION_CONSTANTS = {
 module.exports = {
   MODULE_PERMISSION_CONSTANTS,
   REPORT_PERMISSION_CONSTANTS,
-  MASTER_PERMISSION_CONSTANTS
+  MASTER_PERMISSION_CONSTANTS,
+  create_master_permission,
+  create_report_permission
 };
