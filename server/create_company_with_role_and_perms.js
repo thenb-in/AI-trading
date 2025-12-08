@@ -4,10 +4,12 @@ const db = require('./src/models'); // Sequelize models index
 const logger = require('./logger');
 const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
 const env = require('./src/config/env');
-const { YES } = require('./src/constants/startup/standard_constants');
+const { YES, INPUT_SKIP_KEY } = require('./src/constants/startup/standard_constants');
 const { signup, approveUser } = require('./src/services/startup/authService');
 const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
 const { createStartingAppData } = require('./scripts/default_data/app');
+
+
 
 // Utility to get user input from terminal
 const rl = readline.createInterface({
@@ -64,10 +66,8 @@ async function createUser(company, transaction) {
 
   const username = await askQuestion('Enter username: ');
   const password = await askQuestion('Enter password: ');
-  // eslint-disable-next-line custom/no-hardcoded-strings
-  const phone = await askQuestion('Enter phone number (optional, press Enter to skip): ') || null;
-  // eslint-disable-next-line custom/no-hardcoded-strings
-  const name = await askQuestion('Enter user name (optional, press Enter to use username): ') || username;
+  const phone = await askQuestion(`Enter phone number (optional, press ${INPUT_SKIP_KEY} to skip): `) || null;
+  const name = await askQuestion(`Enter user name (optional, press ${INPUT_SKIP_KEY} to use username): `) || username;
 
   // get role with name super admin
   const superAdminRole = await db.Role.findOne({ where: { name: SYSTEM_ROLE_CONSTANTS.SUPER_ADMIN.name } });
