@@ -2,7 +2,6 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import path from 'path';
 
 
 // https://vitejs.dev/config/
@@ -42,19 +41,16 @@ export default ({ mode }) => {
         },
       },
     },
-    theme: {
-      extend: {
-        fontFamily: {
-          poppins: ['Poppins', 'sans-serif'],
-        },
-      },
-    },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, 'src'),
-        '@data': path.resolve(__dirname, 'src/data'),
-        '@theme': path.resolve(__dirname, 'src/constants/startup/theme'),
-      }
+        '@': resolve(__dirname, 'src'),
+        '@startup': resolve(__dirname, 'src/components/startup'),
+        '@theme': resolve(__dirname, 'src/constants/startup/theme.js'),
+        '@report': resolve(__dirname, 'src/components/startup/BaseReport'),
+        '@utils': resolve(__dirname, 'src/utils'),
+
+        '@data': resolve(__dirname, 'src/data'),
+      },
     },
     plugins: [
       react(), // Enable React plugin for Vite
