@@ -6,7 +6,7 @@ import {
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
 
-import { useRef } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 
 function DataGridHeader({
   headerRef,
@@ -19,10 +19,15 @@ function DataGridHeader({
   toggleFrozen,
   columnWidths,
   handleColumnResize,
+  fullScreen = false,
+  filterModel = {},
+  handleFilterChange,
 }) {
   // Optimized column resizing refs (shared across all columns)
   const resizeStateRef = useRef({});
   const rafRef = useRef();
+  const filterRowRef = useRef(null);
+  const [headerRowHeight, setHeaderRowHeight] = useState(48); // Default estimate
 
   const handleToggleFrozen = (field) => (e) => {
     e.stopPropagation();
@@ -84,15 +89,17 @@ function DataGridHeader({
       width: totalWidth,
       minWidth: totalWidth,
       maxWidth: totalWidth,
+      zIndex: fullScreen ? (isFrozen ? 10003 : 10002) : (isFrozen ? 3 : 2),
       ...(isFrozen && {
         position: "sticky",
         left,
-        zIndex: 3,
       }),
     };
 
-    // // --- Column resizing logic ---
-    // // Optimized column resizing
+    // --- Column resizing logic ---
+    // Optimized column resizing
+    // NOTE: This code was causing React Hooks violations when called inside .map()
+    // Hooks must be called at the component level, not inside render functions
     // const resizeStateRef = useRef({});
     // const rafRef = useRef();
 
@@ -133,7 +140,7 @@ function DataGridHeader({
     //   window.addEventListener('mousemove', onMouseMove);
     //   window.addEventListener('mouseup', onMouseUp);
     // };
-    // // End optimized column resizing 
+    // End optimized column resizing
 
     return (
       <th key={col.field} style={cellStyle}>
@@ -185,11 +192,74 @@ function DataGridHeader({
     );
   };
 
+  const handleFilterInputChange = useCallback((field, value) => {
+    if (handleFilterChange) {
+      handleFilterChange(field, value);
+    }
+  }, [handleFilterChange]);
+
+  const handleFilterInputClick = useCallback((e) => {
+    e.stopPropagation();
+  }, []);
+
+  // Measure header row height for sticky filter positioning
+  useEffect(() => {
+    if (headerRef?.current) {
+      const headerRow = headerRef.current;
+      const height = headerRow.offsetHeight;
+      if (height > 0) {
+        setHeaderRowHeight(height);
+      }
+    }
+  }, [headerRef, columnWidths, frozenColumns, nonFrozenColumns]);
+
+  const renderFilterCell = (col, isFrozen) => {
+    const left = isFrozen ? cumulativeFrozenLeftOffsets[col.field] || 0 : undefined;
+    const totalWidth = columnWidths && columnWidths[col.field]
+      ? columnWidths[col.field]
+      : getColumnWidthWithIcons(col);
+
+    const filterCellStyle = {
+      ...headerCellBaseStyle,
+      padding: "4px 8px",
+      height: "auto",
+      background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+      borderBottom: "2px solid #cbd5e1",
+      borderRight: "2px solid #e5e7eb",
+      position: "sticky",
+      top: headerRowHeight,
+      zIndex: fullScreen ? (isFrozen ? 10001 : 10000) : (isFrozen ? 1 : 0),
+      width: totalWidth,
+      minWidth: totalWidth,
+      maxWidth: totalWidth,
+      ...(isFrozen && {
+        left,
+      }),
+    };
+
+    return (
+      <th key={`filter-${col.field}`} style={filterCellStyle}>
+        <input
+          type="text"
+          value={filterModel[col.field] || ""}
+          onChange={(e) => handleFilterInputChange(col.field, e.target.value)}
+          placeholder="Filter..."
+          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
+          onClick={handleFilterInputClick}
+        />
+      </th>
+    );
+  };
+
   return (
     <thead>
       <tr ref={headerRef}>
         {frozenColumns.map((col) => renderHeaderCell(col, true))}
         {nonFrozenColumns.map((col) => renderHeaderCell(col, false))}
+      </tr>
+      <tr ref={filterRowRef}>
+        {frozenColumns.map((col) => renderFilterCell(col, true))}
+        {nonFrozenColumns.map((col) => renderFilterCell(col, false))}
       </tr>
     </thead>
   );
@@ -209,6 +279,9 @@ DataGridHeader.propTypes = {
   frozenState: PropTypes.object.isRequired,
   handleHeaderClick: PropTypes.func.isRequired,
   toggleFrozen: PropTypes.func.isRequired,
+  fullScreen: PropTypes.bool,
+  filterModel: PropTypes.object,
+  handleFilterChange: PropTypes.func,
 };
 
 export { DataGridHeader };

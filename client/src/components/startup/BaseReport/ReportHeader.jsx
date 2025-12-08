@@ -25,18 +25,18 @@ const ReportHeader = ({ isFiltering, showPastReport = true, backPath = "/admin/r
             <span className="font-medium">Back to Reports</span>
           </button>
           {showPastReport && (
-            <button
-              onClick={() => navigate("/admin/report/past-report")}
-              disabled={isFiltering}
-              className={`flex items-center gap-2 transition-colors ${
-                isFiltering
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              <RestorePageIcon size={18} />
-              <span className="font-medium">Past Report</span>
-            </button>
+          <button
+            onClick={() => navigate("/admin/report/past-report")}
+            disabled={isFiltering}
+            className={`flex items-center gap-2 transition-colors ${
+              isFiltering
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            <RestorePageIcon size={18} />
+            <span className="font-medium">Past Report</span>
+          </button>
           )}
         </div>
       </div>
@@ -51,4 +51,3 @@ ReportHeader.propTypes = {
 };
 
 export { ReportHeader };
-

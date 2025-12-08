@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { calculateFrozenOffsets } from "../utils/helpers.js";
 
-const useFrozenColumns = (normalizedColumns, visibleColumns) => {
+const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null) => {
   const [frozenState, setFrozenState] = useState(() => {
     const initial = {};
     normalizedColumns.forEach((c) => {
@@ -34,6 +34,10 @@ const useFrozenColumns = (normalizedColumns, visibleColumns) => {
     }));
   }, []);
 
+  const setFrozenStateState = useCallback((newFrozenState) => {
+    setFrozenState(newFrozenState);
+  }, []);
+
   const frozenColumns = useMemo(() => {
     return visibleColumns.filter((c) => frozenState[c.field]);
   }, [visibleColumns, frozenState]);
@@ -43,12 +47,13 @@ const useFrozenColumns = (normalizedColumns, visibleColumns) => {
   }, [visibleColumns, frozenState]);
 
   const cumulativeFrozenLeftOffsets = useMemo(() => {
-    return calculateFrozenOffsets(frozenColumns);
-  }, [frozenColumns]);
+    return calculateFrozenOffsets(frozenColumns, columnWidths);
+  }, [frozenColumns, columnWidths]);
 
   return {
     frozenState,
     toggleFrozen,
+    setFrozenStateState,
     frozenColumns,
     nonFrozenColumns,
     cumulativeFrozenLeftOffsets,

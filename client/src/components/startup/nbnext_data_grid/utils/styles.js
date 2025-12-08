@@ -1,15 +1,23 @@
-const getGridContainerStyle = (computedContainerHeight) => ({
-  width: "100%",
-  height: computedContainerHeight,
-  position: "relative",
-  border: "1px solid #e2e8f0",
-  borderRadius: 12,
-  overflow: "hidden",
-  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-  background: "#fff",
-  display: "flex",
-  flexDirection: "column",
-});
+const getGridContainerStyle = (computedContainerHeight, fullScreen = false, sidebarWidth = 0) => {
+  const baseStyle = {
+    width: fullScreen ? undefined : "100%", // Let left/right handle width in fullscreen
+    height: fullScreen ? "100vh" : computedContainerHeight,
+    position: fullScreen ? "fixed" : "relative",
+    top: fullScreen ? 0 : undefined,
+    left: fullScreen ? sidebarWidth : undefined,
+    right: fullScreen ? 0 : undefined,
+    bottom: fullScreen ? 0 : undefined,
+    zIndex: fullScreen ? 9999 : undefined,
+    border: fullScreen ? "none" : "1px solid #e2e8f0",
+    borderRadius: fullScreen ? 0 : 12,
+    overflow: "hidden",
+    boxShadow: fullScreen ? "none" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    background: "#fff",
+    display: "flex",
+    flexDirection: "column",
+  };
+  return baseStyle;
+};
 
 const toolbarStyle = {
   display: "flex",
@@ -24,7 +32,7 @@ const columnMenuStyle = {
   position: "absolute",
   top: 44,
   right: 12,
-  zIndex: 10,
+  zIndex: 100000,
   background: "#fff",
   border: "1px solid rgba(229,231,235,1)",
   boxShadow: "0 6px 18px rgba(14, 30, 37, 0.08)",
@@ -35,11 +43,13 @@ const columnMenuStyle = {
   minWidth: 220,
 };
 
-const scrollAreaStyle = {
+const scrollAreaStyle = (fullScreen = false) => ({
   position: "relative",
   overflowX: "auto",
-  overflowY: "hidden",
-};
+  overflowY: "auto",
+  flex: 1,
+  height: fullScreen ? "calc(100vh - 44px)" : undefined, // Subtract toolbar height in fullscreen
+});
 
 const tableStyle = {
   borderCollapse: "separate",

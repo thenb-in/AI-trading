@@ -45,9 +45,14 @@ const useColumnVisibility = (normalizedColumns, initialColumnVisibility, onColum
     });
   }, []);
 
+  const setColumnVisibilityState = useCallback((newVisibility) => {
+    setColumnVisibility(newVisibility);
+  }, []);
+
   return {
     columnVisibility,
     toggleColumnVisibility,
+    setColumnVisibilityState,
   };
 };
 

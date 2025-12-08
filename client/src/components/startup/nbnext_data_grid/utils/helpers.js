@@ -53,6 +53,42 @@ const indexRows = (rows) => {
 };
 
 /**
+ * Filter rows based on filter model
+ */
+const filterRows = (indexedRows, filterModel, columns) => {
+  if (!filterModel || Object.keys(filterModel).length === 0) {
+    return indexedRows;
+  }
+
+  return indexedRows.filter((indexedRow) => {
+    return Object.entries(filterModel).every(([field, filterValue]) => {
+      if (!filterValue || filterValue === "") {
+        return true;
+      }
+
+      const col = columns.find((c) => c.field === field);
+      if (!col) return true;
+
+      // Get the cell value
+      let cellValue;
+      if (typeof col.valueGetter === "function") {
+        cellValue = col.valueGetter({ row: indexedRow._row, field: col.field });
+      } else {
+        cellValue = indexedRow._row?.[field];
+      }
+
+      // Convert to string for filtering
+      const cellText = convertCellToText(col, cellValue);
+      const cellString = cellText == null ? "" : String(cellText).toLowerCase();
+      const filterString = String(filterValue).toLowerCase();
+
+      // Case-insensitive contains match
+      return cellString.includes(filterString);
+    });
+  });
+};
+
+/**
  * Sort rows based on sort model
  */
 const sortRows = (indexedRows, sortModel, columns) => {
@@ -87,13 +123,19 @@ const sortRows = (indexedRows, sortModel, columns) => {
 
 /**
  * Calculate cumulative frozen column offsets
+ * @param {Array} frozenColumns - Array of frozen column objects
+ * @param {Object} columnWidths - Optional object mapping field names to actual rendered widths
  */
-const calculateFrozenOffsets = (frozenColumns) => {
+const calculateFrozenOffsets = (frozenColumns, columnWidths = null) => {
   const offsets = {};
   let current = 0;
   frozenColumns.forEach((c) => {
     offsets[c.field] = current;
-    current += getColumnWidthWithIcons(c);
+    // Use columnWidths if provided (actual rendered width), otherwise fallback to getColumnWidthWithIcons
+    const width = columnWidths && columnWidths[c.field] 
+      ? columnWidths[c.field]
+      : getColumnWidthWithIcons(c);
+    current += width;
   });
   return offsets;
 };
@@ -111,5 +153,60 @@ const getColumnWidthWithIcons = (col) => {
   return baseWidth + extraWidth;
 };
 
-export { normalizeColumns, renderCellContent, getKeyForRow, indexRows, sortRows, calculateFrozenOffsets, getColumnWidthWithIcons };
+/**
+ * Build column config from current grid state for saving to layout
+ * Only saves which columns are frozen and which are hidden
+ */
+ const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState) => {
+  return normalizedColumns.map((col) => ({
+    field: col.field,
+    frozen: frozenState[col.field] || false,
+    hide: !columnVisibility[col.field],
+  }));
+};
 
+/**
+ * Apply column config from layout to grid state
+ * Returns updated column visibility and frozen state
+ */
+ const applyColumnConfig = (normalizedColumns, columnConfig) => {
+  const columnVisibility = {};
+  const frozenState = {};
+  const columnConfigMap = {};
+
+  // Create a map of column config by field
+  if (Array.isArray(columnConfig)) {
+    columnConfig.forEach((config) => {
+      columnConfigMap[config.field] = config;
+    });
+  }
+
+  // Apply config to each normalized column
+  normalizedColumns.forEach((col) => {
+    const config = columnConfigMap[col.field];
+    if (config) {
+      // Apply visibility (hide property in config means hidden)
+      columnVisibility[col.field] = !config.hide;
+      // Apply frozen state
+      frozenState[col.field] = config.frozen === true;
+    } else {
+      // Default: visible and not frozen
+      columnVisibility[col.field] = !col.hide;
+      frozenState[col.field] = col.frozen === true;
+    }
+  });
+
+  return { columnVisibility, frozenState };
+};
+export {
+  normalizeColumns,
+  renderCellContent,
+  getKeyForRow, 
+  indexRows, 
+  sortRows, 
+  calculateFrozenOffsets, 
+  getColumnWidthWithIcons, 
+  buildColumnConfig, 
+  applyColumnConfig,
+  filterRows
+};
