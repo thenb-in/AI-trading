@@ -38,6 +38,25 @@ if (config.use_env_variable) {
   );
 }
 
+
+// load all directories from the models directory
+const directories = fs.readdirSync(__dirname)
+  .filter(file => {
+    const fullPath = path.join(__dirname, file);
+
+    // keep only folders whose names include 'abstract_' or 'base'
+    const excludeFolders = file.includes('abstract_') || file.includes('base');
+
+    // ensure it's a directory
+    const isDir = fs.statSync(fullPath).isDirectory();
+
+    return !excludeFolders && isDir;
+  });
+
+
+
+
+
 // Helper function to load models from a directory
 const loadModelsFromDirectory = (dirPath, dirName) => {
   fs.readdirSync(dirPath)
@@ -58,8 +77,6 @@ const loadModelsFromDirectory = (dirPath, dirName) => {
     });
 };
 
-// load all directories from the models directory
-const directories = fs.readdirSync(__dirname).filter(file => fs.statSync(path.join(__dirname, file)).isDirectory());
 directories.forEach(directory => {
   const directoryPath = path.join(__dirname, directory);
   loadModelsFromDirectory(directoryPath, directory);
