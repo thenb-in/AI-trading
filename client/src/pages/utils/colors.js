@@ -1,4 +1,4 @@
-export const getColorClasses = (color) => {
+const getColorClasses = (color) => {
     const colors = {
       blue: {
         border: 'border-blue-100',
@@ -45,3 +45,5 @@ export const getColorClasses = (color) => {
     };
     return colors[color] || colors.blue;
 };
+
+export { getColorClasses };

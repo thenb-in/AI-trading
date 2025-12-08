@@ -31,21 +31,21 @@ class DebugModeService {
     try {
       const currentValue = this.isDebugMode();
       const newValue = !currentValue;
-      
+
       console.log('[DEBUG MODE SERVICE] Toggling debug mode:', currentValue, '→', newValue);
-      
+
       sessionStorage.setItem(STORAGE_KEYS.REPORT_FILTERS_DEBUG, newValue.toString());
-      
+
       // Notify all listeners
       this.notifyListeners(newValue);
-      
+
       // Trigger storage event for other tabs
       window.dispatchEvent(new StorageEvent('storage', {
         key: STORAGE_KEYS.REPORT_FILTERS_DEBUG,
         newValue: newValue.toString(),
         oldValue: currentValue.toString()
       }));
-      
+
       return newValue;
     } catch (error) {
       console.error('[DEBUG MODE SERVICE] Error toggling debug mode:', error);
@@ -61,21 +61,21 @@ class DebugModeService {
   setDebugMode(value) {
     try {
       const newValue = Boolean(value);
-      
+
       console.log('[DEBUG MODE SERVICE] Setting debug mode to:', newValue);
-      
+
       sessionStorage.setItem(STORAGE_KEYS.REPORT_FILTERS_DEBUG, newValue.toString());
-      
+
       // Notify all listeners
       this.notifyListeners(newValue);
-      
+
       // Trigger storage event for other tabs
       window.dispatchEvent(new StorageEvent('storage', {
         key: STORAGE_KEYS.REPORT_FILTERS_DEBUG,
         newValue: newValue.toString(),
         oldValue: this.isDebugMode().toString()
       }));
-      
+
       return newValue;
     } catch (error) {
       console.error('[DEBUG MODE SERVICE] Error setting debug mode:', error);
@@ -90,7 +90,7 @@ class DebugModeService {
    */
   subscribe(callback) {
     this.listeners.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback);
@@ -124,7 +124,7 @@ class DebugModeService {
     };
 
     window.addEventListener("storage", handleStorageChange);
-    
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -136,9 +136,15 @@ class DebugModeService {
 const debugModeService = new DebugModeService();
 
 // Export utility functions
-export const isDebugMode = () => debugModeService.isDebugMode();
-export const toggleDebugMode = () => debugModeService.toggleDebugMode();
-export const setDebugMode = (value) => debugModeService.setDebugMode(value);
-export const subscribeToDebugMode = (callback) => debugModeService.subscribe(callback);
+const isDebugMode = () => debugModeService.isDebugMode();
+const toggleDebugMode = () => debugModeService.toggleDebugMode();
+const setDebugMode = (value) => debugModeService.setDebugMode(value);
+const subscribeToDebugMode = (callback) => debugModeService.subscribe(callback);
 
-export { debugModeService };
+export {
+  debugModeService,
+  isDebugMode,
+  toggleDebugMode,
+  setDebugMode,
+  subscribeToDebugMode
+};

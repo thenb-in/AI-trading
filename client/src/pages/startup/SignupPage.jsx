@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
 import { Signup } from '../../components/startup/Auth/Signup';
 import { motion } from 'framer-motion';
-export function SignupPage() {
+function SignupPage() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   return (
@@ -27,3 +27,5 @@ export function SignupPage() {
   </div>
   );
 }
+
+export { SignupPage };

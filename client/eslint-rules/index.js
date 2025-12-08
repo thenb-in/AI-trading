@@ -9,6 +9,7 @@ import themeValuesOnly from './rules/theme-values-only.js';
 import noDirectFetch from './rules/no-direct-fetch.js';
 import noInlineArrowFunctions from './rules/no-inline-arrow-functions.js';
 import namedExportsOnly from './rules/named-exports-only.js';
+import bottomExportsOnly from './rules/bottom-exports-only.js';
 
 // Combine all rules into a single object
 const customRules = {
@@ -20,6 +21,7 @@ const customRules = {
   ...noDirectFetch,
   ...noInlineArrowFunctions,
   ...namedExportsOnly,
+  ...bottomExportsOnly,
 };
 
 export default {

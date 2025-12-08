@@ -18,7 +18,7 @@ import { ToggleSwitch } from "./ToggleSwitch";
 import { CompanyProfile } from "../../CompanyProfile";
 import { toast } from "react-toastify";
 
-export function CompanySettings() {
+function CompanySettings() {
 
   const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
   const [isMobileView] = useState(window.innerWidth < 768);
@@ -301,3 +301,5 @@ export function CompanySettings() {
     </div>
   );
 }
+
+export { CompanySettings };

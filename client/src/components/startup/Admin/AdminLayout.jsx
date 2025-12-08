@@ -5,7 +5,7 @@ import { useDataContext } from "../../../context/startup/useDataContext";
 import { useDebugMode } from "../../../hooks/useDebugMode";
 
 
-export function AdminLayout() {
+function AdminLayout() {
   const [collapsed, setCollapsed] = useState(true);
   const { hamburgerMenu } = useDataContext();
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
@@ -64,3 +64,5 @@ export function AdminLayout() {
     </>
   );
 }
+
+export { AdminLayout };

@@ -2,7 +2,7 @@ import { Login } from '../../components/startup/Auth/Login';
 import { motion } from 'framer-motion';
 import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
 
-export function Home() {
+function Home() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side: Animated Section */}
@@ -24,3 +24,5 @@ export function Home() {
     </div>
   );
 }
+
+export { Home };

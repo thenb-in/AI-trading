@@ -8,7 +8,7 @@ import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { toast } from 'react-toastify';
 
-export function UserManagement() {
+function UserManagement() {
   const {
     error,
     loading,
@@ -293,3 +293,5 @@ export function UserManagement() {
     </div>
   );
 }
+
+export { UserManagement };

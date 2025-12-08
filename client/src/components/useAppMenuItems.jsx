@@ -16,7 +16,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { getMasterCategories } from "../data/getMasterModules";
 
 // Hook to get App-specific menu items
-export function useAppMenuItems() {
+function useAppMenuItems() {
   const navigate = useNavigate();
   const location = useLocation();
   const dataContext = useDataContext();
@@ -136,7 +136,6 @@ export function useAppMenuItems() {
         flyoutRef.current.style.top = `${flyoutPosition.top}px`;
         flyoutRef.current.style.left = `${flyoutPosition.left}px`;
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flyoutPosition.top, flyoutPosition.left, showMasterFlyout]);
 
     const handleCategoryClick = (categoryName) => {
@@ -206,3 +205,5 @@ export function useAppMenuItems() {
     }
   ].filter(Boolean);
 }
+
+export { useAppMenuItems };

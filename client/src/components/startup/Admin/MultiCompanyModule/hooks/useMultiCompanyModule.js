@@ -3,7 +3,7 @@ import { ApiService } from '../../../../../services/startup/ApiService';
 import { STORAGE_KEYS } from '../../../../../constants/startup/index';
 import { useDataContext } from '../../../../../context/startup/useDataContext';
 
-export const useMultiCompanyModule = () => {
+const useMultiCompanyModule = () => {
   const { userData, setUserData } = useDataContext();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -94,5 +94,7 @@ export const useMultiCompanyModule = () => {
     handleSwitch,
   };
 };
+
+export { useMultiCompanyModule };
 
 

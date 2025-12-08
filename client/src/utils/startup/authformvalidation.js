@@ -3,7 +3,7 @@
  * @param {Object} formData - The form data object to clean
  * @returns {Object} - The cleaned form data object
  */
-export const cleanFormData = (formData) => {
+const cleanFormData = (formData) => {
   const cleaned = {};
 
   // Fields that should have all spaces removed (not just trimmed)
@@ -42,4 +42,6 @@ export const cleanFormData = (formData) => {
 
   return cleaned;
 };
+
+export { cleanFormData };
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "../../../../../services/startup/ApiService";
 
-export const useUserManagement = () => {
+const useUserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
@@ -184,7 +184,6 @@ export const useUserManagement = () => {
     );
   };
 
-
   const toggleUserSelection = (userId) => {
     setSelectedUsers((prev) =>
       prev.includes(userId)
@@ -267,3 +266,5 @@ export const useUserManagement = () => {
     updateUserProfileInState,
   };
 };
+
+export { useUserManagement };

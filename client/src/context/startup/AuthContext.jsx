@@ -5,7 +5,7 @@ import { isAllowedDevice } from "../../utils/startup/deviceUtils";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
 
-export const DataProvider = ({ children }) => {
+const DataProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
@@ -143,3 +143,5 @@ export const DataProvider = ({ children }) => {
 DataProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export { DataProvider };

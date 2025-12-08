@@ -7,7 +7,7 @@ import PropTypes from "prop-types";
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
 
-export function Signup({ showRoleDropdown }) {
+function Signup({ showRoleDropdown }) {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -314,3 +314,5 @@ export function Signup({ showRoleDropdown }) {
 Signup.propTypes = {
   showRoleDropdown: PropTypes.bool,
 };
+
+export { Signup };

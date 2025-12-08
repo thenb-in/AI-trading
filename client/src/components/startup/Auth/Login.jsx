@@ -6,7 +6,7 @@ import { ApiService } from '../../../services/startup/ApiService';
 import { useDataContext } from '../../../context/startup/useDataContext';
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
 
-export function Login() {
+function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -192,3 +192,5 @@ export function Login() {
     </div>
   );
 }
+
+export { Login };

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
 
-export function ToggleSwitch({ label, checked, onChange, description }) {
+function ToggleSwitch({ label, checked, onChange, description }) {
   return (
     <div className="mb-4">
       <label className="flex items-center text-gray-700 font-medium cursor-pointer">
@@ -45,3 +45,5 @@ ToggleSwitch.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string,
 };
+
+export { ToggleSwitch };

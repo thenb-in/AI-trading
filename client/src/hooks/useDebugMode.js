@@ -5,7 +5,7 @@ import { isDebugMode, subscribeToDebugMode, toggleDebugMode } from '../services/
  * Custom hook to manage debug mode state
  * Debug mode is controlled by session storage and can be toggled with Alt+D globally
  */
-export const useDebugMode = () => {
+const useDebugMode = () => {
   const [isDebugModeState, setIsDebugModeState] = useState(() => {
     const value = isDebugMode();
     console.log('[DEBUG MODE HOOK] Initial state:', value);
@@ -65,3 +65,5 @@ export const useDebugMode = () => {
   console.log('[DEBUG MODE HOOK] Current debug mode state:', isDebugModeState);
   return isDebugModeState;
 };
+
+export { useDebugMode };

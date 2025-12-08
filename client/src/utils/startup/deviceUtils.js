@@ -1,12 +1,12 @@
-export const getUserAgent = () =>
+const getUserAgent = () =>
   typeof navigator !== "undefined" && navigator.userAgent
     ? navigator.userAgent
     : "";
 
-export const isMobileDevice = (ua = getUserAgent()) =>
+const isMobileDevice = (ua = getUserAgent()) =>
   /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
 
-export const isInWebView = (ua = getUserAgent()) => {
+const isInWebView = (ua = getUserAgent()) => {
   if (typeof window === "undefined" || !ua) return false;
 
   try {
@@ -41,7 +41,7 @@ export const isInWebView = (ua = getUserAgent()) => {
  * - desktopWeb -> allow only when desktop browser
  * - mobileWeb  -> allow only when mobile browser (not in webview)
  */
-export const isAllowedDevice = (settings) => {
+const isAllowedDevice = (settings) => {
   if (!settings) return false;
 
   const ua = getUserAgent();
@@ -59,3 +59,5 @@ export const isAllowedDevice = (settings) => {
 
   return false;
 };
+
+export { getUserAgent, isMobileDevice, isInWebView, isAllowedDevice };

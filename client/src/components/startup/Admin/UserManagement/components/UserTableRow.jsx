@@ -307,5 +307,5 @@ UserTableRow.propTypes = {
   extraColumns: PropTypes.array
 };
 
-export const UserTableRowMemo = memo(UserTableRow);
+const UserTableRowMemo = memo(UserTableRow);
 export { UserTableRowMemo as UserTableRow };

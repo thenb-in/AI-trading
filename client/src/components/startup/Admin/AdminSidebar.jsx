@@ -13,7 +13,7 @@ import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "../../../constants/startup/index";
 import { useEffect } from "react";
 
-export function AdminSidebar({
+function AdminSidebar({
   collapsed,
   setCollapsed,
   isMobileView,
@@ -77,7 +77,6 @@ export function AdminSidebar({
     if (isMobileView && hamburgerMenu) {
       setHamburgerMenu(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   // If screen becomes larger, ensure hamburger closed and sidebar expanded appropriately
@@ -85,7 +84,6 @@ export function AdminSidebar({
     if (!isMobileView) {
       setHamburgerMenu(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobileView]);
 
   const handleToggleClick = () => {
@@ -246,3 +244,5 @@ AdminSidebar.propTypes = {
     })
   ),
 };
+
+export { AdminSidebar };

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-export function ProtectedRoute({ children }) {
+function ProtectedRoute({ children }) {
     const { userData, loading } = useDataContext();
     const location = useLocation();
 
@@ -17,3 +17,5 @@ export function ProtectedRoute({ children }) {
 ProtectedRoute.propTypes = {
     children: PropTypes.node.isRequired,
 };
+
+export { ProtectedRoute };
