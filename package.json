@@ -1,6 +1,6 @@
 {
   "name": "nbnext-startup-app",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "NB Next application with client and server made with Startup App Template",
   "main": "index.js",
   "scripts": {
@@ -9,11 +9,9 @@
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "cd client && npm run setup-env && cd ../server && npm run setup-env",
     "setup-env:check": "cd client && npm run setup-env:check && cd ../server && npm run check-env",
-
     "create-app": "node scripts/create-app.js",
     "update-starter-app": "node scripts/update-starter-app.js",
     "migrate": "node scripts/migrate.js",
-
     "prepare": "husky",
     "lint": "npm run lint:server && npm run lint:client",
     "lint:fix": "npm run lint:server:fix && npm run lint:client:fix",
@@ -25,29 +23,23 @@
     "lint:all:fix": "npm run lint:fix",
     "validate": "npm run lint:all && npm run test && npm run setup-env:validate",
     "validate:quick": "npm run lint:all",
-
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-
     "commit": "git-cz",
-
     "build": "cd client && npm run build",
     "build:server": "cd server && npm run build",
     "build:all": "npm run build:server && npm run build",
-
     "test": "npm run test:server && npm run test:client",
     "test:server": "cd server && npm run test",
     "test:client": "cd client && npm run test",
     "test:watch": "concurrently \"npm run test:server -- --watch\" \"npm run test:client -- --watch\"",
-
     "clean": "node scripts/clean.js all",
     "clean:node_modules": "node scripts/clean.js node_modules",
     "clean:build": "node scripts/clean.js build",
     "clean:logs": "node scripts/clean.js logs",
     "commitlint": "commitlint --edit",
     "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
-
     "dev-health-check": "node scripts/dev-utils.js",
     "dev-utils:check": "node scripts/dev-utils.js check",
     "dev-utils:lint": "node scripts/dev-utils.js lint",

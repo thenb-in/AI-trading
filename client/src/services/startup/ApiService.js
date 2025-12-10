@@ -177,6 +177,37 @@ const ApiService = {
     return this.request('POST', '/admin/role-permissions/remove', data);
   },
 
+  
+  // Get all layouts for a specific document (private + public)
+  getLayoutsByDocument(documentName) {
+    return this.request('GET', `/layouts/document/${documentName}`);
+  },
+
+  // Get a specific layout by ID
+  getLayoutById(layoutId) {
+    return this.request('GET', `/layouts/layout/${layoutId}`);
+  },
+
+  // Create or update a layout
+  createOrUpdateLayout(layoutData) {
+    return this.request('POST', '/layouts/create-or-update-layout', layoutData);
+  },
+
+  // Delete a layout
+  deleteLayout(layoutId) {
+    return this.request('DELETE', `/layouts/layout/${layoutId}`);
+  },
+
+  // Set a layout as default
+  setDefaultLayout(layoutId) {
+    return this.request('POST', '/layouts/set-default', { layout_id: layoutId });
+  },
+
+  // Unset default layout for a document
+  unsetDefaultLayout(documentName) {
+    return this.request('POST', '/layouts/unset-default', { document_name: documentName });
+  },
+  
 };
 
 

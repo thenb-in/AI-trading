@@ -82,6 +82,7 @@ module.exports = (sequelize, DataTypes) => {
 
     // Data access configuration per user (same company scope)
     User.hasOne(models.UserProfile, { foreignKey: 'userId', as: 'userProfile' });
+    User.hasMany(models.Layout, { foreignKey: 'userId', as: 'layouts' });
   };
 
   return User;

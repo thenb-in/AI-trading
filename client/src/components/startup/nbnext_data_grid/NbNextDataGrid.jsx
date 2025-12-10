@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
-import { layoutApi } from "../../../services/api.js";
+import { ApiService } from "../../../services/startup/ApiService.js";
 import { ArrowUp } from "lucide-react";
 
 // Hooks
@@ -16,7 +16,7 @@ import { useFiltering } from "./hooks/useFiltering.js";
 import { EmptyState } from "./components/EmptyState.jsx";
 import { Toolbar } from "./components/Toolbar.jsx";
 import { ColumnMenu } from "./components/ColumnMenu.jsx";
-import LayoutMenu from "./components/layout/LayoutMenu.jsx";
+import { LayoutMenu } from "./components/layout/LayoutMenu.jsx";
 import { DataGridHeader } from "./components/DataGridHeader.jsx";
 import { DataGridBody } from "./components/DataGridBody.jsx";
 import { LargeDatasetWarningDialog } from "./components/LargeDatasetWarningDialog.jsx";
@@ -348,7 +348,7 @@ function NbNextDataGrid({
       if (!columns || columns.length === 0) return;
 
       try {
-        const response = await layoutApi.getLayoutsByDocument(documentName);
+        const response = await ApiService.getLayoutsByDocument(documentName);
         const layouts = response.data.data;
         
         // Find default layout in both private and public layouts
