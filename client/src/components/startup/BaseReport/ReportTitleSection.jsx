@@ -3,14 +3,13 @@ import PropTypes from "prop-types";
 import { getColorClasses } from "@theme";
 import { CalendarDays } from "lucide-react";
 import { handleExport } from "./reportExport/index";
-
 const { useState } = React;
 
 /**
  * Generic ReportTitleSection component displaying report title, description, last updated time, and export button.
  * Can be customized by passing custom props or replaced entirely in BaseReport.
  */
-const ReportTitleSection = ({ report, rows, columns, showExport = true, customExportHandler }) => {
+const ReportTitleSection = ({ report, rows, columns, summary = null, showPdfButton = false, handlePDFExport = null, isPDFExporting = false }) => {
   const colorClasses = getColorClasses(report.color);
   const now = new Date();
   const formattedDate = now.toLocaleDateString("en-US", {
@@ -27,15 +26,13 @@ const ReportTitleSection = ({ report, rows, columns, showExport = true, customEx
   const [isExporting, setIsExporting] = useState(false);
   const currentUrl = window.location.href;
 
-  const handleExcelExport = async (report, rows, columns, currentUrl) => {
+  // Function to extract date range from URL parameters
+
+  const handleExcelExport = async (report, rows, columns, currentUrl, summary) => {
     setIsExporting(true);
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0)); // update immediately
     try {
-      if (customExportHandler) {
-        await customExportHandler(report, rows, columns, currentUrl);
-      } else {
-        await handleExport(report, rows, columns, currentUrl);
-      }
+      await handleExport(report, rows, columns, currentUrl, summary);
     } finally {
       setIsExporting(false);
     }
@@ -58,7 +55,7 @@ const ReportTitleSection = ({ report, rows, columns, showExport = true, customEx
       </div>
 
       {/* Right: Last Updated & Export */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-3 mt-2 md:mt-0">
+     <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-3 mt-2 md:mt-0">
         {/* Last Updated */}
         <div className="flex items-center text-sm text-gray-500 gap-2">
           <CalendarDays className="w-4 h-4 text-gray-400" />
@@ -68,32 +65,56 @@ const ReportTitleSection = ({ report, rows, columns, showExport = true, customEx
         </div>
 
         {/* Export Button */}
-        {showExport && (
+        {showPdfButton && (
           <button 
-            id="exportExcelBtn"
+            id = "exportPdfBtn"
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-              isExporting || !rows?.length
+              isPDFExporting || !rows?.length
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
                 : 'bg-black text-white hover:bg-gray-900 hover:shadow-md active:scale-95'
-            }`}
-            disabled={isExporting || !rows?.length}
-            onClick={() => handleExcelExport(report, rows, columns, currentUrl)}
-          >
-            {isExporting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export Excel
-              </>
-            )}
-          </button>
-        )}
+              }`}
+              disabled={isPDFExporting || !rows?.length}
+              onClick={handlePDFExport}
+            >
+              {isPDFExporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  Exporting PDF...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export PDF
+                </>
+              )}
+            </button>
+          )}
+        <button 
+          id = "exportExcelBtn"
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+            isExporting || !rows?.length
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+              : 'bg-black text-white hover:bg-gray-900 hover:shadow-md active:scale-95'
+          }`}
+          disabled={isExporting || !rows?.length}
+          onClick={() => handleExcelExport(report, rows, columns, currentUrl, summary)}
+        >
+          {isExporting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              Exporting...
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export Excel
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
@@ -107,9 +128,11 @@ ReportTitleSection.propTypes = {
   }).isRequired,
   rows: PropTypes.array.isRequired,
   columns: PropTypes.array.isRequired,
-  showExport: PropTypes.bool,
-  customExportHandler: PropTypes.func,
+  summary: PropTypes.object,
+  dataGridRef: PropTypes.object,
+  showPdfButton: PropTypes.bool,
+  handlePDFExport: PropTypes.func,
+  isPDFExporting: PropTypes.bool,
 };
 
 export { ReportTitleSection };
-

@@ -2,9 +2,10 @@
  * Layout Menu component for saving, loading, and managing layouts
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { ApiService } from "../../../../../services/startup/ApiService.js";
+import { columnMenuStyle } from "../../utils/styles.js";
 import { buildColumnConfig } from "../../utils/helpers.js";
 import { LayoutList } from "./LayoutList.jsx";
 import { ErrorDisplay } from "./ErrorDisplay.jsx";
@@ -28,7 +29,13 @@ function LayoutMenu({
   const [newLayoutType, setNewLayoutType] = useState("private");
   const [selectedLayout, setSelectedLayout] = useState(null);
 
-  const loadLayouts = useCallback(async () => {
+  useEffect(() => {
+    if (documentName) {
+      loadLayouts();
+    }
+  }, [documentName]);
+
+  const loadLayouts = async () => {
     if (!documentName) return;
     try {
       setLoading(true);
@@ -61,13 +68,7 @@ function LayoutMenu({
     } finally {
       setLoading(false);
     }
-  }, [documentName, selectedLayout]);
-
-  useEffect(() => {
-    if (documentName) {
-      loadLayouts();
-    }
-  }, [documentName, loadLayouts]);
+  };
 
   const handleSaveLayout = async () => {
     if (!newLayoutName.trim()) {
@@ -191,15 +192,15 @@ function LayoutMenu({
   };
 
   return (
-    <div className="absolute top-11 right-3 z-[100000] bg-white border border-gray-200 shadow-lg rounded-lg p-3 max-h-[280px] overflow-auto min-w-[220px]">
-      <div className="mb-3 font-semibold text-[13px]">
+    <div style={columnMenuStyle}>
+      <div className="font-semibold text-sm mb-4">
         Layout Manager
       </div>
 
       <ErrorDisplay error={error} />
 
       {loading ? (
-        <div className="text-center py-5 text-xs text-gray-500">
+        <div className="text-center text-xs text-gray-600 py-8">
           Loading layouts...
         </div>
       ) : (
@@ -212,7 +213,7 @@ function LayoutMenu({
             onDelete={handleDeleteLayout}
             onSetDefault={handleSetDefault}
           />
-          <div className="h-px bg-gray-200 my-3" />
+          <div className="bg-gray-200 h-px my-4" />
           <LayoutList
             layoutList={layouts.public}
             title="Public Layouts"
@@ -243,11 +244,11 @@ function LayoutMenu({
         />
       )}
 
-      <div className="mt-3">
+      <div className="mt-4">
         <button
           type="button"
           onClick={onClose}
-          className="py-1.5 px-2.5 rounded-md border border-gray-200 bg-white cursor-pointer w-full text-xs hover:bg-gray-50"
+          className="rounded border border-gray-200 bg-white cursor-pointer w-full py-1 px-2"
         >
           Close
         </button>

@@ -11,6 +11,7 @@ import { usePagination } from "./hooks/usePagination.js";
 import { useRowSelection } from "./hooks/useRowSelection.js";
 import { useMeasurements } from "./hooks/useMeasurements.js";
 import { useFiltering } from "./hooks/useFiltering.js";
+import { useVirtualScrolling } from "./hooks/useVirtualScrolling.js";
 
 // Components
 import { EmptyState } from "./components/EmptyState.jsx";
@@ -19,12 +20,10 @@ import { ColumnMenu } from "./components/ColumnMenu.jsx";
 import { LayoutMenu } from "./components/layout/LayoutMenu.jsx";
 import { DataGridHeader } from "./components/DataGridHeader.jsx";
 import { DataGridBody } from "./components/DataGridBody.jsx";
-import { LargeDatasetWarningDialog } from "./components/LargeDatasetWarningDialog.jsx";
 
 // Utilities
 import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig } from "./utils/helpers.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
-import { FULL_SCREEN_WARNING_THRESHOLD } from "./utils/constants.js";
 
 
 function NbNextDataGrid({
@@ -42,6 +41,7 @@ function NbNextDataGrid({
   onRowSelect = null,
   documentName = null,
   fullScreen: externalFullScreen,
+  showTotalRow = false,
 }) {
   // Internal state for fullscreen mode (can be controlled externally via prop)
   const [internalFullScreen, setInternalFullScreen] = useState(false);
@@ -55,6 +55,7 @@ function NbNextDataGrid({
   const containerRef = useRef(null);
   const headerRef = useRef(null);
   const firstRowRef = useRef(null);
+  const scrollAreaRef = useRef(null);
 
   // Detect sidebar width for fullscreen mode
   const [sidebarWidth, setSidebarWidth] = useState(0);
@@ -280,24 +281,64 @@ function NbNextDataGrid({
     setShowScrollToTop(false);
   }, []);
 
-  // Use all rows in fullscreen mode, otherwise use paged rows
-  const displayRows = fullScreen ? sortedRows : pagedRows;
-
   // Row selection hook
   const { selectedRowId, hoveredRowId, handleRowClick, handleRowHover, handleRowLeave } =
     useRowSelection(onRowSelect);
 
-  // Measurements hook
+  // Measurements hook - use pagedRows for measurements (virtual scrolling handled separately)
   const { rowHeight, computedContainerHeight } = useMeasurements(
     headerRef,
     firstRowRef,
-    displayRows,
+    pagedRows, // Always use pagedRows for measurements
     visibleColumns,
     density,
     autoHeight,
     height,
     fullScreen
   );
+
+  // Calculate scroll container height for virtual scrolling
+  const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
+
+  useEffect(() => {
+    if (!fullScreen || !scrollAreaRef.current) {
+      setScrollContainerHeight(0);
+      return;
+    }
+
+    const updateHeight = () => {
+      if (scrollAreaRef.current) {
+        setScrollContainerHeight(scrollAreaRef.current.clientHeight || 0);
+      }
+    };
+
+    // Initial measurement
+    updateHeight();
+
+    // Update on resize
+    const resizeObserver = new ResizeObserver(updateHeight);
+    if (scrollAreaRef.current) {
+      resizeObserver.observe(scrollAreaRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [fullScreen, computedContainerHeight]);
+
+  // Virtual scrolling for fullscreen mode
+  const virtualScrollingResult = useVirtualScrolling(
+    fullScreen ? sortedRows : [],
+    rowHeight,
+    scrollContainerHeight,
+    scrollAreaRef.current,
+    10 // overscan: render 10 extra rows above and below
+  );
+
+  // Use virtual scrolling rows in fullscreen, otherwise use regular display rows
+  const displayRows = fullScreen 
+    ? virtualScrollingResult.visibleRows 
+    : pagedRows;
 
   // Column menu state
   const [showColumnMenu, setShowColumnMenu] = useState(false);
@@ -389,40 +430,10 @@ function NbNextDataGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentName, columns, normalizedColumns]);
 
-  // Warning dialog state
-  const [showWarningDialog, setShowWarningDialog] = useState(false);
-
   // Fullscreen toggle handler
   const handleToggleFullScreen = useCallback(() => {
-    // If already in fullscreen, exit without warning
-    if (fullScreen) {
-      setInternalFullScreen(false);
-      return;
-    }
-
-    // Calculate total number of cells
-    const totalCells = rows.length * visibleColumns.length;
-    const warningThreshold = FULL_SCREEN_WARNING_THRESHOLD;
-
-    // If cells exceed threshold, show warning dialog
-    if (totalCells > warningThreshold) {
-      setShowWarningDialog(true);
-    } else {
-      // Otherwise, proceed directly to fullscreen
-      setInternalFullScreen(true);
-    }
-  }, [fullScreen, rows.length, visibleColumns.length]);
-
-  // Handle warning dialog confirm
-  const handleWarningConfirm = useCallback(() => {
-    setShowWarningDialog(false);
-    setInternalFullScreen(true);
-  }, []);
-
-  // Handle warning dialog cancel
-  const handleWarningCancel = useCallback(() => {
-    setShowWarningDialog(false);
-  }, []);
+    setInternalFullScreen(!fullScreen);
+  }, [fullScreen]);
 
   // Compute styles
   const gridContainerStyle = getGridContainerStyle(computedContainerHeight, fullScreen, sidebarWidth);
@@ -433,9 +444,6 @@ function NbNextDataGrid({
       <EmptyState/>
     );
   }
-
-  // Calculate total cells for warning dialog
-  const totalCells = rows.length * visibleColumns.length;
 
   // Main render
   return (
@@ -478,15 +486,7 @@ function NbNextDataGrid({
           onClose={() => setShowLayoutMenu(false)}
         />
       )}
-      {showWarningDialog && (
-        <LargeDatasetWarningDialog
-          isOpen={showWarningDialog}
-          onConfirm={handleWarningConfirm}
-          onCancel={handleWarningCancel}
-          cellCount={totalCells}
-        />
-      )}
-      <div style={scrollAreaStyle(fullScreen)}>
+      <div ref={scrollAreaRef} style={scrollAreaStyle(fullScreen)}>
         <table style={tableStyle}>
           <DataGridHeader
             headerRef={headerRef}
@@ -517,22 +517,31 @@ function NbNextDataGrid({
             rowHeight={rowHeight}
             getRowIdFunc={getRowId}
             columnWidths={columnWidths}
+            virtualScrolling={fullScreen}
+            offsetY={fullScreen ? virtualScrollingResult.offsetY : 0}
+            totalHeight={fullScreen ? virtualScrollingResult.totalHeight : 0}
+            startIndex={fullScreen ? virtualScrollingResult.startIndex : 0}
+            showTotalRow={showTotalRow}
+            allRows={sortedRows}
+            allColumns={normalizedColumns}
           />
         </table>
       </div>
-      <Toolbar
-        totalRows={sortedRows.length}
-        visibleColumnsCount={visibleColumns.length}
-        setShowColumnMenu={setShowColumnMenu}
-        page={page}
-        totalPages={totalPages}
-        autoPageSize={autoPageSize}
-        goToPrevPage={handleBottomGoToPrevPage}
-        goToNextPage={handleBottomGoToNextPage}
-        fullScreen={fullScreen}
-        onToggleFullScreen={externalFullScreen !== undefined ? null : handleToggleFullScreen}
-        position="bottom"
-      />
+      {!fullScreen && (
+        <Toolbar
+          totalRows={sortedRows.length}
+          visibleColumnsCount={visibleColumns.length}
+          setShowColumnMenu={setShowColumnMenu}
+          page={page}
+          totalPages={totalPages}
+          autoPageSize={autoPageSize}
+          goToPrevPage={handleBottomGoToPrevPage}
+          goToNextPage={handleBottomGoToNextPage}
+          fullScreen={fullScreen}
+          onToggleFullScreen={externalFullScreen !== undefined ? null : handleToggleFullScreen}
+          position="bottom"
+        />
+      )}
       {showScrollToTop && (
         <button
           type="button"
@@ -561,6 +570,7 @@ NbNextDataGrid.propTypes = {
       hide: PropTypes.bool,
       renderCell: PropTypes.func,
       valueGetter: PropTypes.func,
+      type: PropTypes.string,
     })
   ).isRequired,
   height: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -577,6 +587,7 @@ NbNextDataGrid.propTypes = {
   onRowSelect: PropTypes.func,
   documentName: PropTypes.string,
   fullScreen: PropTypes.bool,
+  showTotalRow: PropTypes.bool,
 };
 
 export { NbNextDataGrid };

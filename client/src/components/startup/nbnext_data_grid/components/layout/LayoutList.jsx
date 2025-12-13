@@ -15,15 +15,15 @@ function LayoutList({
 }) {
   if (layoutList.length === 0) {
     return (
-      <div className="text-xs text-gray-500 italic mb-2">
+      <div className="text-xs text-gray-600 italic mb-2">
         No {title.toLowerCase()} layouts
       </div>
     );
   }
 
   return (
-    <div className="mb-3">
-      <div className="text-xs font-semibold mb-1.5 text-gray-700">
+    <div className="mb-4">
+      <div className="text-xs font-semibold text-gray-700 mb-1">
         {title} ({layoutList.length})
       </div>
       {layoutList.map((layout) => (

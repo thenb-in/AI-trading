@@ -14,13 +14,21 @@ function SaveLayoutDialog({
   onSave,
   onCancel,
 }) {
+  const getSaveButtonClasses = () => {
+    const baseClasses = "flex-1 text-white border-none py-1 px-2 rounded border border-gray-200 cursor-pointer text-xs";
+    if (saving) {
+      return `${baseClasses} bg-gray-300 text-gray-600 cursor-not-allowed`;
+    }
+    return `${baseClasses} ${selectedLayout ? 'bg-emerald-600' : 'bg-blue-600'}`;
+  };
+
   return (
-    <div className="mt-3 pt-3 border-t border-gray-200">
+    <div className="border-t border-gray-200 mt-4 pt-4">
       <div className="text-xs font-semibold mb-2">
         {selectedLayout ? "Update Layout" : "Save Layout"}
       </div>
       {selectedLayout && (
-        <div className="py-1.5 px-2 mb-2 bg-blue-50 border border-blue-200 rounded text-[11px] text-blue-800">
+        <div className="bg-blue-50 border border-blue-300 rounded text-blue-800 text-xs mb-2 py-1 px-2">
           Updating: <strong>{selectedLayout.layout_name}</strong>
         </div>
       )}
@@ -29,36 +37,30 @@ function SaveLayoutDialog({
         value={newLayoutName}
         onChange={(e) => onNameChange(e.target.value)}
         placeholder="Layout name"
-        className="w-full py-1.5 px-2 mb-2 border border-gray-200 rounded text-xs box-border"
+        className="w-full border border-gray-200 rounded text-xs box-border mb-2 py-1 px-2"
       />
       <select
         value={newLayoutType}
         onChange={(e) => onTypeChange(e.target.value)}
-        className="w-full py-1.5 px-2 mb-2 border border-gray-200 rounded text-xs box-border bg-white cursor-pointer"
+        className="w-full border border-gray-200 rounded text-xs box-border bg-white cursor-pointer mb-2 py-1 px-2"
       >
         <option value="private">Private</option>
         <option value="public">Public</option>
         <option value="temp">Temporary</option>
       </select>
-      <div className="flex gap-1.5">
+      <div className="flex gap-1">
         <button
           type="button"
           onClick={onSave}
           disabled={saving || !newLayoutName.trim()}
-          className={`flex-1 py-1 px-2 rounded-md border-none text-xs ${
-            saving
-              ? "bg-gray-200 text-gray-600 cursor-not-allowed"
-              : selectedLayout
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                : "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
-          } disabled:bg-gray-200 disabled:text-gray-600 disabled:cursor-not-allowed`}
+          className={getSaveButtonClasses()}
         >
           {saving ? (selectedLayout ? "Updating..." : "Saving...") : (selectedLayout ? "Update" : "Save")}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="py-1 px-2 rounded-md border border-gray-200 bg-white cursor-pointer text-xs hover:bg-gray-50"
+          className="py-1 px-2 rounded border border-gray-200 bg-white cursor-pointer text-xs"
         >
           Cancel
         </button>

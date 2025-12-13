@@ -147,3 +147,45 @@
 .flyout-positioned {
   position: fixed;
 }
+
+/* Progress bar with dynamic width */
+.progress-bar-fill {
+  width: var(--progress-width, 0%);
+}
+
+/* Battery indicator with dynamic width */
+.battery-indicator-fill {
+  width: var(--battery-width, 0%);
+}
+
+/* Circular loading bar with dynamic properties */
+.circular-loading-bar {
+  width: var(--loading-size, 24px);
+  height: var(--loading-size, 24px);
+  border: var(--loading-thickness, 5px) solid var(--loading-color-opacity, rgba(46, 125, 50, 0.125));
+  border-top: var(--loading-thickness, 5px) solid var(--loading-color, #2e7d32);
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Data grid cell styles with dynamic properties */
+.data-grid-cell-frozen {
+  position: sticky;
+  left: var(--cell-left, 0px);
+  z-index: 1;
+  width: var(--cell-width, auto);
+  min-width: var(--cell-width, auto);
+  max-width: var(--cell-width, auto);
+  background: var(--cell-bg, transparent);
+}
+
+.data-grid-cell {
+  width: var(--cell-width, auto);
+  min-width: var(--cell-width, auto);
+  max-width: var(--cell-width, auto);
+  background: var(--cell-bg, transparent);
+}

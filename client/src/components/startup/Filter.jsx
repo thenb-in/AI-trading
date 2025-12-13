@@ -18,7 +18,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TextField } from '@mui/material';
 import { format, parse, isValid } from 'date-fns';
-import { formatDate } from './dateTimeUtils';
+import { formatDate } from '@utils/startup/dateTimeUtils';
 import { toast } from 'react-toastify';
 import { colors, fontSize } from '@theme';
 
@@ -328,6 +328,15 @@ const Filter = ({
   const handleDateChange = useCallback((name, date) => {
     if (isDisabled) return;
     if (date && isValid(date)) {
+      // Ensure date is not in the future
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (date > today) {
+        // If date is in the future, set to today instead
+        const formattedDate = format(today, 'yyyy-MM-dd');
+        setFilters((prev) => ({ ...prev, [name]: formattedDate }));
+        return;
+      }
       // Convert to yyyy-mm-dd format for backend
       const formattedDate = format(date, 'yyyy-MM-dd');
       setFilters((prev) => ({ ...prev, [name]: formattedDate }));
@@ -491,6 +500,10 @@ const Filter = ({
           return renderDatePickerInput(params, inputDisabled);
         };
 
+        // Set max date to today
+        const maxDate = new Date();
+        maxDate.setHours(23, 59, 59, 999); // Set to end of today
+
         return (
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
@@ -498,6 +511,7 @@ const Filter = ({
               onChange={(newValue) => handleDateChange(config.name, newValue)}
               disabled={inputDisabled}
               format="dd/MM/yyyy"
+              maxDate={maxDate}
               renderInput={renderDateInput}
             />
           </LocalizationProvider>

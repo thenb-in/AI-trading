@@ -198,6 +198,78 @@ const getColumnWidthWithIcons = (col) => {
 
   return { columnVisibility, frozenState };
 };
+/**
+ * Calculate totals for numeric columns across all rows
+ * @param {Array} rows - Array of row objects
+ * @param {Array} columns - Array of column definitions
+ * @returns {Object} - Object mapping field names to total values
+ */
+const calculateTotals = (rows, columns) => {
+  const totals = {};
+  
+  if (!rows || rows.length === 0) {
+    return totals;
+  }
+
+  // Identify numeric columns (exclude duration, date, datetime, time, boolean, string types)
+  const excludedTypes = ['duration', 'date', 'datetime', 'time', 'boolean', 'string', 'html', 'status'];
+  const numericColumns = columns.filter(col => {
+    // Skip excluded types
+    if (col.type && excludedTypes.includes(col.type)) {
+      return false;
+    }
+    
+    // Check if column type is number or numeric
+    const isNumericType = col.type === 'number' || col.type === 'numeric';
+    
+    // Also check common numeric field patterns
+    const isNumericField = typeof col.field === 'string' && (
+      col.field.includes('amount') ||
+      col.field.includes('salary') ||
+      col.field.includes('total') ||
+      col.field.includes('value') ||
+      col.field.includes('price') ||
+      col.field.includes('cost') ||
+      col.field.includes('_sal') ||
+      col.field.includes('_amt') ||
+      col.field.startsWith('component_')
+    );
+    
+    return isNumericType || isNumericField;
+  });
+
+  // Calculate totals for each numeric column
+  numericColumns.forEach(col => {
+    let total = 0;
+    let count = 0;
+
+    rows.forEach(row => {
+      let value;
+      if (typeof col.valueGetter === "function") {
+        value = col.valueGetter({ row, field: col.field });
+      } else {
+        value = row?.[col.field];
+      }
+
+      // Convert to number if possible
+      if (value != null && value !== '') {
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
+        if (!isNaN(numValue)) {
+          total += numValue;
+          count++;
+        }
+      }
+    });
+
+    // Only set total if we found at least one valid value
+    if (count > 0) {
+      totals[col.field] = total;
+    }
+  });
+
+  return totals;
+};
+
 export {
   normalizeColumns,
   renderCellContent,
@@ -208,5 +280,6 @@ export {
   getColumnWidthWithIcons, 
   buildColumnConfig, 
   applyColumnConfig,
-  filterRows
+  filterRows,
+  calculateTotals
 };

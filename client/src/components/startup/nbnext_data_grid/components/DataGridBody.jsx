@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
-import { cellBaseStyle, getRowStyle, getCellBackgroundColor } from "../utils/styles.js";
-import { renderCellContent, getKeyForRow, getColumnWidthWithIcons } from "../utils/helpers.js";
+import { cellBaseStyle, getRowStyle, getCellBackgroundColor, totalRowStyle } from "../utils/styles.js";
+import { renderCellContent, getKeyForRow, getColumnWidthWithIcons, calculateTotals } from "../utils/helpers.js";
+import { convertCellToText } from "../../BaseReport/ReportUtils.js";
 
 function DataGridBody({
   firstRowRef,
@@ -16,15 +17,71 @@ function DataGridBody({
   rowHeight,
   getRowIdFunc = null,
   columnWidths = {},
+  // Virtual scrolling props
+  virtualScrolling = false,
+  offsetY = 0,
+  totalHeight = 0,
+  startIndex = 0,
+  // Total row props
+  showTotalRow = false,
+  allRows = [],
+  allColumns = [],
 }) {
   const baseCellStyle = cellBaseStyle(rowHeight);
 
+  // Only show total row if there's more than 1 row
+  const shouldShowTotalRow = showTotalRow && allRows.length > 1;
+
+  // Calculate totals if total row is enabled
+  const totals = shouldShowTotalRow && allRows.length > 0 
+    ? calculateTotals(allRows.map(w => w._row || w), allColumns)
+    : {};
+
+  const setOffsetHeight = (el) => {
+    if (el) {
+      el.style.height = `${offsetY}px`;
+    }
+  };
+
+  const setTotalHeight = (el) => {
+    if (el) {
+      const totalRowHeight = shouldShowTotalRow ? rowHeight : 0;
+      el.style.height = `${Math.max(0, totalHeight - offsetY - (pagedRows.length * rowHeight) - totalRowHeight)}px`;
+    }
+  };
+
+  // Render total row cell content
+  const renderTotalCell = (col) => {
+    const totalValue = totals[col.field];
+    if (totalValue !== undefined && totalValue !== null) {
+      // Format the total value similar to regular cells
+      const formatted = convertCellToText(col, totalValue);
+      return formatted != null ? String(formatted) : '';
+    }
+    // For non-numeric columns, show empty or "Total" label for first column
+    if (col === frozenColumns[0] || col === nonFrozenColumns[0]) {
+      return 'Total';
+    }
+    return '';
+  };
+
   return (
     <tbody>
+      {virtualScrolling && offsetY > 0 && (
+        <tr>
+          <td 
+            className="p-0 border-none" 
+            ref={setOffsetHeight}
+            colSpan={frozenColumns.length + nonFrozenColumns.length} 
+          />
+        </tr>
+      )}
       {pagedRows.map((wrapped, idx) => {
         const row = wrapped._row;
         const key = getKeyForRow(row, wrapped._origIndex, getRowIdFunc);
-        const isEven = idx % 2 === 0;
+        // Use original index for isEven calculation in virtual scrolling
+        const originalIndex = virtualScrolling ? startIndex + idx : wrapped._origIndex;
+        const isEven = originalIndex % 2 === 0;
         const isSelected = key === selectedRowId;
         const isHovered = key === hoveredRowId;
 
@@ -90,6 +147,67 @@ function DataGridBody({
           </tr>
         );
       })}
+      {virtualScrolling && totalHeight > 0 && (
+        <tr>
+          <td 
+            className="p-0 border-none"
+            ref={setTotalHeight}
+            colSpan={frozenColumns.length + nonFrozenColumns.length} 
+          />
+        </tr>
+      )}
+      {shouldShowTotalRow && (
+        <tr style={totalRowStyle}>
+          {frozenColumns.map((col) => {
+            const left = cumulativeFrozenLeftOffsets[col.field] || 0;
+            const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+            
+            const setCellStyles = (element) => {
+              if (element) {
+                Object.assign(element.style, baseCellStyle);
+                element.style.setProperty('--cell-left', `${left}px`);
+                element.style.setProperty('--cell-width', `${totalWidth}px`);
+                element.style.setProperty('--cell-bg', '#f3f4f6');
+                element.style.fontWeight = '600';
+                element.style.color = '#1f2937';
+              }
+            };
+            
+            return (
+              <td
+                key={`total-${col.field}`}
+                ref={setCellStyles}
+                className="data-grid-cell-frozen"
+              >
+                {renderTotalCell(col)}
+              </td>
+            );
+          })}
+          {nonFrozenColumns.map((col) => {
+            const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+            
+            const setCellStyles = (element) => {
+              if (element) {
+                Object.assign(element.style, baseCellStyle);
+                element.style.setProperty('--cell-width', `${totalWidth}px`);
+                element.style.setProperty('--cell-bg', '#f3f4f6');
+                element.style.fontWeight = '600';
+                element.style.color = '#1f2937';
+              }
+            };
+            
+            return (
+              <td
+                key={`total-${col.field}`}
+                ref={setCellStyles}
+                className="data-grid-cell"
+              >
+                {renderTotalCell(col)}
+              </td>
+            );
+          })}
+        </tr>
+      )}
     </tbody>
   );
 }
@@ -108,6 +226,13 @@ DataGridBody.propTypes = {
   handleRowLeave: PropTypes.func.isRequired,
   rowHeight: PropTypes.number.isRequired,
   getRowIdFunc: PropTypes.func,
+  virtualScrolling: PropTypes.bool,
+  offsetY: PropTypes.number,
+  totalHeight: PropTypes.number,
+  startIndex: PropTypes.number,
+  showTotalRow: PropTypes.bool,
+  allRows: PropTypes.array,
+  allColumns: PropTypes.array,
 };
 
 export { DataGridBody };

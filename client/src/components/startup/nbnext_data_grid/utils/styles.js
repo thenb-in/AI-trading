@@ -160,5 +160,27 @@ const getCellBackgroundColor = (isEven, isSelected, isHovered) => {
   return isSelected ? selectedBg : isHovered ? hoverBg : baseBg;
 };
 
-export { getGridContainerStyle, toolbarStyle, columnMenuStyle, scrollAreaStyle, tableStyle, headerCellBaseStyle, cellBaseStyle, headerButtonStyle, pinButtonStyle, smallButtonStyle, getSortedHeaderStyle, getRowStyle, getCellBackgroundColor };
+const totalRowStyle = {
+  background: "#f3f4f6",
+  fontWeight: 600,
+  borderTop: "3px solid #2563eb",
+  borderBottom: "3px solid #2563eb",
+};
+
+export {
+  getGridContainerStyle,
+  toolbarStyle,
+  columnMenuStyle,
+  scrollAreaStyle,
+  tableStyle,
+  headerCellBaseStyle,
+  cellBaseStyle,
+  headerButtonStyle,
+  pinButtonStyle,
+  smallButtonStyle,
+  getSortedHeaderStyle,
+  getRowStyle,
+  getCellBackgroundColor,
+  totalRowStyle,
+};
 

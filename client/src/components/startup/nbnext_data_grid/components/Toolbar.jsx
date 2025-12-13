@@ -82,16 +82,9 @@ function Toolbar({
           autoPageSize={autoPageSize}
           goToPrevPage={goToPrevPage}
           goToNextPage={goToNextPage}
+          fullScreen={fullScreen}
+          totalRows={totalRows}
         />
-        {!fullScreen && (
-          <PaginationControls
-            page={page}
-            totalPages={totalPages}
-            autoPageSize={autoPageSize}
-            goToPrevPage={goToPrevPage}
-            goToNextPage={goToNextPage}
-          />
-        )}
         {onToggleFullScreen && (
           <button
             type="button"

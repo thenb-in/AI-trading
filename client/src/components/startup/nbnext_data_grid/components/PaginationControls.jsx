@@ -1,6 +1,17 @@
 import PropTypes from "prop-types";
 
-function PaginationControls({ page, totalPages, autoPageSize, goToPrevPage, goToNextPage }) {
+function PaginationControls({ page, totalPages, autoPageSize, goToPrevPage, goToNextPage, fullScreen = false, totalRows = 0 }) {
+  // In fullscreen, show "All rows" instead of pagination
+  if (fullScreen) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-gray-600">
+          Showing all {totalRows} rows
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs text-gray-600">
@@ -39,6 +50,8 @@ PaginationControls.propTypes = {
   autoPageSize: PropTypes.number.isRequired,
   goToPrevPage: PropTypes.func.isRequired,
   goToNextPage: PropTypes.func.isRequired,
+  fullScreen: PropTypes.bool,
+  totalRows: PropTypes.number,
 };
 
 export { PaginationControls };

@@ -86,6 +86,14 @@ const ApiService = {
     return this.request('PUT', '/company/settings', settings);
   },
 
+  getCompanyProfile() {
+    return this.request('GET', '/company-profile');
+  },
+
+  updateCompanyProfile(profile) {
+    return this.request('PUT', '/company-profile', profile);
+  },
+
   getUserCompanies() {
     return this.request('GET', '/company/my');
   },
