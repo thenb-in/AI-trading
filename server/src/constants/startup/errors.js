@@ -9,4 +9,10 @@ const sequelizeErrors = {
   SEQUELIZE_CONNECTION_TIMED_OUT_ERROR: 'SequelizeConnectionTimedOutError'
 };
 
-module.exports = sequelizeErrors;
+const COMPANY_ID_REQUIRED = 'Company ID is required';
+
+
+module.exports = {
+  sequelizeErrors,
+  COMPANY_ID_REQUIRED
+};

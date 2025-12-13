@@ -4,7 +4,7 @@ const logger = require('../../logger');
 const companyProfileService = {
   async getCompanyProfile(companyId) {
     try {
-      const companyProfile = await CompanyProfile.findOne({
+      let companyProfile = await CompanyProfile.findOne({
         where: { companyId },
         include: [
           {
@@ -16,7 +16,18 @@ const companyProfileService = {
       });
 
       if (!companyProfile) {
-        throw new Error(`Company profile not found for company ${companyId}.`);
+        companyProfile = await CompanyProfile.create({
+          companyId
+        });
+        await companyProfile.reload({
+          include: [
+            {
+              model: Company,
+              as: 'company',
+              attributes: ['id', 'name']
+            }
+          ]
+        });
       }
 
       return companyProfile;
@@ -28,15 +39,19 @@ const companyProfileService = {
 
   async updateCompanyProfile(companyId, data) {
     try {
-      const companyProfile = await CompanyProfile.findOne({
+      let companyProfile = await CompanyProfile.findOne({
         where: { companyId }
       });
 
       if (!companyProfile) {
-        throw new Error(`Company profile not found for company ${companyId}.`);
+        companyProfile = await CompanyProfile.create({
+          companyId,
+          ...data
+        });
+      } else {
+        await companyProfile.update(data);
       }
 
-      await companyProfile.update(data);
       return companyProfile;
     } catch (error) {
       logger.error('Failed to update company profile', error);

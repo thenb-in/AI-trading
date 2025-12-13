@@ -1,9 +1,11 @@
+import { getReportDisplayName } from '../../../../../data/getReportModules';
+
 /**
  * Organizes permissions by type (module, report, master)
  * and groups master permissions by entity
  * Also includes linked permissions (duplicates) in master section
  */
-export function organizePermissions(permissions) {
+function organizePermissions(permissions) {
   if (!Array.isArray(permissions)) {
     return {
       module: [],
@@ -67,7 +69,8 @@ export function organizePermissions(permissions) {
       }
     } else if (inferredType === 'report') {
       // Group report permissions by report identifier
-      const reportId = extractReportId(permission.name);
+      // Try permission name first (for mapping), then display_name, then fall back to parsing
+      const reportId = extractReportId(permission.name) || extractReportId(permission.display_name) || 'Other Reports';
       if (!organized.report[reportId]) {
         organized.report[reportId] = [];
       }
@@ -129,14 +132,46 @@ export function organizePermissions(permissions) {
 
 /**
  * Extracts report identifier from permission name
+ * Uses the report permission name map from getReportModules.js for accurate mapping
  * Examples:
  * - "read_report_1" -> "Report 1"
- * - "download_report_2" -> "Report 2"
+ * - "read_report-2" -> "Report 2"
  * - "view_report_user" -> "User Report"
- * - "read_report_1" -> "Report 1"
+ * - "read_user_report" -> "User Report"
  */
 function extractReportId(permissionName) {
   if (!permissionName) return 'Other Reports';
+  
+  // Try to use the report permission name map first (most accurate)
+  // This uses the permissionName mapping from getReportModules.js
+  const mappedName = getReportDisplayName(permissionName);
+  if (mappedName) {
+    return mappedName;
+  }
+  
+  // If display_name is provided and it's in format "Read <Report Name>", extract the report name
+  // Example: "Read detailed-attendance-report" -> "Detailed Attendance Report"
+  if (permissionName.toLowerCase().startsWith('read ')) {
+    const reportName = permissionName.substring(5); // Remove "Read " prefix
+    return reportName
+      .split(/[-_\s]+/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+  
+  // Pattern: read_<report-name-with-hyphens> (e.g., read_detailed-attendance-report)
+  // This handles the server pattern: read_<report-name>
+  const hyphenReportPattern = /^(?:read|download|view|export)_([a-z0-9-]+)$/i;
+  const hyphenMatch = permissionName.match(hyphenReportPattern);
+  
+  if (hyphenMatch && hyphenMatch[1]) {
+    const reportName = hyphenMatch[1];
+    // Convert hyphens and underscores to spaces and format properly
+    return reportName
+      .split(/[-_]/)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
   
   // Pattern: read_user_report, read_company_report (entity between operation and _report)
   const entityBeforeReportPattern = /(?:read|download|view|export)_([a-z_]+)_report/i;
@@ -238,7 +273,7 @@ function extractEntityFromPermission(permissionName) {
 /**
  * Groups master permissions by operation type (CRUD, approve, etc.)
  */
-export function groupMasterPermissionsByOperation(permissions) {
+function groupMasterPermissionsByOperation(permissions) {
   const grouped = {
     create: [],
     read: [],
@@ -278,7 +313,7 @@ export function groupMasterPermissionsByOperation(permissions) {
 /**
  * Groups report permissions by operation type (view, download, export, etc.)
  */
-export function groupReportPermissionsByOperation(permissions) {
+function groupReportPermissionsByOperation(permissions) {
   const grouped = {
     view: [],
     read: [],
@@ -312,7 +347,7 @@ export function groupReportPermissionsByOperation(permissions) {
 /**
  * Gets display name for permission operation
  */
-export function getOperationDisplayName(operation) {
+function getOperationDisplayName(operation) {
   const names = {
     create: 'Create',
     read: 'Read/View',
@@ -331,7 +366,7 @@ export function getOperationDisplayName(operation) {
 /**
  * Checks if a permission is assigned to a role
  */
-export function isPermissionAssigned(role, permissionId) {
+function isPermissionAssigned(role, permissionId) {
   if (!role || !role.permissions) return false;
   return role.permissions.some((p) => p.id === permissionId);
 }
@@ -393,7 +428,7 @@ function createLinkedPermissionObject(permission, context) {
  * @param {Object} permission - The permission object to check
  * @returns {boolean} True if the permission is linked
  */
-export function isLinkedPermission(permission) {
+function isLinkedPermission(permission) {
   if (!permission) return false;
   const permissionName = permission.name?.toLowerCase();
   return permissionName ? getLinkedContexts(permissionName).length > 0 : false;
@@ -405,7 +440,7 @@ export function isLinkedPermission(permission) {
  * @param {string} permissionName - The permission name
  * @returns {string|null} The display context or null if not linked
  */
-export function getLinkedPermissionDisplayContext(permissionName) {
+function getLinkedPermissionDisplayContext(permissionName) {
   const linkedContexts = getLinkedContexts(permissionName);
   if (linkedContexts.length === 0) return null;
   
@@ -413,4 +448,14 @@ export function getLinkedPermissionDisplayContext(permissionName) {
   const context = linkedContexts[0];
   return convertContextToEntityDisplay(context);
 }
+
+export {
+  organizePermissions,
+  groupMasterPermissionsByOperation,
+  groupReportPermissionsByOperation,
+  getOperationDisplayName,
+  isPermissionAssigned,
+  isLinkedPermission,
+  getLinkedPermissionDisplayContext,
+};
 

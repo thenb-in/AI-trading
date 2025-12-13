@@ -9,6 +9,7 @@ router.post('/roles', adminController.createRole);
 
 router.get('/permissions', adminController.getPermissions);
 router.post('/permissions', adminController.createPermission);
+router.delete('/permissions/:permissionId', adminController.deletePermission);
 
 
 

@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import { Layers, FileText, Database, Loader2, AlertTriangle } from 'lucide-react';
+import { Layers, FileText, Database, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { isPermissionAssigned } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
+import { hasPermission } from '../../../../../utils/hasPermission';
 
 const categoryIcons = {
   module: Layers,
@@ -18,13 +19,15 @@ const categoryColors = {
   other: 'bg-yellow-50 border-yellow-200',
 };
 
-export function PermissionCategorySection({
+function PermissionCategorySection({
   title,
   permissions,
   category,
   selectedRole,
   onTogglePermission,
   onToggleOperation,
+  onDeletePermission,
+  userData,
   updating,
 }) {
 
@@ -42,6 +45,13 @@ export function PermissionCategorySection({
     );
     onToggleOperation(allPermIds, !allAssigned);
   }, [permissions, selectedRole, onToggleOperation]);
+
+  // Handler for permission deletion
+  const handleDeletePermission = useCallback((permissionId, permissionName) => {
+    if (window.confirm(`Are you sure you want to delete the permission "${permissionName}"? This action cannot be undone.`)) {
+      onDeletePermission(permissionId);
+    }
+  }, [onDeletePermission]);
 
   // Validate permissions based on category type
   let hasPermissions = false;
@@ -94,6 +104,7 @@ export function PermissionCategorySection({
     const allCategoryAssigned = permissions.length > 0 && permissions.every((p) =>
       isPermissionAssigned(selectedRole, p.id)
     );
+    const canDeletePermission = hasPermission(userData, 'delete_permission');
 
     return (
       <div className={`border rounded p-2 ${colorClass}`}>
@@ -137,7 +148,10 @@ export function PermissionCategorySection({
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Display Name</th>
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Description</th>
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Type</th>
-                <th className="text-left p-1.5 font-semibold text-gray-700">Original Type</th>
+                <th className={`text-left p-1.5 font-semibold text-gray-700 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>Original Type</th>
+                {canDeletePermission && (
+                  <th className="text-center p-1.5 font-semibold text-gray-700">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -160,7 +174,19 @@ export function PermissionCategorySection({
                     <td className="p-1.5 text-gray-700 border-r border-gray-200">{permission.display_name || '—'}</td>
                     <td className="p-1.5 text-gray-600 border-r border-gray-200">{permission.description || '—'}</td>
                     <td className="p-1.5 text-gray-700 border-r border-gray-200">{permission.type || '—'}</td>
-                    <td className="p-1.5 text-gray-600">{permission.originalType || '—'}</td>
+                    <td className={`p-1.5 text-gray-600 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>{permission.originalType || '—'}</td>
+                    {canDeletePermission && (
+                      <td className="p-1.5 text-center">
+                        <button
+                          onClick={() => handleDeletePermission(permission.id, permission.display_name || permission.name)}
+                          disabled={updating}
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          title="Delete permission"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -244,6 +270,9 @@ PermissionCategorySection.propTypes = {
   selectedRole: PropTypes.object,
   onTogglePermission: PropTypes.func.isRequired,
   onToggleOperation: PropTypes.func.isRequired,
+  onDeletePermission: PropTypes.func,
+  userData: PropTypes.object,
   updating: PropTypes.bool,
 };
 
+export { PermissionCategorySection };

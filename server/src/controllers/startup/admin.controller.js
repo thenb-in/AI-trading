@@ -127,6 +127,25 @@ const getPermissions = async (req, res) => {
   }
 };
 
+const deletePermission = async (req, res) => {
+  try {
+    const { permissionId } = req.params;
+    const result = await adminService.deletePermission(permissionId);
+    res.json({
+      success: true,
+      message: result.message,
+      data: result
+    });
+  } catch (error) {
+    logger.error('Error deleting permission', error);
+    const statusCode = error.status || 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   createRole,
 
@@ -134,5 +153,6 @@ module.exports = {
   addPermissionToRole,
   removePermissionFromRole,
   getRoles,
-  getPermissions
+  getPermissions,
+  deletePermission
 };

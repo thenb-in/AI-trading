@@ -1,4 +1,4 @@
-export const getUserManagementExtraColumns = () => {
+const getUserManagementExtraColumns = () => {
 //   return [
 //     {
 //       header: 'Name',
@@ -6,3 +6,5 @@ export const getUserManagementExtraColumns = () => {
 //     },
 //   ];
 };
+
+export { getUserManagementExtraColumns };

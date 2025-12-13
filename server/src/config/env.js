@@ -2,6 +2,8 @@
 const path = require('path');
 const { PARSE_INT_RADIX } = require('../constants/startup/standard_constants');
 const { PRODUCTION_ENV } = require('../constants/startup/standard_constants');
+const logger = require('../../logger');
+
 
 // This file sets up dotenv-safe once and exports the configuration
 require('dotenv-safe').config({
@@ -26,6 +28,22 @@ if (uploadsDir) {
   // Use default path
   uploadsDir = defaultUploadsDir;
 }
+
+// Calculate default secret directory relative to server root
+const defaultSecretDir = path.resolve(__dirname, '../../secret');
+
+// Handle SECRET_DIR: if set, use it (resolve if relative), otherwise use default
+let secretDir = process.env.SECRETS_PATH;
+if (secretDir) {
+  // If provided, resolve to absolute path (handles both absolute and relative)
+  secretDir = path.isAbsolute(secretDir) ? secretDir : path.resolve(__dirname, secretDir);
+  logger.info(`SECRET_DIR is set to: ${secretDir}`);
+} else {
+  // Use default path
+  secretDir = defaultSecretDir;
+  logger.info(`SECRET_DIR is set to default: ${secretDir}`);
+}
+
 module.exports = {
   // Server configuration
   NODE_ENV: process.env.NODE_ENV,
@@ -49,6 +67,9 @@ module.exports = {
 
   // File upload configuration
   UPLOADS_DIR: uploadsDir,
+
+  // Secret directory configuration
+  SECRET_DIR: secretDir,
 
   // Helper functions
   isProduction,

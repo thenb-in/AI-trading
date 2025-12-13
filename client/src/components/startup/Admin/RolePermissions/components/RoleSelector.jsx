@@ -1,7 +1,7 @@
 import { Shield } from 'lucide-react';
 import PropTypes from 'prop-types';
 
-export function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
+function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
   return (
     <div className="mb-3">
       <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -39,3 +39,5 @@ RoleSelector.propTypes = {
   onSelect: PropTypes.func.isRequired,
   loading: PropTypes.bool,
 };
+
+export { RoleSelector };

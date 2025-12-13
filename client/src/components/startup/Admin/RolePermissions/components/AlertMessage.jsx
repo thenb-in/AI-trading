@@ -1,7 +1,7 @@
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import PropTypes from 'prop-types';
 
-export function AlertMessage({ type = 'info', message, onDismiss }) {
+function AlertMessage({ type = 'info', message, onDismiss }) {
   const icons = {
     success: CheckCircle,
     error: AlertCircle,
@@ -44,3 +44,4 @@ AlertMessage.propTypes = {
   onDismiss: PropTypes.func,
 };
 
+export { AlertMessage };

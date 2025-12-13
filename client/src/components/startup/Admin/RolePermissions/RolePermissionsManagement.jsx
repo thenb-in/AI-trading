@@ -4,8 +4,10 @@ import { RoleSelector } from './components/RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
 import { organizePermissions } from './utils/permissionUtils';
+import { useDataContext } from '../../../../context/startup/useDataContext';
 
-export function RolePermissionsManagement() {
+function RolePermissionsManagement() {
+  const { userData } = useDataContext();
   const {
     roles,
     permissions,
@@ -17,6 +19,7 @@ export function RolePermissionsManagement() {
     setSelectedRoleId,
     togglePermission,
     toggleMultiplePermissions,
+    deletePermission,
   } = useRolePermissions();
 
   const organizedPermissions = organizePermissions(permissions);
@@ -117,6 +120,8 @@ export function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              onDeletePermission={deletePermission}
+              userData={userData}
               updating={updating}
             />
           )}
@@ -153,3 +158,4 @@ export function RolePermissionsManagement() {
   );
 }
 
+export { RolePermissionsManagement };

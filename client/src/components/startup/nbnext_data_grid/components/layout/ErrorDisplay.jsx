@@ -8,7 +8,7 @@ function ErrorDisplay({ error }) {
   if (!error) return null;
 
   return (
-    <div className="px-3 py-2 mb-3 bg-red-100 border border-red-300 rounded-md text-red-800 text-xs">
+    <div className="bg-red-100 border border-red-300 rounded text-red-800 text-xs py-2 px-4 mb-4">
       {error}
     </div>
   );

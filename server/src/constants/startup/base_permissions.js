@@ -37,12 +37,22 @@ const MODULE_PERMISSION_CONSTANTS = {
 };
 
 
+
+// Helper function to format display names: converts "gate_pass" to "Gate Pass"
+const formatDisplayName = (text) => {
+  return text
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const create_report_permission = (report) => {
   report = report.toLowerCase();
+  const formattedReport = formatDisplayName(report);
   return {
     name: `read_${report}`,
-    display_name: `Read ${report}`,
-    description: `Permission to read ${report}`
+    display_name: `Read ${formattedReport}`,
+    description: `Permission to read ${formattedReport}`
   };
 };
 
@@ -55,38 +65,39 @@ const REPORT_PERMISSION_CONSTANTS = {
 
 const create_master_permission = (master, approval_required = false) => {
   master = master.toLowerCase();
+  const formattedMaster = formatDisplayName(master);
   const permissions = {
     create: {
       name: `create_${master}`,
-      display_name: `Create ${master}`,
-      description: `Permission to create ${master}`
+      display_name: `Create ${formattedMaster}`,
+      description: `Permission to create ${formattedMaster}`
     },
     read: {
       name: `read_${master}`,
-      display_name: `Read ${master}`,
-      description: `Permission to read ${master}`
+      display_name: `Read ${formattedMaster}`,
+      description: `Permission to read ${formattedMaster}`
     },
     update: {
       name: `update_${master}`,
-      display_name: `Update ${master}`,
-      description: `Permission to update ${master}`
+      display_name: `Update ${formattedMaster}`,
+      description: `Permission to update ${formattedMaster}`
     },
     delete: {
       name: `delete_${master}`,
-      display_name: `Delete ${master}`,
-      description: `Permission to delete ${master}`
+      display_name: `Delete ${formattedMaster}`,
+      description: `Permission to delete ${formattedMaster}`
     }
   };
   if (approval_required) {
     permissions.approve = {
       name: `approve_${master}`,
-      display_name: `Approve ${master}`,
-      description: `Permission to approve ${master}`
+      display_name: `Approve ${formattedMaster}`,
+      description: `Permission to approve ${formattedMaster}`
     };
     permissions.reject = {
       name: `reject_${master}`,
-      display_name: `Reject ${master}`,
-      description: `Permission to reject ${master}`
+      display_name: `Reject ${formattedMaster}`,
+      description: `Permission to reject ${formattedMaster}`
     };
   }
   return permissions;
@@ -165,7 +176,6 @@ const MASTER_PERMISSION_CONSTANTS = {
     }
   }
 };
-
 
 module.exports = {
   MODULE_PERMISSION_CONSTANTS,

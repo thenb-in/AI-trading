@@ -237,6 +237,30 @@ const addPermissionToRole = async (roleId, permissionIds) => {
   }
 };
 
+const deletePermission = async (permissionId) => {
+  try {
+    // Check if permission exists
+    const permission = await Permission.findByPk(permissionId);
+    if (!permission) {
+      throw { status: 404, message: `Permission with id ${permissionId} not found` };
+    }
+
+    // Delete the permission (cascade will handle role-permission mappings due to onDelete: 'CASCADE')
+    await permission.destroy();
+
+    logger.info(`Permission deleted successfully: ${permissionId} - ${permission.name}`);
+    return { message: `Permission "${permission.name}" deleted successfully` };
+  } catch (error) {
+    if (error.status) {
+      throw error;
+    }
+    throw {
+      status: 500,
+      message: error.message || `Error deleting permission with id ${permissionId}`
+    };
+  }
+};
+
 module.exports = {
   createRole,
   createPermission,
@@ -244,5 +268,6 @@ module.exports = {
   getRolesAndPermissions,
   getAllPermissions,
   removePermissionFromRole,
-  addPermissionToRole
+  addPermissionToRole,
+  deletePermission
 };

@@ -5,7 +5,7 @@ const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const logger = require('../../../logger');
 const env = require('../../config/env');
 const userService = require('../../services/startup/userService');
-const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 
 const signupValidation = [
   body('phone').isMobilePhone().withMessage(`Invalid phone number for signup ${body('phone').value}.`),
@@ -124,7 +124,7 @@ const resetPassword = async (req, res) => {
 };
 
 const approveUser = async (req, res) => {
-  const requiredPermission = MODULE_PERMISSION_CONSTANTS.APPROVE_USER.name;
+  const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.approve.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(404).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -170,7 +170,7 @@ const logout = async (req, res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.clearCookie('isLoggedIn');
-    res.status(200).json({ message: `User logged out successfully ${req.user.username}` });
+    res.status(200).json({ message: `User logged out successfully  ${req.user.id}` });
   } catch (error) {
     logger.error('Logout error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });

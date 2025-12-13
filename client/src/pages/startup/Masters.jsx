@@ -195,7 +195,11 @@ const MasterContent = () => {
                     permission = `read_${master.title.toLowerCase().replace(/ /g, "_")}`;
                   }
                 }
-                const hasMasterPermission = hasPermission(permission, dataContext);
+                // Skip permission check if skipPermissionCheck is true
+                const hasMasterPermission = master.skipPermissionCheck || hasPermission(permission, dataContext);
+                if (!hasMasterPermission && !master.skipPermissionCheck) {
+                  console.log(`No permission for ${permission}`, master);
+                }
                 return (
                   <Grid
                     item

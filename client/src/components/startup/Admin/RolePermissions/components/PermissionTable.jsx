@@ -7,7 +7,7 @@ import {
   isPermissionAssigned,
 } from '../utils/permissionUtils';
 
-export function PermissionTable({
+function PermissionTable({
   groups,
   selectedRole,
   onTogglePermission,
@@ -280,3 +280,4 @@ PermissionTable.propTypes = {
   groupByOperation: PropTypes.oneOf(['master', 'report']).isRequired,
 };
 
+export { PermissionTable };
