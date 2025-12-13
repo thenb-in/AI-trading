@@ -23,13 +23,16 @@ fi
 
 
 # Prompt user for GitHub Token securely
-read -s -p "Enter your GitHub Token for $GITHUB_OWNER/$GITHUB_REPO: " GITHUB_TOKEN
+read -p "Enter your GitHub Token for $GITHUB_OWNER/$GITHUB_REPO: " GITHUB_TOKEN
 echo ""
 
 # Fetch the latest successful workflow run ID
-LATEST_RUN_ID=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=success&per_page=1" | \
-    jq -r '.workflow_runs[0].id')
+LATEST_RUN_ID=$(
+  curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=success&branch=main&per_page=50" \
+  | jq -r '.workflow_runs[] | select(.name=="Build and Upload Artifact") | .id' \
+  | head -n1
+)
 
 # Check if a run was found
 if [[ "$LATEST_RUN_ID" == "null" ]]; then
@@ -56,12 +59,14 @@ echo "Downloading latest artifact..."
 curl -L -H "Authorization: token $GITHUB_TOKEN" -o artifact.zip "$ARTIFACT_URL"
 
 # Extract the artifact
-# try to remove build directory if it exists
+# try to remove dist directory if it exists
 if [ -d "dist" ]; then
+    echo "Removing existing dist directory..."
     sudo rm -rf dist
 fi
 # try to remove /app/$REPO_NAME directory if it exists
 if [ -d "/app/$REPO_NAME" ]; then
+    echo "Removing existing app directory..."
     sudo rm -rf /app/$REPO_NAME
 fi
 
