@@ -3,7 +3,7 @@ import { Layers, FileText, Database, Loader2, AlertTriangle, Trash2 } from 'luci
 import PropTypes from 'prop-types';
 import { isPermissionAssigned } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
-import { hasPermission } from '../../../../../utils/hasPermission';
+import { hasPermission } from '@utils/startup/hasPermission';
 
 const categoryIcons = {
   module: Layers,

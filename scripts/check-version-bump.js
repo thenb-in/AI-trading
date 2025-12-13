@@ -17,7 +17,7 @@ function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
-function parseVersion(version) {
+function _parseVersion(version) {
   const parts = version.split('.').map(Number);
   return {
     major: parts[0] || 0,
@@ -26,9 +26,9 @@ function parseVersion(version) {
   };
 }
 
-function compareVersions(v1, v2) {
-  const parsed1 = parseVersion(v1);
-  const parsed2 = parseVersion(v2);
+function _compareVersions(v1, v2) {
+  const parsed1 = _parseVersion(v1);
+  const parsed2 = _parseVersion(v2);
   
   if (parsed1.major !== parsed2.major) {
     return parsed1.major - parsed2.major;
@@ -45,6 +45,67 @@ function getCurrentVersion(packageJsonPath) {
     : path.join(process.cwd(), packageJsonPath);
   const packageJson = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
   return packageJson.version;
+}
+
+function logDebugInfo(packageJsonPath, currentVersion, remoteVersion, remoteBranch) {
+  log('', 'reset');
+  log('🔍 DEBUG INFO:', 'yellow');
+  log('─'.repeat(50), 'yellow');
+  
+  // Parse versions for detailed comparison
+  const currentParsed = _parseVersion(currentVersion);
+  const remoteParsed = _parseVersion(remoteVersion);
+  
+  log(`Local Version (${packageJsonPath}):`, 'blue');
+  log(`  Raw: ${currentVersion}`, 'reset');
+  log(`  Parsed: Major=${currentParsed.major}, Minor=${currentParsed.minor}, Patch=${currentParsed.patch}`, 'reset');
+  
+  log('', 'reset');
+  log(`Remote Version (${remoteBranch}):`, 'blue');
+  log(`  Raw: ${remoteVersion}`, 'reset');
+  log(`  Parsed: Major=${remoteParsed.major}, Minor=${remoteParsed.minor}, Patch=${remoteParsed.patch}`, 'reset');
+  
+  log('', 'reset');
+  log('Comparison:', 'blue');
+  log(`  Major: ${currentParsed.major} vs ${remoteParsed.major} ${currentParsed.major === remoteParsed.major ? '✓' : '✗'}`, 'reset');
+  log(`  Minor: ${currentParsed.minor} vs ${remoteParsed.minor} ${currentParsed.minor === remoteParsed.minor ? '✓' : '✗'}`, 'reset');
+  log(`  Patch: ${currentParsed.patch} vs ${remoteParsed.patch} ${currentParsed.patch === remoteParsed.patch ? '✓' : '✗'}`, 'reset');
+  
+  try {
+    // Try to show actual file contents for deeper debugging
+    const fullPath = path.isAbsolute(packageJsonPath)
+      ? packageJsonPath
+      : path.join(process.cwd(), packageJsonPath);
+    
+    const localContent = fs.readFileSync(fullPath, 'utf8');
+    const localJson = JSON.parse(localContent);
+    
+    const gitPath = path.isAbsolute(packageJsonPath)
+      ? path.relative(process.cwd(), packageJsonPath)
+      : packageJsonPath;
+    
+    const remoteContent = execSync(
+      `git show ${remoteBranch}:${gitPath}`,
+      { encoding: 'utf8', cwd: process.cwd() }
+    );
+    const remoteJson = JSON.parse(remoteContent);
+    
+    log('', 'reset');
+    log('Full Local package.json:', 'blue');
+    log(JSON.stringify({ name: localJson.name, version: localJson.version }, null, 2), 'reset');
+    
+    log('', 'reset');
+    log('Full Remote package.json:', 'blue');
+    log(JSON.stringify({ name: remoteJson.name, version: remoteJson.version }, null, 2), 'reset');
+    
+  } catch (error) {
+    log('', 'reset');
+    log('⚠️  Could not retrieve full file contents for debugging', 'yellow');
+    log(`   Error: ${error.message}`, 'yellow');
+  }
+  
+  log('─'.repeat(50), 'yellow');
+  log('', 'reset');
 }
 
 function getRemoteVersion(packageJsonPath, branch = 'origin/main') {
@@ -113,7 +174,7 @@ function checkSingleVersion(packageJsonPath, packageName) {
   
   log(`📦 ${packageName}: Current: ${currentVersion}, Remote: ${remoteVersion}`, 'blue');
   
-  const comparison = compareVersions(currentVersion, remoteVersion);
+  const comparison = _compareVersions(currentVersion, remoteVersion);
   
   if (comparison > 0) {
     log(`✅ ${packageName}: Version has been bumped!`, 'green');
@@ -122,10 +183,12 @@ function checkSingleVersion(packageJsonPath, packageName) {
     log(`❌ ${packageName}: Version has not been changed!`, 'red');
     log(`💡 Please bump the version in ${packageJsonPath} before pushing.`, 'yellow');
     log('   Example: cd client && npm version patch|minor|major', 'yellow');
+    logDebugInfo(packageJsonPath, currentVersion, remoteVersion, remoteBranch);
     return false;
   } else {
     log(`❌ ${packageName}: Version has been decreased!`, 'red');
     log(`💡 Version should only increase. Please bump the version in ${packageJsonPath}.`, 'yellow');
+    logDebugInfo(packageJsonPath, currentVersion, remoteVersion, remoteBranch);
     return false;
   }
 }
@@ -139,35 +202,20 @@ function checkVersionBump() {
     
     // First, check if base package.json has changes and if its version is bumped
     const basePath = 'package.json';
-    let baseHasChanges = false;
-    try {
-      const diffOutput = execSync(`git diff --name-only ${remoteBranch} HEAD -- ${basePath}`, 
-                                   { encoding: 'utf8', cwd: process.cwd(), stdio: 'pipe' }).trim();
-      baseHasChanges = diffOutput.length > 0;
-    } catch (error) {
-      // If git diff fails, assume no changes
-      baseHasChanges = false;
-    }
+    // check if package.json has changes as compared to remote branch
+    log('📦 Checking Base Package Version (package.json has changes):', 'blue');
+    const baseVersionBumped = checkSingleVersion(basePath, 'Base Package');
+    log('', 'reset');
     
-    if (baseHasChanges) {
-      log('📦 Checking Base Package Version (package.json has changes):', 'blue');
-      const baseVersionBumped = checkSingleVersion(basePath, 'Base Package');
-      log('', 'reset');
-      
-      // If base version is bumped, skip individual client/server checks
-      if (baseVersionBumped) {
-        log('✅ Base package version has been bumped. Skipping individual client/server checks.', 'green');
-        return true;
-      }
-      
-      // If base has changes but version is not bumped, continue with individual checks
-      log('📦 Base package version not bumped. Checking client/server individually...', 'blue');
-      log('', 'reset');
+    // If base version is bumped, skip individual client/server checks
+    if (baseVersionBumped) {
+      log('✅ Base package version has been bumped. Skipping individual client/server checks.', 'green');
+      return true;
     } else {
       log('📦 Base package.json: No changes detected, proceeding with client/server checks', 'blue');
       log('', 'reset');
     }
-    
+
     let clientOk = true;
     let serverOk = true;
     let clientChecked = false;
@@ -226,5 +274,5 @@ if (require.main === module) {
   process.exit(success ? 0 : 1);
 }
 
-module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion, hasFolderChanges };
+module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion, hasFolderChanges, hasFileChanges };
 

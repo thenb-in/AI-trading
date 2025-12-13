@@ -1,34 +1,28 @@
+
+const create_module_permission = (module, displayName) => {
+  const moduleKey = module.toLowerCase().replace(/-/g, '_');
+  const formattedDisplayName = displayName || module.split('-').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+  return {
+    name: `view_${moduleKey}_module`,
+    display_name: `View ${formattedDisplayName} Module`,
+    description: `Permission to view ${formattedDisplayName.toLowerCase()} module`
+  };
+};
+
+
 const MODULE_PERMISSION_CONSTANTS = {
-  VIEW_REPORT_MODULE: {
-    name: 'view_report_module',
-    display_name: 'View Reports Module',
-    description: 'Permission to view reports module'
-  },
-  VIEW_USER_MODULE: {
-    name: 'view_user_module',
-    display_name: 'View User Module',
-    description: 'Permission to view user module'
-  },
+  VIEW_REPORT_MODULE: create_module_permission('report', 'Reports'),
+  VIEW_USER_MODULE: create_module_permission('user', 'User'),
   VIEW_COMPANY_SETTINGS: {
     name: 'view_company_settings',
     display_name: 'View Company Settings',
     description: 'Permission to view company settings'
   },
-  VIEW_MASTER_MODULE: {
-    name: 'view_master_module',
-    display_name: 'View Masters Module',
-    description: 'Permission to view masters module'
-  },
-  VIEW_DASHBOARD_MODULE: {
-    name: 'view_dashboard_module',
-    display_name: 'View Dashboards Module',
-    description: 'Permission to view dashboards module'
-  },
-  VIEW_ROLE_PERMISSION_MODULE: {
-    name: 'view_role_permission_module',
-    display_name: 'View Role Permission Module',
-    description: 'Permission to view role permission module'
-  }
+  VIEW_MASTER_MODULE: create_module_permission('master', 'Masters'),
+  VIEW_DASHBOARD_MODULE: create_module_permission('dashboard', 'Dashboards'),
+  VIEW_ROLE_PERMISSION_MODULE: create_module_permission('role_permission', 'Role Permission')
   // IS_ADMIN: {
   //   name: 'is_admin',
   //   display_name: 'isAdmin',
