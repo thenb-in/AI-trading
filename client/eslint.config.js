@@ -48,6 +48,9 @@ export default [
       'custom/named-exports-only': ['error', { 
         excludePatterns: ['eslint-rules', 'scripts']
       }],
+      'custom/bottom-exports-only': ['error', {
+        excludePatterns: ['eslint-rules', 'scripts']
+      }],
     },
   },
 
