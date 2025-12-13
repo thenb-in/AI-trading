@@ -65,5 +65,17 @@ export default ({ mode }) => {
         },
       },
     ],
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'mui-vendor': ['@mui/material', '@mui/icons-material', '@mui/x-data-grid', '@mui/x-date-pickers'],
+            'chart-vendor': ['chart.js', 'react-chartjs-2'],
+          },
+        },
+      },
+    },
   });
 };
