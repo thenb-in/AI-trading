@@ -1,12 +1,15 @@
-import { Shield, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, Loader2, Plus, Globe, Building2 } from 'lucide-react';
 import { useRolePermissions } from './hooks/useRolePermissions';
 import { RoleSelector } from './components/RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
+import { CreateRoleModal } from './components/CreateRoleModal';
 import { organizePermissions } from './utils/permissionUtils';
 import { useDataContext } from '../../../../context/startup/useDataContext';
-
+  
 function RolePermissionsManagement() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { userData } = useDataContext();
   const {
     roles,
@@ -19,10 +22,15 @@ function RolePermissionsManagement() {
     setSelectedRoleId,
     togglePermission,
     toggleMultiplePermissions,
+    refetch,
     deletePermission,
   } = useRolePermissions();
 
   const organizedPermissions = organizePermissions(permissions);
+
+  const handleRoleCreated = () => {
+    refetch();
+  };
 
   if (loading) {
     return (
@@ -38,9 +46,18 @@ function RolePermissionsManagement() {
   return (
     <div className="p-3 max-w-7xl mx-auto">
       <div className="mb-3">
-        <div className="flex items-center gap-2 mb-1">
-          <Shield className="w-5 h-5 text-blue-600" />
-          <h1 className="text-xl font-bold text-gray-900">Roles & Permissions</h1>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            <h1 className="text-xl font-bold text-gray-900">Roles & Permissions</h1>
+          </div>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Create Role
+          </button>
         </div>
         <p className="text-xs text-gray-600">
           Manage role permissions by selecting a role and toggling permissions below.
@@ -63,6 +80,30 @@ function RolePermissionsManagement() {
         onSelect={setSelectedRoleId}
         loading={loading}
       />
+      
+      {selectedRole && (
+        <div className="mb-3 flex items-center gap-2 text-xs">
+          {selectedRole.isGlobal ? (
+            <>
+              <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                <Globe className="w-3 h-3" />
+                Global Role
+              </span>
+              {!userData?.isSadmin && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded border border-orange-200">
+                  <Shield className="w-3 h-3" />
+                  Read-Only (Default Roles)
+                </span>
+              )}
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded">
+              <Building2 className="w-3 h-3" />
+              Company-Specific Role
+            </span>
+          )}
+        </div>
+      )}
 
       {!selectedRoleId ? (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-center">
@@ -81,6 +122,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              userData={userData}
               updating={updating}
             />
           )}
@@ -94,6 +136,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              userData={userData}
               updating={updating}
             />
           )}
@@ -107,6 +150,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              userData={userData}
               updating={updating}
             />
           )}
@@ -154,6 +198,12 @@ function RolePermissionsManagement() {
           </div>
         </div>
       )}
+
+      <CreateRoleModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleRoleCreated}
+      />
     </div>
   );
 }

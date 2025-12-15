@@ -1,6 +1,6 @@
 const db = require('../../models');
 const { User, Company, Role, UserProfile } = require('../../models');
-
+const { Op } = require('sequelize');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -72,8 +72,15 @@ const getAllUsers = async (companyId) => {
     order: [['last_active', 'DESC']]
   });
 
-  // Fetch all roles separately
+  // Fetch all roles separately - get global roles (companyId is null) and company-specific roles
+
   const roles = await Role.findAll({
+    where: {
+      [Op.or]: [
+        { companyId: null }, // Global roles
+        { companyId: companyId } // Company-specific roles
+      ]
+    },
     attributes: ['id', 'name'],
     order: [['name', 'ASC']]
   });

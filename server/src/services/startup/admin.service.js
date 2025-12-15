@@ -1,12 +1,19 @@
 const { Role, Permission, User, Company } = require('../../models');
 const logger = require('../../../logger');
+const { Op } = require('sequelize');
 
-const checkRoleExists = async (name) => {
-  const existingRole = await Role.findOne({ where: { name: name.trim() } });
+const checkRoleExists = async (name, companyId = null) => {
+  const whereClause = { name: name.trim() };
+  if (companyId) {
+    whereClause.companyId = companyId;
+  } else {
+    whereClause.companyId = null;
+  }
+  const existingRole = await Role.findOne({ where: whereClause });
   return existingRole;
 };
 
-const createRole = async (name, description) => {
+const createRole = async (name, description, companyId = null) => {
   // Input validation
   if (!name || typeof name !== 'string') {
     throw new Error(`Role name is required and must be a string ${name}.`);
@@ -48,17 +55,20 @@ const createRole = async (name, description) => {
   }
 
   // Check for duplicate
-  const existingRole = await checkRoleExists(trimmedName);
+  const existingRole = await checkRoleExists(trimmedName, companyId);
   if (existingRole) {
-    throw new Error(`Role with name already exists ${trimmedName}.`);
+    const roleType = companyId ? 'company-specific' : 'global';
+    throw new Error(`Role with name "${trimmedName}" already exists as a ${roleType} role`);
   }
 
   // Create the role
   const newRole = await Role.create({
     name: trimmedName,
-    description: trimmedDescription
+    description: trimmedDescription,
+    companyId: companyId
   });
 
+  logger.info(`Created role "${trimmedName}" with companyId: ${companyId || 'null (global)'}`);
   return newRole;
 };
 
@@ -150,9 +160,18 @@ const fetchAllUsers = async () => {
   }
 };
 
-const getRolesAndPermissions = async () => {
+const getRolesAndPermissions = async (companyId) => {
   try {
+    // All users see global roles (default roles) + company-specific roles
+    const whereClause = {
+      [Op.or]: [
+        { companyId: null }, // Global/default roles (visible to all users)
+        { companyId: companyId } // Company-specific roles
+      ]
+    };
+
     const roles = await Role.findAll({
+      where: whereClause,
       include: {
         model: Permission,
         as: 'permissions',
@@ -161,7 +180,12 @@ const getRolesAndPermissions = async () => {
       },
       order: [['name', 'ASC']]
     });
-    return roles;
+
+    // Add isGlobal flag to each role for frontend
+    return roles.map(role => ({
+      ...role.toJSON(),
+      isGlobal: role.companyId === null
+    }));
   } catch (error) {
     throw { status: 500, message: error.message };
   }
@@ -179,12 +203,22 @@ const getAllPermissions = async () => {
   }
 };
 
-const removePermissionFromRole = async (roleId, permissionId) => {
+const removePermissionFromRole = async (roleId, permissionId, userId) => {
   try {
     const role = await Role.findByPk(roleId);
     if (!role) {
       throw { status: 404, message: `Role with id ${roleId} not found` };
     }
+
+    // Check if role is a default/global role (companyId is null)
+    if (role.companyId === null) {
+      // Only superadmins can modify default roles
+      const user = await User.findByPk(userId, { attributes: ['isSadmin'] });
+      if (!user || !user.isSadmin) {
+        throw { status: 403, message: 'Only superadmins can modify default system roles' };
+      }
+    }
+
     const permission = await Permission.findByPk(permissionId);
     if (!permission) {
       throw { status: 404, message: `Permission with id ${permissionId} not found` };
@@ -192,11 +226,11 @@ const removePermissionFromRole = async (roleId, permissionId) => {
     await role.removePermission(permission);
     return { message: 'Permission removed from role successfully' };
   } catch (error) {
-    throw { status: 500, message: error.message };
+    throw { status: error.status || 500, message: error.message };
   }
 };
 
-const addPermissionToRole = async (roleId, permissionIds) => {
+const addPermissionToRole = async (roleId, permissionIds, userId) => {
   try {
     // Ensure permissionIds is an array
     const permissionIdArray = Array.isArray(permissionIds) ? permissionIds : [permissionIds];
@@ -204,6 +238,15 @@ const addPermissionToRole = async (roleId, permissionIds) => {
     const role = await Role.findByPk(roleId);
     if (!role) {
       throw { status: 404, message: `Role with id ${roleId} not found` };
+    }
+
+    // Check if role is a default/global role (companyId is null)
+    if (role.companyId === null) {
+      // Only superadmins can modify default roles
+      const user = await User.findByPk(userId, { attributes: ['isSadmin'] });
+      if (!user || !user.isSadmin) {
+        throw { status: 403, message: 'Only superadmins can modify default system roles' };
+      }
     }
 
     // Find all permissions at once

@@ -14,7 +14,11 @@ function PermissionTable({
   onToggleOperation,
   updating,
   groupByOperation,
+  userData,
 }) {
+  // Check if the role is read-only (default role and user is not superadmin)
+  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSadmin;
+
   const groupFunction = groupByOperation === 'master' 
     ? groupMasterPermissionsByOperation 
     : groupReportPermissionsByOperation;
@@ -144,9 +148,9 @@ function PermissionTable({
                                   type="checkbox"
                                   checked={assigned}
                                   onChange={() => onTogglePermission(permission.id, assigned)}
-                                  disabled={updating || !selectedRole}
+                                  disabled={updating || !selectedRole || isRoleReadOnly}
                                   className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
-                                  title={tooltipText}
+                                  title={isRoleReadOnly ? `${tooltipText} (Read-only: Only superadmins can modify default roles)` : tooltipText}
                                 />
                                 {isLinked && (
                                   <Link2 
@@ -160,9 +164,9 @@ function PermissionTable({
                           {operationPermissions.length > 1 && (
                             <button
                               onClick={() => handleOperationToggle(operationPermissions, allOperationAssigned)}
-                              disabled={updating || !selectedRole}
+                              disabled={updating || !selectedRole || isRoleReadOnly}
                               className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 ml-1"
-                              title={allOperationAssigned ? 'Deselect all' : 'Select all'}
+                              title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allOperationAssigned ? 'Deselect all' : 'Select all')}
                             >
                               {updating ? (
                                 <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -183,9 +187,9 @@ function PermissionTable({
                 <td className="p-1 text-center">
                   <button
                     onClick={() => handleGroupToggle(groupPermissions, allGroupAssigned)}
-                    disabled={updating || !selectedRole}
+                    disabled={updating || !selectedRole || isRoleReadOnly}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                    title={allGroupAssigned ? 'Deselect all' : 'Select all'}
+                    title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allGroupAssigned ? 'Deselect all' : 'Select all')}
                   >
                     {updating ? (
                       <Loader2 className="w-3 h-3 animate-spin mx-auto" />
@@ -222,9 +226,9 @@ function PermissionTable({
                   {allOperationPerms.length > 0 ? (
                     <button
                       onClick={() => handleFooterOperationToggle(allOperationPerms, allAssigned)}
-                      disabled={updating || !selectedRole}
+                      disabled={updating || !selectedRole || isRoleReadOnly}
                       className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                      title={allAssigned ? 'Deselect all' : 'Select all'}
+                      title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allAssigned ? 'Deselect all' : 'Select all')}
                     >
                       {updating ? (
                         <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
@@ -249,9 +253,9 @@ function PermissionTable({
                 return (
                   <button
                     onClick={() => handleFooterAllToggle(allPerms, allAssigned)}
-                    disabled={updating || !selectedRole}
+                    disabled={updating || !selectedRole || isRoleReadOnly}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                    title={allAssigned ? 'Deselect all' : 'Select all'}
+                    title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allAssigned ? 'Deselect all' : 'Select all')}
                   >
                     {updating ? (
                       <Loader2 className="w-3 h-3 animate-spin mx-auto" />
@@ -278,6 +282,7 @@ PermissionTable.propTypes = {
   onToggleOperation: PropTypes.func.isRequired,
   updating: PropTypes.bool,
   groupByOperation: PropTypes.oneOf(['master', 'report']).isRequired,
+  userData: PropTypes.object,
 };
 
 export { PermissionTable };

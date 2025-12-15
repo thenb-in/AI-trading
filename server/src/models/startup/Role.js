@@ -10,7 +10,6 @@ module.exports = (sequelize) => {
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: {
         notEmpty: true
       }
@@ -18,15 +17,31 @@ module.exports = (sequelize) => {
     description: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    companyId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'nbnext_company',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     }
   }, {
-    tableName: 'nbnext_roles'
+    tableName: 'nbnext_roles',
+    indexes: [
+      {
+        unique: true,
+        fields: ['name', 'company_id']
+      }
+    ]
   });
 
   Role.associate = (models) => {
     // A Role can have many Users
     Role.hasMany(models.User, {
-      foreignKey: 'roleId',
+      foreignKey: 'role_id',
       as: 'users'
     });
 
@@ -34,7 +49,15 @@ module.exports = (sequelize) => {
     Role.belongsToMany(models.Permission, {
       through: 'nbnext_role_permission_mapping',
       as: 'permissions',
-      foreignKey: 'roleId'
+      foreignKey: 'role_id'
+    });
+
+    // A Role belongs to a Company (optional)
+    Role.belongsTo(models.Company, {
+      foreignKey: 'company_id',
+      as: 'company',
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     });
   };
 

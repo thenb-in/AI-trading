@@ -72,17 +72,17 @@ module.exports = (sequelize, DataTypes) => {
 
   User.associate = (models) => {
     User.belongsTo(models.Company, {
-      foreignKey: 'companyId',
+      foreignKey: 'company_id',
       as: 'company',
       onUpdate: 'CASCADE',
       onDelete: 'RESTRICT'
     });
 
-    User.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
+    User.belongsTo(models.Role, { foreignKey: 'role_id', as: 'role' });
 
     // Data access configuration per user (same company scope)
-    User.hasOne(models.UserProfile, { foreignKey: 'userId', as: 'userProfile' });
-    User.hasMany(models.Layout, { foreignKey: 'userId', as: 'layouts' });
+    User.hasOne(models.UserProfile, { foreignKey: 'user_id', as: 'userProfile' });
+    User.hasMany(models.Layout, { foreignKey: 'user_id', as: 'layouts' });
   };
 
   return User;

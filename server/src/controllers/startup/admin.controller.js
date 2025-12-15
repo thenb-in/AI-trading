@@ -1,5 +1,4 @@
 const adminService = require('../../services/startup/admin.service');
-const _allowedPermissions = require('../../utils/startup/allowedPermissions');
 const logger = require('../../../logger');
 
 
@@ -10,10 +9,13 @@ const createRole = async (req, res) => {
   // }
   try {
     const { name, description } = req.body;
-    const newRole = await adminService.createRole(name, description);
+    const companyId = req.user.company_id;
+
+    // All roles created from frontend are company-specific
+    const newRole = await adminService.createRole(name, description, companyId);
     res.json({
       success: true,
-      message: `Role "${newRole.name}" created successfully!`,
+      message: `Role "${newRole.name}" created successfully for your company!`,
       data: newRole
     });
   } catch (error) {
@@ -58,14 +60,16 @@ const addPermissionToRole = async (req, res) => {
   // }
   try {
     const { roleId, permissionIds } = req.body;
-    await adminService.addPermissionToRole(roleId, permissionIds);
+    const userId = req.user.id;
+    await adminService.addPermissionToRole(roleId, permissionIds, userId);
     res.json({
       success: true,
       message: `${permissionIds.length} Permissions added successfully!`
     });
   } catch (error) {
     logger.error('Error adding permission to role', error);
-    res.status(400).json({
+    const statusCode = error.status || 400;
+    res.status(statusCode).json({
       success: false,
       message: error.message
     });
@@ -79,14 +83,16 @@ const removePermissionFromRole = async (req, res) => {
   // }
   try {
     const { roleId, permissionId } = req.body;
-    const result = await adminService.removePermissionFromRole(roleId, permissionId);
+    const userId = req.user.id;
+    const result = await adminService.removePermissionFromRole(roleId, permissionId, userId);
     res.json({
       success: true,
       message: `${result.message}`
     });
   } catch (error) {
     logger.error('Error removing permission from role', error);
-    res.status(400).json({
+    const statusCode = error.status || 400;
+    res.status(statusCode).json({
       success: false,
       message: error.message
     });
@@ -97,7 +103,8 @@ const removePermissionFromRole = async (req, res) => {
 // New API endpoints for React components
 const getRoles = async (req, res) => {
   try {
-    const roles = await adminService.getRolesAndPermissions();
+    const companyId = req.user.company_id;
+    const roles = await adminService.getRolesAndPermissions(companyId);
     res.json({
       success: true,
       data: roles

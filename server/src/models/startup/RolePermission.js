@@ -29,25 +29,25 @@ module.exports = (sequelize) => {
     indexes: [
       {
         unique: true,
-        fields: ['roleId', 'permissionId']
+        fields: ['role_id', 'permission_id']
       },
       {
-        fields: ['roleId']
+        fields: ['role_id']
       },
       {
-        fields: ['permissionId']
+        fields: ['permission_id']
       }
     ]
   });
 
   RolePermission.associate = (models) => {
     RolePermission.belongsTo(models.Role, {
-      foreignKey: 'roleId',
+      foreignKey: 'role_id',
       as: 'role'
     });
 
     RolePermission.belongsTo(models.Permission, {
-      foreignKey: 'permissionId',
+      foreignKey: 'permission_id',
       as: 'permission'
     });
   };

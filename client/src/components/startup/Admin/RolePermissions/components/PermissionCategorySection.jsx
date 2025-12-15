@@ -30,6 +30,8 @@ function PermissionCategorySection({
   userData,
   updating,
 }) {
+  // Check if the role is read-only (default role and user is not superadmin)
+  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSadmin;
 
   // Handler for individual permission toggle
   const handlePermissionToggle = useCallback((permissionId, isAssigned) => {
@@ -91,6 +93,7 @@ function PermissionCategorySection({
           onToggleOperation={onToggleOperation}
           updating={updating}
           groupByOperation={category}
+          userData={userData}
         />
       </div>
     );
@@ -123,8 +126,9 @@ function PermissionCategorySection({
             {permissions.length > 0 && (
               <button
                 onClick={handleCategoryToggle}
-                disabled={updating || !selectedRole}
+                disabled={updating || !selectedRole || isRoleReadOnly}
                 className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
               >
                 {updating ? (
                   <Loader2 className="w-3 h-3 animate-spin inline" />
@@ -164,9 +168,9 @@ function PermissionCategorySection({
                         type="checkbox"
                         checked={assigned}
                         onChange={() => handlePermissionToggle(permission.id, assigned)}
-                        disabled={updating || !selectedRole}
+                        disabled={updating || !selectedRole || isRoleReadOnly}
                         className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
-                        title={permission.display_name || permission.name}
+                        title={isRoleReadOnly ? `${permission.display_name || permission.name} (Read-only: Only superadmins can modify default roles)` : (permission.display_name || permission.name)}
                       />
                     </td>
                     <td className="p-1.5 text-gray-700 border-r border-gray-200 font-mono text-xs">{permission.id}</td>
@@ -219,8 +223,9 @@ function PermissionCategorySection({
           {permissions.length > 0 && (
             <button
               onClick={handleCategoryToggle}
-              disabled={updating || !selectedRole}
+              disabled={updating || !selectedRole || isRoleReadOnly}
               className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+              title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
             >
               {updating ? (
                 <Loader2 className="w-3 h-3 animate-spin inline" />
@@ -241,12 +246,13 @@ function PermissionCategorySection({
             <label
               key={permission.id}
               className="flex items-center gap-1 p-1 bg-white rounded border border-gray-200 hover:border-blue-300 cursor-pointer"
+              title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
             >
               <input
                 type="checkbox"
                 checked={assigned}
                 onChange={() => handlePermissionToggle(permission.id, assigned)}
-                disabled={updating || !selectedRole}
+                disabled={updating || !selectedRole || isRoleReadOnly}
                 className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
               />
               <span className="text-xs text-gray-700 truncate flex-1">

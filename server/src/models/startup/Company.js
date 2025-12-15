@@ -33,9 +33,9 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Company.associate = (models) => {
-    Company.hasMany(models.User, { foreignKey: 'companyId', as: 'users' });
-    Company.belongsTo(models.Role, { foreignKey: 'roleId', as: 'role' });
-    Company.hasOne(models.CompanyProfile, { foreignKey: 'companyId', as: 'companyProfile' });
+    Company.hasMany(models.User, { foreignKey: 'company_id', as: 'users' });
+    Company.belongsTo(models.Role, { foreignKey: 'role_id', as: 'role' });
+    Company.hasOne(models.CompanyProfile, { foreignKey: 'company_id', as: 'companyProfile' });
   };
 
   return Company;

@@ -25,10 +25,21 @@ function useRolePermissions() {
       setRoles(rolesData);
       setPermissions(permissionsData);
 
-      // Auto-select first role if none selected
-      if (!selectedRoleId && rolesData.length > 0) {
-        setSelectedRoleId(rolesData[0].id);
-      }
+      // Reset selected role if it's not in the new list, or auto-select first if none selected
+      setSelectedRoleId((prevSelectedRoleId) => {
+        // If previously selected role is not in new list, clear selection
+        if (prevSelectedRoleId && !rolesData.find(r => r.id === prevSelectedRoleId)) {
+          return null;
+        }
+        
+        // Auto-select first role if none selected
+        if (!prevSelectedRoleId && rolesData.length > 0) {
+          return rolesData[0].id;
+        }
+        
+        // Keep current selection
+        return prevSelectedRoleId;
+      });
     } catch (err) {
       const errorMessage = err?.message || 'Failed to fetch roles and permissions';
       setError(errorMessage);
@@ -36,7 +47,7 @@ function useRolePermissions() {
     } finally {
       setLoading(false);
     }
-  }, [selectedRoleId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
