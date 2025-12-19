@@ -199,6 +199,7 @@ const MasterContent = () => {
                 const hasMasterPermission = master.skipPermissionCheck || hasPermission(permission, dataContext);
                 if (!hasMasterPermission && !master.skipPermissionCheck) {
                   console.log(`No permission for ${permission}`, master);
+                  return null;
                 }
                 return (
                   <Grid
