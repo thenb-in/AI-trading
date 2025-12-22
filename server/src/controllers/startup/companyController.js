@@ -3,7 +3,7 @@ const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
-const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS ,MODULE_PERMISSION_CONSTANTS} = require('../../constants/permissions');
 const env = require('../../config/env');
 const { User } = require('../../models');
 
@@ -26,7 +26,7 @@ const companyController = {
 
   async updateCompanySettings(req, res) {
     try {
-      const requiredPermission = MODULE_PERMISSION_CONSTANTS.UPDATE_COMPANY_SETTINGS.name;
+      const requiredPermission = MASTER_PERMISSION_CONSTANTS.COMPANY.update.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -53,19 +53,24 @@ const companyController = {
 
   async createCompany(req, res) {
     try {
-      const requiredPermission = MODULE_PERMISSION_CONSTANTS.CREATE_COMPANY.name;
+      const requiredPermission = MASTER_PERMISSION_CONSTANTS.COMPANY.create.name;
       const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
       if (!hasPermission) {
         return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
       }
 
-      const { name, mobileApp, desktopWeb, mobileWeb } = req.body;
+      const { name, companyId, mobileApp, desktopWeb, mobileWeb } = req.body;
       if (!name) {
-        return res.status(400).json({ error: 'Name is required' });
+        return res.status(400).json({ error: `Company name is required get ${name}` });
       }
-
-      const company = await companyService.createCompanyAndLink({ name, mobileApp, desktopWeb, mobileWeb }, req.user.id);
-      return res.status(201).json(company);
+      if (!companyId) {
+        return res.status(400).json({ error: `Company ID is required get ${companyId}` });
+      }
+      const company = await companyService.createCompanyAndLink({ name, companyId, mobileApp, desktopWeb, mobileWeb }, req.user.id);
+      return res.status(201).json({
+        message: `Company "${company.name}" created successfully with ID "${companyId}"!`,
+        company
+      });
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }

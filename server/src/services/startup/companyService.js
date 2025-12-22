@@ -43,9 +43,21 @@ const companyService = {
   async createCompanyAndLink(data, userId) {
     const transaction = await Company.sequelize.transaction();
     try {
+      // Check if companyId already exists
+      if (data.companyId) {
+        const existingCompany = await Company.findOne({
+          where: { id: data.companyId },
+          transaction
+        });
+        if (existingCompany) {
+          throw new Error(`Company ID "${data.companyId}" is already taken. Please choose a different ID.`);
+        }
+      }
+
       const company = await Company.create(
         {
           name: data.name,
+          id: data.companyId,
           mobileApp: !!data.mobileApp,
           desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
           mobileWeb: !!data.mobileWeb

@@ -4,24 +4,29 @@ import { ToggleSwitch } from '../../ToggleSwitch';
 import { AlertMessage } from '../../RolePermissions/components/AlertMessage';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
+const sanitizeCompanyId = (value) => value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
 
 const CompanyCreateForm = ({ onCreate, creating, createError }) => {
-  const [form, setForm] = useState({ name: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
+  const [form, setForm] = useState({ name: '', companyId: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
   const [touched, setTouched] = useState(false);
 
-  const isValid = form.name.trim().length >= 2;
+  const isValid = form.name.trim().length >= 2 && form.companyId.trim().length >= 2;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched(true);
     if (!isValid) return;
     await onCreate(form);
-    setForm({ name: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
+    setForm({ name: '', companyId: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
     setTouched(false);
   };
 
   const handleNameChange = (e) => {
     setForm((f) => ({ ...f, name: sanitizeName(e.target.value) }));
+  };
+
+  const handleCompanyIdChange = (e) => {
+    setForm((f) => ({ ...f, companyId: sanitizeCompanyId(e.target.value) }));
   };
 
   const handleMobileAppChange = (e) => {
@@ -48,6 +53,20 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
       )}
 
       <form onSubmit={handleSubmit} className="grid gap-4">
+       <div>
+          <input
+            type="text"
+            placeholder="Company ID (unique identifier)"
+            value={form.companyId}
+            onChange={handleCompanyIdChange}
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              touched && !isValid ? 'border-red-300' : 'border-gray-300'
+            }`}
+          />
+          {touched && form.companyId.trim().length < 2 && (
+            <p className="text-xs text-red-600 mt-1">Company ID must be at least 2 characters (letters, numbers, underscores, hyphens only).</p>
+          )}
+        </div>
         <div>
           <input
             type="text"
@@ -58,10 +77,12 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
               touched && !isValid ? 'border-red-300' : 'border-gray-300'
             }`}
           />
-          {touched && !isValid && (
+          {touched && form.name.trim().length < 2 && (
             <p className="text-xs text-red-600 mt-1">Name must be at least 2 characters.</p>
           )}
         </div>
+
+       
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ToggleSwitch

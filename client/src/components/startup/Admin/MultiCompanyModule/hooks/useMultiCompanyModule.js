@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'react-toastify';
 import { ApiService } from '../../../../../services/startup/ApiService';
 import { STORAGE_KEYS } from '../../../../../constants/startup/index';
 import { useDataContext } from '../../../../../context/startup/useDataContext';
@@ -49,10 +50,18 @@ const useMultiCompanyModule = () => {
     setCreating(true);
     setCreateError(null);
     try {
-      await ApiService.request('POST', '/company', payload);
+      const response = await ApiService.request('POST', '/company', payload);
+      // Show success message from server
+      if (response?.message) {
+        toast.success(response.message);
+      } else {
+        toast.success('Company created successfully!');
+      }
       await fetchCompanies();
     } catch (e) {
-      setCreateError(e?.error || 'Failed to create company');
+      const errorMessage = e?.error || 'Failed to create company';
+      setCreateError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setCreating(false);
     }
