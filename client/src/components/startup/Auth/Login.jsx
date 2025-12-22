@@ -37,9 +37,10 @@ function Login() {
       const { user } = response.data;
       setUserData(user);
       toast.success('Login successful!');
-      
+
       // Navigate to originally requested route if available (preserve search)
-      const redirectTo = location.state?.from || '/admin';
+      // If isSadmin is true, default to multi-company-setup
+      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const errorData = err || {};

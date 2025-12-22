@@ -51,7 +51,7 @@ const DataProvider = ({ children }) => {
 
         // Redirect from login page if already authenticated
         if (isLoginPage && user) {
-          const redirectTo = location.state?.from || "/admin";
+          const redirectTo = location.state?.from || (user?.isSadmin ? "/admin/multi-company-setup" : "/admin");
           navigate(redirectTo, { replace: true });
         }
       } catch (err) {
