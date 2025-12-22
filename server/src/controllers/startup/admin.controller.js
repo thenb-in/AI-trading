@@ -153,13 +153,129 @@ const deletePermission = async (req, res) => {
   }
 };
 
+// User-Company Assignment endpoints
+const getSadminUsers = async (req, res) => {
+  try {
+    const users = await adminService.getSadminUsers();
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    logger.error('Error fetching sadmin users', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getAllCompanies = async (req, res) => {
+  try {
+    const companies = await adminService.getAllCompanies();
+    res.json({
+      success: true,
+      data: companies
+    });
+  } catch (error) {
+    logger.error('Error fetching companies', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const assignUserToCompany = async (req, res) => {
+  try {
+    const { userId, companyId } = req.body;
+
+    if (!userId || !companyId) {
+      return res.status(400).json({
+        success: false,
+        message: `User ID and Company ID are required ,get ${userId} and  ${companyId}`
+      });
+    }
+
+    const result = await adminService.assignUserToCompany(userId, companyId);
+    res.json({
+      success: true,
+      message: result.message,
+      data: result
+    });
+  } catch (error) {
+    logger.error('Error assigning user to company', error);
+    const statusCode = error.status || 400;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const removeUserFromCompany = async (req, res) => {
+  try {
+    const { userId, companyId } = req.body;
+
+    if (!userId || !companyId) {
+      return res.status(400).json({
+        success: false,
+        message: `User ID and Company ID are required ,get ${userId} and  ${companyId}`
+      });
+    }
+
+    const result = await adminService.removeUserFromCompany(userId, companyId);
+    res.json({
+      success: true,
+      message: result.message,
+      data: result
+    });
+  } catch (error) {
+    logger.error('Error removing user from company', error);
+    const statusCode = error.status || 400;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+const getCompanyUsers = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: `Company ID is required ${companyId}`
+      });
+    }
+
+    const users = await adminService.getCompanyUsers(companyId);
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    logger.error('Error fetching company users', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   createRole,
-
   createPermission,
   addPermissionToRole,
   removePermissionFromRole,
   getRoles,
   getPermissions,
-  deletePermission
+  deletePermission,
+  getSadminUsers,
+  getAllCompanies,
+  assignUserToCompany,
+  removeUserFromCompany,
+  getCompanyUsers
 };

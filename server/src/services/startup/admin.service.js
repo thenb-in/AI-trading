@@ -1,4 +1,4 @@
-const { Role, Permission, User, Company } = require('../../models');
+const { Role, Permission, User, Company, MultiCompanyModule } = require('../../models');
 const logger = require('../../../logger');
 const { Op } = require('sequelize');
 
@@ -304,6 +304,170 @@ const deletePermission = async (permissionId) => {
   }
 };
 
+// User-Company Assignment methods
+const getSadminUsers = async () => {
+  try {
+    const users = await User.findAll({
+      where: {
+        isSadmin: true,
+        isActive: true
+      },
+      attributes: ['id', 'name', 'username'],
+      include: [
+        {
+          model: Company,
+          as: 'company',
+          attributes: ['id', 'name']
+        }
+      ],
+      order: [['name', 'ASC']]
+    });
+    return users;
+  } catch (error) {
+    logger.error('Error fetching sadmin users', error);
+    throw new Error(`Failed to fetch super admin users at  ${new Date()}`);
+  }
+};
+
+const getAllCompanies = async () => {
+  try {
+    const companies = await Company.findAll({
+      attributes: ['id', 'name'],
+      order: [['name', 'ASC']]
+    });
+    return companies;
+  } catch (error) {
+    logger.error('Error fetching companies', error);
+    throw new Error(`Failed to fetch companies at  ${new Date()}`);
+  }
+};
+
+const assignUserToCompany = async (userId, companyId) => {
+  try {
+    // Validate user exists and is sadmin and active
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'name', 'isSadmin', 'isActive']
+    });
+
+    if (!user) {
+      throw { status: 404, message: 'User not found' };
+    }
+
+    if (!user.isSadmin || !user.isActive) {
+      throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
+    }
+
+    // Validate company exists
+    const company = await Company.findByPk(companyId, {
+      attributes: ['id', 'name']
+    });
+
+    if (!company) {
+      throw { status: 404, message: 'Company not found' };
+    }
+
+    // Check if assignment already exists
+    const existingAssignment = await MultiCompanyModule.findOne({
+      where: { userId, companyId }
+    });
+
+    if (existingAssignment) {
+      throw { status: 409, message: 'User is already assigned to this company' };
+    }
+
+    // Create the assignment
+    await MultiCompanyModule.create({ userId, companyId });
+
+    logger.info(`User ${userId} assigned to company ${companyId}`);
+    return {
+      message: `User "${user.name}" successfully assigned to company "${company.name}"`,
+      user,
+      company
+    };
+  } catch (error) {
+    logger.error('Error assigning user to company', error);
+    throw error;
+  }
+};
+
+const removeUserFromCompany = async (userId, companyId) => {
+  try {
+    // Validate user exists
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'name']
+    });
+
+    if (!user) {
+      throw { status: 404, message: 'User not found' };
+    }
+
+    // Validate company exists
+    const company = await Company.findByPk(companyId, {
+      attributes: ['id', 'name']
+    });
+
+    if (!company) {
+      throw { status: 404, message: 'Company not found' };
+    }
+
+    // Check if assignment exists
+    const assignment = await MultiCompanyModule.findOne({
+      where: { userId, companyId }
+    });
+
+    if (!assignment) {
+      throw { status: 404, message: 'User is not assigned to this company' };
+    }
+
+    // Remove the assignment
+    await assignment.destroy();
+
+    logger.info(`User ${userId} removed from company ${companyId}`);
+    return {
+      message: `User "${user.name}" successfully removed from company "${company.name}"`,
+      user,
+      company
+    };
+  } catch (error) {
+    logger.error('Error removing user from company', error);
+    throw error;
+  }
+};
+
+const getCompanyUsers = async (companyId) => {
+  try {
+    // Validate company exists
+    const company = await Company.findByPk(companyId, {
+      attributes: ['id', 'name']
+    });
+
+    if (!company) {
+      throw { status: 404, message: 'Company not found' };
+    }
+
+    const assignments = await MultiCompanyModule.findAll({
+      where: { companyId },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'name', 'username', 'isSadmin', 'isActive'],
+          where: {
+            isSadmin: true,
+            isActive: true
+          }
+        }
+      ],
+      order: [['createdAt', 'ASC']]
+    });
+
+    return assignments.map(assignment => assignment.user).filter(Boolean);
+  } catch (error) {
+    logger.error('Error fetching company users', error);
+    throw new Error(`Failed to fetch company users ${companyId}`);
+  }
+};
+
 module.exports = {
   createRole,
   createPermission,
@@ -312,5 +476,10 @@ module.exports = {
   getAllPermissions,
   removePermissionFromRole,
   addPermissionToRole,
-  deletePermission
+  deletePermission,
+  getSadminUsers,
+  getAllCompanies,
+  assignUserToCompany,
+  removeUserFromCompany,
+  getCompanyUsers
 };

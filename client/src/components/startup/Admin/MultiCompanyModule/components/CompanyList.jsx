@@ -1,23 +1,37 @@
 import PropTypes from 'prop-types';
+import { useState, useCallback } from 'react';
+import { UserCompanyAssignmentModal } from './UserCompanyAssignmentModal';
 
-const CompanyCard = ({ company, isActive, loading, handleSwitchClick }) => {
+const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignClick }) => {
+  const handleCardClick = useCallback(() => {
+    onAssignClick(company);
+  }, [onAssignClick, company]);
+
+  const handleSwitchButtonClick = useCallback((e) => {
+    e.stopPropagation();
+    handleSwitchClick(company.id);
+  }, [handleSwitchClick, company.id]);
+
   return (
-    <li className={`flex items-center justify-between p-4 border rounded-xl shadow-sm ${isActive ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-      <div className="flex items-center gap-3">
+    <li className={`flex items-center justify-between p-4 border rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer ${isActive ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+      <div className="flex items-center gap-3 flex-1" onClick={handleCardClick}>
         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold">
           {company.name?.[0]?.toUpperCase() || '?'}
         </div>
-        <div>
+        <div className="flex-1">
           <div className="font-semibold text-gray-900">{company.name}</div>
           <div className="text-xs text-gray-500 mt-0.5">{company.id}</div>
           {isActive ? (
             <span className="inline-flex items-center text-xs mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
           ) : null}
+          <div className="text-xs text-blue-600 mt-1 cursor-pointer hover:text-blue-800">
+            Click to assign users to this company
+          </div>
         </div>
       </div>
-      <div>
+      <div className="flex flex-col gap-2 ml-4">
         <button
-          onClick={handleSwitchClick(company.id)}
+          onClick={handleSwitchButtonClick}
           disabled={isActive || loading}
           className={`px-3 py-2 rounded-lg text-sm text-white ${
             isActive ? 'bg-gray-400' : 'bg-gray-900 hover:bg-black'
@@ -35,11 +49,29 @@ CompanyCard.propTypes = {
   isActive: PropTypes.bool.isRequired,
   loading: PropTypes.bool,
   handleSwitchClick: PropTypes.func.isRequired,
+  onAssignClick: PropTypes.func.isRequired,
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
-  const handleSwitchClick = (companyId) => () => {
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+
+  const handleSwitchClick = useCallback((companyId) => {
     onSwitch(companyId);
+  }, [onSwitch]);
+
+  const handleAssignClick = (company) => {
+    setSelectedCompany(company);
+    setAssignmentModalOpen(true);
+  };
+
+  const handleAssignmentModalClose = () => {
+    setAssignmentModalOpen(false);
+    setSelectedCompany(null);
+  };
+
+  const handleAssignmentSuccess = () => {
+    // Could refresh company data if needed
   };
   if (!companies?.length) {
     return (
@@ -71,9 +103,17 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
         onSwitch={onSwitch}
         loading={loading}
         handleSwitchClick={handleSwitchClick}
+        onAssignClick={handleAssignClick}
       />
     );})}
   </ul>
+
+  <UserCompanyAssignmentModal
+    isOpen={assignmentModalOpen}
+    onClose={handleAssignmentModalClose}
+    company={selectedCompany}
+    onSuccess={handleAssignmentSuccess}
+  />
 </>
 
   );

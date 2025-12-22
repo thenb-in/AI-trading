@@ -185,7 +185,27 @@ const ApiService = {
     return this.request('POST', '/admin/role-permissions/remove', data);
   },
 
-  
+  // Admin - User Company Assignment
+  getSadminUsers() {
+    return this.request('GET', '/admin/users/sadmin');
+  },
+
+  getAllCompanies() {
+    return this.request('GET', '/admin/companies');
+  },
+
+  assignUserToCompany(userId, companyId) {
+    return this.request('POST', '/admin/assign-user', { userId, companyId });
+  },
+
+  removeUserFromCompany(userId, companyId) {
+    return this.request('POST', '/admin/remove-user', { userId, companyId });
+  },
+
+  getCompanyUsers(companyId) {
+    return this.request('GET', `/admin/companies/${companyId}/users`);
+  },
+
   // Get all layouts for a specific document (private + public)
   getLayoutsByDocument(documentName) {
     return this.request('GET', `/layouts/document/${documentName}`);
