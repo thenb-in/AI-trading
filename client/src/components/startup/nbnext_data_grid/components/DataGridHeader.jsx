@@ -89,7 +89,7 @@ function DataGridHeader({
       width: totalWidth,
       minWidth: totalWidth,
       maxWidth: totalWidth,
-      zIndex: fullScreen ? (isFrozen ? 10003 : 10002) : (isFrozen ? 3 : 2),
+      zIndex: fullScreen ? (isFrozen ? 10002 : 10001) : (isFrozen ? 2 : 1),
       ...(isFrozen && {
         position: "sticky",
         left,
@@ -228,7 +228,7 @@ function DataGridHeader({
       borderRight: "2px solid #e5e7eb",
       position: "sticky",
       top: headerRowHeight,
-      zIndex: fullScreen ? (isFrozen ? 10001 : 10000) : (isFrozen ? 1 : 0),
+      zIndex: fullScreen ? (isFrozen ? 10004 : 10003) : (isFrozen ? 4 : 3),
       width: totalWidth,
       minWidth: totalWidth,
       maxWidth: totalWidth,
