@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../../controllers/startup/authController');
+const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout } = require('../../views/startup/authView');
+const authValidator = require('../../validators/startup/authValidator');
 const authMiddleware = require('../../middleware/authMiddleware');
 
 // Public routes
-router.post('/signup', authController.signup);
-router.post('/login', authController.login);
-router.post('/reset-password', authController.resetPassword);
-router.post('/logout', authMiddleware.protect, authController.logout);
+router.post('/signup', authValidator.signupValidation, signup);
+router.post('/login', authValidator.loginValidation, login);
+router.post('/reset-password', authValidator.resetPasswordValidation, resetPassword);
+router.post('/logout', authMiddleware.protect, logout);
 // Protected routes (admin only)
-router.post('/approve/:userId', authMiddleware.protect, authController.approveUser);
-router.get('/users', authMiddleware.protect, authController.getAllUsers);
+router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUserValidation, approveUser);
+router.get('/users', authMiddleware.protect, getAllUsers);
 
-router.get('/roles', authController.getAllRoles);
+router.get('/roles', getAllRoles);
 module.exports = router;

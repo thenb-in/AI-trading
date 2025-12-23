@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const companyProfileController = require('../controllers/companyProfileController');
+const { getCompanyProfileView, updateCompanyProfileView } = require('../views/companyProfileView');
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware.protect);
 
-router.get('/', companyProfileController.getCompanyProfile);
-router.put('/', companyProfileController.updateCompanyProfile);
+router.get('/', getCompanyProfileView);
+router.put('/', updateCompanyProfileView);
 
 module.exports = router;
 

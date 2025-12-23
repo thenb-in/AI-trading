@@ -1,1 +1,0 @@
-Views take in res and gives out req objects. All the other logic should happen in controllers (TODO).

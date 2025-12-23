@@ -91,7 +91,24 @@ function Signup({ showRoleDropdown }) {
       toast.success('Signup successful! Awaiting admin approval.');
       navigate('/');
     } catch (err) {
-      const message = err.error || 'Signup failed. Please try again.';
+      // Handle different error formats from backend
+      let message = 'Signup failed. Please try again.';
+      
+      if (err.errors && Array.isArray(err.errors)) {
+        // Validation errors from express-validator (array format)
+        const errorMessages = err.errors.map(e => e.msg || e.message || e).join('. ');
+        message = errorMessages || message;
+      } else if (err.error) {
+        // Single error message
+        message = err.error;
+      } else if (typeof err === 'string') {
+        // Error is a string
+        message = err;
+      } else if (err.message) {
+        // Error object with message property
+        message = err.message;
+      }
+      
       setError(message);
       toast.error(message);
     }
