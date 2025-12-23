@@ -165,6 +165,9 @@ const totalRowStyle = {
   fontWeight: 600,
   borderTop: "3px solid #2563eb",
   borderBottom: "3px solid #2563eb",
+  position: "sticky",
+  bottom: 0,
+  zIndex: 1,
 };
 
 export {
