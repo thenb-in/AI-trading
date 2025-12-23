@@ -2,7 +2,7 @@ const authService = require('../../services/startup/authService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const userService = require('../../services/startup/userService');
 const logger = require('../../../logger');
-const { MODULE_PERMISSION_CONSTANTS } = require('../../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 
 const getAllUsers = async (req, res) => {
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);
@@ -21,7 +21,7 @@ const getAllUsers = async (req, res) => {
 };
 
 const deactivateUser = async (req, res) => {
-  const requiredPermission = MODULE_PERMISSION_CONSTANTS.DEACTIVATE_USER.name;
+  const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.deactivate.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
@@ -59,7 +59,7 @@ const getMe = async (req, res) => {
 
 
 const deleteUser = async (req, res) => {
-  const requiredPermission = MODULE_PERMISSION_CONSTANTS.DELETE_USER.name;
+  const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.delete.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
   if (!hasPermission) {
     return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });

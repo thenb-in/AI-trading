@@ -64,7 +64,7 @@ const handleRefreshToken = async (refreshToken) => {
     const tx = await User.sequelize.transaction();
     try {
       const user = await User.findByPk(decoded.id, {
-        attributes: ['id', 'isActive', 'refresh_token', 'companyId', 'username'],
+        attributes: ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
         lock: tx.LOCK.UPDATE,
         transaction: tx
       });
@@ -112,8 +112,8 @@ const handleRefreshToken = async (refreshToken) => {
       }
 
       // Token matches and user active — rotate token
-      const newAccess = generateAccessToken({ id: user.id, companyId: decoded.company_id });
-      const newRefresh = await generateRefreshToken({ id: user.id, companyId: decoded.company_id });
+      const newAccess = generateAccessToken({ id: user.id, company_id: decoded.company_id });
+      const newRefresh = await generateRefreshToken({ id: user.id, company_id: decoded.company_id });
       user.refresh_token = newRefresh;
       user.last_active = new Date();
       await user.save({ transaction: tx });

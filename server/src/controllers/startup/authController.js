@@ -132,11 +132,12 @@ const approveUser = async (req, res) => {
 
   try {
     const { userId } = req.params;
+    const { requirePasswordReset = false, roleId = null } = req.body;
 
-    await authService.approveUser(userId);
+    await authService.approveUser(userId, requirePasswordReset, roleId);
     res.status(200).json({ message: `User approved successfully ${userId}` });
   } catch (error) {
-    if (error.message === 'User not found') {
+    if (error.message === 'User not found' || error.message.includes('Role not found')) {
       return res.status(404).json({ error: error.message });
     }
     logger.error('Approve user error', error);

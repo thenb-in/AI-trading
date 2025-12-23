@@ -46,9 +46,9 @@ function UserManagement() {
   const { setHamburgerMenu, hamburgerMenu, userData } = useDataContext();
   const isMobileView = window.innerWidth < 768;
 
-  const confirmAction = () => {
+  const confirmAction = (requirePasswordReset = false, roleId = null) => {
     const { action, userId } = confirmDialog;
-    if (action === 'approve') handleApprove(userId);
+    if (action === 'approve') handleApprove(userId, requirePasswordReset, roleId);
     if (action === 'deactivate') handleDeactivate(userId);
     if (action === 'delete') handleDelete(userId);
   };
@@ -283,6 +283,8 @@ function UserManagement() {
         dialog={confirmDialog}
         onConfirm={confirmAction}
         onCancel={handleCancelConfirmDialog}
+        isSadmin={userData?.isSadmin || false}
+        roles={roles}
       />
 
       <BulkDeleteConfirmationDialog

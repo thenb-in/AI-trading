@@ -115,8 +115,8 @@ const ApiService = {
     return this.request('GET',`/users/${userId}`)
   },
 
-  approveUser(userId) {
-    return this.request('POST', `/auth/approve/${userId}`);
+  approveUser(userId, requirePasswordReset = false, roleId = null) {
+    return this.request('POST', `/auth/approve/${userId}`, { requirePasswordReset, roleId });
   },
 
   deactivateUser(userId) {

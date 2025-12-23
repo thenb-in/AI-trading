@@ -61,7 +61,7 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     username,
     password: hashedPassword,
     name,
-    companyId,
+    company_id: companyId,
     roleId: roleInstance ? roleInstance.id : null,
     isActive: true,
     refresh_token: null,
@@ -136,7 +136,7 @@ const issueTokensAndPersist = async (user) => {
 
 const getActiveCompanyForUser = async (user) => {
   const profile = await UserProfile.findOne({ where: { userId: user.id } });
-  const activeCompanyId = profile?.currentCompany || user.companyId;
+  const activeCompanyId = profile?.currentCompany || user.company_id;
   if (!activeCompanyId) {
     return null;
   }
@@ -183,13 +183,33 @@ const loginUser = async (credentials) => {
 };
 
 
-const approveUser = async (userId) => {
+const approveUser = async (userId, requirePasswordReset = false, roleId = null) => {
   const user = await User.findByPk(userId);
   if (!user) {
     throw new Error(`User not found ${userId}.`);
   }
 
   user.is_approved = true;
+
+  // If roleId is provided, validate and assign it
+  if (roleId) {
+    const role = await Role.findByPk(roleId);
+    if (!role) {
+      throw new Error(`Role not found ${roleId}.`);
+    }
+    user.roleId = roleId;
+    logger.info(`User approved with role assignment: ${userId} - Role: ${roleId}`);
+  }
+
+  // If requirePasswordReset is false, set last_active to now so user doesn't need to reset password
+  if (!requirePasswordReset) {
+    user.last_active = new Date();
+    logger.info(`User approved without password reset: ${userId} - Setting last_active to now`);
+  } else {
+    // If requirePasswordReset is true, keep last_active as null so user must reset password
+    logger.info(`User approved with password reset required: ${userId} - Keeping last_active as null`);
+  }
+
   await user.save();
 };
 
@@ -244,7 +264,7 @@ const getCurrentUser = async (userId) => {
     }
 
     const profile = await UserProfile.findOne({ where: { userId } });
-    const activeCompanyId = profile?.currentCompany || user.companyId;
+    const activeCompanyId = profile?.currentCompany || user.company_id;
     const activeCompany = activeCompanyId
       ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] })
       : null;
@@ -254,6 +274,8 @@ const getCurrentUser = async (userId) => {
       mobileApp: user.mobileApp,
       desktopWeb: user.desktopWeb,
       mobileWeb: user.mobileWeb,
+      defaultScreenMode: profile?.default_screen_mode || 'location_mode',
+      username: user.username,
       phone: user.phone,
       name: user.name,
       companyId: activeCompanyId || null,

@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    roleId: {
+    role_id: {
       type: DataTypes.INTEGER,
       allowNull: true
     }

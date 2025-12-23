@@ -62,8 +62,8 @@ const getAllUsers = async (companyId) => {
     throw new Error(`Company ID is required ${companyId}.`);
   }
   const users = await User.findAll({
-    where: { isActive: true, companyId: companyId },
-    attributes: ['id', 'phone', 'name', 'companyId', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
+    where: { isActive: true, company_id: companyId },
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
       { model: Role, as: 'role', attributes: ['id', 'name'] },
@@ -77,8 +77,8 @@ const getAllUsers = async (companyId) => {
   const roles = await Role.findAll({
     where: {
       [Op.or]: [
-        { companyId: null }, // Global roles
-        { companyId: companyId } // Company-specific roles
+        { company_id: null }, // Global roles
+        { company_id: companyId } // Company-specific roles
       ]
     },
     attributes: ['id', 'name'],
@@ -115,7 +115,7 @@ const updateUserProfile = async (userId, userProfile) => {
       // UserProfile doesn't exist, create it
       await UserProfile.create({
         userId: user.id,
-        currentCompany: user.companyId,
+        currentCompany: user.company_id,
         ...userProfile
       });
     }

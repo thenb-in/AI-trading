@@ -12,6 +12,7 @@ const useUserManagement = () => {
     userId: null,
     action: null,
     username: "",
+    userRole: null,
   });
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -46,13 +47,22 @@ const useUserManagement = () => {
       return () => clearTimeout(timeout);
     }
   }, [error]);
-  const handleApprove = async (userId) => {
+  const handleApprove = async (userId, requirePasswordReset = false, roleId = null) => {
     try {
-      await ApiService.approveUser(userId);
+      await ApiService.approveUser(userId, requirePasswordReset, roleId);
       setUsers(
-        users.map((user) =>
-          user.id === userId ? { ...user, is_approved: true } : user
-        )
+        users.map((user) => {
+          if (user.id === userId) {
+            const updatedUser = { ...user, is_approved: true };
+            // If roleId was provided, update the role in the user object
+            if (roleId) {
+              const newRole = roles.find((role) => role.id === roleId);
+              updatedUser.role = newRole || null;
+            }
+            return updatedUser;
+          }
+          return user;
+        })
       );
       setError("");
     } catch (err) {
@@ -63,6 +73,7 @@ const useUserManagement = () => {
         userId: null,
         action: null,
         username: "",
+        userRole: null,
       });
     }
   };
@@ -84,6 +95,7 @@ const useUserManagement = () => {
         userId: null,
         action: null,
         username: "",
+        userRole: null,
       });
     }
   };
@@ -101,6 +113,7 @@ const useUserManagement = () => {
         userId: null,
         action: null,
         username: "",
+        userRole: null,
       });
     }
   };
@@ -202,8 +215,8 @@ const useUserManagement = () => {
     setSelectedUsers((prev) => prev.filter((id) => !tableUserIds.includes(id)));
   };
 
-  const showConfirmation = (userId, action, username) => {
-    setConfirmDialog({ show: true, userId, action, username });
+  const showConfirmation = (userId, action, username, userRole = null) => {
+    setConfirmDialog({ show: true, userId, action, username, userRole });
   };
 
   const showBulkDeleteConfirmation = () => {

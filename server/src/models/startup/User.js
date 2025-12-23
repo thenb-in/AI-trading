@@ -25,13 +25,24 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    roleId: {
+    role_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
+      references: {
+        model: 'nbnext_roles',
+        key: 'id'
+      },
+      onDelete: 'SET NULL'
     },
-    companyId: {
-      type: DataTypes.UUID,  // type UUID because foreign key is a UUID
-      allowNull: false
+    company_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'nbnext_company',
+        key: 'id'
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'RESTRICT'
     },
     isActive: {
       type: DataTypes.BOOLEAN,

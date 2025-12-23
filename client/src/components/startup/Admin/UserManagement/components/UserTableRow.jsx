@@ -81,7 +81,7 @@ const UserTableRow = ({
   };
 
   const handleApproveClick = () => {
-    showConfirmation(user.id, 'approve', user.name);
+    showConfirmation(user.id, 'approve', user.name, user.role);
   };
 
   const handleDeleteClick = () => {
