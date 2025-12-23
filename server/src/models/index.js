@@ -15,7 +15,10 @@ const db = {};
 
 let sequelize;
 const default_config = {
-  logging: false, // Disable SQL logging
+  logging: (msg) => {
+    // Enable SQL logging to debug foreign key constraint issues
+    logger.silly(`[Sequelize SQL] ${msg}`);
+  },
   define: {
     underscored: true // Use snake_case for automatically added attributes
   }

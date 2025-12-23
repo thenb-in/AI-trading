@@ -6,7 +6,9 @@ const baseRoles = require('./startup/base_roles');
 const SYSTEM_ROLE_CONSTANTS = baseRoles.SYSTEM_ROLE_CONSTANTS;
 
 const MASTER_PERMISSION_CONSTANTS = {
-  ...basePermissions.MASTER_PERMISSION_CONSTANTS
+  ...basePermissions.MASTER_PERMISSION_CONSTANTS,
+  TEST_MASTER_1: basePermissions.create_master_permission('test_master_1'),
+  TEST_MASTER_2: basePermissions.create_master_permission('test_master_2')
 };
 
 const MODULE_PERMISSION_CONSTANTS = {

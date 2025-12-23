@@ -274,5 +274,29 @@ if (require.main === module) {
   process.exit(success ? 0 : 1);
 }
 
-module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion, hasFolderChanges, hasFileChanges };
+
+/**
+ * Check if a specific file has changes compared to a given Git remote/branch.
+ *
+ * @param {string} filePath - Path to the file to check.
+ * @param {string} [remoteBranch] - Git ref to compare against (defaults to origin/main).
+ * @returns {boolean} true if the file has changes, false otherwise.
+ */
+// NOTE: THIS FUNCTION IS NOT TESTED AND HENCE COMMENTED OUT
+// function hasFileChanges(filePath, remoteBranch = process.env.GIT_REMOTE_BRANCH || 'origin/main') {
+//   try {
+//     const diffOutput = execSync(
+//       `git diff --name-only ${remoteBranch} -- "${filePath}"`,
+//       { stdio: ['ignore', 'pipe', 'ignore'] }
+//     )
+//       .toString()
+//       .trim();
+//     return diffOutput.length > 0;
+//   } catch (error) {
+//     log(`⚠️  Error checking changes for file ${filePath}: ${error.message}`, 'yellow');
+//     return false;
+//   }
+// }
+
+module.exports = { checkVersionBump, getCurrentVersion, checkSingleVersion, hasFolderChanges };
 

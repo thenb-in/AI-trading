@@ -24,9 +24,15 @@ module.exports = (sequelize) => {
         }
       },
       type: {
-        type: DataTypes.ENUM('public', 'private', 'temp'),
+        type: DataTypes.STRING(50),
         allowNull: false,
-        defaultValue: 'private'
+        defaultValue: 'private',
+        validate: {
+          isIn: {
+            args: [['public', 'private', 'temp']],
+            msg: 'Type must be one of: public, private, temp'
+          }
+        }
       },
       user_id: {
         type: DataTypes.UUID,
@@ -49,22 +55,12 @@ module.exports = (sequelize) => {
       column_config: {
         type: DataTypes.JSONB,
         allowNull: false
-      },
-      created_at: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW
-      },
-      updated_at: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: DataTypes.NOW
       }
     },
     {
       tableName: 'nbnext_layouts',
       modelName: 'Layout',
-      timestamps: false,
+      timestamps: true,
       freezeTableName: true,
       indexes: [
         {

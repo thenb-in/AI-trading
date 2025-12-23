@@ -69,6 +69,9 @@ app.use('/uploads', express.static(env.UPLOADS_DIR));
 
 // Error handling middleware - must be last
 app.use(errorMiddleware);
+app.get('/healthz', (req, res) => {
+  res.status(200).send('ok');
+});
 
 
 // Start server after syncing database
@@ -81,12 +84,15 @@ const startServer = async () => {
   const sequelize = db.sequelize;
   if (!env.isProduction) {
     await sequelize
-      .sync()
+      .sync({ alter: false, logging: (msg) => logger.silly(`[Sync SQL] ${msg}`) })
       .then(() => {
         logger.info(`Database tables synchronized successfully at ${new Date().toISOString()}`);
       })
       .catch(error => {
         logger.error('Error synchronizing database tables', error);
+        if (error.sql) {
+          logger.error('SQL that caused error:', error);
+        }
       });
   }
 
