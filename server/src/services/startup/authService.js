@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { User, Company, Role, Permission, MultiCompanyModule, UserProfile } = require('../../models');
+const { User, Company, Role, MultiCompanyModule, UserProfile } = require('../../models');
 const logger = require('../../../logger');
 const { where: _where } = require('sequelize');
 const {
@@ -7,6 +7,8 @@ const {
   generateRefreshToken,
   revokeRefreshToken
 } = require('../../utils/startup/authUtils');
+const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../../utils/startup/modelHelpers');
+const userService = require('./userService');
 
 const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
   username = username?.trim();
@@ -32,11 +34,8 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     }
   }
 
-  const company = await Company.findByPk(companyId);
-  logger.info(`Looking up company by ID: ${companyId} - Found: ${!!company}`);
-  if (!company) {
-    throw new Error(`Company not found ${companyId}.`);
-  }
+  const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
+  logger.info(`Looking up company by ID: ${companyId} - Found: true`);
 
   let roleInstance = null;
   if (role) {
@@ -80,18 +79,7 @@ const findUserWithRole = async (username) => {
   username = username?.trim();
   return await User.findOne({
     where: { username },
-    include: [
-      {
-        model: Role,
-        as: 'role',
-        include: [{
-          model: Permission,
-          as: 'permissions',
-          through: { attributes: [] },
-          attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
-        }]
-      }
-    ],
+    include: getUserWithRoleInclude(),
     attributes: { exclude: ['refresh_token'] }
   });
 };
@@ -127,10 +115,7 @@ const issueTokensAndPersist = async (user) => {
   logger.info(`Access token generated: ${accessToken}`);
   const refreshToken = await generateRefreshToken(user);
   logger.info(`Refresh token generated: ${refreshToken}`);
-  await User.update(
-    { refresh_token: refreshToken, last_active: new Date() },
-    { where: { id: user.id } }
-  );
+  await userService.updateUserRefreshTokenAndLastActive(user.id, refreshToken);
   return { accessToken, refreshToken };
 };
 
@@ -184,19 +169,13 @@ const loginUser = async (credentials) => {
 
 
 const approveUser = async (userId, requirePasswordReset = false, roleId = null) => {
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new Error(`User not found ${userId}.`);
-  }
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
   user.is_approved = true;
 
   // If roleId is provided, validate and assign it
   if (roleId) {
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      throw new Error(`Role not found ${roleId}.`);
-    }
+    await findModelByIdOrThrow(Role, roleId, {}, 'Role');
     user.roleId = roleId;
     logger.info(`User approved with role assignment: ${userId} - Role: ${roleId}`);
   }
@@ -240,24 +219,9 @@ const resetPassword = async ({ username, password, isFirstLogin }) => {
 const getCurrentUser = async (userId) => {
   try {
     // Fetch user with associated company
-    const user = await User.findByPk(userId, {
-      include: [
-        {
-          model: Role,
-          as: 'role',
-          include: [{
-            model: Permission,
-            as: 'permissions',
-            through: { attributes: [] },
-            attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
-          }]
-        }
-      ]
-    });
-
-    if (!user) {
-      throw new Error(`User not found ${userId}.`);
-    }
+    const user = await findModelByIdOrThrow(User, userId, {
+      include: getUserWithRoleInclude()
+    }, 'User');
 
     if (!user.isActive) {
       throw new Error(`User account is deactivated ${userId}.`);

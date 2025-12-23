@@ -2,17 +2,14 @@
 const { Company, MultiCompanyModule, User, UserProfile, CompanyProfile } = require('../../models');
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
+const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 
 const companyService = {
   async getCompanySettings(id) {
     try {
-      const company = await Company.findByPk(id, {
+      return await findModelByIdOrThrow(Company, id, {
         attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb']
-      });
-      if (!company) {
-        throw new Error(`Company not found ${id}.`);
-      }
-      return company;
+      }, 'Company');
     } catch (error) {
       throw new Error(`Failed to fetch company settings: ${error.message}`);
     }
@@ -22,10 +19,7 @@ const companyService = {
     logger.info(`Updating company settings for ID: ${id}`);
     logger.silly(`New settings: ${JSON.stringify(data)}`);
     try {
-      const company = await Company.findByPk(id);
-      if (!company) {
-        throw new Error(`Company with id ${id} not found ${id}.`);
-      }
+      const company = await findModelByIdOrThrow(Company, id, {}, 'Company');
       await company.update({
 
         name: data.name,
@@ -103,13 +97,10 @@ const companyService = {
       throw new Error(`You are not linked to this company ${companyId}.`);
     }
 
-    const company = await Company.findByPk(companyId);
-    if (!company) {
-      throw new Error(`Company not found ${companyId}.`);
-    }
+    const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
+    const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
-    const user = await User.findByPk(userId);
-    if (!user || !user.isActive) {
+    if (!user.isActive) {
       throw new Error(`Invalid or inactive user ${userId}.`);
     }
 

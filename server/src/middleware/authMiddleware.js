@@ -1,8 +1,9 @@
-const { User } = require('../models');
+const userService = require('../services/startup/userService');
 const logger = require('../../logger');
 const { verifyToken, generateAccessToken, generateRefreshToken } = require('../utils/startup/authUtils');
 const env = require('../config/env');
 const allowedPermissions = require('../utils/startup/allowedPermissions');
+const db = require('../models');
 
 const refreshTokenLocks = new Map();
 
@@ -12,10 +13,8 @@ const setAuthCookies = (res, tokens, options) => {
   res.cookie('isLoggedIn', 'true', options.isLoggedIn);
 };
 const checkUserActive = async (userId) => {
-  const user = await User.findByPk(userId, {
-    attributes: ['is_approved', 'username']
-  });
-  if (!user || !user.is_approved) {
+  const { isActive, user } = await userService.checkUserActive(userId);
+  if (!isActive) {
     logger.error(`User inactive or not found ${user ? user.username : userId}`);
     return false;
   }
@@ -61,9 +60,9 @@ const handleRefreshToken = async (refreshToken) => {
   logger.debug(`Placed placeholder for tokenKey (user:${decoded.id})`);
 
   (async () => {
-    const tx = await User.sequelize.transaction();
+    const tx = await db.sequelize.transaction();
     try {
-      const user = await User.findByPk(decoded.id, {
+      const user = await userService.getUserByPkWithLock(decoded.id, {
         attributes: ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
         lock: tx.LOCK.UPDATE,
         transaction: tx
@@ -114,9 +113,7 @@ const handleRefreshToken = async (refreshToken) => {
       // Token matches and user active — rotate token
       const newAccess = generateAccessToken({ id: user.id, company_id: decoded.company_id });
       const newRefresh = await generateRefreshToken({ id: user.id, company_id: decoded.company_id });
-      user.refresh_token = newRefresh;
-      user.last_active = new Date();
-      await user.save({ transaction: tx });
+      await userService.updateUserRefreshToken(user.id, newRefresh, tx);
       await tx.commit();
 
       const accessMax = parseInt(env.MAX_JWT_ACCESS_EXPIRATION_MS || 300000);
@@ -124,7 +121,7 @@ const handleRefreshToken = async (refreshToken) => {
       logger.debug(`Cid:${decoded.company_id} - Refreshed tokens for user ${user.id}`);
 
       const result = {
-        user: { id: user.id, company_id: decoded.company_id },
+        user: { id: user.id, company_id: decoded.company_id || user.company_id },
         tokens: { access: newAccess, refresh: newRefresh },
         options: {
           access:  { httpOnly: true, sameSite: 'strict', secure: env.NODE_ENV === 'production', maxAge: accessMax },

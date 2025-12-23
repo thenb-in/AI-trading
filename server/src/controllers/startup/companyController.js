@@ -1,11 +1,11 @@
 // controllers/companyController.js
 const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
+const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
 const { MASTER_PERMISSION_CONSTANTS ,MODULE_PERMISSION_CONSTANTS} = require('../../constants/permissions');
 const env = require('../../config/env');
-const { User } = require('../../models');
 
 const companyController = {
   async getCompanySettings(req, res) {
@@ -99,10 +99,7 @@ const companyController = {
       const refreshToken = await generateRefreshToken(updatedUser);
 
       // Persist refresh token and activity
-      await User.update(
-        { refresh_token: refreshToken, last_active: new Date() },
-        { where: { id: updatedUser.id } }
-      );
+      await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
 
       res.cookie('accessToken', accessToken, {
         httpOnly: true,

@@ -1,6 +1,7 @@
 const db = require('../../models');
 const { User, Company, Role, UserProfile } = require('../../models');
 const { Op } = require('sequelize');
+const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -14,18 +15,11 @@ async function deleteUser(userId) {
 }
 
 async function updateUserRole(userId, newRoleId) {
-  const user = await db.User.findByPk(userId);
-  if (!user) {
-    throw new Error(`User not found ${userId}.`);
-  }
+  const user = await findModelByIdOrThrow(db.User, userId, {}, 'User');
 
   // Allow null roleId (no role assigned)
   if (newRoleId) {
-    const role = await db.Role.findByPk(newRoleId);
-    if (!role) {
-      throw new Error(`Role not found ${newRoleId}.`);
-    }
-
+    await findModelByIdOrThrow(db.Role, newRoleId, {}, 'Role');
     user.roleId = newRoleId;
   } else {
     user.roleId = null;
@@ -35,10 +29,7 @@ async function updateUserRole(userId, newRoleId) {
 }
 
 async function updateUserDeviceAccess(userId, deviceAccess) {
-  const user = await db.User.findByPk(userId);
-  if (!user) {
-    throw new Error(`User not found ${userId}.`);
-  }
+  const user = await findModelByIdOrThrow(db.User, userId, {}, 'User');
 
   // Update only fields present in the payload
   if (deviceAccess.desktopWeb !== undefined) {
@@ -89,23 +80,15 @@ const getAllUsers = async (companyId) => {
 };
 
 const getUserById = async (userId) => {
-  const user = await User.findByPk(userId);
-  if (!user) {
-    throw new Error(`User not found ${userId}.`);
-  }
-  return user;
+  return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
 const updateUserProfile = async (userId, userProfile) => {
-  const user = await User.findByPk(userId, {
+  const user = await findModelByIdOrThrow(User, userId, {
     include: [
       { model: UserProfile, as: 'userProfile', required: false }
     ]
-  });
-
-  if (!user) {
-    throw new Error(`User not found ${userId}.`);
-  }
+  }, 'User');
 
   try {
     if (user.userProfile) {
@@ -133,11 +116,107 @@ const updateUserProfile = async (userId, userProfile) => {
   }
 };
 
+const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
+  const [updated] = await User.update(
+    { refresh_token: refreshToken, last_active: new Date() },
+    { where: { id: userId }, returning: true }
+  );
+
+  return updated > 0;
+};
+
+const checkUserActive = async (userId) => {
+  const user = await User.findByPk(userId, {
+    attributes: ['is_approved', 'username']
+  });
+  if (!user || !user.is_approved) {
+    return { isActive: false, user };
+  }
+  return { isActive: true, user };
+};
+
+const getUserByPkWithLock = async (userId, options = {}) => {
+  const { attributes, lock, transaction } = options;
+  const queryOptions = {
+    attributes: attributes || ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
+    ...(lock && { lock }),
+    ...(transaction && { transaction })
+  };
+
+  return await User.findByPk(userId, queryOptions);
+};
+
+const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
+  const user = await findModelByIdOrThrow(User, userId, { transaction }, 'User');
+
+  user.refresh_token = refreshToken;
+  user.last_active = new Date();
+  await user.save({ transaction });
+  return user;
+};
+
+const revokeRefreshToken = async (userId) => {
+  const [updated] = await User.update(
+    { refresh_token: null },
+    {
+      where: { id: userId },
+      returning: true
+    }
+  );
+
+  return updated > 0;
+};
+
+const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefreshToken, companyId) => {
+  const tx = await User.sequelize.transaction();
+  try {
+    const user = await findModelByIdOrThrow(User, userId, {
+      attributes: ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
+      lock: tx.LOCK.UPDATE,
+      transaction: tx
+    }, 'User');
+
+    if (!user.isActive) {
+      await tx.rollback();
+      throw new Error(`User inactive ${user.username || userId}`);
+    }
+
+    // If stored refresh token doesn't match the presented one, it was rotated earlier
+    if (user.refresh_token !== currentRefreshToken) {
+      await tx.rollback();
+      throw new Error(`Invalid or rotated refresh token for user ${user.username || userId}`);
+    }
+
+    // Rotate token
+    user.refresh_token = newRefreshToken;
+    user.last_active = new Date();
+    await user.save({ transaction: tx });
+    await tx.commit();
+
+    return {
+      id: user.id,
+      company_id: companyId || user.company_id,
+      username: user.username
+    };
+  } catch (error) {
+    if (!tx.finished) {
+      await tx.rollback();
+    }
+    throw error;
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,
-  updateUserProfile
+  updateUserProfile,
+  updateUserRefreshTokenAndLastActive,
+  checkUserActive,
+  getUserByPkWithLock,
+  updateUserRefreshToken,
+  revokeRefreshToken,
+  handleRefreshTokenRotation
 };

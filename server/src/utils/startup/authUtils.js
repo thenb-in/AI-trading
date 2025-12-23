@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../../models');
+const userService = require('../../services/startup/userService');
 const env = require('../../config/env');
 
 const generateAccessToken = (user) => {
@@ -26,15 +26,7 @@ const verifyToken = (token, secret) => {
 };
 
 const revokeRefreshToken = async (userId) => {
-  const [updated] = await User.update(
-    { refresh_token: null },
-    {
-      where: { id: userId },
-      returning: true
-    }
-  );
-
-  return updated > 0;
+  return await userService.revokeRefreshToken(userId);
 };
 
 module.exports = {

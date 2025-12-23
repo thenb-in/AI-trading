@@ -1,6 +1,7 @@
 const { Role, Permission, User, Company, MultiCompanyModule } = require('../../models');
 const logger = require('../../../logger');
 const { Op } = require('sequelize');
+const { findModelByIdOrThrow, validateName, validateDescription } = require('../../utils/startup/modelHelpers');
 
 const checkRoleExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
@@ -14,45 +15,8 @@ const checkRoleExists = async (name, companyId = null) => {
 };
 
 const createRole = async (name, description, companyId = null) => {
-  // Input validation
-  if (!name || typeof name !== 'string') {
-    throw new Error(`Role name is required and must be a string ${name}.`);
-  }
-
-  const trimmedName = name.trim();
-
-  // Length validation
-  if (trimmedName.length === 0) {
-    throw new Error(`Role name cannot be empty ${trimmedName}.`);
-  }
-
-  if (trimmedName.length < 2) {
-    throw new Error(`Role name must be at least 2 characters long ${trimmedName}.`);
-  }
-
-  if (trimmedName.length > 50) {
-    throw new Error(`Role name cannot exceed 50 characters ${trimmedName.length}.`);
-  }
-
-  // Character validation - only allow letters, numbers, spaces, and hyphens
-  const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
-  if (!nameRegex.test(trimmedName)) {
-    throw new Error(`Role name can only contain letters, numbers, spaces, hyphens, and underscores ${trimmedName}.`);
-  }
-
-  // Description validation (optional)
-  let trimmedDescription = null;
-  if (description) {
-    if (typeof description !== 'string') {
-      throw new Error(`Description must be a string ${description}.`);
-    }
-
-    trimmedDescription = description.trim();
-
-    if (trimmedDescription.length > 500) {
-      throw new Error(`Description cannot exceed 500 characters ${trimmedDescription}.`);
-    }
-  }
+  const trimmedName = validateName(name, { fieldName: 'Role name' });
+  const trimmedDescription = validateDescription(description);
 
   // Check for duplicate
   const existingRole = await checkRoleExists(trimmedName, companyId);
@@ -72,52 +36,9 @@ const createRole = async (name, description, companyId = null) => {
   return newRole;
 };
 
-const createPermission = async (name, display_name, description,type) => {
-  // Input validation
-  if (!name || typeof name !== 'string') {
-    logger.warn(`Name is invalid (${name}, ${typeof name}) - Must be a string`);
-    throw new Error(`Permission name is required and must be a string ${name}.`);
-  }
-
-  const trimmedName = name.trim();
-
-  if (trimmedName.length === 0) {
-    logger.warn(`Empty permission name provided after trimming (${trimmedName})`);
-    throw new Error(`Permission name cannot be empty ${trimmedName}.`);
-  }
-
-  if (trimmedName.length < 2) {
-    logger.warn(`Permission name too short (${trimmedName.length} chars) - Must be at least 2 characters`);
-    throw new Error(`Permission name must be at least 2 characters long ${trimmedName}.`);
-  }
-
-  if (trimmedName.length > 50) {
-    logger.warn(`Permission name too long (${trimmedName.length} chars) - Exceeds 50 character limit`);
-    throw new Error(`Permission name cannot exceed 50 characters ${trimmedName}.`);
-  }
-
-  // Character validation
-  const nameRegex = /^[a-zA-Z0-9\s\-_]+$/;
-  if (!nameRegex.test(trimmedName)) {
-    logger.warn(`Invalid characters in permission name (${trimmedName}) - Only letters, numbers, spaces, hyphens, and underscores allowed`);
-    throw new Error(`Permission name can only contain letters, numbers, spaces, hyphens, and underscores ${trimmedName}.`);
-  }
-
-  // Description validation (optional)
-  let trimmedDescription = null;
-  if (description) {
-    if (typeof description !== 'string') {
-      logger.warn(`Invalid permission description format (${typeof description}) - Must be a string`);
-      throw new Error(`Description must be a string ${description}.`);
-    }
-
-    trimmedDescription = description.trim();
-
-    if (trimmedDescription.length > 500) {
-      logger.warn(`Permission description too long (${trimmedDescription.length} chars) - Exceeds 500 character limit`);
-      throw new Error(`Description cannot exceed 500 characters ${trimmedDescription}.`);
-    }
-  }
+const createPermission = async (name, display_name, description, type) => {
+  const trimmedName = validateName(name, { fieldName: 'Permission name' });
+  const trimmedDescription = validateDescription(description);
 
   // Check for duplicate
   const existingPermission = await Permission.findOne({ where: { name: trimmedName } });
@@ -205,21 +126,18 @@ const getAllPermissions = async () => {
 
 const removePermissionFromRole = async (roleId, permissionId, userId) => {
   try {
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      throw { status: 404, message: `Role with id ${roleId} not found` };
-    }
+    const role = await findModelByIdOrThrow(Role, roleId, {}, 'Role');
 
     // Check if role is a default/global role (companyId is null)
     if (role.companyId === null) {
       // Only superadmins can modify default roles
-      const user = await User.findByPk(userId, { attributes: ['isSadmin'] });
-      if (!user || !user.isSadmin) {
+      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
+      if (!user.isSadmin) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
 
-    const permission = await Permission.findByPk(permissionId);
+    const permission = await findModelByIdOrThrow(Permission, permissionId, {}, 'Permission');
     if (!permission) {
       throw { status: 404, message: `Permission with id ${permissionId} not found` };
     }
@@ -235,16 +153,13 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
     // Ensure permissionIds is an array
     const permissionIdArray = Array.isArray(permissionIds) ? permissionIds : [permissionIds];
 
-    const role = await Role.findByPk(roleId);
-    if (!role) {
-      throw { status: 404, message: `Role with id ${roleId} not found` };
-    }
+    const role = await findModelByIdOrThrow(Role, roleId, {}, 'Role');
 
     // Check if role is a default/global role (companyId is null)
     if (role.companyId === null) {
       // Only superadmins can modify default roles
-      const user = await User.findByPk(userId, { attributes: ['isSadmin'] });
-      if (!user || !user.isSadmin) {
+      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
+      if (!user.isSadmin) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
@@ -283,7 +198,7 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
 const deletePermission = async (permissionId) => {
   try {
     // Check if permission exists
-    const permission = await Permission.findByPk(permissionId);
+    const permission = await findModelByIdOrThrow(Permission, permissionId, {}, 'Permission');
     if (!permission) {
       throw { status: 404, message: `Permission with id ${permissionId} not found` };
     }
@@ -345,26 +260,18 @@ const getAllCompanies = async () => {
 const assignUserToCompany = async (userId, companyId) => {
   try {
     // Validate user exists and is sadmin and active
-    const user = await User.findByPk(userId, {
+    const user = await findModelByIdOrThrow(User, userId, {
       attributes: ['id', 'name', 'isSadmin', 'isActive']
-    });
-
-    if (!user) {
-      throw { status: 404, message: 'User not found' };
-    }
+    }, 'User');
 
     if (!user.isSadmin || !user.isActive) {
       throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
     }
 
     // Validate company exists
-    const company = await Company.findByPk(companyId, {
+    const company = await findModelByIdOrThrow(Company, companyId, {
       attributes: ['id', 'name']
-    });
-
-    if (!company) {
-      throw { status: 404, message: 'Company not found' };
-    }
+    }, 'Company');
 
     // Check if assignment already exists
     const existingAssignment = await MultiCompanyModule.findOne({
@@ -393,22 +300,14 @@ const assignUserToCompany = async (userId, companyId) => {
 const removeUserFromCompany = async (userId, companyId) => {
   try {
     // Validate user exists
-    const user = await User.findByPk(userId, {
+    const user = await findModelByIdOrThrow(User, userId, {
       attributes: ['id', 'name']
-    });
-
-    if (!user) {
-      throw { status: 404, message: 'User not found' };
-    }
+    }, 'User');
 
     // Validate company exists
-    const company = await Company.findByPk(companyId, {
+    const company = await findModelByIdOrThrow(Company, companyId, {
       attributes: ['id', 'name']
-    });
-
-    if (!company) {
-      throw { status: 404, message: 'Company not found' };
-    }
+    }, 'Company');
 
     // Check if assignment exists
     const assignment = await MultiCompanyModule.findOne({
@@ -437,13 +336,9 @@ const removeUserFromCompany = async (userId, companyId) => {
 const getCompanyUsers = async (companyId) => {
   try {
     // Validate company exists
-    const company = await Company.findByPk(companyId, {
+    await findModelByIdOrThrow(Company, companyId, {
       attributes: ['id', 'name']
-    });
-
-    if (!company) {
-      throw { status: 404, message: 'Company not found' };
-    }
+    }, 'Company');
 
     const assignments = await MultiCompanyModule.findAll({
       where: { companyId },
