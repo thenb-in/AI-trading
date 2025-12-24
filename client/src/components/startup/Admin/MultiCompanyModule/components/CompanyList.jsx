@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { useState, useCallback } from 'react';
+import { toast } from 'react-toastify';
 import { UserCompanyAssignmentModal } from './UserCompanyAssignmentModal';
 
 const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignClick }) => {
@@ -12,6 +13,16 @@ const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignCl
     handleSwitchClick(company.id);
   }, [handleSwitchClick, company.id]);
 
+  const handleCodeClick = useCallback(async (e) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(company.id);
+      toast.success('Company code copied to clipboard');
+    } catch {
+      toast.error('Failed to copy company code');
+    }
+  }, [company.id]);
+
   return (
     <li className={`flex items-center justify-between p-4 border rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer ${isActive ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
       <div className="flex items-center gap-3 flex-1" onClick={handleCardClick}>
@@ -20,13 +31,16 @@ const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignCl
         </div>
         <div className="flex-1">
           <div className="font-semibold text-gray-900">{company.name}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{company.id}</div>
+          <div 
+            onClick={handleCodeClick}
+            className="text-xs text-gray-500 mt-0.5 hover:text-blue-600 hover:underline cursor-pointer transition-colors"
+            title="Click to copy company code"
+          >
+            {company.id}
+          </div>
           {isActive ? (
             <span className="inline-flex items-center text-xs mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
           ) : null}
-          <div className="text-xs text-blue-600 mt-1 cursor-pointer hover:text-blue-800">
-            Click to assign users to this company
-          </div>
         </div>
       </div>
       <div className="flex flex-col gap-2 ml-4">
