@@ -2,11 +2,11 @@
  * View layer for authentication endpoints
  * Handles request parsing, validation, controller calls, and response building
  */
-const authController = require('../../controllers/startup/authController');
-const allowedPermissions = require('../../utils/startup/allowedPermissions');
-const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 const logger = require('../../../logger');
 const env = require('../../config/env');
+const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
+const authController = require('../../controllers/startup/authController');
+const allowedPermissions = require('../../utils/startup/allowedPermissions');
 
 /**
  * Sign up view

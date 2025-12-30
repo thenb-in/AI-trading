@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "1.0.4",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
@@ -9,7 +9,7 @@
     "lint": "npx eslint .",
     "lint:errors": "npx eslint . --quiet",
     "lint:fix": "npx eslint . --fix",
-    "create-new-company":"node create_company_with_role_and_perms.js",
+    "create-new-company": "node create_company_with_role_and_perms.js",
     "setup-env": "node scripts/setup-env/index.js setup",
     "check-env": "node scripts/setup-env/index.js check",
     "validate-env": "node scripts/setup-env/index.js validate",
@@ -45,8 +45,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "eslint": "^9.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import": "^2.32.0",
     "globals": "^15.0.0"
   }
-
 }

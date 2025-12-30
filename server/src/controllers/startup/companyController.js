@@ -1,11 +1,11 @@
 // controllers/companyController.js
+const env = require('../../config/env');
+const { MASTER_PERMISSION_CONSTANTS ,MODULE_PERMISSION_CONSTANTS} = require('../../constants/permissions');
 const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
 const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
-const { MASTER_PERMISSION_CONSTANTS ,MODULE_PERMISSION_CONSTANTS} = require('../../constants/permissions');
-const env = require('../../config/env');
 
 const companyController = {
   async getCompanySettings(req, res) {

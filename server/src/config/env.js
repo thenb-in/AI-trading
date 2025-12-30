@@ -1,8 +1,8 @@
 // Centralized environment configuration
 const path = require('path');
+const logger = require('../../logger');
 const { PARSE_INT_RADIX } = require('../constants/startup/standard_constants');
 const { PRODUCTION_ENV } = require('../constants/startup/standard_constants');
-const logger = require('../../logger');
 
 
 // This file sets up dotenv-safe once and exports the configuration

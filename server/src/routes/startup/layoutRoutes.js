@@ -1,8 +1,8 @@
 const express = require('express');
-const router = express.Router();
-
-const authMiddleware = require('../../middleware/authMiddleware');
 const LayoutController = require('../../controllers/startup/layoutController');
+const authMiddleware = require('../../middleware/authMiddleware');
+
+const router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware.protect);

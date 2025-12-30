@@ -11,9 +11,9 @@
  * - Skips certain file types (models, services, routes, etc.)
  */
 
+const { createCatchBlockTracker } = require('../utils/catchBlockTracker');
 const { isConstantsFile, shouldSkipFile, shouldSkipString } = require('../utils/fileUtils');
 const { analyzeStringContent, isLoggerCall, isErrorConstructorCall, convertBinaryExpressionToTemplateLiteral, isStringConcatenation } = require('../utils/stringUtils');
-const { createCatchBlockTracker } = require('../utils/catchBlockTracker');
 
 /**
  * Check if file should be skipped for hardcoded string checks

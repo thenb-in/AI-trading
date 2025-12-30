@@ -1,9 +1,9 @@
-const userService = require('../services/startup/userService');
 const logger = require('../../logger');
-const { verifyToken, generateAccessToken, generateRefreshToken } = require('../utils/startup/authUtils');
 const env = require('../config/env');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
 const db = require('../models');
+const userService = require('../services/startup/userService');
+const allowedPermissions = require('../utils/startup/allowedPermissions');
+const { verifyToken, generateAccessToken, generateRefreshToken } = require('../utils/startup/authUtils');
 
 const refreshTokenLocks = new Map();
 

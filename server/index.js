@@ -1,26 +1,25 @@
-const express = require('express');
 const http = require('http');
 const path = require('path');
-const cors = require('cors');
-const env = require('./src/config/env');
-
-// Load database models
-const db = require('./src/models');
-const authRoutes = require('./src/routes/startup/authRoutes');
-const userRoutes = require('./src/routes/startup/userRoutes');
-const companyRoutes = require('./src/routes/startup/companyRoutes');
-const adminRoutes = require('./src/routes/startup/admin.route');
-const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
-const layoutRoutes = require('./src/routes/startup/layoutRoutes');
-const errorMiddleware = require('./src/middleware/errorMiddleware');
-
+const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const cors = require('cors');
+const express = require('express');
+const logger = require('./logger');
+const env = require('./src/config/env');
+const errorMiddleware = require('./src/middleware/errorMiddleware');
+const httpLogger = require('./src/middleware/httpLogger');
+const db = require('./src/models');
+const appRoutes = require('./src/routes/app_routes');
+const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
+const adminRoutes = require('./src/routes/startup/admin.route');
+const authRoutes = require('./src/routes/startup/authRoutes');
+const companyRoutes = require('./src/routes/startup/companyRoutes');
+const layoutRoutes = require('./src/routes/startup/layoutRoutes');
+const userRoutes = require('./src/routes/startup/userRoutes');
 
 const app = express();
-const bodyParser = require('body-parser');
 const server = http.createServer(app);
-const logger = require('./logger');
-const httpLogger = require('./src/middleware/httpLogger');
+
 app.use(httpLogger);
 
 // // Debug middleware to log all requests before routing
@@ -60,7 +59,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/company-profile', companyProfileRoutes);
 app.use('/api/v1/layouts', layoutRoutes);
 // App routes (custom routes)
-const appRoutes = require('./src/routes/app_routes');
+
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"
 // current routes in app route need to manually add /api/v1 prefix
 // todo: automatically add /api/v1 prefix to app routes

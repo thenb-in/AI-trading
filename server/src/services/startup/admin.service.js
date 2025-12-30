@@ -1,6 +1,6 @@
-const { Role, Permission, User, Company, MultiCompanyModule } = require('../../models');
-const logger = require('../../../logger');
 const { Op } = require('sequelize');
+const logger = require('../../../logger');
+const { Role, Permission, User, Company, MultiCompanyModule } = require('../../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../../utils/startup/modelHelpers');
 
 const checkRoleExists = async (name, companyId = null) => {

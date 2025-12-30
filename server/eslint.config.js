@@ -1,4 +1,5 @@
 const customPlugin = require('./eslint-rules/index.js');
+const importPlugin = require('eslint-plugin-import');
 
 module.exports = [
   { ignores: ['node_modules', 'logs', 'migrations', 'eslint.config.js', 'scripts'] },
@@ -32,7 +33,8 @@ module.exports = [
       sourceType: 'commonjs' // Server uses CommonJS modules
     },
     plugins: {
-      custom: customPlugin
+      custom: customPlugin,
+      import: importPlugin
     },
     rules: {
       // Basic recommended rules
@@ -79,7 +81,57 @@ module.exports = [
       // Security rules
       'no-eval': 'error',
       'no-implied-eval': 'error',
-      'no-new-func': 'error'
+      'no-new-func': 'error',
+
+      // Import/export rules
+      'import/no-unresolved': 'error',
+      'import/named': 'error',
+      'import/default': 'error',
+      'import/namespace': 'error',
+      'import/no-absolute-path': 'error',
+      'import/no-dynamic-require': 'warn',
+      'import/no-internal-modules': 'off',
+      'import/no-webpack-loader-syntax': 'error',
+      'import/export': 'error',
+      'import/no-named-as-default': 'warn',
+      'import/no-named-as-default-member': 'warn',
+      'import/no-deprecated': 'warn',
+      'import/no-extraneous-dependencies': 'error',
+      'import/no-mutable-exports': 'error',
+      'import/no-unused-modules': 'off',
+      'import/first': 'error',
+      'import/exports-last': 'off',
+      'import/no-duplicates': 'error',
+      'import/no-namespace': 'off',
+      'import/extensions': ['error', 'ignorePackages', {
+        js: 'never',
+        json: 'always'
+      }],
+      'import/order': ['error', {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          'parent',
+          'sibling',
+          'index'
+        ],
+        'newlines-between': 'never',
+        alphabetize: {
+          order: 'asc',
+          caseInsensitive: true
+        }
+      }],
+      'import/newline-after-import': 'error',
+      'import/prefer-default-export': 'off',
+      'import/max-dependencies': 'off',
+      'import/no-unassigned-import': 'off',
+      'import/no-named-default': 'error',
+      'import/no-default-export': 'off',
+      'import/no-named-export': 'off',
+      'import/no-anonymous-default-export': 'off',
+      'import/group-exports': 'off',
+      'import/dynamic-import-chunkname': 'off'
     }
   },
 
@@ -112,7 +164,8 @@ module.exports = [
       sourceType: 'commonjs'
     },
     plugins: {
-      custom: customPlugin
+      custom: customPlugin,
+      import: importPlugin
     },
     rules: {
       'no-process-exit': 'off',

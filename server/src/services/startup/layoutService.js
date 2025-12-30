@@ -1,5 +1,5 @@
-const { Layout, UserDefaultLayout } = require('../../models');
 const logger = require('../../../logger');
+const { Layout, UserDefaultLayout } = require('../../models');
 
 class LayoutService {
   /**

@@ -1,5 +1,5 @@
-const LayoutService = require('../../services/startup/layoutService');
 const logger = require('../../../logger');
+const LayoutService = require('../../services/startup/layoutService');
 
 class LayoutController {
   /**

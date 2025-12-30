@@ -1,5 +1,5 @@
-const adminService = require('../../services/startup/admin.service');
 const logger = require('../../../logger');
+const adminService = require('../../services/startup/admin.service');
 
 
 const createRole = async (req, res) => {

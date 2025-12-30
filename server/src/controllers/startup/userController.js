@@ -1,8 +1,8 @@
-const authService = require('../../services/startup/authService');
-const allowedPermissions = require('../../utils/startup/allowedPermissions');
-const userService = require('../../services/startup/userService');
 const logger = require('../../../logger');
 const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
+const authService = require('../../services/startup/authService');
+const userService = require('../../services/startup/userService');
+const allowedPermissions = require('../../utils/startup/allowedPermissions');
 
 const getAllUsers = async (req, res) => {
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);

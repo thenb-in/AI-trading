@@ -1,7 +1,7 @@
 // services/companyService.js
-const { Company, MultiCompanyModule, User, UserProfile, CompanyProfile } = require('../../models');
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
+const { Company, MultiCompanyModule, User, UserProfile, CompanyProfile } = require('../../models');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 
 const companyService = {

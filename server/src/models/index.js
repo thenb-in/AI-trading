@@ -2,14 +2,15 @@
 
 const fs = require('fs');
 const path = require('path');
-const Sequelize = require('sequelize');
 const process = require('process');
-const env = require('../config/env'); // Load environment variables
+const Sequelize = require('sequelize');
 const logger = require('../../logger');
+const config = require('../config/config');
+const env = require('../config/env');
 
 const basename = path.basename(__filename);
 const nodeEnv = env.NODE_ENV;
-const config = require('../config/config.js')[nodeEnv];
+const dbConfig = config[nodeEnv];
 
 const db = {};
 
@@ -24,18 +25,18 @@ const default_config = {
   }
 };
 
-if (config.use_env_variable) {
-  sequelize = new Sequelize(process.env[config.use_env_variable], {
-    dialect: config.dialect,
+if (dbConfig.use_env_variable) {
+  sequelize = new Sequelize(process.env[dbConfig.use_env_variable], {
+    dialect: dbConfig.dialect,
     ...default_config
   });
 } else {
   sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
+    dbConfig.database,
+    dbConfig.username,
+    dbConfig.password,
     {
-      ...config,
+      ...dbConfig,
       ...default_config
     }
   );

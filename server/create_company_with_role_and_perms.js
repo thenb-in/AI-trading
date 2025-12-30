@@ -1,13 +1,13 @@
 'use strict';
 const readline = require('readline');
-const db = require('./src/models'); // Sequelize models index
 const logger = require('./logger');
-const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
-const env = require('./src/config/env');
-const { YES, INPUT_SKIP_KEY } = require('./src/constants/startup/standard_constants');
-const { signup, approveUser } = require('./src/services/startup/authService');
-const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
 const { createStartingAppData } = require('./scripts/default_data/app');
+const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
+const env = require('./src/config/env');
+const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
+const { YES, INPUT_SKIP_KEY } = require('./src/constants/startup/standard_constants');
+const db = require('./src/models'); // Sequelize models index
+const { signup, approveUser } = require('./src/services/startup/authService');
 
 
 

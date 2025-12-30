@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const userService = require('../../services/startup/userService');
 const env = require('../../config/env');
+const userService = require('../../services/startup/userService');
 
 const generateAccessToken = (user) => {
   return jwt.sign(

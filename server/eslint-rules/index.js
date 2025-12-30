@@ -1,16 +1,16 @@
 // Main ESLint custom rules index file
 // This file imports and exports all custom rules for better organization
 
-const noConsoleUsage = require('./rules/no-console-usage');
-const loggerArgsChecker = require('./rules/logger-args-checker');
-const noDirectDotenv = require('./rules/no-direct-dotenv');
-const noHardcodedStrings = require('./rules/no-hardcoded-strings');
-const warnMixedStrings = require('./rules/warn-mixed-strings');
-const noJsonStringifyInLogs = require('./rules/no-json-stringify-in-logs');
 const constantsInSingleFolder = require('./rules/constants-in-single-folder');
 const fileLengthWarning = require('./rules/file-length-warning');
-const noDirectModelImports = require('./rules/no-direct-model-imports');
+const loggerArgsChecker = require('./rules/logger-args-checker');
 const namedExportsOnly = require('./rules/named-exports-only');
+const noConsoleUsage = require('./rules/no-console-usage');
+const noDirectDotenv = require('./rules/no-direct-dotenv');
+const noDirectModelImports = require('./rules/no-direct-model-imports');
+const noHardcodedStrings = require('./rules/no-hardcoded-strings');
+const noJsonStringifyInLogs = require('./rules/no-json-stringify-in-logs');
+const warnMixedStrings = require('./rules/warn-mixed-strings');
 
 // Combine all rules into a single object
 const customRules = {

@@ -1,8 +1,9 @@
 const express = require('express');
-const router = express.Router();
-const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout } = require('../../views/startup/authView');
-const authValidator = require('../../validators/startup/authValidator');
 const authMiddleware = require('../../middleware/authMiddleware');
+const authValidator = require('../../validators/startup/authValidator');
+const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout } = require('../../views/startup/authView');
+
+const router = express.Router();
 
 // Public routes
 router.post('/signup', authValidator.signupValidation, signup);

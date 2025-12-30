@@ -1,7 +1,8 @@
 const express = require('express');
-const router = express.Router();
-const { getCompanyProfileView, updateCompanyProfileView } = require('../views/companyProfileView');
 const authMiddleware = require('../middleware/authMiddleware');
+const { getCompanyProfileView, updateCompanyProfileView } = require('../views/companyProfileView');
+
+const router = express.Router();
 
 router.use(authMiddleware.protect);
 

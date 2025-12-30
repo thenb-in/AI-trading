@@ -1,5 +1,5 @@
-const { CompanyProfile, Company } = require('../models');
 const logger = require('../../logger');
+const { CompanyProfile, Company } = require('../models');
 
 const companyProfileService = {
   async getCompanyProfile(companyId) {

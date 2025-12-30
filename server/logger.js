@@ -1,6 +1,6 @@
+const { ValidationError } = require('sequelize');
 const winston = require('winston');
 require('winston-daily-rotate-file');
-const { ValidationError } = require('sequelize');
 
 
 const { combine, timestamp, printf, colorize, json } = winston.format;

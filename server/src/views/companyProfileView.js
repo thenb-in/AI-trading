@@ -2,11 +2,11 @@
  * View layer for company profile endpoints
  * Handles request parsing, validation, controller calls, and response building
  */
-const companyProfileController = require('../controllers/companyProfileController');
-const companyProfileValidator = require('../validators/startup/companyProfileValidator');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
-const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const logger = require('../../logger');
+const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
+const companyProfileController = require('../controllers/companyProfileController');
+const allowedPermissions = require('../utils/startup/allowedPermissions');
+const companyProfileValidator = require('../validators/startup/companyProfileValidator');
 
 /**
  * Get company profile view

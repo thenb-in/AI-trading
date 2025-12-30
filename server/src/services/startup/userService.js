@@ -1,6 +1,6 @@
+const { Op } = require('sequelize');
 const db = require('../../models');
 const { User, Company, Role, UserProfile } = require('../../models');
-const { Op } = require('sequelize');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 
 async function deleteUser(userId) {
