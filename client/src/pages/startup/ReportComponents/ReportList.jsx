@@ -14,7 +14,7 @@ const ReportList = ({ reports, categories }) => {
     return reports.filter(report => {
       const matchesFilter = activeFilter === 'all' || report.category === activeFilter;
       const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const permissionName = "read_" + report.id;
+      const permissionName = report.permissionName || ("read_" + report.id);
       const isPermissionGranted = hasPermission(permissionName, dataContext);
       if (!isPermissionGranted) {
         console.log(`No permission for ${permissionName}`, report);
