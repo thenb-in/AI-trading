@@ -84,17 +84,46 @@ function DataGridBody({
         const isEven = originalIndex % 2 === 0;
         const isSelected = key === selectedRowId;
         const isHovered = key === hoveredRowId;
+        const isDisabled = row._isDisabled === true;
 
-        const rowStyle = getRowStyle(isEven, isSelected, isHovered);
+        const rowStyle = {
+          ...getRowStyle(isEven, isSelected, isHovered),
+          ...(isDisabled && {
+            opacity: 0.5,
+            pointerEvents: 'none',
+            cursor: 'not-allowed',
+            backgroundColor: '#f3f4f6'
+          })
+        };
+
+        // Extract event handlers to avoid inline arrow functions
+        const handleMouseEnter = () => {
+          if (!isDisabled) {
+            handleRowHover(key);
+          }
+        };
+
+        const handleMouseLeave = () => {
+          if (!isDisabled) {
+            handleRowLeave(key);
+          }
+        };
+
+        const handleClick = () => {
+          if (!isDisabled) {
+            handleRowClick(key, row);
+          }
+        };
 
         return (
           <tr
             key={key}
             ref={idx === 0 ? firstRowRef : null}
             style={rowStyle}
-            onMouseEnter={() => handleRowHover(key)}
-            onMouseLeave={() => handleRowLeave(key)}
-            onClick={() => handleRowClick(key, row)}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleClick}
+            className={isDisabled ? 'data-grid-row-disabled' : ''}
           >
             {frozenColumns.map((col) => {
               const left = cumulativeFrozenLeftOffsets[col.field] || 0;
