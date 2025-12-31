@@ -95,6 +95,18 @@ function useAppMenuItems() {
   const isMasterPage = location.pathname.startsWith("/admin/master");
   const activeCategory = searchParams.get("category") || (isMasterPage ? "Common Masters" : null);
 
+  // Handle click on Masters button - navigate to first category
+  const handleMasterButtonClick = useCallback(() => {
+    if (categories && categories.length > 0) {
+      const firstCategory = categories[0];
+      const path = `/admin/master?category=${encodeURIComponent(firstCategory.name)}`;
+      navigate(path);
+    } else {
+      // Fallback to master page if no categories
+      navigate("/admin/master");
+    }
+  }, [categories, navigate]);
+
   // Master Categories Submenu Component
   const MasterSubmenu = () => {
     const handleCategoryClick = (categoryName) => {
@@ -199,6 +211,7 @@ function useAppMenuItems() {
       hasSubmenu: true,
       submenu: <MasterSubmenu />,
       flyout: <MasterFlyout />,
+      onClick: handleMasterButtonClick,
       onMouseEnter: openFlyout,
       onMouseLeave: scheduleCloseFlyout,
       buttonRef: masterButtonRef,
