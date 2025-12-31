@@ -10,7 +10,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
   const [form, setForm] = useState({ name: '', companyId: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
   const [touched, setTouched] = useState(false);
 
-  const isValid = form.name.trim().length >= 2 && form.companyId.trim().length >= 2;
+  const isValid = form.name.trim().length >= 2;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,16 +56,12 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
        <div>
           <input
             type="text"
-            placeholder="Company ID (unique identifier)"
+            placeholder="Company ID (optional - will be auto-generated if not provided)"
             value={form.companyId}
             onChange={handleCompanyIdChange}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              touched && !isValid ? 'border-red-300' : 'border-gray-300'
-            }`}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
           />
-          {touched && form.companyId.trim().length < 2 && (
-            <p className="text-xs text-red-600 mt-1">Company ID must be at least 2 characters (letters, numbers, underscores, hyphens only).</p>
-          )}
+          <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate a unique ID. If provided, must be at least 2 characters (letters, numbers, underscores, hyphens only).</p>
         </div>
         <div>
           <input
@@ -74,7 +70,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
             value={form.name}
             onChange={handleNameChange}
             className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              touched && !isValid ? 'border-red-300' : 'border-gray-300'
+              touched && form.name.trim().length < 2 ? 'border-red-300' : 'border-gray-300'
             }`}
           />
           {touched && form.name.trim().length < 2 && (
