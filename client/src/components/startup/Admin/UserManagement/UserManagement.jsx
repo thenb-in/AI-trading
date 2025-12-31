@@ -41,7 +41,7 @@ function UserManagement() {
     updateUserProfileInState,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
-  const [showNewUsers, setShowNewUsers] = useState(false);
+  const [showNewUsers, setShowNewUsers] = useState(true);
   const [showAllUsers, setShowAllUsers] = useState(false);
   const { setHamburgerMenu, hamburgerMenu, userData } = useDataContext();
   const isMobileView = window.innerWidth < 768;
@@ -202,8 +202,8 @@ function UserManagement() {
       />
 
       <div className="mb-4">
-        <button onClick={handleToggleNewUsers} className="w-full flex justify-between items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-md font-semibold mb-2 focus:outline-none">
-          <span>New Users (Never Signed In)</span>
+        <button onClick={handleToggleNewUsers} className="w-full flex justify-between items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-md font-semibold focus:outline-none">
+          <span>New Users (Never Signed In) ({newUsers.length})</span>
           <span>{showNewUsers ? '▲' : '▼'}</span>
         </button>
         {showNewUsers && (
@@ -228,7 +228,7 @@ function UserManagement() {
       </div>
 
       <div className="mb-4">
-        <button onClick={handleToggleInactive} className="w-full flex justify-between items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-md font-semibold mb-2 focus:outline-none">
+        <button onClick={handleToggleInactive} className="w-full flex justify-between items-center px-4 py-2 bg-orange-100 text-orange-800 rounded-md font-semibold focus:outline-none">
           <span>Inactive Users</span>
           <span>{showInactive ? '▲' : '▼'}</span>
         </button>
@@ -254,7 +254,7 @@ function UserManagement() {
       </div>
 
       <div className="mb-4">
-        <button onClick={handleToggleAllUsers} className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-semibold mb-2 focus:outline-none">
+        <button onClick={handleToggleAllUsers} className="w-full flex justify-between items-center px-4 py-2 bg-gray-100 text-gray-800 rounded-md font-semibold focus:outline-none">
           <span>All Users</span>
           <span>{showAllUsers ? '▲' : '▼'}</span>
         </button>

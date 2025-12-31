@@ -19,6 +19,7 @@ const UserTable = ({
   handleDeviceOptionUpdate,
   extraColumns = []
 }) => {
+  console.log('title', title);
   const allUsersInTableSelected = users.length > 0 && users.every(user => selectedUsers.includes(user.id));
 
   const formatLastActive = useCallback((dateString) => {
@@ -46,10 +47,6 @@ const UserTable = ({
 
   return (
     <div className={`mb-4 rounded-lg overflow-hidden shadow-md border ${statusColor || 'bg-gray-100'}`}>
-      <div className="p-4 flex justify-between items-center">
-        <h3 className="font-bold text-lg">{title} ({users.length})</h3>
-        
-      </div>
       <div className="overflow-x-auto">
         {users.length === 0 ? (
           <p className="p-4 text-center text-gray-500">{emptyMessage}</p>
