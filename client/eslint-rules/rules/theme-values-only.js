@@ -1,7 +1,7 @@
 // Theme values only rule
 // Ensures colors, spacing, and fontSize come from theme.js
 
-export default {
+const themeValuesOnly = {
   'theme-values-only': {
     meta: {
       type: 'problem',
@@ -148,3 +148,4 @@ export default {
   }
 };
 
+export { themeValuesOnly };

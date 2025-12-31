@@ -9,6 +9,8 @@ use sequelize
   - Views: API responses and data formatting in `/server/controllers/`
   - Controllers: Request handling and business logic in `/server/controllers/`
   - Services: Model to request data into business logic layer in `/server/services/`
+    - **One Model Per Service**: Each service can only import ONE model (one-to-one mapping)
+    - Models can only be imported in services, not in controllers, routes, or anywhere else
   - Routes: API endpoints in `/server/routes/`
 
 - **Frontend**: Component-based architecture

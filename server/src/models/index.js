@@ -73,6 +73,7 @@ const loadModelsFromDirectory = (dirPath, dirName) => {
     )
     .forEach(file => {
       logger.debug(`Loading ${dirName} model: ${file}`);
+      // eslint-disable-next-line global-require
       const model = require(path.join(dirPath, file))(
         sequelize,
         Sequelize.DataTypes
@@ -98,6 +99,7 @@ fs.readdirSync(__dirname)
   )
   .forEach(file => {
     logger.debug(`Loading app model: ${file}`);
+    // eslint-disable-next-line global-require
     const model = require(path.join(__dirname, file))(
       sequelize,
       Sequelize.DataTypes

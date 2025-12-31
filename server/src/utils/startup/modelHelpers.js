@@ -100,28 +100,11 @@ const validateDescription = (description, options = {}) => {
   return trimmedDescription;
 };
 
-/**
- * Get reusable include configuration for User with Role and Permissions
- * @returns {array} Sequelize include configuration
- */
-const getUserWithRoleInclude = () => [
-  {
-    model: require('../../models').Role,
-    as: 'role',
-    include: [{
-      model: require('../../models').Permission,
-      as: 'permissions',
-      through: { attributes: [] },
-      attributes: ['id', 'name', 'description', 'type']
-    }]
-  }
-];
 
 module.exports = {
   findModelByIdOrThrow,
   findModelById,
   validateName,
-  validateDescription,
-  getUserWithRoleInclude
+  validateDescription
 };
 

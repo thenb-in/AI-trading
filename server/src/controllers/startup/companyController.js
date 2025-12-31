@@ -3,6 +3,7 @@ const env = require('../../config/env');
 const { MASTER_PERMISSION_CONSTANTS ,MODULE_PERMISSION_CONSTANTS} = require('../../constants/permissions');
 const { get: _get } = require('../../routes/startup/authRoutes');
 const companyService = require('../../services/startup/companyService');
+const multiCompanyService = require('../../services/startup/multiCompanyService');
 const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
@@ -66,7 +67,7 @@ const companyController = {
       if (!companyId) {
         return res.status(400).json({ error: `Company ID is required get ${companyId}` });
       }
-      const company = await companyService.createCompanyAndLink({ name, companyId, mobileApp, desktopWeb, mobileWeb }, req.user.id);
+      const company = await multiCompanyService.createCompanyAndLink({ name, companyId, mobileApp, desktopWeb, mobileWeb }, req.user.id);
       return res.status(201).json({
         message: `Company "${company.name}" created successfully with ID "${companyId}"!`,
         company
@@ -78,7 +79,7 @@ const companyController = {
 
   async myCompanies(req, res) {
     try {
-      const companies = await companyService.getUserCompanies(req.user.id);
+      const companies = await multiCompanyService.getUserCompanies(req.user.id);
       return res.status(200).json({ companies, activeCompanyId: req.user.company_id });
     } catch (error) {
       return res.status(400).json({ error: error.message });
@@ -92,7 +93,7 @@ const companyController = {
         return res.status(400).json({ error: `companyId is required ${companyId}.` });
       }
 
-      const updatedUser = await companyService.switchUserCompany(req.user.id, companyId);
+      const updatedUser = await multiCompanyService.switchUserCompany(req.user.id, companyId);
 
       // Issue new tokens tied to new companyId
       const accessToken = generateAccessToken(updatedUser);

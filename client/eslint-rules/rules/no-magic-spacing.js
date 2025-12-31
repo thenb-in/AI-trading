@@ -1,7 +1,7 @@
 // No magic spacing numbers rule
 // Disallows hardcoded spacing numbers in className, style props, or sx props
 
-export default {
+const noMagicSpacing = {
   'no-magic-spacing': {
     meta: {
       type: 'problem',
@@ -109,3 +109,4 @@ export default {
   }
 };
 
+export { noMagicSpacing };

@@ -1,13 +1,18 @@
 const bcrypt = require('bcrypt');
 const { where: _where } = require('sequelize');
 const logger = require('../../../logger');
-const { User, Company, Role, MultiCompanyModule, UserProfile } = require('../../models');
+// User is the primary model for this service
+const { User } = require('../../models');
 const {
   generateAccessToken,
   generateRefreshToken,
   revokeRefreshToken
 } = require('../../utils/startup/authUtils');
-const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../../utils/startup/modelHelpers');
+const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
+const companyService = require('./companyService');
+const multiCompanyService = require('./multiCompanyService');
+const rolePermissionService = require('./rolePermissionService');
+const { getUserWithRoleInclude } = require('./rolePermissionService');
 const userService = require('./userService');
 
 const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
@@ -34,7 +39,8 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     }
   }
 
-  const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
+  // Use companyService to get company
+  const company = await companyService.getCompanySettings(companyId);
   logger.info(`Looking up company by ID: ${companyId} - Found: true`);
 
   let roleInstance = null;
@@ -42,10 +48,14 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     logger.info(`Looking up role information: ${role} - Type: ${typeof role}`);
     // Check if role is a number (ID) or string (name)
     if (typeof role === 'number' || !isNaN(role)) {
-      roleInstance = await Role.findByPk(role);
+      // Use adminService to get role by ID
+      const allRoles = await rolePermissionService.getRolesAndPermissions(companyId);
+      roleInstance = allRoles.find(r => r.id === role);
       logger.info(`Role lookup by ID completed: ${role} - Found: ${!!roleInstance}`);
     } else {
-      roleInstance = await Role.findOne({ where: { name: role } });
+      // Use adminService to get role by name
+      const allRoles = await rolePermissionService.getRolesAndPermissions(companyId);
+      roleInstance = allRoles.find(r => r.name === role);
       logger.info(`Role lookup by name completed: ${role} - Found: ${!!roleInstance}`);
     }
     if (!roleInstance) {
@@ -69,8 +79,9 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb      // inherits from company
   }, { transaction });
-  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId }, { transaction });
-  await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId }, { transaction });
+  // Use userService and multiCompanyService for related operations
+  await userService.createUserProfile(user?.dataValues?.id, { currentCompany: companyId }, transaction);
+  await multiCompanyService.assignUserToCompany(user?.dataValues?.id, companyId, transaction);
 
   return user;
 };
@@ -120,12 +131,14 @@ const issueTokensAndPersist = async (user) => {
 };
 
 const getActiveCompanyForUser = async (user) => {
-  const profile = await UserProfile.findOne({ where: { userId: user.id } });
+  // Use userService for UserProfile and companyService for Company
+  const profile = await userService.getUserProfile(user.id);
   const activeCompanyId = profile?.currentCompany || user.company_id;
   if (!activeCompanyId) {
     return null;
   }
-  return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] });
+  const company = await companyService.getCompanySettings(activeCompanyId);
+  return { id: company.id, name: company.name };
 };
 
 const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
@@ -173,9 +186,13 @@ const approveUser = async (userId, requirePasswordReset = false, roleId = null) 
 
   user.is_approved = true;
 
-  // If roleId is provided, validate and assign it
+  // If roleId is provided, validate and assign it - use adminService
   if (roleId) {
-    await findModelByIdOrThrow(Role, roleId, {}, 'Role');
+    const allRoles = await rolePermissionService.getRolesAndPermissions(user.company_id);
+    const roleExists = allRoles.some(r => r.id === roleId);
+    if (!roleExists) {
+      throw new Error(`Role not found ${roleId}.`);
+    }
     user.roleId = roleId;
     logger.info(`User approved with role assignment: ${userId} - Role: ${roleId}`);
   }
@@ -227,11 +244,14 @@ const getCurrentUser = async (userId) => {
       throw new Error(`User account is deactivated ${userId}.`);
     }
 
-    const profile = await UserProfile.findOne({ where: { userId } });
+    // Use userService for UserProfile and companyService for Company
+    const profile = await userService.getUserProfile(userId);
     const activeCompanyId = profile?.currentCompany || user.company_id;
-    const activeCompany = activeCompanyId
-      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] })
-      : null;
+    let activeCompany = null;
+    if (activeCompanyId) {
+      const company = await companyService.getCompanySettings(activeCompanyId);
+      activeCompany = { id: company.id, name: company.name };
+    }
 
     return {
       id: user.id,
@@ -264,10 +284,16 @@ const getCurrentUser = async (userId) => {
 };
 
 const getAllRoles = async () => {
-  const roles = await Role.findAll({
-    attributes: ['id', 'name', 'description']
-  });
-  return roles;
+  // Use adminService to get all roles
+  // Get roles for a specific company (or null for global)
+  // Since we need all roles without company filter, we'll get them through adminService
+  // Note: getRolesAndPermissions requires companyId, so we'll get global roles
+  const globalRoles = await rolePermissionService.getRolesAndPermissions(null);
+  return globalRoles.map(role => ({
+    id: role.id,
+    name: role.name,
+    description: role.description
+  }));
 };
 //  todo : remove the use rservices from here and add them in use servuce.
 module.exports = {

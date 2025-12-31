@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const logger = require('../../../logger');
 const { Layout, UserDefaultLayout } = require('../../models');
 
@@ -70,7 +71,7 @@ class LayoutService {
         where: {
           id: layoutId,
           company_id: companyId,
-          [require('sequelize').Op.or]: [
+          [Op.or]: [
             { user_id: userId },
             { type: 'public' }
           ]
@@ -192,7 +193,7 @@ class LayoutService {
         where: {
           id: layoutId,
           company_id: companyId,
-          [require('sequelize').Op.or]: [
+          [Op.or]: [
             { user_id: userId },
             { type: 'public' }
           ]

@@ -1,18 +1,14 @@
 // services/companyService.js
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
-const { Company, MultiCompanyModule, User, UserProfile, CompanyProfile } = require('../../models');
+// Company is the primary model for this service
+const { Company } = require('../../models');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 
 const companyService = {
-  async getCompanySettings(id) {
-    try {
-      return await findModelByIdOrThrow(Company, id, {
-        attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb']
-      }, 'Company');
-    } catch (error) {
-      throw new Error(`Failed to fetch company settings: ${error.message}`);
-    }
+  async createCompany(data, transaction = null) {
+    const options = transaction ? { transaction } : {};
+    return await Company.create(data, options);
   },
 
   async updateCompanySettings(id, data) {
@@ -34,94 +30,24 @@ const companyService = {
     }
   },
 
-  async createCompanyAndLink(data, userId) {
-    const transaction = await Company.sequelize.transaction();
+  async getCompanySettings(id, options = {}) {
+    return await findModelByIdOrThrow(Company, id, {
+      attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb'],
+      ...options
+    }, 'Company');
+  },
+
+  async getAllCompanies() {
     try {
-      // Check if companyId already exists
-      if (data.companyId) {
-        const existingCompany = await Company.findOne({
-          where: { id: data.companyId },
-          transaction
-        });
-        if (existingCompany) {
-          throw new Error(`Company ID "${data.companyId}" is already taken. Please choose a different ID.`);
-        }
-      }
-
-      const company = await Company.create(
-        {
-          name: data.name,
-          id: data.companyId,
-          mobileApp: !!data.mobileApp,
-          desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
-          mobileWeb: !!data.mobileWeb
-        },
-        { transaction }
-      );
-
-      await CompanyProfile.create(
-        {
-          companyId: company.id
-        },
-        { transaction }
-      );
-
-      await MultiCompanyModule.create(
-        { userId, companyId: company.id },
-        { transaction }
-      );
-
-      await transaction.commit();
-      return company;
+      const companies = await Company.findAll({
+        attributes: ['id', 'name'],
+        order: [['name', 'ASC']]
+      });
+      return companies;
     } catch (error) {
-      if (!transaction.finished) {
-        await transaction.rollback();
-      }
-      throw new Error(`Failed to create company: ${error.message}`);
+      logger.error('Error fetching companies', error);
+      throw new Error(`Failed to fetch companies at  ${new Date()}`);
     }
-  },
-
-  async getUserCompanies(userId) {
-    const links = await MultiCompanyModule.findAll({
-      where: { userId },
-      include: [{ model: Company, as: 'company', attributes: ['id', 'name'] }],
-      order: [['createdAt', 'ASC']]
-    });
-    return links.map(link => link.company).filter(Boolean);
-  },
-
-  async switchUserCompany(userId, companyId) {
-    // Ensure the user is linked to the company
-    const link = await MultiCompanyModule.findOne({ where: { userId, companyId } });
-    if (!link) {
-      throw new Error(`You are not linked to this company ${companyId}.`);
-    }
-
-    const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
-    const user = await findModelByIdOrThrow(User, userId, {}, 'User');
-
-    if (!user.isActive) {
-      throw new Error(`Invalid or inactive user ${userId}.`);
-    }
-
-    user.companyId = companyId;
-    // Inherit device access flags from company when switching
-    user.mobileApp = company.mobileApp;
-    user.desktopWeb = company.desktopWeb;
-    user.mobileWeb = company.mobileWeb;
-    // await user.save();
-    await UserProfile.update(
-      { currentCompany: companyId },
-      { where: { userId } }
-    );
-    return {
-      ...user.toJSON(),
-      company: {
-        id: company.id,
-        name: company.name
-      }
-    };
-
   }
 };
 

@@ -1,5 +1,5 @@
 const logger = require('../../../logger');
-const adminService = require('../../services/startup/admin.service');
+const rolePermissionService = require('../../services/startup/rolePermissionService');
 
 
 const createRole = async (req, res) => {
@@ -12,7 +12,7 @@ const createRole = async (req, res) => {
     const companyId = req.user.company_id;
 
     // All roles created from frontend are company-specific
-    const newRole = await adminService.createRole(name, description, companyId);
+    const newRole = await rolePermissionService.createRole(name, description, companyId);
     res.json({
       success: true,
       message: `Role "${newRole.name}" created successfully for your company!`,
@@ -36,7 +36,7 @@ const createPermission = async (req, res) => {
   // }
   try {
     const { name, description ,type} = req.body;
-    const newPermission = await adminService.createPermission(name, name, description, type);
+    const newPermission = await rolePermissionService.createPermission(name, name, description, type);
     res.json({
       success: true,
       message: `Permission "${newPermission.name}" created successfully!`,
@@ -61,7 +61,7 @@ const addPermissionToRole = async (req, res) => {
   try {
     const { roleId, permissionIds } = req.body;
     const userId = req.user.id;
-    await adminService.addPermissionToRole(roleId, permissionIds, userId);
+    await rolePermissionService.addPermissionToRole(roleId, permissionIds, userId);
     res.json({
       success: true,
       message: `${permissionIds.length} Permissions added successfully!`
@@ -84,7 +84,7 @@ const removePermissionFromRole = async (req, res) => {
   try {
     const { roleId, permissionId } = req.body;
     const userId = req.user.id;
-    const result = await adminService.removePermissionFromRole(roleId, permissionId, userId);
+    const result = await rolePermissionService.removePermissionFromRole(roleId, permissionId, userId);
     res.json({
       success: true,
       message: `${result.message}`
@@ -104,7 +104,7 @@ const removePermissionFromRole = async (req, res) => {
 const getRoles = async (req, res) => {
   try {
     const companyId = req.user.company_id;
-    const roles = await adminService.getRolesAndPermissions(companyId);
+    const roles = await rolePermissionService.getRolesAndPermissions(companyId);
     res.json({
       success: true,
       data: roles
@@ -120,7 +120,7 @@ const getRoles = async (req, res) => {
 
 const getPermissions = async (req, res) => {
   try {
-    const permissions = await adminService.getAllPermissions();
+    const permissions = await rolePermissionService.getAllPermissions();
     res.json({
       success: true,
       data: permissions
@@ -137,7 +137,7 @@ const getPermissions = async (req, res) => {
 const deletePermission = async (req, res) => {
   try {
     const { permissionId } = req.params;
-    const result = await adminService.deletePermission(permissionId);
+    const result = await rolePermissionService.deletePermission(permissionId);
     res.json({
       success: true,
       message: result.message,
@@ -156,7 +156,7 @@ const deletePermission = async (req, res) => {
 // User-Company Assignment endpoints
 const getSadminUsers = async (req, res) => {
   try {
-    const users = await adminService.getSadminUsers();
+    const users = await rolePermissionService.getSadminUsers();
     res.json({
       success: true,
       data: users
@@ -172,7 +172,7 @@ const getSadminUsers = async (req, res) => {
 
 const getAllCompanies = async (req, res) => {
   try {
-    const companies = await adminService.getAllCompanies();
+    const companies = await rolePermissionService.getAllCompanies();
     res.json({
       success: true,
       data: companies
@@ -197,7 +197,7 @@ const assignUserToCompany = async (req, res) => {
       });
     }
 
-    const result = await adminService.assignUserToCompany(userId, companyId);
+    const result = await rolePermissionService.assignUserToCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -224,7 +224,7 @@ const removeUserFromCompany = async (req, res) => {
       });
     }
 
-    const result = await adminService.removeUserFromCompany(userId, companyId);
+    const result = await rolePermissionService.removeUserFromCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -251,7 +251,7 @@ const getCompanyUsers = async (req, res) => {
       });
     }
 
-    const users = await adminService.getCompanyUsers(companyId);
+    const users = await rolePermissionService.getCompanyUsers(companyId);
     res.json({
       success: true,
       data: users

@@ -1,25 +1,30 @@
-const { Op } = require('sequelize');
-const db = require('../../models');
-const { User, Company, Role, UserProfile } = require('../../models');
+const { Op: _Op } = require('sequelize');
+// User is the primary model for this service
+// UserProfile is tightly coupled with User (one-to-one relationship)
+const { User, UserProfile } = require('../../models');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
+const rolePermissionService = require('./rolePermissionService');
 
 async function deleteUser(userId) {
-  // Delete user profile
+  // Delete user profile - UserProfile is imported for includes, use directly here
   await UserProfile.destroy({ where: { userId: userId } });
 
-  // Delete multi-company module associations if they exist
-  await db.MultiCompanyModule.destroy({ where: { user_id: userId } });
-
+  // Delete multi-company module associations - use multiCompanyService, this is cascaded by DB foreign key constraint
   // Finally, delete the user
-  await db.User.destroy({ where: { id: userId } });
+  await User.destroy({ where: { id: userId } });
 }
 
 async function updateUserRole(userId, newRoleId) {
-  const user = await findModelByIdOrThrow(db.User, userId, {}, 'User');
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
   // Allow null roleId (no role assigned)
   if (newRoleId) {
-    await findModelByIdOrThrow(db.Role, newRoleId, {}, 'Role');
+    // Use adminService to validate role exists
+    const roles = await rolePermissionService.getRolesAndPermissions(user.company_id);
+    const roleExists = roles.some(r => r.id === newRoleId);
+    if (!roleExists) {
+      throw new Error(`Role not found ${newRoleId}.`);
+    }
     user.roleId = newRoleId;
   } else {
     user.roleId = null;
@@ -29,7 +34,7 @@ async function updateUserRole(userId, newRoleId) {
 }
 
 async function updateUserDeviceAccess(userId, deviceAccess) {
-  const user = await findModelByIdOrThrow(db.User, userId, {}, 'User');
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
   // Update only fields present in the payload
   if (deviceAccess.desktopWeb !== undefined) {
@@ -46,44 +51,34 @@ async function updateUserDeviceAccess(userId, deviceAccess) {
   return user;
 }
 
-
-
-const getAllUsers = async (companyId) => {
-  if (!companyId) {
-    throw new Error(`Company ID is required ${companyId}.`);
-  }
-  const users = await User.findAll({
-    where: { isActive: true, company_id: companyId },
-    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
-    include: [
-      { model: Company, as: 'company', attributes: ['name'] },
-      { model: Role, as: 'role', attributes: ['id', 'name'] },
-      { model: UserProfile, as: 'userProfile', required: false }
-    ],
-    order: [['last_active', 'DESC']]
-  });
-
-  // Fetch all roles separately - get global roles (companyId is null) and company-specific roles
-
-  const roles = await Role.findAll({
-    where: {
-      [Op.or]: [
-        { company_id: null }, // Global roles
-        { company_id: companyId } // Company-specific roles
-      ]
-    },
-    attributes: ['id', 'name'],
-    order: [['name', 'ASC']]
-  });
-
-  return { users, roles };
-};
-
 const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
+const getAllUsers = async (companyId) => {
+  const users = await User.findAll({
+    where: { isActive: true, company_id: companyId },
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'role_id'],
+    include: [
+      { model: UserProfile, as: 'userProfile', required: false }
+    ],
+    order: [['last_active', 'DESC']]
+  });
+  return users;
+};
+
+async function updateUserCurrentCompany(userId, companyId) {
+  // Update user's company_id
+  // await User.update({ company_id: companyId }, { where: { id: userId } });
+  // Update UserProfile currentCompany
+  await UserProfile.update(
+    { currentCompany: companyId },
+    { where: { userId } }
+  );
+}
+
 const updateUserProfile = async (userId, userProfile) => {
+  // UserProfile is imported for includes
   const user = await findModelByIdOrThrow(User, userId, {
     include: [
       { model: UserProfile, as: 'userProfile', required: false }
@@ -206,8 +201,21 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
   }
 };
 
+const getUserProfile = async (userId) => {
+  // UserProfile is imported for includes
+  return await UserProfile.findOne({ where: { userId } });
+};
+
+const createUserProfile = async (userId, data = {}, transaction = null) => {
+  // UserProfile is imported for includes
+  const options = transaction ? { transaction } : {};
+  return await UserProfile.create({
+    userId,
+    ...data
+  }, options);
+};
+
 module.exports = {
-  getAllUsers,
   getUserById,
   deleteUser,
   updateUserRole,
@@ -218,5 +226,9 @@ module.exports = {
   getUserByPkWithLock,
   updateUserRefreshToken,
   revokeRefreshToken,
-  handleRefreshTokenRotation
+  getAllUsers,
+  handleRefreshTokenRotation,
+  getUserProfile,
+  createUserProfile,
+  updateUserCurrentCompany
 };

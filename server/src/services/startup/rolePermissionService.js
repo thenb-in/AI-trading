@@ -1,7 +1,13 @@
 const { Op } = require('sequelize');
 const logger = require('../../../logger');
-const { Role, Permission, User, Company, MultiCompanyModule } = require('../../models');
+// Role is the primary model for this service
+// Permission is needed for includes in getRolesAndPermissions
+const { Role, Permission } = require('../../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../../utils/startup/modelHelpers');
+const companyService = require('./companyService');
+const multiCompanyService = require('./multiCompanyService');
+const permissionService = require('./permissionService');
+const userService = require('./userService');
 
 const checkRoleExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
@@ -37,45 +43,24 @@ const createRole = async (name, description, companyId = null) => {
 };
 
 const createPermission = async (name, display_name, description, type) => {
-  const trimmedName = validateName(name, { fieldName: 'Permission name' });
-  const trimmedDescription = validateDescription(description);
-
-  // Check for duplicate
-  const existingPermission = await Permission.findOne({ where: { name: trimmedName } });
-  if (existingPermission) {
-    logger.warn(`Permission creation failed - Permission with name ${trimmedName} already exists`);
-    throw new Error(`Permission with this name already exists ${trimmedName}.`);
-  }
-
-  // Create the permission
-  const newPermission = await Permission.create({
-    name: trimmedName,
-    display_name: display_name,
-    description: trimmedDescription,
-    type: type
-  });
-
-  logger.info(`New permission created successfully: ${newPermission.id} - ${newPermission.name} - ${newPermission}`);
-  return newPermission;
+  // Use permissionService for Permission operations
+  return await permissionService.createPermission(name, display_name, description, type);
 };
 
 
 const fetchAllUsers = async () => {
   try {
-    const users = await User.findAll({
-      include: [
-        {
-          model: Company,
-          as: 'company',
-          attributes: ['id', 'name']
-        },
-        {
-          model: Role,
-          as: 'role'
-        }
-      ]
-    });
-    return users;
+    // Use multiCompanyService to get users, but we need to include role info
+    // Since multiCompanyService.getAllUsers requires companyId, we'll need to get all companies first
+    const companies = await companyService.getAllCompanies();
+    const allUsers = [];
+
+    for (const company of companies) {
+      const { users } = await multiCompanyService.getAllUsers(company.id);
+      allUsers.push(...users);
+    }
+
+    return allUsers;
   } catch (error) {
     throw { status: 500, message: error.message };
   }
@@ -91,6 +76,7 @@ const getRolesAndPermissions = async (companyId) => {
       ]
     };
 
+    // Permission is imported at top level for includes
     const roles = await Role.findAll({
       where: whereClause,
       include: {
@@ -103,25 +89,26 @@ const getRolesAndPermissions = async (companyId) => {
     });
 
     // Add isGlobal flag to each role for frontend
-    return roles.map(role => ({
-      ...role.toJSON(),
-      isGlobal: role.companyId === null
-    }));
+    return roles.map(role => {
+      const roleJson = role.toJSON();
+      // Check companyId before toJSON() or from the JSON object
+      const isGlobal = (role.companyId === null || roleJson.companyId === null);
+      // Ensure permissions are included (they should be from the include)
+      const result = {
+        ...roleJson,
+        isGlobal,
+        permissions: roleJson.permissions || []
+      };
+      return result;
+    });
   } catch (error) {
     throw { status: 500, message: error.message };
   }
 };
 
 const getAllPermissions = async () => {
-  try {
-    const permissions = await Permission.findAll({
-      attributes: ['id', 'name', 'display_name', 'description', 'type'], // Explicitly specify attributes that exist
-      order: [['name', 'ASC']]
-    });
-    return permissions;
-  } catch (error) {
-    throw { status: 500, message: error.message };
-  }
+  // Use permissionService for Permission operations
+  return await permissionService.getAllPermissions();
 };
 
 const removePermissionFromRole = async (roleId, permissionId, userId) => {
@@ -130,17 +117,15 @@ const removePermissionFromRole = async (roleId, permissionId, userId) => {
 
     // Check if role is a default/global role (companyId is null)
     if (role.companyId === null) {
-      // Only superadmins can modify default roles
-      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
+      // Only superadmins can modify default roles - use userService
+      const user = await userService.getUserById(userId);
       if (!user.isSadmin) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
 
-    const permission = await findModelByIdOrThrow(Permission, permissionId, {}, 'Permission');
-    if (!permission) {
-      throw { status: 404, message: `Permission with id ${permissionId} not found` };
-    }
+    // Use permissionService for Permission operations
+    const permission = await permissionService.getPermissionById(permissionId);
     await role.removePermission(permission);
     return { message: 'Permission removed from role successfully' };
   } catch (error) {
@@ -157,19 +142,15 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
 
     // Check if role is a default/global role (companyId is null)
     if (role.companyId === null) {
-      // Only superadmins can modify default roles
-      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
+      // Only superadmins can modify default roles - use userService
+      const user = await userService.getUserById(userId);
       if (!user.isSadmin) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
 
-    // Find all permissions at once
-    const permissions = await Permission.findAll({
-      where: {
-        id: permissionIdArray
-      }
-    });
+    // Use permissionService for Permission operations
+    const permissions = await permissionService.getPermissionsByIds(permissionIdArray);
 
     // Check if all permissions were found
     if (permissions.length !== permissionIdArray.length) {
@@ -196,48 +177,25 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
 };
 
 const deletePermission = async (permissionId) => {
-  try {
-    // Check if permission exists
-    const permission = await findModelByIdOrThrow(Permission, permissionId, {}, 'Permission');
-    if (!permission) {
-      throw { status: 404, message: `Permission with id ${permissionId} not found` };
-    }
-
-    // Delete the permission (cascade will handle role-permission mappings due to onDelete: 'CASCADE')
-    await permission.destroy();
-
-    logger.info(`Permission deleted successfully: ${permissionId} - ${permission.name}`);
-    return { message: `Permission "${permission.name}" deleted successfully` };
-  } catch (error) {
-    if (error.status) {
-      throw error;
-    }
-    throw {
-      status: 500,
-      message: error.message || `Error deleting permission with id ${permissionId}`
-    };
-  }
+  // Use permissionService for Permission operations
+  return await permissionService.deletePermission(permissionId);
 };
 
 // User-Company Assignment methods
 const getSadminUsers = async () => {
   try {
-    const users = await User.findAll({
-      where: {
-        isSadmin: true,
-        isActive: true
-      },
-      attributes: ['id', 'name', 'username'],
-      include: [
-        {
-          model: Company,
-          as: 'company',
-          attributes: ['id', 'name']
-        }
-      ],
-      order: [['name', 'ASC']]
-    });
-    return users;
+    // Use companyService to get all companies, then multiCompanyService for each
+    const companies = await companyService.getAllCompanies();
+    const allUsers = [];
+
+    for (const company of companies) {
+      const { users } = await multiCompanyService.getAllUsers(company.id);
+      const sadminUsers = users.filter(user => user.isSadmin && user.isActive);
+      allUsers.push(...sadminUsers);
+    }
+
+    // Sort by name
+    return allUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   } catch (error) {
     logger.error('Error fetching sadmin users', error);
     throw new Error(`Failed to fetch super admin users at  ${new Date()}`);
@@ -246,11 +204,8 @@ const getSadminUsers = async () => {
 
 const getAllCompanies = async () => {
   try {
-    const companies = await Company.findAll({
-      attributes: ['id', 'name'],
-      order: [['name', 'ASC']]
-    });
-    return companies;
+    // Use companyService instead of direct model access
+    return await companyService.getAllCompanies();
   } catch (error) {
     logger.error('Error fetching companies', error);
     throw new Error(`Failed to fetch companies at  ${new Date()}`);
@@ -259,31 +214,25 @@ const getAllCompanies = async () => {
 
 const assignUserToCompany = async (userId, companyId) => {
   try {
-    // Validate user exists and is sadmin and active
-    const user = await findModelByIdOrThrow(User, userId, {
-      attributes: ['id', 'name', 'isSadmin', 'isActive']
-    }, 'User');
+    // Validate user exists and is sadmin and active - use userService
+    const user = await userService.getUserById(userId);
 
     if (!user.isSadmin || !user.isActive) {
       throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
     }
 
-    // Validate company exists
-    const company = await findModelByIdOrThrow(Company, companyId, {
-      attributes: ['id', 'name']
-    }, 'Company');
+    // Validate company exists - use companyService
+    const company = await companyService.getCompanySettings(companyId);
 
-    // Check if assignment already exists
-    const existingAssignment = await MultiCompanyModule.findOne({
-      where: { userId, companyId }
-    });
+    // MultiCompanyModule operations should use multiCompanyService
+    const existingAssignment = await multiCompanyService.findUserCompanyLink(userId, companyId);
 
     if (existingAssignment) {
       throw { status: 409, message: 'User is already assigned to this company' };
     }
 
-    // Create the assignment
-    await MultiCompanyModule.create({ userId, companyId });
+    // Create the assignment using multiCompanyService
+    await multiCompanyService.assignUserToCompany(userId, companyId);
 
     logger.info(`User ${userId} assigned to company ${companyId}`);
     return {
@@ -299,27 +248,18 @@ const assignUserToCompany = async (userId, companyId) => {
 
 const removeUserFromCompany = async (userId, companyId) => {
   try {
-    // Validate user exists
-    const user = await findModelByIdOrThrow(User, userId, {
-      attributes: ['id', 'name']
-    }, 'User');
+    // Validate user exists - use userService
+    const user = await userService.getUserById(userId);
 
-    // Validate company exists
-    const company = await findModelByIdOrThrow(Company, companyId, {
-      attributes: ['id', 'name']
-    }, 'Company');
+    // Validate company exists - use companyService
+    const company = await companyService.getCompanySettings(companyId);
 
-    // Check if assignment exists
-    const assignment = await MultiCompanyModule.findOne({
-      where: { userId, companyId }
-    });
+    // MultiCompanyModule operations should use multiCompanyService
+    const assignment = await multiCompanyService.removeUserFromCompany(userId, companyId);
 
     if (!assignment) {
       throw { status: 404, message: 'User is not assigned to this company' };
     }
-
-    // Remove the assignment
-    await assignment.destroy();
 
     logger.info(`User ${userId} removed from company ${companyId}`);
     return {
@@ -335,33 +275,34 @@ const removeUserFromCompany = async (userId, companyId) => {
 
 const getCompanyUsers = async (companyId) => {
   try {
-    // Validate company exists
-    await findModelByIdOrThrow(Company, companyId, {
-      attributes: ['id', 'name']
-    }, 'Company');
+    // Validate company exists - use companyService
+    await companyService.getCompanySettings(companyId);
 
-    const assignments = await MultiCompanyModule.findAll({
-      where: { companyId },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['id', 'name', 'username', 'isSadmin', 'isActive'],
-          where: {
-            isSadmin: true,
-            isActive: true
-          }
-        }
-      ],
-      order: [['createdAt', 'ASC']]
-    });
-
-    return assignments.map(assignment => assignment.user).filter(Boolean);
+    // MultiCompanyModule operations should use multiCompanyService
+    return await multiCompanyService.getCompanyUsers(companyId);
   } catch (error) {
     logger.error('Error fetching company users', error);
     throw new Error(`Failed to fetch company users ${companyId}`);
   }
 };
+
+/**
+ * Get reusable include configuration for User with Role and Permissions
+ * @returns {array} Sequelize include configuration
+ */
+const getUserWithRoleInclude = () => [
+  // todo: this should be removed. make it like a structure?
+  {
+    model: Role,
+    as: 'role',
+    include: [{
+      model: Permission,
+      as: 'permissions',
+      through: { attributes: [] },
+      attributes: ['id', 'name', 'description', 'type']
+    }]
+  }
+];
 
 module.exports = {
   createRole,
@@ -376,5 +317,6 @@ module.exports = {
   getAllCompanies,
   assignUserToCompany,
   removeUserFromCompany,
-  getCompanyUsers
+  getCompanyUsers,
+  getUserWithRoleInclude
 };

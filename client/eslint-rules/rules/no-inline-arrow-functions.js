@@ -1,7 +1,7 @@
 // No inline arrow functions in JSX rule
 // Disallows arrow functions defined inline in JSX props
 
-export default {
+const noInlineArrowFunctions = {
   'no-inline-arrow-functions': {
     meta: {
       type: 'problem',
@@ -80,3 +80,4 @@ export default {
   }
 };
 
+export { noInlineArrowFunctions };

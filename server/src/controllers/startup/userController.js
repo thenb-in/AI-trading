@@ -1,6 +1,7 @@
 const logger = require('../../../logger');
 const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 const authService = require('../../services/startup/authService');
+const multiCompanyService = require('../../services/startup/multiCompanyService');
 const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 
@@ -12,7 +13,7 @@ const getAllUsers = async (req, res) => {
   const companyId = req.user.company_id;
 
   try {
-    const users = await userService.getAllUsers(companyId);
+    const users = await multiCompanyService.getAllUsers(companyId);
     res.status(200).json(users);
   } catch (error) {
     logger.error('Get all users error', error);

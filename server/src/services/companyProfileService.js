@@ -57,6 +57,14 @@ const companyProfileService = {
       logger.error('Failed to update company profile', error);
       throw new Error(`Failed to update company profile: ${error.message}`);
     }
+  },
+
+  async createCompanyProfile(companyId, data = {}, transaction = null) {
+    const options = transaction ? { transaction } : {};
+    return await CompanyProfile.create({
+      companyId,
+      ...data
+    }, options);
   }
 };
 

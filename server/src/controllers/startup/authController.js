@@ -3,7 +3,7 @@
  * Contains only business logic, no request/response handling
  */
 const authService = require('../../services/startup/authService');
-const userService = require('../../services/startup/userService');
+const multiCompanyService = require('../../services/startup/multiCompanyService');
 
 const authController = {
   /**
@@ -61,7 +61,7 @@ const authController = {
    * @returns {Promise<object>} Users and roles
    */
   async getAllUsers(companyId) {
-    return await userService.getAllUsers(companyId);
+    return await multiCompanyService.getAllUsers(companyId);
   },
 
   /**

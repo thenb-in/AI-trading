@@ -1,7 +1,7 @@
 // No anonymous components rule
 // Disallows anonymous function components and arrow function components without names
 
-export default {
+const noAnonymousComponents = {
   'no-anonymous-components': {
     meta: {
       type: 'problem',
@@ -47,12 +47,12 @@ export default {
             // This shouldn't happen for components, but check if it's JSX-returning
             if (node.body && (
               (node.body.type === 'JSXElement') ||
-              (node.body.type === 'BlockStatement' && 
-               node.body.body.some(stmt => 
-                 stmt.type === 'ReturnStatement' && 
-                 stmt.argument && 
-                 (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
-               ))
+              (node.body.type === 'BlockStatement' &&
+                node.body.body.some(stmt =>
+                  stmt.type === 'ReturnStatement' &&
+                  stmt.argument &&
+                  (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
+                ))
             )) {
               context.report({
                 node,
@@ -66,14 +66,14 @@ export default {
         VariableDeclarator(node) {
           if (node.init && node.init.type === 'ArrowFunctionExpression') {
             // Check if it returns JSX
-            const returnsJSX = 
+            const returnsJSX =
               (node.init.body.type === 'JSXElement' || node.init.body.type === 'JSXFragment') ||
-              (node.init.body.type === 'BlockStatement' && 
-               node.init.body.body.some(stmt => 
-                 stmt.type === 'ReturnStatement' && 
-                 stmt.argument && 
-                 (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
-               ));
+              (node.init.body.type === 'BlockStatement' &&
+                node.init.body.body.some(stmt =>
+                  stmt.type === 'ReturnStatement' &&
+                  stmt.argument &&
+                  (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
+                ));
 
             if (returnsJSX) {
               // Must be assigned to a named variable starting with uppercase
@@ -92,15 +92,15 @@ export default {
           if (node.declaration) {
             // Anonymous function expression
             if (node.declaration.type === 'FunctionExpression' && !node.declaration.id) {
-              const returnsJSX = 
+              const returnsJSX =
                 (node.declaration.body.type === 'JSXElement' || node.declaration.body.type === 'JSXFragment') ||
-                (node.declaration.body.type === 'BlockStatement' && 
-                 node.declaration.body.body.some(stmt => 
-                   stmt.type === 'ReturnStatement' && 
-                   stmt.argument && 
-                   (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
-                 ));
-              
+                (node.declaration.body.type === 'BlockStatement' &&
+                  node.declaration.body.body.some(stmt =>
+                    stmt.type === 'ReturnStatement' &&
+                    stmt.argument &&
+                    (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
+                  ));
+
               if (returnsJSX) {
                 context.report({
                   node,
@@ -110,15 +110,15 @@ export default {
             }
             // Anonymous arrow function
             if (node.declaration.type === 'ArrowFunctionExpression') {
-              const returnsJSX = 
+              const returnsJSX =
                 (node.declaration.body.type === 'JSXElement' || node.declaration.body.type === 'JSXFragment') ||
-                (node.declaration.body.type === 'BlockStatement' && 
-                 node.declaration.body.body.some(stmt => 
-                   stmt.type === 'ReturnStatement' && 
-                   stmt.argument && 
-                   (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
-                 ));
-              
+                (node.declaration.body.type === 'BlockStatement' &&
+                  node.declaration.body.body.some(stmt =>
+                    stmt.type === 'ReturnStatement' &&
+                    stmt.argument &&
+                    (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
+                  ));
+
               if (returnsJSX) {
                 context.report({
                   node,
@@ -133,3 +133,4 @@ export default {
   }
 };
 
+export { noAnonymousComponents };

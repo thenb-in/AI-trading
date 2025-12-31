@@ -2,7 +2,7 @@
 // Requires that exports be written at the bottom of the file using export { name }
 // instead of inline exports like export function Component() or export const Component = ...
 
-export default {
+const bottomExportsOnly = {
   'bottom-exports-only': {
     meta: {
       type: 'suggestion',
@@ -216,3 +216,5 @@ export default {
     }
   }
 };
+
+export { bottomExportsOnly };
