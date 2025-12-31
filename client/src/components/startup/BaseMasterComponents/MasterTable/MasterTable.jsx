@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import { FileViewerModal } from '../../../common/FileViewerModal';
 import PropTypes from 'prop-types';
@@ -55,14 +55,59 @@ const MasterTable = ({
   emptyMessage = "No data found",
   loadingMessage = "Loading...",
   onRowClick,
-  rowClickEnabled = false
+  rowClickEnabled = false,
+  selectRow = false,
+  onSelectedRowsChange
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
+  const [selectedRows, setSelectedRows] = useState(new Set());
 
   // Handle close viewer
   const handleCloseViewer = useCallback(() => {
     setViewerState({ open: false, url: '', mime: '', title: '' });
   }, []);
+
+  // Update parent when selected rows change
+  useEffect(() => {
+    if (onSelectedRowsChange && selectRow) {
+      const selectedData = data.filter(item => selectedRows.has(item.id));
+      onSelectedRowsChange(selectedData, Array.from(selectedRows));
+    }
+  }, [selectedRows, data, onSelectedRowsChange, selectRow]);
+
+  // Handle individual row selection
+  const handleRowSelect = useCallback((rowId, checked) => {
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(rowId);
+      } else {
+        newSet.delete(rowId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Handle select all
+  const handleSelectAll = useCallback((checked) => {
+    if (checked) {
+      const allIds = new Set(data.map(item => item.id));
+      setSelectedRows(allIds);
+    } else {
+      setSelectedRows(new Set());
+    }
+  }, [data]);
+
+  // Check if all rows are selected
+  const isAllSelected = data.length > 0 && selectedRows.size === data.length;
+  const isIndeterminate = selectedRows.size > 0 && selectedRows.size < data.length;
+
+  // Handle checkbox ref for indeterminate state
+  const checkboxRef = useCallback((input) => {
+    if (input) {
+      input.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
 
   // Render cell content
   const renderCell = useCallback((item, column) => {
@@ -158,6 +203,17 @@ const MasterTable = ({
       <table className="min-w-full bg-white border border-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            {selectRow && (
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  ref={checkboxRef}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                />
+              </th>
+            )}
             {columns?.map((column, index) => (
               <th
                 key={column.key || column.id || index}
@@ -181,8 +237,23 @@ const MasterTable = ({
               }
             };
 
+            const isRowSelected = selectedRows.has(item.id);
+
             return (
-              <tr key={item.id} className={`${rowClickEnabled ? "hover:bg-gray-50 cursor-pointer" : "hover:bg-gray-50"}`} onClick={handleRowClick}>
+              <tr key={item.id} className={`${rowClickEnabled ? "hover:bg-gray-50 cursor-pointer" : "hover:bg-gray-50"} ${isRowSelected ? "bg-blue-50" : ""}`} onClick={handleRowClick}>
+                {selectRow && (
+                  <td 
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isRowSelected}
+                      onChange={(e) => handleRowSelect(item.id, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
+                )}
                 {columns?.map((column, colIndex) => (
                   <td
                     key={column.key || column.id || colIndex}
@@ -257,7 +328,9 @@ MasterTable.propTypes = {
   emptyMessage: PropTypes.string,
   loadingMessage: PropTypes.string,
   onRowClick: PropTypes.func,
-  rowClickEnabled: PropTypes.bool
+  rowClickEnabled: PropTypes.bool,
+  selectRow: PropTypes.bool,
+  onSelectedRowsChange: PropTypes.func
 };
 
 export { MasterTable };
