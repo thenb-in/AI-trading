@@ -55,13 +55,28 @@ const DataProvider = ({ children }) => {
           navigate(redirectTo, { replace: true });
         }
       } catch (err) {
-        console.error("Error fetching user:", err);
-        setUserData(null);
-        setError(err);
+        // Check if this is a session expiration error
+        const isSessionExpired = err?.requiresLogin === true || err?.status === 400;
         
-        // Only redirect to login if not on a public path and not already on the login page
-        if (!isPublicPath && !isLoginPage) {
-          navigate("/", { state: { from: location }, replace: true });
+        if (isSessionExpired) {
+          // Session expired - silently handle, don't log as error
+          setUserData(null);
+          setError(null); // Clear error for session expiration
+          
+          // Only redirect to login if not on a public path and not already on the login page
+          if (!isPublicPath && !isLoginPage) {
+            navigate("/", { state: { from: location }, replace: true });
+          }
+        } else {
+          // Other errors - log them
+          console.error("Error fetching user:", err);
+          setUserData(null);
+          setError(err);
+          
+          // Only redirect to login if not on a public path and not already on the login page
+          if (!isPublicPath && !isLoginPage) {
+            navigate("/", { state: { from: location }, replace: true });
+          }
         }
       } finally {
         setLoading(false);

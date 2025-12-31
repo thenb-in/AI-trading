@@ -39,16 +39,31 @@ const ApiService = {
       return response;
       
     } catch (error) {
-      // Log error response
-      console.error(`❌ ${method} ${url} error:`, {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
+      // Log error response (only for non-session-expired errors to reduce noise)
+      const errorData = error.response?.data || {};
+      const isSessionExpired = error.response?.status === 400 && errorData.requiresLogin;
       
-      // if (error.response?.status === 401) {
-      //   window.location.href = '/';
-      // }
+      if (!isSessionExpired) {
+        console.error(`❌ ${method} ${url} error:`, {
+          status: error.response?.status,
+          data: errorData,
+          message: error.message
+        });
+      }
+      
+      // Handle session expiration - don't throw, let the caller handle it
+      if (isSessionExpired || error.response?.status === 401) {
+        // Clear any stale auth data
+        if (typeof window !== 'undefined') {
+          // Clear cookies if possible
+          document.cookie.split(";").forEach((c) => {
+            document.cookie = c
+              .replace(/^ +/, "")
+              .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+          });
+        }
+      }
+      
       throw error.response?.data || error;
     }
   },
