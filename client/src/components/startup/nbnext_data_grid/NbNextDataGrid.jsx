@@ -42,6 +42,7 @@ function NbNextDataGrid({
   documentName = null,
   fullScreen: externalFullScreen,
   showTotalRow = false,
+  frozenColumns = [],
 }) {
   // Internal state for fullscreen mode (can be controlled externally via prop)
   const [internalFullScreen, setInternalFullScreen] = useState(false);
@@ -177,9 +178,9 @@ function NbNextDataGrid({
     return normalizedColumns.filter((c) => columnVisibility[c.field]);
   }, [normalizedColumns, columnVisibility]);
 
-  // Frozen columns hook
-  const { frozenState, toggleFrozen, setFrozenStateState, frozenColumns, nonFrozenColumns, cumulativeFrozenLeftOffsets } =
-    useFrozenColumns(normalizedColumns, visibleColumns, columnWidths);
+  // Frozen columns hook - pass frozenColumns prop for initial setup only
+  const { frozenState, toggleFrozen, setFrozenStateState, frozenColumns: computedFrozenColumns, nonFrozenColumns, cumulativeFrozenLeftOffsets } =
+    useFrozenColumns(normalizedColumns, visibleColumns, columnWidths, frozenColumns);
 
   // Sorting hook
   const { sortModel, handleHeaderClick } = useSorting(initialSortModel, onSortModelChange);
@@ -490,7 +491,7 @@ function NbNextDataGrid({
         <table style={tableStyle}>
           <DataGridHeader
             headerRef={headerRef}
-            frozenColumns={frozenColumns}
+            frozenColumns={computedFrozenColumns}
             nonFrozenColumns={nonFrozenColumns}
             cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
             sortModel={sortModel}
@@ -506,7 +507,7 @@ function NbNextDataGrid({
           <DataGridBody
             firstRowRef={firstRowRef}
             pagedRows={displayRows}
-            frozenColumns={frozenColumns}
+            frozenColumns={computedFrozenColumns}
             nonFrozenColumns={nonFrozenColumns}
             cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
             selectedRowId={selectedRowId}
@@ -588,6 +589,7 @@ NbNextDataGrid.propTypes = {
   documentName: PropTypes.string,
   fullScreen: PropTypes.bool,
   showTotalRow: PropTypes.bool,
+  frozenColumns: PropTypes.arrayOf(PropTypes.string),
 };
 
 export { NbNextDataGrid };
