@@ -22,21 +22,13 @@ const loginValidation = [
 ];
 
 const resetPasswordValidation = [
-  body('phone').isMobilePhone().withMessage(`Invalid phone number for reset password ${body('phone').value}.`),
-  body('newPassword')
-    .isLength({ min: 8 })
-    .withMessage(`New password must be at least 8 characters ${body('newPassword').value}.`)
-    .matches(/[A-Z]/)
-    .withMessage(`New password must contain at least one uppercase letter ${body('newPassword').value}.`)
-    .matches(/[0-9]/)
-    .withMessage(`New password must contain at least one number ${body('newPassword').value}.`)
+  body('username').notEmpty().withMessage(`Username is required ${body('username').value}.`),
+  body('password').notEmpty().withMessage(`Password is required ${body('password').value}.`)
 ];
 
 const approveUserValidation = [
   // eslint-disable-next-line custom/no-hardcoded-strings
-  body('requirePasswordReset').optional().isBoolean().withMessage('requirePasswordReset must be a boolean'),
-  // eslint-disable-next-line custom/no-hardcoded-strings
-  body('roleId').optional().isUUID().withMessage('roleId must be a valid UUID')
+  body('requirePasswordReset').optional().isBoolean().withMessage('requirePasswordReset must be a boolean')
 ];
 
 /**
