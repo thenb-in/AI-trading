@@ -3,13 +3,13 @@ const { Op: _Op } = require('sequelize');
 // UserProfile is tightly coupled with User (one-to-one relationship)
 const { User, UserProfile } = require('../../models');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
-const rolePermissionService = require('./rolePermissionService');
+const roleService = require('./roleService');
 
 async function deleteUser(userId) {
   // Delete user profile - UserProfile is imported for includes, use directly here
   await UserProfile.destroy({ where: { userId: userId } });
 
-  // Delete multi-company module associations - use multiCompanyService, this is cascaded by DB foreign key constraint
+  // Delete multi-company module associations is cascaded by DB foreign key constraint
   // Finally, delete the user
   await User.destroy({ where: { id: userId } });
 }
@@ -20,7 +20,7 @@ async function updateUserRole(userId, newRoleId) {
   // Allow null roleId (no role assigned)
   if (newRoleId) {
     // Use adminService to validate role exists
-    const roles = await rolePermissionService.getRolesAndPermissions(user.company_id);
+    const roles = await roleService.getAllRoles(user.company_id);
     const roleExists = roles.some(r => r.id === newRoleId);
     if (!roleExists) {
       throw new Error(`Role not found ${newRoleId}.`);

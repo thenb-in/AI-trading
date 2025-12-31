@@ -1,4 +1,5 @@
 const logger = require('../../../logger');
+const multiCompanyService = require('../../services/startup/multiCompanyService');
 const rolePermissionService = require('../../services/startup/rolePermissionService');
 
 
@@ -197,7 +198,7 @@ const assignUserToCompany = async (req, res) => {
       });
     }
 
-    const result = await rolePermissionService.assignUserToCompany(userId, companyId);
+    const result = await multiCompanyService.assignUserToCompanyFinal(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -224,7 +225,7 @@ const removeUserFromCompany = async (req, res) => {
       });
     }
 
-    const result = await rolePermissionService.removeUserFromCompany(userId, companyId);
+    const result = await multiCompanyService.removeUserFromCompanyFinal(userId, companyId);
     res.json({
       success: true,
       message: result.message,

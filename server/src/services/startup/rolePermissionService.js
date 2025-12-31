@@ -5,7 +5,6 @@ const logger = require('../../../logger');
 const { Role, Permission } = require('../../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../../utils/startup/modelHelpers');
 const companyService = require('./companyService');
-const multiCompanyService = require('./multiCompanyService');
 const permissionService = require('./permissionService');
 const userService = require('./userService');
 
@@ -50,13 +49,12 @@ const createPermission = async (name, display_name, description, type) => {
 
 const fetchAllUsers = async () => {
   try {
-    // Use multiCompanyService to get users, but we need to include role info
-    // Since multiCompanyService.getAllUsers requires companyId, we'll need to get all companies first
+    // Use userService to get users, but we need to include role info
     const companies = await companyService.getAllCompanies();
     const allUsers = [];
 
     for (const company of companies) {
-      const { users } = await multiCompanyService.getAllUsers(company.id);
+      const { users } = await userService.getAllUsers(company.id);
       allUsers.push(...users);
     }
 
@@ -189,7 +187,7 @@ const getSadminUsers = async () => {
     const allUsers = [];
 
     for (const company of companies) {
-      const { users } = await multiCompanyService.getAllUsers(company.id);
+      const { users } = await userService.getAllUsers(company.id);
       const sadminUsers = users.filter(user => user.isSadmin && user.isActive);
       allUsers.push(...sadminUsers);
     }
@@ -212,66 +210,6 @@ const getAllCompanies = async () => {
   }
 };
 
-const assignUserToCompany = async (userId, companyId) => {
-  try {
-    // Validate user exists and is sadmin and active - use userService
-    const user = await userService.getUserById(userId);
-
-    if (!user.isSadmin || !user.isActive) {
-      throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
-    }
-
-    // Validate company exists - use companyService
-    const company = await companyService.getCompanySettings(companyId);
-
-    // MultiCompanyModule operations should use multiCompanyService
-    const existingAssignment = await multiCompanyService.findUserCompanyLink(userId, companyId);
-
-    if (existingAssignment) {
-      throw { status: 409, message: 'User is already assigned to this company' };
-    }
-
-    // Create the assignment using multiCompanyService
-    await multiCompanyService.assignUserToCompany(userId, companyId);
-
-    logger.info(`User ${userId} assigned to company ${companyId}`);
-    return {
-      message: `User "${user.name}" successfully assigned to company "${company.name}"`,
-      user,
-      company
-    };
-  } catch (error) {
-    logger.error('Error assigning user to company', error);
-    throw error;
-  }
-};
-
-const removeUserFromCompany = async (userId, companyId) => {
-  try {
-    // Validate user exists - use userService
-    const user = await userService.getUserById(userId);
-
-    // Validate company exists - use companyService
-    const company = await companyService.getCompanySettings(companyId);
-
-    // MultiCompanyModule operations should use multiCompanyService
-    const assignment = await multiCompanyService.removeUserFromCompany(userId, companyId);
-
-    if (!assignment) {
-      throw { status: 404, message: 'User is not assigned to this company' };
-    }
-
-    logger.info(`User ${userId} removed from company ${companyId}`);
-    return {
-      message: `User "${user.name}" successfully removed from company "${company.name}"`,
-      user,
-      company
-    };
-  } catch (error) {
-    logger.error('Error removing user from company', error);
-    throw error;
-  }
-};
 
 const getCompanyUsers = async (companyId) => {
   try {
@@ -279,7 +217,7 @@ const getCompanyUsers = async (companyId) => {
     await companyService.getCompanySettings(companyId);
 
     // MultiCompanyModule operations should use multiCompanyService
-    return await multiCompanyService.getCompanyUsers(companyId);
+    return await userService.getAllUsers(companyId);
   } catch (error) {
     logger.error('Error fetching company users', error);
     throw new Error(`Failed to fetch company users ${companyId}`);
@@ -315,8 +253,6 @@ module.exports = {
   deletePermission,
   getSadminUsers,
   getAllCompanies,
-  assignUserToCompany,
-  removeUserFromCompany,
   getCompanyUsers,
   getUserWithRoleInclude
 };

@@ -109,6 +109,68 @@ async function getCompanyUsers(companyId) {
   return users;
 }
 
+
+const assignUserToCompanyFinal = async (userId, companyId) => {
+  try {
+    // Validate user exists and is sadmin and active - use userService
+    const user = await userService.getUserById(userId);
+
+    if (!user.isSadmin || !user.isActive) {
+      throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
+    }
+
+    // Validate company exists - use companyService
+    const company = await companyService.getCompanySettings(companyId);
+
+    // MultiCompanyModule operations should use multiCompanyService
+    const existingAssignment = await findUserCompanyLink(userId, companyId);
+
+    if (existingAssignment) {
+      throw { status: 409, message: 'User is already assigned to this company' };
+    }
+
+    // Create the assignment using multiCompanyService
+    await assignUserToCompany(userId, companyId);
+
+    logger.info(`User ${userId} assigned to company ${companyId}`);
+    return {
+      message: `User "${user.name}" successfully assigned to company "${company.name}"`,
+      user,
+      company
+    };
+  } catch (error) {
+    logger.error('Error assigning user to company', error);
+    throw error;
+  }
+};
+
+const removeUserFromCompanyFinal = async (userId, companyId) => {
+  try {
+    // Validate user exists - use userService
+    const user = await userService.getUserById(userId);
+
+    // Validate company exists - use companyService
+    const company = await companyService.getCompanySettings(companyId);
+
+    // MultiCompanyModule operations should use multiCompanyService
+    const assignment = await removeUserFromCompany(userId, companyId);
+
+    if (!assignment) {
+      throw { status: 404, message: 'User is not assigned to this company' };
+    }
+
+    logger.info(`User ${userId} removed from company ${companyId}`);
+    return {
+      message: `User "${user.name}" successfully removed from company "${company.name}"`,
+      user,
+      company
+    };
+  } catch (error) {
+    logger.error('Error removing user from company', error);
+    throw error;
+  }
+};
+
 async function removeUserFromCompany(userId, companyId) {
   const assignment = await MultiCompanyModule.findOne({
     where: { userId, companyId }
@@ -118,6 +180,7 @@ async function removeUserFromCompany(userId, companyId) {
   }
   return assignment;
 }
+
 
 async function getAllUsers(companyId) {
   if (!companyId) {
@@ -153,24 +216,29 @@ async function createCompanyAndLink(data, userId) {
   // CompanyProfile and MultiCompanyModule are part of Company operations
   const transaction = await MultiCompanyModule.sequelize.transaction();
   try {
-    // Check if companyId already exists
-    if (data.companyId) {
+    // Check if companyId already exists (only if provided)
+    if (data.companyId && data.companyId.trim()) {
       const existingCompany = await companyService.getCompanySettings(data.companyId, { transaction });
       if (existingCompany) {
         throw new Error(`Company ID "${data.companyId}" is already taken. Please choose a different ID.`);
       }
     }
 
-    const company = await companyService.createCompany(
-      {
-        name: data.name,
-        id: data.companyId,
-        mobileApp: !!data.mobileApp,
-        desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
-        mobileWeb: !!data.mobileWeb
-      },
-      { transaction }
-    );
+    // Build company data - only include id if companyId is provided
+    const companyData = {
+      name: data.name,
+      mobileApp: !!data.mobileApp,
+      desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
+      mobileWeb: !!data.mobileWeb
+    };
+
+    // Only set id if companyId is provided and not empty
+    if (data.companyId && data.companyId.trim()) {
+      companyData.id = data.companyId.trim();
+    }
+    // Otherwise, let Sequelize auto-generate UUID via defaultValue: DataTypes.UUIDV4
+
+    const company = await companyService.createCompany(companyData, transaction);
 
     await companyProfileService.createCompanyProfile(company.id, {}, transaction);
 
@@ -196,5 +264,7 @@ module.exports = {
   getCompanyUsers,
   removeUserFromCompany,
   getAllUsers,
-  createCompanyAndLink
+  createCompanyAndLink,
+  assignUserToCompanyFinal,
+  removeUserFromCompanyFinal
 };
