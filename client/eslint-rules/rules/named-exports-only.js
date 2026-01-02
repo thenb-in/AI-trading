@@ -1,7 +1,7 @@
 // Named exports only rule
 // Disallows default exports - only named exports are allowed
 
-export default {
+const namedExportsOnly = {
   'named-exports-only': {
     meta: {
       type: 'problem',
@@ -63,4 +63,6 @@ export default {
     }
   }
 };
+
+export { namedExportsOnly };
 
