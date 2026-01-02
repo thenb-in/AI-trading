@@ -71,7 +71,7 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     password: hashedPassword,
     name,
     company_id: companyId,
-    roleId: roleInstance ? roleInstance.id : null,
+    role_id: roleInstance ? roleInstance.id : null,
     isActive: true,
     refresh_token: null,
     is_approved: false,
@@ -193,7 +193,7 @@ const approveUser = async (userId, requirePasswordReset = false, roleId = null) 
     if (!roleExists) {
       throw new Error(`Role not found ${roleId}.`);
     }
-    user.roleId = roleId;
+    user.role_id = roleId;
     logger.info(`User approved with role assignment: ${userId} - Role: ${roleId}`);
   }
 
@@ -263,7 +263,7 @@ const getCurrentUser = async (userId) => {
       phone: user.phone,
       name: user.name,
       companyId: activeCompanyId || null,
-      roleId: user.roleId,
+      roleId: user.role_id,
       isActive: user.isActive,
       is_approved: user.is_approved,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,

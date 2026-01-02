@@ -25,9 +25,9 @@ async function updateUserRole(userId, newRoleId) {
     if (!roleExists) {
       throw new Error(`Role not found ${newRoleId}.`);
     }
-    user.roleId = newRoleId;
+    user.role_id = newRoleId;
   } else {
-    user.roleId = null;
+    user.role_id = null;
   }
 
   await user.save();
