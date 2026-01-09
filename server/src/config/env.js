@@ -63,6 +63,14 @@ module.exports = {
   MAX_JWT_ACCESS_EXPIRATION_MS: parseInt(process.env.MAX_JWT_ACCESS_EXPIRATION_MS, PARSE_INT_RADIX),
   MAX_JWT_REFRESH_EXPIRATION_MS: parseInt(process.env.MAX_JWT_REFRESH_EXPIRATION_MS, PARSE_INT_RADIX),
 
+
+  // TOTP Constants
+  TOTP_ISSUER: process.env.TOTP_ISSUER || 'Startup App',
+  TOTP_CODE_LENGTH: parseInt(process.env.TOTP_CODE_LENGTH, PARSE_INT_RADIX),
+  TOTP_WINDOW: parseInt(process.env.TOTP_WINDOW, PARSE_INT_RADIX),
+
+
+
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
   // File upload configuration

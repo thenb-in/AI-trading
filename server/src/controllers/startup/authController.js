@@ -4,6 +4,7 @@
  */
 const authService = require('../../services/startup/authService');
 const multiCompanyService = require('../../services/startup/multiCompanyService');
+const totpService = require('../../services/startup/totpService');
 
 const authController = {
   /**
@@ -73,6 +74,25 @@ const authController = {
     // Logout logic is handled by clearing cookies in view layer
     // This is a placeholder if any service-level cleanup is needed
     return Promise.resolve();
+  },
+
+  /**
+   * Generate TOTP secret for a user
+   * @param {string} username - Username
+   * @returns {Promise<object>} TOTP data (secret, qrCodeUrl, otpauthUrl)
+   */
+  async generateTotpSecret(username) {
+    return await totpService.generateTotpSecret(username);
+  },
+
+  /**
+   * Verify TOTP code and enable 2FA
+   * @param {string} username - Username
+   * @param {string} totpCode - TOTP code from authenticator app
+   * @returns {Promise<object>} Verification result
+   */
+  async verifyAndEnableTotp(username, totpCode) {
+    return await totpService.verifyAndEnableTotp(username, totpCode);
   }
 };
 

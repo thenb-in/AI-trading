@@ -98,6 +98,9 @@ async function login(req, res) {
     if (error.requiresPasswordChange) {
       return res.status(403).json({ error: error.message, requiresPasswordChange: true });
     }
+    if (error.requiresTotpSetup) {
+      return res.status(403).json({ error: error.message, requiresTotpSetup: true });
+    }
     logger.error('Login error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
@@ -218,9 +221,60 @@ async function logout(req, res) {
     res.clearCookie('isLoggedIn');
 
     // Build and send response
-    res.status(200).json({ message: `User logged out successfully ${userId}` });
+    res.status(200).json({ message: 'User logged out successfully' });
   } catch (error) {
     logger.error('Logout error', error);
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
+  }
+}
+
+/**
+ * Generate TOTP secret view
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+async function generateTotpSecret(req, res) {
+  try {
+    // Extract data from request
+    const { username } = req.body;
+
+    // Call controller
+    const totpData = await authController.generateTotpSecret(username);
+
+    // Build and send response
+    res.status(200).json(totpData);
+  } catch (error) {
+    if (error.message.includes('User not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    logger.error('Generate TOTP secret error', error);
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
+  }
+}
+
+/**
+ * Verify and enable TOTP view
+ * @param {object} req - Express request object
+ * @param {object} res - Express response object
+ */
+async function verifyAndEnableTotp(req, res) {
+  try {
+    // Extract data from request
+    const { username, totpCode } = req.body;
+
+    // Call controller
+    const result = await authController.verifyAndEnableTotp(username, totpCode);
+
+    // Build and send response
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.message === 'User not found') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Invalid TOTP code' || error.message === 'TOTP is already enabled for this user') {
+      return res.status(400).json({ error: error.message });
+    }
+    logger.error('Verify and enable TOTP error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }
@@ -232,5 +286,7 @@ module.exports = {
   approveUser,
   getAllUsers,
   getAllRoles,
-  logout
+  logout,
+  generateTotpSecret,
+  verifyAndEnableTotp
 };

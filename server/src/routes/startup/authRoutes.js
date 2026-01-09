@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/authMiddleware');
 const authValidator = require('../../validators/startup/authValidator');
-const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout } = require('../../views/startup/authView');
+const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout, generateTotpSecret, verifyAndEnableTotp } = require('../../views/startup/authView');
 
 const router = express.Router();
 
@@ -15,4 +15,9 @@ router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUse
 router.get('/users', authMiddleware.protect, getAllUsers);
 
 router.get('/roles', getAllRoles);
+
+// TOTP routes
+router.post('/generate-totp-secret', authValidator.generateTotpSecretValidation, generateTotpSecret);
+router.post('/verify-totp', authValidator.verifyTotpValidation, verifyAndEnableTotp);
+
 module.exports = router;

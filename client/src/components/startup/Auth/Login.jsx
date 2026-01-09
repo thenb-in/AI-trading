@@ -5,12 +5,15 @@ import { toast } from 'react-toastify';
 import { ApiService } from '../../../services/startup/ApiService';
 import { useDataContext } from '../../../context/startup/useDataContext';
 import { cleanFormData } from '../../../utils/startup/authformvalidation';
+import { SetupTotpPopup } from './SetupTotpPopup';
 
 function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showTotpPopup, setShowTotpPopup] = useState(false);
+  const [loginSuccessData, setLoginSuccessData] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { setUserData } = useDataContext();
@@ -33,10 +36,17 @@ function Login() {
         username: cleanedData.username,
         password: cleanedData.password
       });
-      
+
       const { user } = response.data;
       setUserData(user);
       toast.success('Login successful!');
+
+      // Check if TOTP is not enabled and show setup popup
+      if (user.is_totp_enabled === false) {
+        setLoginSuccessData({ user, cleanedData });
+        setShowTotpPopup(true);
+        return;
+      }
 
       // Navigate to originally requested route if available (preserve search)
       // If isSadmin is true, default to multi-company-setup
@@ -50,15 +60,15 @@ function Login() {
       // If password change is required, redirect to forgot password page
       if (errorData.requiresPasswordChange) {
         toast.warning('Please change your password on first login');
-        navigate('/forgot-password', { 
-          state: { 
+        navigate('/forgot-password', {
+          state: {
             username: cleanedData.username,
-            isFirstLogin: true 
-          } 
+            isFirstLogin: true
+          }
         });
         return;
       }
-      
+
       setError(message);
       toast.error(message);
     } finally {
@@ -76,6 +86,32 @@ function Login() {
 
   const handleForgotPasswordClick = () => {
     navigate('/forgot-password');
+  };
+
+  const handleTotpSetupSuccess = () => {
+    setShowTotpPopup(false);
+    // Refresh user data to get updated TOTP status
+    if (loginSuccessData) {
+      const { user } = loginSuccessData;
+      // Update user data with TOTP enabled
+      const updatedUser = { ...user, is_totp_enabled: true };
+      setUserData(updatedUser);
+
+      // Navigate to originally requested route
+      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
+      navigate(redirectTo, { replace: true });
+    }
+  };
+
+  const handleTotpPopupClose = () => {
+    setShowTotpPopup(false);
+    setLoginSuccessData(null);
+    // User cancelled TOTP setup, they can still login but will be prompted again next time
+    if (loginSuccessData) {
+      const { user } = loginSuccessData;
+      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
+      navigate(redirectTo, { replace: true });
+    }
   };
 
   return (
@@ -190,6 +226,14 @@ function Login() {
           </div>
         </form>
       </div>
+
+      {/* TOTP Setup Popup */}
+      <SetupTotpPopup
+        isOpen={showTotpPopup}
+        onClose={handleTotpPopupClose}
+        onSuccess={handleTotpSetupSuccess}
+        username={loginSuccessData?.cleanedData?.username}
+      />
     </div>
   );
 }

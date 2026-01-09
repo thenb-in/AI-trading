@@ -74,6 +74,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false
+    },
+    totp_secret: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    is_totp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false
     }
   }, {
     tableName: 'nbnext_users',

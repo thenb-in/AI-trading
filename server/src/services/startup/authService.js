@@ -152,6 +152,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
       username: userData.username,
       name: userData.name,
       isActive: userData.isActive,
+      is_totp_enabled: userData.is_totp_enabled,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
       isSadmin: userData.isSadmin,
       role: userData.role ? {
@@ -295,6 +296,7 @@ const getAllRoles = async () => {
     description: role.description
   }));
 };
+
 //  todo : remove the use rservices from here and add them in use servuce.
 module.exports = {
   signup,

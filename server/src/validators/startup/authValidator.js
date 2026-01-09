@@ -31,6 +31,15 @@ const approveUserValidation = [
   body('requirePasswordReset').optional().isBoolean().withMessage('requirePasswordReset must be a boolean')
 ];
 
+const generateTotpSecretValidation = [
+  body('username').notEmpty().withMessage('Username is required')
+];
+
+const verifyTotpValidation = [
+  body('username').notEmpty().withMessage('Username is required'),
+  body('totpCode').isLength({ min: 6, max: 6 }).withMessage(`TOTP code must be exactly 6 digits , provide :${ body('totpCode').length}`).isNumeric().withMessage(`TOTP code must contain only numeric characters , provide :${ body('totpCode').value}`)
+];
+
 /**
  * Middleware to handle validation results
  * Returns 400 with errors if validation fails
@@ -47,6 +56,8 @@ module.exports = {
   signupValidation: [...signupValidation, handleValidationErrors],
   loginValidation: [...loginValidation, handleValidationErrors],
   resetPasswordValidation: [...resetPasswordValidation, handleValidationErrors],
-  approveUserValidation: [...approveUserValidation, handleValidationErrors]
+  approveUserValidation: [...approveUserValidation, handleValidationErrors],
+  generateTotpSecretValidation: [...generateTotpSecretValidation, handleValidationErrors],
+  verifyTotpValidation: [...verifyTotpValidation, handleValidationErrors]
 };
 

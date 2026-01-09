@@ -37,8 +37,10 @@
     "nodemon": "^3.1.10",
     "pg": "^8.16.0",
     "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "speakeasy": "^2.0.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"

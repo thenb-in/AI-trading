@@ -84,6 +84,14 @@ const ApiService = {
     return this.request('POST', '/auth/logout');
   },
 
+  generateTotpSecret(data) {
+    return this.request('POST', '/auth/generate-totp-secret', data);
+  },
+
+  verifyAndEnableTotp(data) {
+    return this.request('POST', '/auth/verify-totp', data);
+  },
+
   updateUserProfile(userId, userProfile) {
     return this.request('POST', `/users/userProfile`, { userId, userProfile });
   },
