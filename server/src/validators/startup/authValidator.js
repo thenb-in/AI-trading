@@ -23,7 +23,9 @@ const loginValidation = [
 
 const resetPasswordValidation = [
   body('username').notEmpty().withMessage(`Username is required ${body('username').value}.`),
-  body('password').notEmpty().withMessage(`Password is required ${body('password').value}.`)
+  body('password').notEmpty().withMessage(`Password is required ${body('password').value}.`),
+  body('otp').optional({ checkFalsy: true }).isLength({ min: 6, max: 6 }).withMessage(({ value }) => `OTP must be exactly 6 digits. Received: ${value}`).isNumeric().withMessage(({ value }) => `OTP must contain only numeric characters. Received: ${value}`)
+
 ];
 
 const approveUserValidation = [

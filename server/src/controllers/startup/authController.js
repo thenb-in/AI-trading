@@ -30,7 +30,7 @@ const authController = {
 
   /**
    * Reset password
-   * @param {object} data - Reset password data (username, password, isFirstLogin)
+   * @param {object} data - Reset password data (username, password, isFirstLogin, otp)
    * @returns {Promise<object>} Updated user
    */
   async resetPassword(data) {

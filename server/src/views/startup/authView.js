@@ -114,13 +114,13 @@ async function login(req, res) {
 async function resetPassword(req, res) {
   try {
     // Extract data from request
-    const { username, password, isFirstLogin } = req.body;
+    const { username, password, isFirstLogin, otp } = req.body;
 
     // Call controller
-    await authController.resetPassword({ username, password, isFirstLogin });
+    await authController.resetPassword({ username, password, isFirstLogin, otp });
 
     // Build and send response
-    res.status(200).json({ message: `Password reset successfully, account deactivated, pending admin approval ${username}` });
+    res.status(200).json({ message: `Password reset successfully,for ${username}` });
   } catch (error) {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
@@ -221,7 +221,7 @@ async function logout(req, res) {
     res.clearCookie('isLoggedIn');
 
     // Build and send response
-    res.status(200).json({ message: 'User logged out successfully' });
+    res.status(200).json({ message: `User with id:${userId} logged out successfully` });
   } catch (error) {
     logger.error('Logout error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
@@ -258,10 +258,9 @@ async function generateTotpSecret(req, res) {
  * @param {object} res - Express response object
  */
 async function verifyAndEnableTotp(req, res) {
+  // Extract data from request
+  const { username, totpCode } = req.body;
   try {
-    // Extract data from request
-    const { username, totpCode } = req.body;
-
     // Call controller
     const result = await authController.verifyAndEnableTotp(username, totpCode);
 
@@ -271,7 +270,7 @@ async function verifyAndEnableTotp(req, res) {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
     }
-    if (error.message === 'Invalid TOTP code' || error.message === 'TOTP is already enabled for this user') {
+    if (error.message === `Invalid TOTP code:${totpCode}` || error.message === `TOTP is already enabled for this user:${username}`) {
       return res.status(400).json({ error: error.message });
     }
     logger.error('Verify and enable TOTP error', error);

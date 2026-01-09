@@ -13,6 +13,7 @@ const companyService = require('./companyService');
 const multiCompanyService = require('./multiCompanyService');
 const rolePermissionService = require('./rolePermissionService');
 const { getUserWithRoleInclude } = require('./rolePermissionService');
+const totpService = require('./totpService');
 const userService = require('./userService');
 
 const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
@@ -210,7 +211,7 @@ const approveUser = async (userId, requirePasswordReset = false, roleId = null) 
   await user.save();
 };
 
-const resetPassword = async ({ username, password, isFirstLogin }) => {
+const resetPassword = async ({ username, password, isFirstLogin, otp }) => {
   username = username?.trim();
   password = password?.trim();
   const user = await User.findOne({ where: { username } });
@@ -226,6 +227,20 @@ const resetPassword = async ({ username, password, isFirstLogin }) => {
     user.last_active = new Date();
     user.is_approved = true;
     logger.info(`First login password reset: ${user.id} - Setting last_active to now`);
+  } else if (otp && otp.trim()) { // If OTP is provided and valid, allow password reset without admin approval
+    try {
+      await totpService.verifyTotpOnly(username, otp.trim());
+      user.is_approved = true;
+      user.last_active = new Date();
+      logger.info(`Password reset with valid OTP: ${user.id} - User approved immediately`);
+    } catch (error) {
+      // If OTP verification fails, require admin approval
+      logger.warn(`Invalid OTP for password reset: ${user.id} - ${error.message}`);
+      throw new Error(`Invalid OTP for password reset: ${user.id} - ${error.message}`);
+    }
+  } else { // If no OTP provided, require admin approval (existing behavior)
+    logger.info(`Password reset without OTP: ${user.id} - Requires admin approval`);
+    user.is_approved = false;
   }
 
   // Revoke all active refresh tokens

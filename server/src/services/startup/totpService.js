@@ -55,13 +55,13 @@ const verifyAndEnableTotp = async (username, totpCode) => {
   // First, check if user already has TOTP enabled
   if (user.is_totp_enabled) {
     logger.warn(`TOTP already enabled for user: ${username}`);
-    throw new Error('TOTP is already enabled for this user');
+    throw new Error(`TOTP is already enabled for this user:${username}`);
   }
 
   // Check if user has a TOTP secret
   if (!user.totp_secret) {
     logger.warn(`No TOTP secret found for user: ${username}`);
-    throw new Error('TOTP secret not found. Please generate a new secret.');
+    throw new Error(`TOTP secret not found. Please generate a new secret.${username}`);
   }
 
   // Verify the TOTP code using the stored secret
@@ -74,7 +74,7 @@ const verifyAndEnableTotp = async (username, totpCode) => {
 
   if (!isValid) {
     logger.warn(`Invalid TOTP code for user: ${username}`);
-    throw new Error('Invalid TOTP code');
+    throw new Error(`Invalid TOTP code: ${totpCode}`);
   }
 
   // Enable TOTP (secret is already stored)
@@ -88,8 +88,51 @@ const verifyAndEnableTotp = async (username, totpCode) => {
   };
 };
 
+const verifyTotpOnly = async (username, totpCode) => {
+  username = username?.trim();
+  logger.info(`Verifying TOTP code for password reset: ${username}`);
+
+  const user = await User.findOne({ where: { username } });
+  if (!user) {
+    logger.warn(`User not found for TOTP verification: ${username}`);
+    throw new Error(`User not found: ${username}`);
+  }
+
+  // Check if user has TOTP enabled
+  if (!user.is_totp_enabled) {
+    logger.warn(`TOTP not enabled for user: ${username}`);
+    throw new Error(`TOTP is not enabled for this user:${username}`);
+  }
+
+  // Check if user has a TOTP secret
+  if (!user.totp_secret) {
+    logger.warn(`No TOTP secret found for user: ${username}`);
+    throw new Error(`TOTP secret not found for this user:${username}`);
+  }
+
+  // Verify the TOTP code using the stored secret
+  const isValid = speakeasy.totp.verify({
+    secret: user.totp_secret,
+    encoding: 'base32',
+    token: totpCode,
+    window: env.TOTP_WINDOW
+  });
+
+  if (!isValid) {
+    logger.warn(`Invalid TOTP code for user: ${username}`);
+    throw new Error(`Invalid TOTP code: ${totpCode}`);
+  }
+
+  logger.info(`TOTP verification successful for password reset: ${username} , status: ${isValid}`);
+  return {
+    success: true,
+    message: 'TOTP code verified successfully'
+  };
+};
+
 
 module.exports = {
   generateTotpSecret,
-  verifyAndEnableTotp
+  verifyAndEnableTotp,
+  verifyTotpOnly
 };

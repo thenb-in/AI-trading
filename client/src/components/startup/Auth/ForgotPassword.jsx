@@ -15,6 +15,7 @@ const ForgotPassword = () => {
     username: prefillUsername,
     newPassword: '',
     confirmPassword: '',
+    otp: ['', '', '', '', '', ''],
   });
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -30,6 +31,28 @@ const ForgotPassword = () => {
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) return; // Only allow single digit
+
+    const newOtp = [...formData.otp];
+    newOtp[index] = value.replace(/[^0-9]/g, ''); // Only allow numbers
+
+    setFormData({ ...formData, otp: newOtp });
+
+    // Auto-focus next input if a digit was entered
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !formData.otp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
   };
 
   const toggleNewPasswordVisibility = () => setShowNewPassword(!showNewPassword);
@@ -54,6 +77,7 @@ const ForgotPassword = () => {
         username: cleanedData.username,
         password: cleanedData.newPassword,
         isFirstLogin: isFirstLogin || false,
+        otp: !isFirstLogin ? formData.otp.join('') : undefined,
       });
       toast.success('Password reset successful! Please log in.');
       setTimeout(() => navigate('/'), 1000);
@@ -76,9 +100,9 @@ const ForgotPassword = () => {
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">Reset Password</h2>
             <p className="text-gray-600">
-              {isFirstLogin 
-                ? 'Please set a new password to continue' 
-                : 'Enter your username and new password'}
+              {isFirstLogin
+                ? 'Please set a new password to continue'
+                : 'Enter your username, new password, and Google Authenticator code'}
             </p>
             {isFirstLogin && (
               <p className="text-sm text-amber-600 mt-2 bg-amber-50 py-2 rounded-lg">
@@ -174,6 +198,40 @@ const ForgotPassword = () => {
             </div>
           </div>
 
+          {/* OTP Input - only show when not first login */}
+          {!isFirstLogin && (
+            <div className="mb-4">
+              <div className="flex justify-center gap-2 mb-2">
+                {formData.otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    id={`otp-${index}`}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength="1"
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className="w-12 h-12 text-center text-xl font-semibold border-2 border-gray-300
+                               rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+                               focus:border-blue-500 transition duration-200 hover:border-gray-400"
+                    placeholder="0"
+                  />
+                ))}
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <FaLock className="text-gray-400 text-sm" />
+                  <p className="text-sm text-gray-600 font-medium">Google Authenticator Code</p>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Enter your 6-digit code. Leave empty to request approval.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Submit */}
           <div className="mb-6">
             <button
@@ -189,15 +247,17 @@ const ForgotPassword = () => {
           </div>
 
           {/* Back to Login */}
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="text-sm text-blue-600 hover:text-blue-800 hover:underline 
-                         transition flex items-center justify-center gap-2"
-            >
-              <FaArrowLeft /> Back to Login
-            </button>
+          <div className="text-center flex justify-center">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline 
+                           transition flex items-center justify-center gap-2"
+              >
+                <FaArrowLeft /> Back to Login
+              </button>
+            </div>
           </div>
         </form>
       </div>
