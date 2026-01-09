@@ -11,7 +11,7 @@ import { useDataContext, hasPermission } from "../../../context/startup/useDataC
 import { LogoutButton } from "../LogoutButton";
 import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "../../../constants/startup/index";
-import { useEffect } from "react";
+
 
 function AdminSidebar({
   collapsed,
@@ -21,7 +21,7 @@ function AdminSidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userData, setHamburgerMenu, hamburgerMenu } = useDataContext();
+  const { userData } = useDataContext();
 
   const dataContext = useDataContext();
   // Base menu items
@@ -56,10 +56,6 @@ function AdminSidebar({
   const menuItems = [...additionalMenuItems, ...baseMenuItems];
 
   const handleNavigation = (item) => {
-    if (isMobileView) {
-      // close hamburger on mobile navigation
-      setHamburgerMenu(false);
-    }
     if (item.onClick) {
       item.onClick(item);
     } else if (item.path) {
@@ -72,26 +68,9 @@ function AdminSidebar({
     return location.pathname.startsWith(path);
   };
 
-  // Close mobile sidebar when route changes (so it doesn't stay open)
-  useEffect(() => {
-    if (isMobileView && hamburgerMenu) {
-      setHamburgerMenu(false);
-    }
-  }, [location.pathname]);
-
-  // If screen becomes larger, ensure hamburger closed and sidebar expanded appropriately
-  useEffect(() => {
-    if (!isMobileView) {
-      setHamburgerMenu(false);
-    }
-  }, [isMobileView]);
 
   const handleToggleClick = () => {
-    if (isMobileView) {
-      setHamburgerMenu(!hamburgerMenu);
-    } else {
-      setCollapsed(!collapsed);
-    }
+    setCollapsed(!collapsed);
   };
 
   const handleItemClick = (item) => () => {
@@ -99,26 +78,14 @@ function AdminSidebar({
   };
 
   return (
-    <>
-      {/* Mobile overlay - shown when hamburgerMenu is true */}
-      {isMobileView && hamburgerMenu && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[99998] transition-opacity"
-          onClick={() => setHamburgerMenu(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      <div
+    <div
         className={`
           bg-gray-800 text-white fixed top-0 left-0 flex flex-col z-[99999] sidebar-container
           ${isMobileView
-            ? "max-w-[80%] w-[80%] shadow-lg h-full max-h-screen"
+            ? (collapsed ? "w-14" : "w-48") + " h-screen shadow-lg"
             : (collapsed ? "w-14" : "w-64") + " h-screen"}
-          ${isMobileView ? (hamburgerMenu ? "translate-x-0" : "-translate-x-full") : "translate-x-0"}
+          ${isMobileView ? "translate-x-0" : "translate-x-0"}
         `}
-        aria-hidden={isMobileView ? !hamburgerMenu : undefined}
-        tabIndex={isMobileView && !hamburgerMenu ? -1 : 0}
         role="navigation"
       >
         {/* Top Header */}
@@ -220,7 +187,6 @@ function AdminSidebar({
           <LogoutButton collapsed={collapsed} />
         </div>
       </div>
-    </>
   );
 }
 
