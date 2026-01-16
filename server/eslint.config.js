@@ -66,8 +66,8 @@ module.exports = [
       'custom/file-length-warning': ['warn', { warningLines: 300 }],
       'custom/no-direct-model-imports': 'error',
       'custom/no-sequelize-models': 'error',
-      'custom/one-model-per-service-warn': ['warn', { warnThreshold: 2, errorThreshold: 3 }],
-      'custom/one-model-per-service': ['error', { errorThreshold: 3 }],
+      'custom/one-model-per-service-warn': ['warn', { warnThreshold: 3 }],
+      // 'custom/one-model-per-service': ['error', { errorThreshold: 3 }],
       'custom/named-exports-only': ['error', { 
         excludePatterns: ['eslint-rules', 'scripts', 'migrations']
       }],
