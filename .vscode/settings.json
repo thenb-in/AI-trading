@@ -1,0 +1,50 @@
+{
+  // TypeScript/JavaScript settings
+  "typescript.tsdk": "./client/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.preferences.useAliasesForRenames": true,
+  "typescript.validate.enable": true,
+  "typescript.disableAutomaticTypeAcquisition": false,
+  "typescript.enableProjectDiagnostics": true,
+  "typescript.tsserver.maxTsServerMemory": 4096,
+  
+  // JavaScript settings (use jsconfig.json/tsconfig.json for path resolution)
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "javascript.suggest.autoImports": true,
+  "javascript.preferences.includePackageJsonAutoImports": "auto",
+  "javascript.preferences.useAliasesForRenames": true,
+  "javascript.validate.enable": true,
+  
+  // Enable IntelliSense for JavaScript files using tsconfig.json/jsconfig.json
+  "js/ts.implicitProjectConfig.checkJs": false,
+  
+  // Search for jsconfig.json and tsconfig.json in subdirectories
+  // VSCode will automatically detect jsconfig.json/tsconfig.json in client/ directory
+  // when editing files within that directory structure
+  
+  // Editor settings
+  "editor.formatOnSave": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  
+  // File associations
+  "files.associations": {
+    "*.js": "javascript",
+    "*.jsx": "javascriptreact"
+  },
+  
+  // ESLint settings
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact"
+  ],
+  "eslint.workingDirectories": [
+    { "directory": "./client", "changeProcessCWD": true },
+    { "directory": "./server", "changeProcessCWD": true }
+  ]
+}

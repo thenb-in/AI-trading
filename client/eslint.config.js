@@ -3,6 +3,7 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import importPlugin from 'eslint-plugin-import'
 import customPlugin from './eslint-rules/index.js'
 
 export default [
@@ -20,11 +21,20 @@ export default [
         sourceType: 'module',
       },
     },
-    settings: { react: { version: '18.3' } },
+    settings: {
+      react: { version: '18.3' },
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json'
+        }
+      }
+    },
     plugins: {
       react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      import: importPlugin,
       custom: customPlugin,
     },
     rules: {
@@ -45,13 +55,19 @@ export default [
       'custom/theme-values-only': 'error',
       'custom/no-direct-fetch': 'error',
       'custom/no-inline-arrow-functions': 'error',
-      'custom/named-exports-only': ['error', { 
+      'custom/no-relative-imports': 'error',
+      'custom/named-exports-only': ['error', {
         excludePatterns: ['eslint-rules', 'scripts']
       }],
       'custom/no-default-imports': 'error',
       'custom/bottom-exports-only': ['error', {
         excludePatterns: ['eslint-rules', 'scripts']
       }],
+      // Import/export rules
+      'import/no-unresolved': 'error',
+      'import/named': 'error',
+      'import/default': 'error',
+      'import/namespace': 'error',
     },
   },
 

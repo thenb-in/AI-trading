@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { hasPermission } from "@utils/startup/hasPermission";
-import { exportMaster, importMaster } from "../../../../utils/masterExportimport.js";
+import { exportMaster, importMaster } from "@utils/masterExportimport.js";
 
 const MasterHeader = ({
   title,

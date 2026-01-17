@@ -1,6 +1,8 @@
 // Generic import function for master components
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate } from '@utils/startup/dateTimeUtils';
+import Papa from 'papaparse';
+import ExcelJS from 'exceljs';
 
 const createImportFunction = ({ 
   columns = [], 
@@ -34,7 +36,6 @@ const createImportFunction = ({
 
       if (isExcel) {
         // Parse Excel file
-        const ExcelJS = (await import('exceljs')).default;
         const buffer = await file.arrayBuffer();
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buffer);
@@ -145,7 +146,6 @@ const createImportFunction = ({
         }
       } else if (isCSV) {
         // Parse CSV file
-        const Papa = (await import('papaparse')).default;
         
         const text = await file.text();
         const parseResult = Papa.parse(text, {

@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
@@ -41,19 +42,9 @@ export default ({ mode }) => {
         },
       },
     },
-    resolve: {
-      alias: {
-        '@': resolve(__dirname, 'src'),
-        '@startup': resolve(__dirname, 'src/components/startup'),
-        '@theme': resolve(__dirname, 'src/constants/startup/theme.js'),
-        '@report': resolve(__dirname, 'src/components/startup/BaseReport'),
-        '@utils': resolve(__dirname, 'src/utils'),
-
-        '@data': resolve(__dirname, 'src/data'),
-      },
-    },
     plugins: [
       react(), // Enable React plugin for Vite
+      tsconfigPaths(), // Use path aliases from tsconfig.json
       {
         name: 'html-transform',
         transformIndexHtml(html) {
