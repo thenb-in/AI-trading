@@ -9,7 +9,7 @@
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "cd client && npm run setup-env && cd ../server && npm run setup-env",
     "setup-env:check": "cd client && npm run setup-env:check && cd ../server && npm run check-env",
-    "create-app": "node scripts/create-app.js",
+    "create-new-app": "node scripts/create-app.js",
     "update-starter-app": "node scripts/update-starter-app.js",
     "migrate": "node scripts/migrate.js",
     "prepare": "husky",
