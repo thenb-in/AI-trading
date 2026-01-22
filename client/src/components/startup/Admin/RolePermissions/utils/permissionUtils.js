@@ -1,4 +1,4 @@
-import { getReportDisplayName } from '../../../../../data/getReportModules';
+import { getReportDisplayName } from '@data/getReportModules';
 
 /**
  * Organizes permissions by type (module, report, master)

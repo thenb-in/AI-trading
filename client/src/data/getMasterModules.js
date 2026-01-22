@@ -1,35 +1,21 @@
 import {
-  People as PeopleIcon,
+  Settings as SettingsIcon,
 } from "@mui/icons-material";
 
 const getMasterModules = (handleOpenMaster) => [
-  {
-    id: "test_master_1",
-    title: "Test master 1",
-    description:
-      "Test master module 1.",
-    icon: PeopleIcon,
-    color: "primary",
-    onClick: () => handleOpenMaster("test-master-1"),
-    buttonText: "Test Master 1",
-    tags: ["Test", "Master", "Module"],
-    keywords:
-      "test master module",
-    category: "Common Masters",
-    // permissionName: "read_master_1", // optional, if not provided, the title will be used to generate the permission name
-  },
-  {
-    id: "test_master_2",
-    title: "Test master 2",
-    description: "Test master module 2.",
-    icon: PeopleIcon,
-    color: "primary",
-    onClick: () => handleOpenMaster("test-master-2"),
-    buttonText: "Open Test",
-    tags: ["Test"],
-    keywords: "test master module",
-    category: "Other master categories",
-  },
+{
+  id: "activity",
+  title: "Audit Logs",
+  description: "Track and review all user actions and CRUD operations across every system module and model.",
+  icon: SettingsIcon,
+  color: "primary",
+  onClick: () => handleOpenMaster("activity"),
+  buttonText: "View Audit Logs",
+  tags: ["Audit","Activity","Logs","CRUD","Tracking","System"],
+  keywords: "audit logs activity tracking crud operations user actions system history change log",
+  category: "System Logs",
+  permissionName: "read_activity",
+}
 ];
 
 

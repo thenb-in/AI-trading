@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useDataContext, hasPermission } from "../../../context/startup/useDataContext";
-import { ApiService } from "../../../services/startup/ApiService";
+import { useDataContext, hasPermission } from "@context/startup/useDataContext";
+import { ApiService } from "@services/startup/ApiService";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building,

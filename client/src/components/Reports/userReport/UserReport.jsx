@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { BaseReport } from "../../startup/BaseReport/BaseReport";
-import { ApiService } from "../../../services/startup/ApiService";
+import { ApiService } from "@services/startup/ApiService";
 
 /**
  * UserReport - Example custom report implementation using BaseReport.

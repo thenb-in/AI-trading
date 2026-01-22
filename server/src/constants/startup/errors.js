@@ -10,9 +10,11 @@ const sequelizeErrors = {
 };
 
 const COMPANY_ID_REQUIRED = 'Company ID is required';
+const ACTIVITY_MISSING_REQUIRED_FIELDS = 'Missing required fields: head, log, and timestamp are required';
 
 
 module.exports = {
   sequelizeErrors,
-  COMPANY_ID_REQUIRED
+  COMPANY_ID_REQUIRED,
+  ACTIVITY_MISSING_REQUIRED_FIELDS
 };

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { ApiService } from "../../../../../services/startup/ApiService.js";
+import { ApiService } from "@services/startup/ApiService.js";
 import { columnMenuStyle } from "../../utils/styles.js";
 import { buildColumnConfig } from "../../utils/helpers.js";
 import { LayoutList } from "./LayoutList.jsx";

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { AppSideBar } from "../../AppSideBar";
 import { Outlet } from "react-router-dom";
-import { useDebugMode } from "../../../hooks/useDebugMode";
+import { useDebugMode } from "@/hooks/useDebugMode";
 
 
 function AdminLayout() {

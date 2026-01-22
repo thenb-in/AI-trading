@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaQrcode, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
-import { ApiService } from '../../../services/startup/ApiService';
+import { ApiService } from '@services/startup/ApiService';
 import { MasterModal } from '../BaseMasterComponents/MasterModal/MasterModal';
 
 const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {

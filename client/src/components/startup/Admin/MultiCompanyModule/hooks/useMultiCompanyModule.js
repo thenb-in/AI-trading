@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../../../services/startup/ApiService';
-import { STORAGE_KEYS } from '../../../../../constants/startup/index';
-import { useDataContext } from '../../../../../context/startup/useDataContext';
+import { ApiService } from '@services/startup/ApiService';
+import { STORAGE_KEYS } from '@/constants/startup/index';
+import { useDataContext } from '@context/startup/useDataContext';
 
 const useMultiCompanyModule = () => {
   const { userData, setUserData } = useDataContext();

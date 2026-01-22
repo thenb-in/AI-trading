@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2 } from 'lucide-react';
-import { ApiService } from '../../../../../services/startup/ApiService';
-import { useEscapeKey } from '../../../../../hooks/useEscapeKey';
+import { ApiService } from '@services/startup/ApiService';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
 
 function CreateRoleModal({ isOpen, onClose, onSuccess }) {

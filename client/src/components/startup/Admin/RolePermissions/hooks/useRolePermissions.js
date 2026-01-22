@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../../../services/startup/ApiService';
+import { ApiService } from '@services/startup/ApiService';
 
 function useRolePermissions() {
   const [roles, setRoles] = useState([]);

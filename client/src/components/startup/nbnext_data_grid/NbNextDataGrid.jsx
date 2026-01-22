@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
-import { ApiService } from "../../../services/startup/ApiService.js";
+import { ApiService } from "@services/startup/ApiService.js";
 import { ArrowUp } from "lucide-react";
 
 // Hooks

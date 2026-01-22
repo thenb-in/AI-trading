@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
-import { hasPermission, useDataContext } from '../../../context/startup/useDataContext';
+import { hasPermission, useDataContext } from '@context/startup/useDataContext';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');

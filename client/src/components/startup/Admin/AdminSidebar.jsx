@@ -7,10 +7,10 @@ import {
   CopySlash,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "../../../context/startup/useDataContext";
+import { useDataContext, hasPermission } from "@context/startup/useDataContext";
 import { LogoutButton } from "../LogoutButton";
 import PropTypes from "prop-types";
-import { STORAGE_KEYS } from "../../../constants/startup/index";
+import { STORAGE_KEYS } from "@/constants/startup/index";
 
 
 function AdminSidebar({

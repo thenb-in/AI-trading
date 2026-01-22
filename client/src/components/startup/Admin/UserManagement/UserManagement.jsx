@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { UserPlus, UserMinus, Search, Users, Menu, Trash2, Link as LinkIcon } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
-import { useDataContext } from '../../../../context/startup/useDataContext';
+import { useDataContext } from '@context/startup/useDataContext';
 import { UserTable } from './components/UserTable';
-import { getUserManagementExtraColumns } from '../../../userManagementExtraColumns';
+import { getUserManagementExtraColumns } from '@/components/userManagementExtraColumns';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { toast } from 'react-toastify';

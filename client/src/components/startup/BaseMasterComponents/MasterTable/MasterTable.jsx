@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Eye } from 'lucide-react';
-import { FileViewerModal } from '../../../common/FileViewerModal';
+import { FileViewerModal } from '@/components/common/FileViewerModal';
 import PropTypes from 'prop-types';
 
 // Utility function to format date for display

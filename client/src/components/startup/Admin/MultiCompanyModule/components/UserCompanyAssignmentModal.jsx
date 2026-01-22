@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Loader2 } from 'lucide-react';
-import { useEscapeKey } from '../../../../../hooks/useEscapeKey';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
 import { useCompanyUserData } from './useCompanyUserData';
 import { UserCompanyAssignmentHeader } from './UserCompanyAssignmentHeader';
 import { UserAssignmentForm } from './UserAssignmentForm';
 import { UserAssignmentList } from './UserAssignmentList';
-import { ApiService } from '../../../../../services/startup/ApiService';
+import { ApiService } from '@services/startup/ApiService';
 
 function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
   const { users, companyUsers, loading, loadCompanyUsers } = useCompanyUserData(isOpen, company);

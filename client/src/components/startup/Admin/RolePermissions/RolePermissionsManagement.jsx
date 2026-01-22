@@ -6,7 +6,7 @@ import { PermissionCategorySection } from './components/PermissionCategorySectio
 import { AlertMessage } from './components/AlertMessage';
 import { CreateRoleModal } from './components/CreateRoleModal';
 import { organizePermissions } from './utils/permissionUtils';
-import { useDataContext } from '../../../../context/startup/useDataContext';
+import { useDataContext } from '@context/startup/useDataContext';
   
 function RolePermissionsManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

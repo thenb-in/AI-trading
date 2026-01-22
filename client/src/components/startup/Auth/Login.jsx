@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../services/startup/ApiService';
-import { useDataContext } from '../../../context/startup/useDataContext';
-import { cleanFormData } from '../../../utils/startup/authformvalidation';
+import { ApiService } from '@services/startup/ApiService';
+import { useDataContext } from '@context/startup/useDataContext';
+import { cleanFormData } from '@utils/startup/authformvalidation';
 import { SetupTotpPopup } from './SetupTotpPopup';
 
 function Login() {

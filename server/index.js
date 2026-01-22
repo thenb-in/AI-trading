@@ -11,6 +11,7 @@ const httpLogger = require('./src/middleware/httpLogger');
 const db = require('./src/models');
 const appRoutes = require('./src/routes/app_routes');
 const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
+const activityRoutes = require('./src/routes/startup/activityRoutes');
 const adminRoutes = require('./src/routes/startup/admin.route');
 const authRoutes = require('./src/routes/startup/authRoutes');
 const companyRoutes = require('./src/routes/startup/companyRoutes');
@@ -58,6 +59,7 @@ app.use('/api/v1/company', companyRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/company-profile', companyProfileRoutes);
 app.use('/api/v1/layouts', layoutRoutes);
+app.use('/api/v1/activity', activityRoutes);
 // App routes (custom routes)
 
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"

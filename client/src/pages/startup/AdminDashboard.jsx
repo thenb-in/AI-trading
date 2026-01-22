@@ -9,6 +9,7 @@ import { appRoutes } from "../AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
 import { DashboardContent } from "./Dashboards";
+import { ActivityMaster } from "../../components/masters/startup/activityMaster/ActivityMaster";
 
 
 const AdminDashboard = () => {
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
 
         <Route path="masters" element={<MasterContent />} />
         <Route path="master/*" element={<MasterContent />} />
+        <Route path="master/activity" element={<ActivityMaster />} />
         
         <Route path="users" element={<UserManagement />} />
         <Route path="company" element={<CompanySettings />} />

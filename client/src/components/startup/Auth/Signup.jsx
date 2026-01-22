@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../services/startup/ApiService';
+import { ApiService } from '@services/startup/ApiService';
 import PropTypes from "prop-types";
-import { cleanFormData } from '../../../utils/startup/authformvalidation';
+import { cleanFormData } from '@utils/startup/authformvalidation';
 
 
 function Signup({ showRoleDropdown }) {

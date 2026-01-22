@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { ApiService } from '../../../services/startup/ApiService';
-import { cleanFormData } from '../../../utils/startup/authformvalidation';
+import { ApiService } from '@services/startup/ApiService';
+import { cleanFormData } from '@utils/startup/authformvalidation';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();

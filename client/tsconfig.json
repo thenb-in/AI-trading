@@ -25,6 +25,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@startup/*": ["src/components/startup/*"],
+      "@context/*": ["src/context/*"],
+      "@services/*": ["src/services/*"],
       "@theme": ["./src/constants/startup/theme.js"],
       "@report/*": ["src/components/startup/BaseReport/*"],
       "@utils/*": ["src/utils/*"],

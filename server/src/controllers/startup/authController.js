@@ -1,7 +1,5 @@
-/**
- * Controller for authentication operations
- * Contains only business logic, no request/response handling
- */
+const logger = require('../../../logger');
+const activityService = require('../../services/startup/activityService');
 const authService = require('../../services/startup/authService');
 const multiCompanyService = require('../../services/startup/multiCompanyService');
 const totpService = require('../../services/startup/totpService');
@@ -25,7 +23,37 @@ const authController = {
    * @returns {Promise<object>} User data with tokens
    */
   async loginUser(credentials) {
-    return await authService.loginUser(credentials);
+    const loginResult = await authService.loginUser(credentials);
+    const { user } = loginResult;
+
+    // Create activity entry for login
+    try {
+      // Get companyId from user.company.id or fallback to null
+      const companyId = user.company?.id || null;
+
+      if (!companyId) {
+        logger.warn(`Cannot create login activity: companyId is missing for user ${user.id}`);
+        return loginResult;
+      }
+
+      const timestamp = Date.now();
+      await activityService.createActivity(
+        'User Login',
+        `User ${user.username} logged in successfully`,
+        timestamp,
+        'User',
+        user.id,
+        user.id,
+        companyId
+      );
+      logger.info(`Login activity created successfully for user ${user.id}`);
+    } catch (activityError) {
+      // Log error but don't fail login if activity creation fails
+      logger.error(`Failed to create login activity for user ${user.id}`, activityError);
+      logger.error('Activity error details', activityError);
+    }
+
+    return loginResult;
   },
 
   /**
