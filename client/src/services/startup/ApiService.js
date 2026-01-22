@@ -19,9 +19,13 @@ const ApiService = {
     });
 
     try {
+      // Check if URL is already absolute (starts with http:// or https://)
+      const isAbsoluteUrl = url.startsWith('http://') || url.startsWith('https://');
+      const requestUrl = isAbsoluteUrl ? url : `${API_URL}${url}`;
+      
       const response = await axios({
         method,
-        url: `${API_URL}${url}`,
+        url: requestUrl,
         ...(data && { data }),
         ...(config.params && { params: config.params }),
         headers,

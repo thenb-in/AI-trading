@@ -1,5 +1,6 @@
 import {
   Settings as SettingsIcon,
+  CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 
 const getMasterModules = (handleOpenMaster) => [
@@ -8,13 +9,26 @@ const getMasterModules = (handleOpenMaster) => [
   title: "Audit Logs",
   description: "Track and review all user actions and CRUD operations across every system module and model.",
   icon: SettingsIcon,
-  color: "primary",
+  color: "success",
   onClick: () => handleOpenMaster("activity"),
   buttonText: "View Audit Logs",
   tags: ["Audit","Activity","Logs","CRUD","Tracking","System"],
   keywords: "audit logs activity tracking crud operations user actions system history change log",
   category: "System Logs",
   permissionName: "read_activity",
+},
+{
+  id: "nbnext-drive",
+  title: "NBnext Drive",
+  description: "Upload, view, download, and manage files. Store files with optional object references for future API integration.",
+  icon: CloudUploadIcon,
+  color: "secondary",
+  onClick: () => handleOpenMaster("nbnext-drive"),
+  buttonText: "Open Drive",
+  tags: ["Files","Storage","Upload","Download","Drive","Documents"],
+  keywords: "file storage upload download drive documents files management",
+  category: "File Management",
+  permissionName: "read_personal_nbnext_drive",
 }
 ];
 

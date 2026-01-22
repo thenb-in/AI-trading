@@ -9,6 +9,7 @@ import {
   Storage as StorageIcon,
   SupervisorAccount as ManagementIcon,
   Build as CommonMastersIcon,
+  CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "../context/startup/useDataContext";
@@ -86,6 +87,8 @@ function useAppMenuItems() {
         return <ManagementIcon className="h-4 w-4" />;
       case "Common Masters":
         return <CommonMastersIcon className="h-4 w-4" />;
+      case 'File Management':
+        return <CloudUploadIcon className="h-4 w-4"/>;
       default:
         return <CategoryIcon className="h-4 w-4" />;
     }

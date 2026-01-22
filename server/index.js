@@ -16,6 +16,7 @@ const adminRoutes = require('./src/routes/startup/admin.route');
 const authRoutes = require('./src/routes/startup/authRoutes');
 const companyRoutes = require('./src/routes/startup/companyRoutes');
 const layoutRoutes = require('./src/routes/startup/layoutRoutes');
+const nbnextDriveRoutes = require('./src/routes/startup/nbnextDriveRoutes');
 const userRoutes = require('./src/routes/startup/userRoutes');
 
 const app = express();
@@ -60,6 +61,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/company-profile', companyProfileRoutes);
 app.use('/api/v1/layouts', layoutRoutes);
 app.use('/api/v1/activity', activityRoutes);
+app.use('/api/v1/nbnext-drive', nbnextDriveRoutes);
 // App routes (custom routes)
 
 appRoutes(app, '/api/v1');  // todo: app routes for "/api/v1"

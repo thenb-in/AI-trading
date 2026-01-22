@@ -1,118 +1,173 @@
 import PropTypes from 'prop-types';
-import { X } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { ApiService } from '../../services/startup/ApiService';
+import { useImageZoom } from '../../hooks/useImageZoom';
+import { getFileType } from '../../utils/fileManagement/fileTypeUtils';
+import { loadFile } from '../../utils/fileManagement/fileLoader';
+import {
+  ImageViewer,
+  PdfViewer,
+  VideoViewer,
+  AudioViewer,
+  UnsupportedViewer,
+} from './FileViewer';
 
-const isPdfByMimeOrUrl = (mimeType, url) => {
-  if (mimeType) return mimeType.toLowerCase().includes('pdf');
-  if (!url) return false;
-  try {
-    const pathname = new URL(url, window.location.origin).pathname.toLowerCase();
-    return pathname.endsWith('.pdf');
-  } catch (err) {
-    console.error('FileViewerModal: Error parsing URL for PDF check', {
-      url,
-      error: err.message,
-    });
-    return url.toLowerCase().includes('.pdf');
-  }
-};
-
+/**
+ * File Viewer Modal Component
+ * Displays files in a modal with appropriate viewer based on file type
+ */
 const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File' }) => {
   const [blobUrl, setBlobUrl] = useState('');
   const [effectiveMime, setEffectiveMime] = useState(mimeType || '');
 
+  // Image zoom controls (only used for images)
+  const imageZoomHook = useImageZoom(isOpen);
+  const {
+    imageZoom,
+    imagePosition,
+    isDragging,
+    imageRef,
+    containerRef,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+    handleFitToScreen,
+    handleWheel,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+  } = imageZoomHook;
+
   // Handle escape key to close modal
   useEscapeKey(onClose, isOpen);
 
+  // Load file when modal opens or file changes
   useEffect(() => {
     let revokedUrl = '';
+    
     const load = async () => {
       if (!isOpen || !fileUrl) return;
+      
       try {
-        // Check if fileUrl is a full URL or relative path
-        const isFullUrl = fileUrl.startsWith('http://') || fileUrl.startsWith('https://');
-        let response;
+        const { blobUrl: loadedBlobUrl, mimeType: loadedMimeType } = await loadFile(fileUrl, mimeType);
+        setBlobUrl(loadedBlobUrl);
+        setEffectiveMime(loadedMimeType);
         
-        if (isFullUrl) {
-          // For full URLs, extract the pathname if it's from the same origin
-          try {
-            const urlObj = new URL(fileUrl);
-            const sameOrigin = urlObj.origin === window.location.origin;
-            if (sameOrigin) {
-              // Use the pathname with ApiService
-              response = await ApiService.request('GET', urlObj.pathname, null, {
-                responseType: 'blob',
-                headers: {},
-              });
-            } else {
-              // For different origin, we need to use fetch but this violates the rule
-              // Fallback: use the full URL directly as blob URL
-              setBlobUrl(fileUrl);
-              setEffectiveMime(mimeType || '');
-              return;
-            }
-          } catch (urlError) {
-            console.log(urlError)
-            // If URL parsing fails, treat as relative path
-            response = await ApiService.request('GET', fileUrl, null, {
-              responseType: 'blob',
-              headers: {},
-            });
-          }
-        } else {
-          // Relative path - use ApiService directly
-          response = await ApiService.request('GET', fileUrl, null, {
-            responseType: 'blob',
-            headers: {},
-          });
+        // Store URL for cleanup if it's a blob URL
+        if (loadedBlobUrl.startsWith('blob:')) {
+          revokedUrl = loadedBlobUrl;
         }
-        
-        const blob = response.data instanceof Blob ? response.data : new Blob([response.data]);
-        const url = URL.createObjectURL(blob);
-        setBlobUrl(url);
-        setEffectiveMime(blob.type || mimeType || '');
-        revokedUrl = url;
-      } catch (err) {
-        console.error('FileViewerModal: Error loading file blob', {
-          fileUrl,
-          mimeType,
-          error: err.message,
-          status: err.response?.status,
-        });
+      } catch {
+        // Fallback to original URL if loading fails
         setBlobUrl(fileUrl);
         setEffectiveMime(mimeType || '');
       }
     };
+
     load();
+
     return () => {
-      if (revokedUrl) URL.revokeObjectURL(revokedUrl);
+      if (revokedUrl) {
+        URL.revokeObjectURL(revokedUrl);
+      }
       setBlobUrl('');
     };
   }, [isOpen, fileUrl, mimeType]);
 
-  const isPdf = useMemo(() => isPdfByMimeOrUrl(effectiveMime, fileUrl), [effectiveMime, fileUrl]);
+  // Determine file type
+  const fileType = useMemo(() => getFileType(effectiveMime, fileUrl), [effectiveMime, fileUrl]);
+  const isImage = fileType === 'image';
 
   if (!isOpen) return null;
+
+  // Render appropriate viewer based on file type
+  const renderFileContent = () => {
+    switch (fileType) {
+      case 'pdf':
+        return <PdfViewer blobUrl={blobUrl} fileUrl={fileUrl} />;
+      
+      case 'image':
+        return (
+          <ImageViewer
+            blobUrl={blobUrl}
+            fileUrl={fileUrl}
+            title={title}
+            imageZoom={imageZoom}
+            imagePosition={imagePosition}
+            isDragging={isDragging}
+            imageRef={imageRef}
+            containerRef={containerRef}
+            handleWheel={handleWheel}
+            handleMouseDown={handleMouseDown}
+            handleMouseMove={handleMouseMove}
+            handleMouseUp={handleMouseUp}
+          />
+        );
+      
+      case 'video':
+        return <VideoViewer blobUrl={blobUrl} fileUrl={fileUrl} />;
+      
+      case 'audio':
+        return <AudioViewer blobUrl={blobUrl} fileUrl={fileUrl} title={title} />;
+      
+      case 'excel':
+      case 'csv':
+      case 'unknown':
+        return <UnsupportedViewer />;
+      
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000]">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[80vh] mx-4 flex flex-col">
         <div className="flex items-center justify-between p-3 border-b border-gray-200">
-          <div className="text-sm font-medium text-gray-700 truncate pr-2">{title}</div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="text-sm font-medium text-gray-700 truncate pr-2 flex-1">{title}</div>
+          <div className="flex items-center gap-2">
+            {isImage && (
+              <>
+                <button
+                  onClick={handleZoomOut}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  title="Zoom Out"
+                  disabled={imageZoom <= 0.5}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleZoomIn}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  title="Zoom In"
+                  disabled={imageZoom >= 5}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleFitToScreen}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  title="Fit to Screen"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleResetZoom}
+                  className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
+                  title="Reset Zoom"
+                >
+                  <RotateCw className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <button onClick={onClose} className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 bg-gray-50">
-          {isPdf ? (
-            <iframe title="PDF Viewer" src={blobUrl || fileUrl} className="w-full h-full" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-black">
-              <img src={blobUrl || fileUrl} alt="file" className="max-w-full max-h-full object-contain" />
-            </div>
-          )}
+        <div className="flex-1 bg-gray-50 overflow-hidden">
+          {renderFileContent()}
         </div>
       </div>
     </div>
