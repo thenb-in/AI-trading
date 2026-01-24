@@ -1,6 +1,23 @@
+const path = require('path');
 const { Client } = require('pg');
 const logger = require('../../logger');
 const { createPrompt, askQuestion } = require('./utils');
+
+function getDefaultDbName() {
+  try {
+    const projectRoot = path.resolve(process.cwd(), '..');
+    const folderName = path.basename(projectRoot);
+    const dbName = folderName.trim().replace(/\s+/g, '_');
+    if (!dbName) {
+      logger.warn('Could not derive default DB name from folder; falling back to nbnext_db');
+      return 'nbnext_db';
+    }
+    return dbName;
+  } catch (error) {
+    logger.warn(`Error deriving default DB name from folder: ${error.message}`);
+    return 'nbnext_db';
+  }
+}
 
 async function testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName = 'postgres') {
   const client = new Client({
@@ -184,7 +201,8 @@ async function configureDatabase() {
       const dbPort = await askQuestion(prompt, 'Database port', '5432');
 
       // Database name
-      const dbName = await askQuestion(prompt, 'Database name', 'nbnext_db');
+      const defaultDbName = getDefaultDbName();
+      const dbName = await askQuestion(prompt, 'Database name', defaultDbName);
 
       // Database username
       const dbUser = await askQuestion(prompt, 'Database username', 'postgres');

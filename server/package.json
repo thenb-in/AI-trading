@@ -1,11 +1,11 @@
 {
-  "name": "backend",
-  "version": "1.0.4",
+  "name": "NB Next backend",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "kill": "kill -9 $(lsof -t -i:5000)",
+    "kill": "kill -9 $(lsof -t -i:3000)",
     "lint": "npx eslint .",
     "lint:errors": "npx eslint . --quiet",
     "lint:fix": "npx eslint . --fix",
