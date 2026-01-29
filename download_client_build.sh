@@ -26,21 +26,53 @@ fi
 read -p "Enter your GitHub Token for $GITHUB_OWNER/$GITHUB_REPO: " GITHUB_TOKEN
 echo ""
 
-# Fetch the latest successful workflow run ID
+# Fetch the latest successful workflow run ID (guard against null workflow_runs)
 LATEST_RUN_ID=$(
   curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=success&branch=main&per_page=50" \
-  | jq -r '.workflow_runs[] | select(.name=="Build and Upload Artifact") | .id' \
+  | jq -r '(.workflow_runs // [])[] | select(.name=="Build and Upload Artifact") | .id' \
   | head -n1
 )
 
 # Check if a run was found
-if [[ "$LATEST_RUN_ID" == "null" ]]; then
-    echo "No successful workflow runs found!"
+if [[ -z "$LATEST_RUN_ID" || "$LATEST_RUN_ID" == "null" ]]; then
+    echo "No successful workflow runs found for 'Build and Upload Artifact' on branch main."
+    echo "Check that the workflow has run successfully at least once on main."
     exit 1
 fi
 
-echo "Latest workflow run ID: $LATEST_RUN_ID"
+# Fetch full run details for deployment info
+RUN_DETAILS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs/$LATEST_RUN_ID")
+
+if echo "$RUN_DETAILS" | jq -e '.message == "Not Found"' >/dev/null 2>&1; then
+    echo "Workflow run $LATEST_RUN_ID not found. Token may lack permissions or run was deleted."
+    exit 1
+fi
+if echo "$RUN_DETAILS" | jq -e '.created_at == null' >/dev/null 2>&1; then
+    echo "Invalid response from GitHub API for run $LATEST_RUN_ID."
+    exit 1
+fi
+
+BUILT_AT=$(echo "$RUN_DETAILS" | jq -r '.created_at')
+HEAD_SHA=$(echo "$RUN_DETAILS" | jq -r '.head_sha')
+HEAD_BRANCH=$(echo "$RUN_DETAILS" | jq -r '.head_branch')
+COMMIT_MSG=$(echo "$RUN_DETAILS" | jq -r '.head_commit.message' | tr '\n' ' ' | sed 's/  */ /g')
+COMMIT_AUTHOR=$(echo "$RUN_DETAILS" | jq -r '.head_commit.author.name')
+SHORT_SHA="${HEAD_SHA:0:7}"
+
+echo ""
+echo "=============================================="
+echo "  Artifact deployment details"
+echo "=============================================="
+echo "  Workflow run ID:  $LATEST_RUN_ID"
+echo "  Built at:         $BUILT_AT"
+echo "  Branch:           $HEAD_BRANCH"
+echo "  Commit:           $SHORT_SHA ($HEAD_SHA)"
+echo "  Commit message:   $COMMIT_MSG"
+echo "  Author:           $COMMIT_AUTHOR"
+echo "=============================================="
+echo ""
 
 # Get artifact download URL
 ARTIFACT_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
@@ -78,4 +110,5 @@ rm artifact.zip
 mv dist/* /app/$REPO_NAME/
 sudo systemctl restart nginx.service
 
-echo "Latest artifact downloaded and extracted successfully!"
+echo ""
+echo "Deployment complete. Deployed artifact built at $BUILT_AT (commit $SHORT_SHA)."
