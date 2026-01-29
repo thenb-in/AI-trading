@@ -1,4 +1,5 @@
 // Centralized environment configuration
+const fs = require('fs');
 const path = require('path');
 const logger = require('../../logger');
 const { PARSE_INT_RADIX } = require('../constants/startup/standard_constants');
@@ -10,6 +11,23 @@ require('dotenv-safe').config({
   allowEmptyValues: true,
   example: '.env.example'
 });
+
+// App name from server package.json (fallback if read fails)
+let appName = 'NB Next';
+if (process.env.APP_NAME) {
+  appName = process.env.APP_NAME;
+} else {
+  try {
+    const packageJsonPath = path.resolve(__dirname, '../../package.json');
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    if (packageJson.name) {
+      appName = packageJson.name;
+    }
+  } catch (error) {
+    logger.warn(`Could not read app name from package.json: ${error.message}`);
+  }
+}
+
 
 // Export the configuration for use in other files
 const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
@@ -50,6 +68,7 @@ module.exports = {
   PORT: process.env.PORT,
   FRONTEND_URL: process.env.FRONTEND_URL,
   SERVER_URL: process.env.SERVER_URL,
+  APP_NAME: appName,
 
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,
@@ -65,7 +84,7 @@ module.exports = {
 
 
   // TOTP Constants
-  TOTP_ISSUER: process.env.TOTP_ISSUER || 'Startup App',
+  TOTP_ISSUER: process.env.TOTP_ISSUER || appName,
   TOTP_CODE_LENGTH: parseInt(process.env.TOTP_CODE_LENGTH, PARSE_INT_RADIX),
   TOTP_WINDOW: parseInt(process.env.TOTP_WINDOW, PARSE_INT_RADIX),
 
