@@ -15,8 +15,8 @@ const activityController = {
   },
 
 
-  async createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId) {
-    return await activityService.createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId);
+  async createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId, type = null, isConfirmed = null) {
+    return await activityService.createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId, type, isConfirmed);
   }
 };
 

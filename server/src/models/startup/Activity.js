@@ -48,6 +48,17 @@ module.exports = (sequelize, DataTypes) => {
       },
       onUpdate: 'CASCADE',
       onDelete: 'RESTRICT'
+    },
+    isConfirmed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+      field: 'is_confirmed'
+    },
+    type: {
+      type: DataTypes.SMALLINT,
+      allowNull: true,
+      comment: '1 for create, 0 for update, -1 for delete'
     }
   }, {
     tableName: 'activity',
@@ -71,6 +82,12 @@ module.exports = (sequelize, DataTypes) => {
       },
       {
         fields: ['company_id']
+      },
+      {
+        fields: ['type']
+      },
+      {
+        fields: ['is_confirmed']
       }
     ]
   });

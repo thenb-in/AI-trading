@@ -2,6 +2,7 @@
 const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
 // Activity is the primary model for this service
+const { pushActivityToExternalServer } = require('../../interfaces/startup/activityInterface');
 const { Activity, User } = require('../../models');
 
 const activityService = {
@@ -16,7 +17,7 @@ const activityService = {
         where,
         limit: parseInt(limit, 10),
         order: [['timestamp', 'DESC']],
-        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
+        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'],
         include: [
           {
             model: User,
@@ -44,7 +45,7 @@ const activityService = {
         where,
         limit: parseInt(limit, 10),
         order: [['timestamp', 'DESC']],
-        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
+        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'],
         include: [
           {
             model: User,
@@ -61,13 +62,12 @@ const activityService = {
     }
   },
 
-  async createActivity(head, log, timestamp, objectName = null, objectId = null, createdBy = null, companyId = null, transaction = null) {
+  async createActivity(head, log, objectName = null, objectId = null, createdBy = null, companyId = null, type = null, transaction = null) {
     try {
       const options = transaction ? { transaction } : {};
       const activityData = {
         head,
         log,
-        timestamp,
         objectName,
         objectId
       };
@@ -80,8 +80,43 @@ const activityService = {
         activityData.companyId = companyId;
       }
 
+      if (type !== null && type !== undefined) {
+        activityData.type = type;
+      }
+
+      // Initially set isConfirmed to false, will be updated after successful push
+      activityData.isConfirmed = false;
+
+      // Create activity in database first
       const activity = await Activity.create(activityData, options);
-      return activity;
+
+      // Prepare activity data for external API
+      const activityPayload = {
+        id: activity.id,
+        head: activity.head,
+        log: activity.log,
+        timestamp: activity.timestamp,
+        objectName: activity.objectName,
+        objectId: activity.objectId,
+        createdBy: activity.createdBy,
+        companyId: activity.companyId,
+        type: activity.type,
+        createdAt: activity.createdAt,
+        updatedAt: activity.updatedAt
+      };
+
+      // Push activity to external server
+      try {
+        const walletResponse = await pushActivityToExternalServer(activityPayload);
+        // If push successful, update isConfirmed to true
+        activity.isConfirmed = true;
+        await activity.update({ isConfirmed: true }, options);
+        logger.info(`Activity ${activity.id} successfully pushed and confirmed`);
+        return walletResponse;
+      } catch (pushError) {
+        // Log error but don't fail the creation
+        logger.error(`Failed to push activity ${activity.id} to external server`, pushError);
+      }
     } catch (error) {
       logger.error('Error creating activity', error);
       throw new Error(`Failed to create activity: ${error.message}`);

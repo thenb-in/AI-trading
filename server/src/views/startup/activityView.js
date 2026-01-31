@@ -42,7 +42,7 @@ async function getActivitiesByHead(req, res) {
 async function createActivity(req, res) {
   try {
     // Extract data from request
-    const { head, log, timestamp, objectName, objectId } = req.body;
+    const { head, log, timestamp, objectName, objectId, type, isConfirmed } = req.body;
     const createdBy = req.user?.id || null;
     const companyId = req.user?.company_id || null;
 
@@ -52,10 +52,14 @@ async function createActivity(req, res) {
     }
 
     // Call controller
-    const activity = await activityController.createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId);
+    const result = await activityController.createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId, type, isConfirmed);
 
-    // Build and send response
-    res.status(201).json(activity);
+    // Build and send response with 202 status code and message
+    res.status(202).json({
+      message: result.message,
+      activity: result.activity,
+      isConfirmed: result.isConfirmed
+    });
   } catch (error) {
     logger.error('Create activity error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });

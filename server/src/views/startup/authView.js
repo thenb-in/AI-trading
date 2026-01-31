@@ -55,7 +55,8 @@ async function signup(req, res) {
 async function login(req, res) {
   try {
     // Call controller
-    const { user, accessToken, refreshToken } = await authController.loginUser(req.body);
+    const loginResult = await authController.loginUser(req.body);
+    const { user, accessToken, refreshToken, insufficientWallet, walletMessage } = loginResult;
 
     // Set HTTP-only cookies
     res.cookie('accessToken', accessToken, {
@@ -80,7 +81,14 @@ async function login(req, res) {
     });
 
     // Build and send response
-    res.json({ user });
+    const response = { user };
+    if (insufficientWallet !== undefined) {
+      response.insufficientWallet = insufficientWallet;
+    }
+    if (walletMessage) {
+      response.walletMessage = walletMessage;
+    }
+    res.json(response);
   } catch (error) {
     // Handle specific errors
     if (error.message === 'User not found' || error.message === 'Invalid credentials') {

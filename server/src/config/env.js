@@ -92,6 +92,9 @@ module.exports = {
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
+  // External services configuration
+  WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
+
   // File upload configuration
   UPLOADS_DIR: uploadsDir,
 

@@ -25,28 +25,26 @@ const authController = {
   async loginUser(credentials) {
     const loginResult = await authService.loginUser(credentials);
     const { user } = loginResult;
-
     // Create activity entry for login
+    let walletResponse;
     try {
-      // Get companyId from user.company.id or fallback to null
-      const companyId = user.company?.id || null;
-
-      if (!companyId) {
-        logger.warn(`Cannot create login activity: companyId is missing for user ${user.id}`);
-        return loginResult;
-      }
-
-      const timestamp = Date.now();
-      await activityService.createActivity(
-        'User Login',
-        `User ${user.username} logged in successfully`,
-        timestamp,
+      walletResponse = await activityService.createActivity(
         'User',
+        `User ${user.username} logged in successfully`,
+        'User Login',
         user.id,
         user.id,
-        companyId
+        user.company?.id,
+        0 //type (create/update/delete)
       );
       logger.info(`Login activity created successfully for user ${user.id}`);
+      // Check if wallet is insufficient and add to login result
+      if (walletResponse && walletResponse.insufficientWallet === true) {
+        loginResult.insufficientWallet = true;
+        if (walletResponse.message) {
+          loginResult.walletMessage = walletResponse.message;
+        }
+      }
     } catch (activityError) {
       // Log error but don't fail login if activity creation fails
       logger.error(`Failed to create login activity for user ${user.id}`, activityError);

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'react-toastify';
 import { API_CONFIG } from '../../constants/startup/';
 
 const API_URL = API_CONFIG.BASE_URL;
@@ -76,8 +77,16 @@ const ApiService = {
     return this.request('POST', '/auth/signup', data);
   },
 
-  login(data) {
-    return this.request('POST', '/auth/login', data);
+  async login(data) {
+    const response = await this.request('POST', '/auth/login', data);
+    
+    // Check if wallet is insufficient and show toast
+    if (response?.data?.insufficientWallet === true) {
+      const walletMessage = response.data.walletMessage || 'Your wallet is insufficient to process this request, recharge to use';
+      toast.warning(walletMessage);
+    }
+    
+    return response;
   },
 
   getUser() {
