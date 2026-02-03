@@ -88,7 +88,7 @@ const useUserManagement = () => {
       );
       setError("");
     } catch (err) {
-      setError(err.message || "Failed to deactivate user");
+      setError(err?.error || "Failed to deactivate user");
     } finally {
       setConfirmDialog({
         show: false,

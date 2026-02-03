@@ -2,6 +2,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
+import { hasPermission, useDataContext } from '@context/startup/useDataContext';
 
 const UserTableRow = ({ 
   user, 
@@ -15,6 +16,7 @@ const UserTableRow = ({
   handleDeviceOptionUpdate,
   extraColumns = []
 }) => {
+  const dataContext = useDataContext();
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
 
@@ -22,6 +24,7 @@ const UserTableRow = ({
   const deviceRef = useRef(null);
 
   const isSelected = selectedUsers?.includes(user.id);
+  const canUpdateRole = hasPermission('update_role', dataContext);
 
   const handleRowClick = () => {
     if (bulkDeleteMode) {
@@ -152,6 +155,7 @@ const UserTableRow = ({
             onBlur={handleRoleBlur} 
             onClick={handleStopPropagation}
             className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={!canUpdateRole}
           >
             <option value="">
               No Role
@@ -162,8 +166,13 @@ const UserTableRow = ({
           </select>
         ) : (
           <div
-            className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1 transition-colors duration-150"
-            onClick={handleEditRoleClick}
+            className={`flex items-center gap-2 rounded px-2 py-1 transition-colors duration-150 ${
+              canUpdateRole 
+                ? 'cursor-pointer hover:bg-gray-50' 
+                : 'cursor-not-allowed opacity-60'
+            }`}
+            onClick={canUpdateRole ? handleEditRoleClick : undefined}
+            title={!canUpdateRole ? 'You do not have permission to update roles' : ''}
           >
             <RoleBadge role={user?.role?.name || 'No Role'} />
           </div>
