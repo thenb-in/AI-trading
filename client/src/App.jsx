@@ -7,6 +7,7 @@ import { AdminDashboard } from './pages/startup/AdminDashboard';
 import { SignupPage } from './pages/startup/SignupPage';
 import { ForgotPasswordPage } from './pages/startup/ForgotPasswordPage';
 import { OnboardingPage } from './pages/startup/OnboardingPage';
+import { AppGuide } from './pages/startup/AppGuide';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/startup/ProtectedRoute';
 
@@ -23,6 +24,14 @@ export function App() {
           element={
             <ProtectedRoute>
               <OnboardingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app-guide"
+          element={
+            <ProtectedRoute>
+              <AppGuide />
             </ProtectedRoute>
           }
         />

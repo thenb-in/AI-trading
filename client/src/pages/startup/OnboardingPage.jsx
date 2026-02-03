@@ -54,9 +54,9 @@ function OnboardingPage() {
         }));
       }
 
-      // Close modal and redirect to admin dashboard
+      // Close modal and redirect to app guide
       setIsModalOpen(false);
-      navigate('/admin', { replace: true });
+      navigate('/app-guide', { replace: true });
     } catch (err) {
       const errorMessage = err.error || err.message || 'Failed to create company. Please try again.';
       setError(errorMessage);
@@ -132,8 +132,8 @@ function OnboardingPage() {
         }));
       }
 
-      // Redirect to admin dashboard
-      navigate('/admin', { replace: true });
+      // Redirect to app guide
+      navigate('/app-guide', { replace: true });
     } catch (err) {
       const errorMessage = err.error || err.message || 'Failed to join company. Please try again.';
       setError(errorMessage);
