@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Shield,
   CopySlash,
+  BookOpen,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "@context/startup/useDataContext";
@@ -184,6 +185,29 @@ function AdminSidebar({
               </div>
             </div>
           )}
+          
+          {/* Guide Button */}
+          <a
+            href="/app-guide"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={collapsed ? "App Guide" : undefined}
+            aria-label="Open App Guide"
+            className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors mb-2 ${
+              location.pathname === '/app-guide'
+                ? "bg-blue-600 text-white"
+                : "text-gray-300 hover:bg-gray-700 hover:text-white"
+            } ${collapsed ? "justify-center" : "justify-start"}`}
+          >
+            <BookOpen className="w-5 h-5 flex-shrink-0" />
+            <span
+              className={`ml-3 truncate transition-all duration-300 sidebar-label-transition
+                ${collapsed ? 'opacity-0 -translate-x-3 pointer-events-none hidden' : 'opacity-100 translate-x-0 pointer-events-auto inline'}`}
+            >
+              App Guide
+            </span>
+          </a>
+
           <LogoutButton collapsed={collapsed} />
         </div>
       </div>

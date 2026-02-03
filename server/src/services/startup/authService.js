@@ -49,7 +49,7 @@ const signup = async (username, password, { phone, name, role }, transaction) =>
     mobileApp: false,
     desktopWeb: true,
     mobileWeb:  false,
-    is_approved:true
+    is_approved:false
   }, { transaction });
   // Use userService and multiCompanyService for related operations
   // Only create profile and assign to company if companyId is provided
