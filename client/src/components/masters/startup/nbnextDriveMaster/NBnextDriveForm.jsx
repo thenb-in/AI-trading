@@ -1,16 +1,67 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Upload, X, Camera, Video } from 'lucide-react';
+import { CameraCapture } from '@/components/common/CameraCapture';
 
 const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraMode, setCameraMode] = useState('photo');
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const previewUrlRef = useRef(null);
 
   const handleFileSelect = (file) => {
     if (file) {
+      // Clean up previous preview URL
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      
       setSelectedFile(file);
       onFileChange(file);
+      
+      // Create new preview URL for images
+      if (file.type && file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        previewUrlRef.current = url;
+      } else {
+        setPreviewUrl(null);
+        previewUrlRef.current = null;
+      }
     }
+  };
+
+  const handleCameraCapture = (file) => {
+    if (file) {
+      // Clean up previous preview URL
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      
+      setSelectedFile(file);
+      onFileChange(file);
+      
+      // Create new preview URL for images and videos
+      if (file.type && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+        previewUrlRef.current = url;
+      } else {
+        setPreviewUrl(null);
+        previewUrlRef.current = null;
+      }
+    }
+  };
+
+  const handleOpenCamera = (mode = 'photo') => {
+    setCameraMode(mode);
+    setIsCameraOpen(true);
+  };
+
+  const handleCloseCamera = () => {
+    setIsCameraOpen(false);
   };
 
   const handleDrag = (e) => {
@@ -40,9 +91,24 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
   };
 
   const handleRemoveFile = () => {
+    // Clean up preview URL
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setSelectedFile(null);
+    setPreviewUrl(null);
     onFileChange(null);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
@@ -70,21 +136,40 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
           onDrop={handleDrop}
         >
           {selectedFile ? (
-            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Upload className="h-5 w-5 text-gray-500" />
-                <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <Upload className="h-5 w-5 text-gray-500" />
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                className="text-red-500 hover:text-red-700"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              {previewUrl && selectedFile.type && (
+                <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                  {selectedFile.type.startsWith('image/') ? (
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                    />
+                  ) : selectedFile.type.startsWith('video/') ? (
+                    <video
+                      src={previewUrl}
+                      controls
+                      className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                    />
+                  ) : null}
+                </div>
+              )}
             </div>
           ) : (
             <div>
@@ -93,23 +178,48 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
                 Drag and drop a file here, or click to select
               </p>
               <p className="mt-1 text-xs text-gray-500">Any file type supported (max 100MB)</p>
-              <input
-                type="file"
-                onChange={handleFileInputChange}
-                className="hidden"
-                id="file-upload"
-                accept="*/*"
-              />
-              <label
-                htmlFor="file-upload"
-                className="mt-2 inline-block px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer"
-              >
-                Select File
-              </label>
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <input
+                  type="file"
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                  id="file-upload"
+                  accept="*/*"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="inline-block px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer"
+                >
+                  Select File
+                </label>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCamera('photo')}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                >
+                  <Camera className="h-4 w-4" />
+                  Take Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCamera('video')}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                >
+                  <Video className="h-4 w-4" />
+                  Record Video
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onCapture={handleCameraCapture}
+        onClose={handleCloseCamera}
+        mode={cameraMode}
+      />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
