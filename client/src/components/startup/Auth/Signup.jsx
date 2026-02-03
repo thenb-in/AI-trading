@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
@@ -14,7 +14,6 @@ function Signup({ showRoleDropdown }) {
     phone: '',
     password: '',
     confirmPassword: '',
-    companyId: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -22,21 +21,6 @@ function Signup({ showRoleDropdown }) {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const companyParam = params.get('company_id');
-
-    if (companyParam) {
-      const id = companyParam.substring(companyParam.lastIndexOf('_') + 1);
-      setFormData(prev => ({
-        ...prev,
-        companyId: id || '',
-      }));
-    }
-  }, [location.search]);
-
 
   useEffect(() => {
     if (showRoleDropdown) {
@@ -85,7 +69,6 @@ function Signup({ showRoleDropdown }) {
         username: cleanedData.username,
         phone: cleanedData.phone,
         password: cleanedData.password,
-        companyId: cleanedData.companyId,
         role: cleanedData.role,
       });
       toast.success('Signup successful! Awaiting admin approval.');
@@ -113,9 +96,6 @@ function Signup({ showRoleDropdown }) {
       toast.error(message);
     }
   };
-
-  const params = new URLSearchParams(location.search);
-  const hideCompanyIdField = params.has('company_id');
 
   const handleFormSubmit = (e) => {
     handleSubmit(e);
@@ -253,22 +233,6 @@ function Signup({ showRoleDropdown }) {
               </button>
             </div>
           </div>
-
-          {/* Company ID - only show if not in URL */}
-          {!hideCompanyIdField && (
-            <div className="mb-4">
-              <input
-                type="uuid"
-                name="companyId"
-                id="companyId"
-                placeholder="Company ID"
-                value={formData.companyId}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
-          )}
 
           {/* Role Dropdown - only show if showRoleDropdown is true */}
           {showRoleDropdown && (

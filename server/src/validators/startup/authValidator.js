@@ -13,8 +13,7 @@ const signupValidation = [
     .withMessage(`Password must contain at least one uppercase letter ${body('password').value}.`)
     .matches(/[0-9]/)
     .withMessage(`Password must contain at least one number ${body('password').value}.`),
-  body('name').notEmpty().withMessage('Name is required'),
-  body('companyId').isUUID().withMessage('Invalid company ID')
+  body('name').notEmpty().withMessage('Name is required')
 ];
 
 const loginValidation = [

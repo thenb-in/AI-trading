@@ -48,6 +48,11 @@ const companyService = {
       logger.error('Error fetching companies', error);
       throw new Error(`Failed to fetch companies at  ${new Date()}`);
     }
+  },
+  async  existingCompany (company_id,transaction){
+    return  await Company.findOne({
+      where: { id: company_id },
+      transaction});
   }
 };
 

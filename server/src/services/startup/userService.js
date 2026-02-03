@@ -69,12 +69,15 @@ const getAllUsers = async (companyId) => {
 
 async function updateUserCurrentCompany(userId, companyId) {
   // Update user's company_id
-  // await User.update({ company_id: companyId }, { where: { id: userId } });
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
+  user.company_id = companyId;
+  await user.save();
   // Update UserProfile currentCompany
   await UserProfile.update(
     { currentCompany: companyId },
     { where: { userId } }
   );
+  return user;
 }
 
 const updateUserProfile = async (userId, userProfile) => {

@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     company_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       references: {
         model: 'nbnext_company',
         key: 'id'

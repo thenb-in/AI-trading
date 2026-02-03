@@ -16,10 +16,10 @@ const allowedPermissions = require('../../utils/startup/allowedPermissions');
 async function signup(req, res) {
   try {
     // Extract data from request
-    const { phone, username, password, name, companyId, role } = req.body;
+    const { phone, username, password, name, role } = req.body;
 
     // Call controller
-    const user = await authController.signup(username, password, companyId, { phone, name, role });
+    const user = await authController.signup(username, password, { phone, name, role });
 
     // Build and send response
     res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
@@ -28,9 +28,6 @@ async function signup(req, res) {
     // eslint-disable-next-line custom/no-hardcoded-strings
     const errorMessage = error.message || 'An error occurred during signup';
 
-    if (errorMessage.includes('Company not found')) {
-      return res.status(404).json({ error: errorMessage });
-    }
     if (errorMessage.includes('Invalid role')) {
       return res.status(400).json({ error: errorMessage });
     }
@@ -56,7 +53,7 @@ async function login(req, res) {
   try {
     // Call controller
     const loginResult = await authController.loginUser(req.body);
-    const { user, accessToken, refreshToken, insufficientWallet, walletMessage } = loginResult;
+    const { user, accessToken, refreshToken, insufficientWallet, walletMessage, requiresOnboarding } = loginResult;
 
     // Set HTTP-only cookies
     res.cookie('accessToken', accessToken, {
@@ -87,6 +84,9 @@ async function login(req, res) {
     }
     if (walletMessage) {
       response.walletMessage = walletMessage;
+    }
+    if (requiresOnboarding !== undefined) {
+      response.requiresOnboarding = requiresOnboarding;
     }
     res.json(response);
   } catch (error) {

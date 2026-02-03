@@ -218,7 +218,7 @@ async function createCompanyAndLink(data, userId) {
   try {
     // Check if companyId already exists (only if provided)
     if (data.companyId && data.companyId.trim()) {
-      const existingCompany = await companyService.getCompanySettings(data.companyId, { transaction });
+      const existingCompany = await companyService.existingCompany(data.companyId,  transaction );
       if (existingCompany) {
         throw new Error(`Company ID "${data.companyId}" is already taken. Please choose a different ID.`);
       }
@@ -239,7 +239,6 @@ async function createCompanyAndLink(data, userId) {
     // Otherwise, let Sequelize auto-generate UUID via defaultValue: DataTypes.UUIDV4
 
     const company = await companyService.createCompany(companyData, transaction);
-
     await companyProfileService.createCompanyProfile(company.id, {}, transaction);
 
     // Link user to company

@@ -37,14 +37,20 @@ function Login() {
         password: cleanedData.password
       });
 
-      const { user } = response.data;
+      const { user, requiresOnboarding } = response.data;
       setUserData(user);
       toast.success('Login successful!');
 
       // Check if TOTP is not enabled and show setup popup
       if (user.is_totp_enabled === false) {
-        setLoginSuccessData({ user, cleanedData });
+        setLoginSuccessData({ user, cleanedData, requiresOnboarding });
         setShowTotpPopup(true);
+        return;
+      }
+
+      // Check if user requires onboarding (no companyId)
+      if (requiresOnboarding) {
+        navigate('/onboarding', { replace: true });
         return;
       }
 
@@ -54,7 +60,6 @@ function Login() {
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const errorData = err || {};
-      console.log('Error Data:', errorData);
       const message = errorData.error || err.error || 'Login failed. Please check your credentials.';
       
       // If password change is required, redirect to forgot password page
@@ -92,10 +97,16 @@ function Login() {
     setShowTotpPopup(false);
     // Refresh user data to get updated TOTP status
     if (loginSuccessData) {
-      const { user } = loginSuccessData;
+      const { user, requiresOnboarding } = loginSuccessData;
       // Update user data with TOTP enabled
       const updatedUser = { ...user, is_totp_enabled: true };
       setUserData(updatedUser);
+
+      // Check if user requires onboarding (no companyId)
+      if (requiresOnboarding) {
+        navigate('/onboarding', { replace: true });
+        return;
+      }
 
       // Navigate to originally requested route
       const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
@@ -105,13 +116,21 @@ function Login() {
 
   const handleTotpPopupClose = () => {
     setShowTotpPopup(false);
-    setLoginSuccessData(null);
     // User cancelled TOTP setup, they can still login but will be prompted again next time
     if (loginSuccessData) {
-      const { user } = loginSuccessData;
+      const { user, requiresOnboarding } = loginSuccessData;
+      
+      // Check if user requires onboarding (no companyId)
+      if (requiresOnboarding) {
+        navigate('/onboarding', { replace: true });
+        setLoginSuccessData(null);
+        return;
+      }
+
       const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     }
+    setLoginSuccessData(null);
   };
 
   return (

@@ -10,16 +10,13 @@ const {
 } = require('../../utils/startup/authUtils');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 const companyService = require('./companyService');
-const multiCompanyService = require('./multiCompanyService');
 const rolePermissionService = require('./rolePermissionService');
 const { getUserWithRoleInclude } = require('./rolePermissionService');
 const totpService = require('./totpService');
 const userService = require('./userService');
 
-const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
-  username = username?.trim();
-  password = password?.trim();
-  logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
+const signup = async (username, password, { phone, name, role }, transaction) => {
+  logger.info(`Signup attempt: ${phone} - ${name} - ${role}`);
 
   const existingUser = await User.findOne({ where: { username } });
   logger.info(`Checking if user already exists: ${username} - Found: ${!!existingUser}`);
@@ -39,51 +36,25 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
       // throw new Error(`Phone number already exists ${phone}.`);
     }
   }
-
-  // Use companyService to get company
-  const company = await companyService.getCompanySettings(companyId);
-  logger.info(`Looking up company by ID: ${companyId} - Found: true`);
-
-  let roleInstance = null;
-  if (role) {
-    logger.info(`Looking up role information: ${role} - Type: ${typeof role}`);
-    // Check if role is a number (ID) or string (name)
-    if (typeof role === 'number' || !isNaN(role)) {
-      // Use adminService to get role by ID
-      const allRoles = await rolePermissionService.getRolesAndPermissions(companyId);
-      roleInstance = allRoles.find(r => r.id === role);
-      logger.info(`Role lookup by ID completed: ${role} - Found: ${!!roleInstance}`);
-    } else {
-      // Use adminService to get role by name
-      const allRoles = await rolePermissionService.getRolesAndPermissions(companyId);
-      roleInstance = allRoles.find(r => r.name === role);
-      logger.info(`Role lookup by name completed: ${role} - Found: ${!!roleInstance}`);
-    }
-    if (!roleInstance) {
-      logger.error(`Invalid role specified: ${role}`);
-      throw new Error(`Invalid role ${role}.`);
-    }
-  }
   const hashedPassword = await bcrypt.hash(password, 10);
-
   const user = await User.create({
     phone,
     username,
     password: hashedPassword,
     name,
-    company_id: companyId,
-    role_id: roleInstance ? roleInstance.id : null,
+    company_id: null,
+    role_id: role ?role : null,
     isActive: true,
     refresh_token: null,
-    is_approved: false,
-    mobileApp: company.mobileApp,      // inherits from company
-    desktopWeb: company.desktopWeb,    // inherits from company
-    mobileWeb: company.mobileWeb      // inherits from company
+    mobileApp: false,
+    desktopWeb: true,
+    mobileWeb:  false,
+    is_approved:true
   }, { transaction });
   // Use userService and multiCompanyService for related operations
-  await userService.createUserProfile(user?.dataValues?.id, { currentCompany: companyId }, transaction);
-  await multiCompanyService.assignUserToCompany(user?.dataValues?.id, companyId, transaction);
-
+  // Only create profile and assign to company if companyId is provided
+    // Create user profile without company
+  await userService.createUserProfile(user?.dataValues?.id, { currentCompany: null }, transaction);
   return user;
 };
 
@@ -146,6 +117,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
   const userData = user.get({ plain: true });
   delete userData.password;
   delete userData.refresh_token;
+  const requiresOnboarding = !activeCompany || !activeCompany.id;
   return {
     user: {
       id: userData.id,
@@ -163,6 +135,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
         permissions: userData.role.permissions || []
       } : null
     },
+    requiresOnboarding,
     accessToken,
     refreshToken
   };

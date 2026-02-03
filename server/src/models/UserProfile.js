@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     currentCompany: {
       type: DataTypes.UUID,  // type UUID because foreign key is a UUID
-      allowNull: false
+      allowNull: true
     }
   }, {
     tableName: 'nbnext_user_profiles',

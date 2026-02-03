@@ -138,6 +138,14 @@ const ApiService = {
     return this.request('POST', '/company/switch', { companyId });
   },
 
+  createInitialCompany(data) {
+    return this.request('POST', '/company/initial', data);
+  },
+
+  joinCompany(companyId) {
+    return this.request('POST', '/company/join', { companyId });
+  },
+
   getAllRoles() {
     return this.request('GET', '/auth/roles');
   },

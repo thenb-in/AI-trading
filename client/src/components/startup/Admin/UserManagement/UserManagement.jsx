@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus, Search, Users, Menu, Trash2, Link as LinkIcon } from 'lucide-react';
+import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/startup/useDataContext';
 import { UserTable } from './components/UserTable';
 import { getUserManagementExtraColumns } from '@/components/userManagementExtraColumns';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
+import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
+import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
 import { toast } from 'react-toastify';
 
 function UserManagement() {
@@ -43,9 +45,10 @@ function UserManagement() {
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(true);
   const [showAllUsers, setShowAllUsers] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
   const { setHamburgerMenu, hamburgerMenu, userData } = useDataContext();
   const isMobileView = window.innerWidth < 768;
-
+  const companyId = userData?.companyId || userData?.company?.id;
   const confirmAction = (requirePasswordReset = false, roleId = null) => {
     const { action, userId } = confirmDialog;
     if (action === 'approve') handleApprove(userId, requirePasswordReset, roleId);
@@ -85,22 +88,16 @@ function UserManagement() {
     setHamburgerMenu(!hamburgerMenu);
   };
 
-  const handleCopySignupLink = async () => {
-    try {
-      const companyId = userData?.companyId || userData?.company?.id;
-      if (!companyId) {
-        toast.error('Company ID not found. Please try again.');
-        return;
-      }
+  const handleShowQRCode = () => {
 
-      const signupUrl = `${window.location.origin}/signup?company_id=${companyId}`;
-      
-      await navigator.clipboard.writeText(signupUrl);
-      toast.success('Sign-up link copied to clipboard!');
-    } catch {
-      toast.error('Failed to copy link. Please try again.');
+    if (!companyId) {
+      toast.error('Company ID not found. Please try again.');
+      return;
     }
+    setShowQRModal(true);
   };
+
+
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -154,12 +151,12 @@ function UserManagement() {
     </div>
     <div className="w-full sm:w-auto flex gap-2">
       <button
-        onClick={handleCopySignupLink}
+        onClick={handleShowQRCode}
         className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"
-        title="Copy sign-up link for current company"
+        title="Download QR code for sign-up link"
       >
-        <LinkIcon size={16} className="mr-1" />
-        Copy Sign-up Link
+        <QrCode size={16} className="mr-1" />
+        Download Company QR
       </button>
       {bulkDeleteMode && selectedUsers.length > 0 && (
         <button
@@ -292,6 +289,20 @@ function UserManagement() {
         onConfirm={handleBulkDelete}
         onCancel={handleCancelBulkDeleteDialog}
       />
+
+      <MasterModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        title="Company Onboarding"
+        maxWidth="sm"
+      >
+        <QRCodeDisplay
+          content={companyId}
+          heading="Join Company via QR Code"
+          message="Scan this QR code to complete your onboarding and join the company."
+          onDownload={() => setShowQRModal(false)}
+        />
+      </MasterModal>
     </div>
   );
 }

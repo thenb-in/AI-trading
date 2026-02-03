@@ -124,6 +124,126 @@ const companyController = {
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
+  },
+
+  async createInitialCompany(req, res) {
+    try {
+      // This endpoint is for users without a company to create their first company
+      // No permission check needed since user has no company
+      const { name, mobileApp, desktopWeb, mobileWeb } = req.body;
+      if (!name || !name.trim()) {
+        return res.status(400).json({ error: `Company name is required get ${name}` });
+      }
+      // Check if user already has a company
+      if (req.user.company_id) {
+        return res.status(400).json({ error: `User with id : ${req.user.id} already has a company assigned ` });
+      }
+      const company = await multiCompanyService.createCompanyAndLink(
+        {
+          name: name.trim(),
+          companyId: null, // Auto-generate UUID
+          mobileApp: !!mobileApp,
+          desktopWeb: desktopWeb === undefined ? true : !!desktopWeb,
+          mobileWeb: !!mobileWeb
+        },
+        req.user.id
+      );
+
+      // Update user's company_id using service
+      const updatedUser = await userService.updateUserCurrentCompany(req.user.id, company.id);
+      const accessToken = generateAccessToken(updatedUser);
+      const refreshToken = await generateRefreshToken(updatedUser);
+
+      // Persist refresh token
+      await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
+
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
+      });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      });
+      res.cookie('isLoggedIn', 'true', {
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      });
+
+      return res.status(201).json({
+        message: `Company "${company.name}" created successfully!`,
+        company,
+        user: {
+          id: updatedUser.id,
+          company_id: updatedUser.company_id
+        }
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  },
+
+  async joinCompany(req, res) {
+    try {
+      const { companyId } = req.body;
+      if (!companyId) {
+        return res.status(400).json({ error: `Company ID is required get ${companyId}` });
+      }
+
+      // Check if company exists
+      const company = await companyService.getCompanySettings(companyId);
+      if (!company) {
+        return res.status(404).json({ error: 'Company not found' });
+      }
+
+      // Check if user is already linked to this company
+      const existingLink = await multiCompanyService.findUserCompanyLink(req.user.id, companyId);
+
+      // If not linked, assign user to company
+      if (!existingLink) {
+        await multiCompanyService.assignUserToCompany(req.user.id, companyId);
+      }
+
+      // Switch user to this company
+      const updatedUser = await multiCompanyService.switchUserCompany(req.user.id, companyId);
+
+      // Issue new tokens tied to new companyId
+      const accessToken = generateAccessToken(updatedUser);
+      const refreshToken = await generateRefreshToken(updatedUser);
+
+      // Persist refresh token
+      await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
+
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
+      });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      });
+      res.cookie('isLoggedIn', 'true', {
+        secure: env.isProduction,
+        sameSite: 'strict',
+        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+      });
+
+      return res.status(200).json({
+        updatedUser,
+        message: `Successfully joined company "${company.name}"`
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
   }
 };
 
