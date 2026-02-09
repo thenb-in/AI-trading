@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/startup/ApiService';
 import { MasterModal } from '../BaseMasterComponents/MasterModal/MasterModal';
+import { TextField } from '@startup/safe_choice';
 
 const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
   const [totpData, setTotpData] = useState(null);
@@ -137,14 +138,12 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
             </div>
 
             <div>
-              <input
-                type="text"
+              <TextField
+                type="otp"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="Enter 6-digit code"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-lg tracking-widest"
-                maxLength="6"
-                required
+                otpLength={6}
+                className="text-center text-lg tracking-widest"
               />
             </div>
 

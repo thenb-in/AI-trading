@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { ChevronDown, X, Search } from 'lucide-react';
+import { ChevronDown, X ,Search} from 'lucide-react';
+import { TextField } from '@startup/safe_choice';
 
 function SearchableDropdown({
   options = [],
@@ -148,17 +149,15 @@ function SearchableDropdown({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-hidden">
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="Search..."
-                className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                autoFocus
-              />
-            </div>
+            <TextField
+              icon={<Search className="w-4 h-4 text-gray-400" />} 
+              type="search"
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Search..."
+              autoFocus={true}
+              className="w-full text-sm py-1.5"
+            />
           </div>
 
           {/* Options List */}

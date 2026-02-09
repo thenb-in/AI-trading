@@ -187,7 +187,7 @@ const getSadminUsers = async () => {
     const allUsers = [];
 
     for (const company of companies) {
-      const { users } = await userService.getAllUsers(company.id);
+      const  users  = await userService.getAllUsers(company.id);
       const sadminUsers = users.filter(user => user.isSadmin && user.isActive);
       allUsers.push(...sadminUsers);
     }

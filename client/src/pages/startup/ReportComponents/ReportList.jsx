@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
 import { hasPermission, useDataContext } from '@context/startup/useDataContext';
+import { TextField } from '@startup/safe_choice';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,7 +22,7 @@ const ReportList = ({ reports, categories }) => {
       }
       return matchesFilter && matchesSearch && isPermissionGranted;
     });
-  }, [reports, searchTerm, activeFilter]);
+  }, [reports, searchTerm, activeFilter, dataContext]);
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -58,14 +59,14 @@ const ReportList = ({ reports, categories }) => {
             </button>
           ))}
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input
-            type="text"
+        <div className="w-64">
+          <TextField
+            icon={<Search className="w-4 h-4 text-gray-400" />} 
+            type="search"
             placeholder="Search reports..."
             value={searchTerm}
             onChange={handleSearchChange}
-            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-64 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            className="w-full"
           />
         </div>
       </div>

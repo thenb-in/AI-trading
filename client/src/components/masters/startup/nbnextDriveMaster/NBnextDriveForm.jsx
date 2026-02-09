@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { useState, useEffect, useRef } from 'react';
 import { Upload, X, Camera, Video } from 'lucide-react';
 import { CameraCapture } from '@/components/common/CameraCapture';
+import { TextField } from '@startup/safe_choice';
 
 const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -222,29 +223,23 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Object Name
-        </label>
-        <input
+        <TextField
           type="text"
           name="objectName"
+          label="Object Name"
           value={formData.objectName || ''}
           onChange={(e) => onChange('objectName', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter object name (optional)"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Object ID
-        </label>
-        <input
+        <TextField
           type="text"
           name="objectId"
+          label="Object ID"
           value={formData.objectId || ''}
           onChange={(e) => onChange('objectId', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter object ID (optional)"
         />
       </div>

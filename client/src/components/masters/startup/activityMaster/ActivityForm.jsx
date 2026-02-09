@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { TextField } from '@startup/safe_choice';
 
 const ActivityForm = ({ formData, onChange }) => {
   const handleChange = (e) => {
@@ -9,55 +10,44 @@ const ActivityForm = ({ formData, onChange }) => {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Head *
-        </label>
-        <input
+        <TextField
           type="text"
           name="head"
+          label="Head"
           value={formData.head}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter head identifier (e.g., crane-1)"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Object Name
-        </label>
-        <input
+        <TextField
           type="text"
           name="objectName"
+          label="Object Name"
           value={formData.objectName}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter object name (optional)"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Object ID
-        </label>
-        <input
+        <TextField
           type="text"
           name="objectId"
+          label="Object ID"
           value={formData.objectId}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter object ID (optional)"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Log Message *
-        </label>
-        <textarea
+        <TextField
+          type="textarea"
           name="log"
+          label="Log Message"
           value={formData.log}
           onChange={handleChange}
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter log message"
           required
         />

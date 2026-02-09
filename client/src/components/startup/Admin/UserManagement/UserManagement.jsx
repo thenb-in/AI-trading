@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
+import { UserPlus, UserMinus,Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/startup/useDataContext';
 import { UserTable } from './components/UserTable';
@@ -9,6 +9,7 @@ import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmatio
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
 import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
 import { toast } from 'react-toastify';
+import { TextField } from '@startup/safe_choice';
 
 function UserManagement() {
   const {
@@ -138,15 +139,15 @@ function UserManagement() {
 
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
 
-  <div className="flex flex-col sm:flex-row sm:ml-auto gap-2 w-full sm:w-auto">
+    <div className="flex flex-col sm:flex-row sm:ml-auto gap-2 w-full sm:w-auto">
     <div className="relative w-full sm:w-[20rem] md:w-[24rem]">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-      <input
-        type="text"
+      <TextField
+        icon={<Search className="w-4 h-4 text-gray-400" />} 
+        type="search"
         placeholder="Search users Name or Phone Number.."
-        className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
         value={searchQuery}
         onChange={handleSearchChange}
+        className="w-full"
       />
     </div>
     <div className="w-full sm:w-auto flex gap-2">

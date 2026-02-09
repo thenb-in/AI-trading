@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 import { hasPermission } from '@utils/startup/hasPermission';
 import { useDataContext } from '../../context/startup/useDataContext';
 import { toast } from 'react-toastify';
+import { TextField } from '@startup/safe_choice';
 
 // Utility function to format date for display
 const formatDateForDisplay = (dateValue) => {
@@ -287,10 +288,19 @@ const MasterTable = ({
             />
           );
         case 'text':
+          return (
+            <TextField
+              type="text"
+              value={editData[fieldKey] || ''}
+              onChange={handleTextNumberChange}
+              disabled={isReadOnly}
+              className={commonInputProps.className}
+            />
+          );
         case 'number':
           return (
             <input
-              type={column.type}
+              type="number"
               value={editData[fieldKey] || ''}
               onChange={handleTextNumberChange}
               {...commonInputProps}
@@ -323,11 +333,12 @@ const MasterTable = ({
           );
         default:
           return (
-            <input
+            <TextField
               type="text"
               value={editData[fieldKey] || ''}
               onChange={handleDefaultChange}
-              {...commonInputProps}
+              disabled={isReadOnly}
+              className={commonInputProps.className}
             />
           );
       }

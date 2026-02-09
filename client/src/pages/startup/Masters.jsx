@@ -10,7 +10,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { MasterCard } from "./MasterComponents/MasterCard";
-import { SearchFilter } from "./MasterComponents/SearchFilter";
+import { MasterSearchInput } from "../../components/startup/BaseMasterComponents/MasterSearchInput";
 import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
 import { spacing } from "@theme";
 import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
@@ -80,10 +80,6 @@ const MasterContent = () => {
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-  };
-
-  const handleClearSearch = () => {
-    setSearchTerm("");
   };
 
   const handleCategoryChange = (category) => {
@@ -156,13 +152,30 @@ const MasterContent = () => {
             </div>
           </div>
 
-          <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            onClear={handleClearSearch}
-            totalCards={masterModules.length}
-            filteredCount={filteredMasterModules.length}
-          />
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+            <MasterSearchInput
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Search modules..."
+              className=""
+              autoFocus={true}
+              active={true}
+              module="masters"
+              level="page"
+            />
+          </Box>
+          {searchTerm && (
+            <Box sx={{ mb: 2, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                Showing {filteredMasterModules.length} of {masterModules.length} modules
+                {filteredMasterModules.length === 0 && (
+                  <Typography component="span" color="text.primary" sx={{ ml: 1 }}>
+                    - Try adjusting your search terms
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+          )}
 
           <Divider
             sx={{

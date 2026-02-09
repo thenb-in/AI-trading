@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone } from 'react-icons/fa';
+import {  FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
 import PropTypes from "prop-types";
 import { cleanFormData } from '@utils/startup/authformvalidation';
+import { TextField } from '@startup/safe_choice';
 
 
 function Signup({ showRoleDropdown }) {
@@ -15,8 +16,6 @@ function Signup({ showRoleDropdown }) {
     password: '',
     confirmPassword: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -101,14 +100,6 @@ function Signup({ showRoleDropdown }) {
     handleSubmit(e);
   };
 
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleToggleConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
-
   const handleNavigateToLogin = () => {
     navigate('/');
   };
@@ -127,111 +118,72 @@ function Signup({ showRoleDropdown }) {
 
           {/* Full Name */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                name="name"
-                id="name"
-                placeholder="Full Name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
+            <TextField
+            icon={ <FaUser className="text-gray-400" />}
+              type="text"
+              name="name"
+              id="name"
+              placeholder="Full Name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Username */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                name="username"
-                id="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
+            <TextField
+            icon={ <FaUser className="text-gray-400" />}
+              type="text"
+              name="username"
+              id="username"
+              placeholder="Username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Phone */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaPhone className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                name="phone"
-                id="phone"
-                placeholder="Phone Number"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
+            <TextField
+            icon={ <FaPhone className="text-gray-400" />}
+              type="phone"
+              name="phone"
+              id="phone"
+              placeholder="Phone Number"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Password */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="text-gray-400" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                id="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-              <button
-                type="button"
-                onClick={handleTogglePassword}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
+            <TextField
+            icon={ <FaLock className="text-gray-400" />}
+              type="password"
+              name="password"
+              id="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Confirm Password */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="text-gray-400" />
-              </div>
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                id="confirmPassword"
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-              <button
-                type="button"
-                onClick={handleToggleConfirmPassword}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition"
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
+            <TextField
+            icon={   <FaLock className="text-gray-400" />}
+              type="password"
+              name="confirmPassword"
+              id="confirmPassword"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Role Dropdown - only show if showRoleDropdown is true */}

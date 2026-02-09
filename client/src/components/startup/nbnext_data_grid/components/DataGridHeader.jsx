@@ -5,6 +5,7 @@ import {
   getSortedHeaderStyle,
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
+import { TextField } from "@startup/safe_choice";
 
 import { useRef, useCallback, useState, useEffect } from "react";
 
@@ -198,6 +199,10 @@ function DataGridHeader({
     }
   }, [handleFilterChange]);
 
+  const handleFilterChangeEvent = useCallback((e) => {
+    handleFilterInputChange(e.target.name, e.target.value);
+  }, [handleFilterInputChange]);
+
   const handleFilterInputClick = useCallback((e) => {
     e.stopPropagation();
   }, []);
@@ -239,12 +244,13 @@ function DataGridHeader({
 
     return (
       <th key={`filter-${col.field}`} style={filterCellStyle}>
-        <input
+        <TextField
           type="text"
+          name={col.field}
           value={filterModel[col.field] || ""}
-          onChange={(e) => handleFilterInputChange(col.field, e.target.value)}
+          onChange={handleFilterChangeEvent}
           placeholder="Filter..."
-          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
+          className="w-full px-2 py-1 text-xs"
           onClick={handleFilterInputClick}
         />
       </th>

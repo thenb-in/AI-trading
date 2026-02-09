@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
+import {  FaLock, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
 import { useDataContext } from '@context/startup/useDataContext';
 import { cleanFormData } from '@utils/startup/authformvalidation';
 import { SetupTotpPopup } from './SetupTotpPopup';
+import { TextField } from '@startup/safe_choice';
 
 function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showTotpPopup, setShowTotpPopup] = useState(false);
@@ -81,10 +81,6 @@ function Login() {
     }
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
-
   const handleFormSubmit = (e) => {
     handleSubmit(e);
   };
@@ -154,47 +150,30 @@ function Login() {
 
           {/* Username field */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaUser className="text-gray-400" />
-              </div>
-              <input
-                type="text"
-                name="username"
-                id="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
+            <TextField
+            icon={<FaUser className="text-gray-400" />}
+              type="text"
+              name="username"
+              id="username"
+              placeholder="Username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Password field */}
           <div className="mb-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FaLock className="text-gray-400" />
-              </div>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                id="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700 transition"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
+            <TextField
+              type="password"
+              icon={ <FaLock className="text-gray-400" />}
+              name="password"
+              id="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           {/* Forgot password */}

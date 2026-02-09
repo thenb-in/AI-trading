@@ -2,6 +2,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../../ToggleSwitch';
 import { AlertMessage } from '../../RolePermissions/components/AlertMessage';
+import { TextField } from '@startup/safe_choice';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 const sanitizeCompanyId = (value) => value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
@@ -54,28 +55,22 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
 
       <form onSubmit={handleSubmit} className="grid gap-4">
        <div>
-          <input
+          <TextField
             type="text"
             placeholder="Company ID (optional - will be auto-generated if not provided)"
             value={form.companyId}
             onChange={handleCompanyIdChange}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
           />
           <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate a unique ID. If provided, must be at least 2 characters (letters, numbers, underscores, hyphens only).</p>
         </div>
         <div>
-          <input
+          <TextField
             type="text"
             placeholder="Company name"
             value={form.name}
             onChange={handleNameChange}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              touched && form.name.trim().length < 2 ? 'border-red-300' : 'border-gray-300'
-            }`}
+            error={touched && form.name.trim().length < 2 ? 'Name must be at least 2 characters.' : ''}
           />
-          {touched && form.name.trim().length < 2 && (
-            <p className="text-xs text-red-600 mt-1">Name must be at least 2 characters.</p>
-          )}
         </div>
 
        

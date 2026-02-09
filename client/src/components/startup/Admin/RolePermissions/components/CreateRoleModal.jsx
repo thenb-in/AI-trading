@@ -4,6 +4,7 @@ import { X, Loader2 } from 'lucide-react';
 import { ApiService } from '@services/startup/ApiService';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
+import { TextField } from '@startup/safe_choice';
 
 function CreateRoleModal({ isOpen, onClose, onSuccess }) {
   const [name, setName] = useState('');
@@ -131,17 +132,14 @@ function CreateRoleModal({ isOpen, onClose, onSuccess }) {
             <label className="block text-xs font-medium text-gray-700 mb-1">
               Role Name <span className="text-red-500">*</span>
             </label>
-            <input
+            <TextField
               type="text"
               value={name}
               onChange={handleNameChange}
               disabled={submitting}
-              className={`w-full px-2 py-1.5 text-sm border rounded ${
-                errors.name
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-              } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed`}
               placeholder="Enter role name"
+              error={errors.name || ''}
+              className="px-2 py-1.5 text-sm focus:ring-1"
             />
             {errors.name && (
               <p className="mt-1 text-xs text-red-600">{errors.name}</p>
@@ -153,17 +151,15 @@ function CreateRoleModal({ isOpen, onClose, onSuccess }) {
             <label className="block text-xs font-medium text-gray-700 mb-1">
               Description
             </label>
-            <textarea
+            <TextField
+              type="textarea"
               value={description}
               onChange={handleDescriptionChange}
               disabled={submitting}
               rows={3}
-              className={`w-full px-2 py-1.5 text-sm border rounded ${
-                errors.description
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-              } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none`}
               placeholder="Enter role description (optional)"
+              error={errors.description || ''}
+              className="px-2 py-1.5 text-sm focus:ring-1 resize-none"
             />
             {errors.description && (
               <p className="mt-1 text-xs text-red-600">{errors.description}</p>

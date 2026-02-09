@@ -3,6 +3,7 @@
  */
 
 import PropTypes from "prop-types";
+import { TextField } from "@startup/safe_choice";
 
 function SaveLayoutDialog({
   selectedLayout,
@@ -14,6 +15,10 @@ function SaveLayoutDialog({
   onSave,
   onCancel,
 }) {
+  const handleLayoutNameChange = (e) => {
+    onNameChange(e.target.value);
+  };
+
   const getSaveButtonClasses = () => {
     const baseClasses = "flex-1 text-white border-none py-1 px-2 rounded border border-gray-200 cursor-pointer text-xs";
     if (saving) {
@@ -32,12 +37,13 @@ function SaveLayoutDialog({
           Updating: <strong>{selectedLayout.layout_name}</strong>
         </div>
       )}
-      <input
+      <TextField
         type="text"
         value={newLayoutName}
-        onChange={(e) => onNameChange(e.target.value)}
+        onChange={handleLayoutNameChange}
         placeholder="Layout name"
-        className="w-full border border-gray-200 rounded text-xs box-border mb-2 py-1 px-2"
+        disabled={saving}
+        className="w-full text-xs mb-2 py-1 px-2 border-gray-200"
       />
       <select
         value={newLayoutType}

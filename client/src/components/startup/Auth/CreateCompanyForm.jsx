@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../Admin/ToggleSwitch';
+import { TextField } from '@startup/safe_choice';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 
@@ -47,22 +48,15 @@ const CreateCompanyForm = ({ onSubmit, isSubmitting, error }) => {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Company Name <span className="text-red-500">*</span>
-        </label>
-        <input
+        <TextField
           type="text"
+          label="Company Name"
           placeholder="Enter company name"
           value={form.name}
           onChange={handleNameChange}
           required
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            touched && form.name.trim().length < 2 ? 'border-red-300' : 'border-gray-300'
-          }`}
+          error={touched && form.name.trim().length < 2 ? 'Company name must be at least 2 characters.' : ''}
         />
-        {touched && form.name.trim().length < 2 && (
-          <p className="text-xs text-red-600 mt-1">Company name must be at least 2 characters.</p>
-        )}
       </div>
 
       <div className="space-y-3">
