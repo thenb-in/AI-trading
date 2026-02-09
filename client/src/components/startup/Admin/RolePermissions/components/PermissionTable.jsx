@@ -6,6 +6,7 @@ import {
   getOperationDisplayName,
   isPermissionAssigned,
 } from '../utils/permissionUtils';
+import { TextField } from '@startup/safe_choice';
 
 function PermissionTable({
   groups,
@@ -144,8 +145,9 @@ function PermissionTable({
                             
                             return (
                               <div key={uniqueKey} className="flex items-center gap-0.5">
-                                <input
+                                <TextField
                                   type="checkbox"
+                                  mode="bare"
                                   checked={assigned}
                                   onChange={() => onTogglePermission(permission.id, assigned)}
                                   disabled={updating || !selectedRole || isRoleReadOnly}

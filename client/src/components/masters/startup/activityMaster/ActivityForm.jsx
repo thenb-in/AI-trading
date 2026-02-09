@@ -53,16 +53,15 @@ const ActivityForm = ({ formData, onChange }) => {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Timestamp (milliseconds)
-        </label>
-        <input
+        <TextField
           type="number"
           name="timestamp"
+          label="Timestamp (milliseconds)"
           value={formData.timestamp}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Unix timestamp in milliseconds"
+          numberMode="int"
+          allowNegative={false}
         />
         <p className="mt-1 text-xs text-gray-500">Leave empty to use current time</p>
       </div>

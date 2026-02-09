@@ -9,10 +9,17 @@ import { PasswordTypeField } from './types/PasswordTypeField';
 import { TextareaTypeField } from './types/TextareaTypeField';
 import { DescriptionTypeField } from './types/DescriptionTypeField';
 import { OtpTypeField } from './types/OtpTypeField';
+import { NumberTypeField } from './types/NumberTypeField';
+import { FileTypeField } from './types/FileTypeField';
+import { CheckboxTypeField } from './types/CheckboxTypeField';
+import { RadioTypeField } from './types/RadioTypeField';
+import { DateTypeField } from './types/DateTypeField';
+import { DateTimeTypeField } from './types/DateTimeTypeField';
 
 const TextField = ({
   type = 'text',
   value = '',
+  checked = undefined,
   onChange,
   placeholder = '',
   label = '',
@@ -35,6 +42,7 @@ const TextField = ({
   const commonProps = {
     type,
     value,
+    ...(type === 'checkbox' || type === 'radio' ? { checked } : {}),
     onChange,
     placeholder,
     label,
@@ -63,6 +71,18 @@ const TextField = ({
       return <TextareaTypeField {...commonProps} />;
     case 'description':
       return <DescriptionTypeField {...commonProps} />;
+    case 'checkbox':
+      return <CheckboxTypeField {...commonProps} />;
+    case 'radio':
+      return <RadioTypeField {...commonProps} />;
+    case 'date':
+      return <DateTypeField {...commonProps} />;
+    case 'datetime':
+      return <DateTimeTypeField {...commonProps} />;
+    case 'file':
+      return <FileTypeField {...commonProps} />;
+    case 'number':
+      return <NumberTypeField {...commonProps} />;
     case 'email':
       return <EmailTypeField {...commonProps} />;
     case 'password':
@@ -80,8 +100,9 @@ const TextField = ({
 };
 
 TextField.propTypes = {
-  type: PropTypes.oneOf(['text', 'textarea', 'email', 'password', 'otp', 'phone', 'search', 'url', 'description']),
+  type: PropTypes.oneOf(['text', 'textarea', 'email', 'password', 'otp', 'phone', 'search', 'url', 'description', 'number', 'file', 'checkbox', 'radio', 'date', 'datetime-local']),
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  checked: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   label: PropTypes.string,

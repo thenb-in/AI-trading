@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Eye } from 'lucide-react';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import PropTypes from 'prop-types';
+import { TextField } from '@startup/safe_choice';
 
 // Utility function to format date for display
 const formatDateForDisplay = (dateValue) => {
@@ -205,10 +206,11 @@ const MasterTable = ({
           <tr>
             {selectRow && (
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">
-                <input
+                <TextField
                   type="checkbox"
+                  mode="bare"
                   checked={isAllSelected}
-                  ref={checkboxRef}
+                  inputRef={checkboxRef}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
@@ -246,8 +248,9 @@ const MasterTable = ({
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <input
+                    <TextField
                       type="checkbox"
+                      mode="bare"
                       checked={isRowSelected}
                       onChange={(e) => handleRowSelect(item.id, e.target.checked)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"

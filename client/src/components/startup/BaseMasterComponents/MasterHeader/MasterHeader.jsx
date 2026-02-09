@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { hasPermission } from "@utils/startup/hasPermission";
 import { exportMaster, importMaster } from "@utils/masterExportimport.js";
+import { TextField } from '@startup/safe_choice';
 
 const MasterHeader = ({
   title,
@@ -104,12 +105,19 @@ const MasterHeader = ({
         )}
         {showImport && (
           <>
-            <input
-              ref={importInputRef}
+            <TextField
               type="file"
+              id="master-import-file"
+              name="masterImportFile"
+              inputRef={importInputRef}
               accept=".csv,.xlsx,.xls"
               onChange={onImportChange}
-              className="hidden"
+              fileChangeMode="native"
+              containerClassName="hidden"
+              className=""
+              label=""
+              showClearButton={false}
+              icon={<span className="hidden" />}
             />
             <button
               onClick={onImportClick}

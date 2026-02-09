@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   Dialog,
@@ -23,7 +23,6 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Checkbox,
 } from '@mui/material';
 import { spacing } from '@theme';
 import {
@@ -35,6 +34,7 @@ import {
   Schedule as TempIcon,
 } from '@mui/icons-material';
 import { ApiService } from '@services/startup/ApiService';
+import { TextField as SafeTextField } from '@startup/safe_choice';
 
 const LayoutManager = ({
   open,
@@ -55,14 +55,7 @@ const LayoutManager = ({
   const [newLayoutName, setNewLayoutName] = useState('');
   const [newLayoutType, setNewLayoutType] = useState('private');
 
-  // Load layouts when dialog opens
-  useEffect(() => {
-    if (open && documentName) {
-      loadLayouts();
-    }
-  }, [open, documentName]);
-
-  const loadLayouts = async () => {
+  const loadLayouts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -79,7 +72,14 @@ const LayoutManager = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentName]);
+
+  // Load layouts when dialog opens
+  useEffect(() => {
+    if (open && documentName) {
+      loadLayouts();
+    }
+  }, [open, documentName, loadLayouts]);
 
   const handleSaveLayout = async () => {
     if (!newLayoutName.trim()) {
@@ -251,12 +251,13 @@ const LayoutManager = ({
           {layoutList.map((layout) => (
             <ListItem key={layout.id} sx={{ px: 0 }}>
               <ListItemIcon>
-                <Checkbox
-                  edge="start"
+                <SafeTextField
+                  type="checkbox"
+                  mode="bare"
                   checked={layout.is_default || false}
                   onChange={(e) => handleSetDefault(layout, e.target.checked)}
                   tabIndex={-1}
-                  disableRipple
+                  className="w-4 h-4"
                 />
               </ListItemIcon>
               <ListItemText

@@ -270,21 +270,23 @@ const MasterTable = ({
       switch (column.type) {
         case 'datetime':
           return (
-            <input
+            <TextField
               type="datetime-local"
               value={formatDateForInput(editData[fieldKey])}
               onChange={handleDateTimeChange}
-              {...commonInputProps}
+              disabled={isReadOnly}
+              className={commonInputProps.className}
               step="1" // Allow seconds
             />
           );
         case 'date':
           return (
-            <input
+            <TextField
               type="date"
               value={formatDateOnlyForInput(editData[fieldKey])}
               onChange={handleDateChange}
-              {...commonInputProps}
+              disabled={isReadOnly}
+              className={commonInputProps.className}
             />
           );
         case 'text':
@@ -299,11 +301,14 @@ const MasterTable = ({
           );
         case 'number':
           return (
-            <input
+            <TextField
               type="number"
-              value={editData[fieldKey] || ''}
+              value={editData[fieldKey] ?? ''}
               onChange={handleTextNumberChange}
-              {...commonInputProps}
+              disabled={isReadOnly}
+              className={commonInputProps.className}
+              numberMode="int"
+              allowNegative
             />
           );
         case 'select':

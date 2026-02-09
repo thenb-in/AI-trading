@@ -17,6 +17,12 @@ function BaseInputField({
   pattern,
   normalize,
   clearAriaLabel = 'Clear input',
+  onChangeMode = 'normalized', // 'normalized' | 'native'
+  onClear,
+  inputRef,
+  includeValue = true,
+  hasValueOverride,
+  containerClassName = '',
 
   // Common field props
   value = '',
@@ -46,7 +52,8 @@ function BaseInputField({
   const errorId = error ? `${inputId || name || 'field'}-error` : undefined;
 
   const hasValue = value !== '' && value !== null && value !== undefined;
-  const shouldShowClear = Boolean(showClearButton && hasValue && !disabled);
+  const effectiveHasValue = typeof hasValueOverride === 'boolean' ? hasValueOverride : hasValue;
+  const shouldShowClear = Boolean(showClearButton && effectiveHasValue && !disabled);
 
   const baseInputClasses = useMemo(
     () => getBaseInputClasses({ error, disabled, className }),
@@ -56,8 +63,13 @@ function BaseInputField({
   const leftPad = leftIcon ? 'pl-10' : 'pl-3';
   const rightPad = shouldShowClear ? 'pr-10' : 'pr-3';
 
-  const handleNormalizedChange = useCallback(
+  const handleChange = useCallback(
     (e) => {
+      if (onChangeMode === 'native') {
+        if (onChange) onChange(e);
+        return;
+      }
+
       const raw = e?.target?.value ?? '';
       let next = String(raw ?? '');
 
@@ -71,18 +83,21 @@ function BaseInputField({
 
       emitChange(onChange, e, { name, id: inputId, value: next });
     },
-    [normalize, sanitize, onChange, name, inputId]
+    [onChangeMode, normalize, sanitize, onChange, name, inputId]
   );
 
   const handleClear = useCallback(() => {
+    if (typeof onClear === 'function') {
+      onClear();
+      return;
+    }
     emitChange(onChange, null, { name, id: inputId, value: '' });
-  }, [onChange, name, inputId]);
+  }, [onClear, onChange, name, inputId]);
 
   const sharedProps = {
     id: inputId,
     name,
-    value,
-    onChange: handleNormalizedChange,
+    onChange: handleChange,
     placeholder,
     disabled,
     required,
@@ -97,8 +112,23 @@ function BaseInputField({
     ...restProps,
   };
 
+  if (includeValue) {
+    sharedProps.value = value;
+  }
+
+  if (inputRef) {
+    sharedProps.ref = inputRef;
+  }
+
   return (
-    <FieldFrame inputId={inputId} label={label} required={required} error={error} errorId={errorId}>
+    <FieldFrame
+      inputId={inputId}
+      label={label}
+      required={required}
+      error={error}
+      errorId={errorId}
+      className={containerClassName}
+    >
       <div className="relative">
         {leftIcon ? (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -135,6 +165,12 @@ BaseInputField.propTypes = {
   pattern: PropTypes.string,
   normalize: PropTypes.func,
   clearAriaLabel: PropTypes.string,
+  onChangeMode: PropTypes.oneOf(['normalized', 'native']),
+  onClear: PropTypes.func,
+  inputRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
+  includeValue: PropTypes.bool,
+  hasValueOverride: PropTypes.bool,
+  containerClassName: PropTypes.string,
 
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func.isRequired,

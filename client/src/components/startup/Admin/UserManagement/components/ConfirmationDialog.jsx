@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { AlertTriangle } from 'lucide-react';
+import { TextField } from '@startup/safe_choice';
 
 const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSadmin = false, roles = [] }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
@@ -99,8 +100,9 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSadmin = false, rol
               </div>
             )}
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
+              <TextField
                 type="checkbox"
+                mode="bare"
                 checked={requirePasswordReset}
                 onChange={(e) => setRequirePasswordReset(e.target.checked)}
                 className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"

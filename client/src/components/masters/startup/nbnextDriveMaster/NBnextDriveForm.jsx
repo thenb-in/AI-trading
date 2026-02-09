@@ -85,10 +85,8 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
     }
   };
 
-  const handleFileInputChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
-    }
+  const handleFileInputChange = (file) => {
+    if (file) handleFileSelect(file);
   };
 
   const handleRemoveFile = () => {
@@ -180,12 +178,16 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange }) => {
               </p>
               <p className="mt-1 text-xs text-gray-500">Any file type supported (max 100MB)</p>
               <div className="mt-4 flex items-center justify-center gap-3">
-                <input
+                <TextField
                   type="file"
-                  onChange={handleFileInputChange}
-                  className="hidden"
                   id="file-upload"
+                  name="file"
                   accept="*/*"
+                  onChange={handleFileInputChange}
+                  containerClassName="hidden"
+                  className=""
+                  label=""
+                  showClearButton={false}
                 />
                 <label
                   htmlFor="file-upload"

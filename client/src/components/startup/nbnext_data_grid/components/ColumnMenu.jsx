@@ -3,6 +3,7 @@
  */
 
 import PropTypes from "prop-types";
+import { TextField } from '@startup/safe_choice';
 
 function ColumnMenu({
   normalizedColumns,
@@ -22,8 +23,9 @@ function ColumnMenu({
           key={c.field}
           className="flex items-center gap-2 mb-1.5"
         >
-          <input
+          <TextField
             type="checkbox"
+            mode="bare"
             checked={!!columnVisibility[c.field]}
             onChange={() => toggleColumnVisibility(c.field)}
           />

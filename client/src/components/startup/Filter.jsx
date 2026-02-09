@@ -21,6 +21,7 @@ import { format, parse, isValid } from 'date-fns';
 import { formatDate } from '@utils/startup/dateTimeUtils';
 import { toast } from 'react-toastify';
 import { colors, fontSize } from '@theme';
+import { TextField as SafeTextField } from '@startup/safe_choice';
 
 const Filter = ({
   onFiltersApply,
@@ -562,8 +563,9 @@ const Filter = ({
                 : "hover:text-gray-900"
               }`}
           >
-            <input
+            <SafeTextField
               type="checkbox"
+              mode="bare"
               name={config.name}
               checked={filters[config.name] || false}
               onChange={handleCheckboxChange}
