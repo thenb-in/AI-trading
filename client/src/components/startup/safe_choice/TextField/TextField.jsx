@@ -78,6 +78,7 @@ const TextField = ({
     case 'date':
       return <DateTypeField {...commonProps} />;
     case 'datetime':
+    case 'datetime-local':
       return <DateTimeTypeField {...commonProps} />;
     case 'file':
       return <FileTypeField {...commonProps} />;
@@ -100,7 +101,7 @@ const TextField = ({
 };
 
 TextField.propTypes = {
-  type: PropTypes.oneOf(['text', 'textarea', 'email', 'password', 'otp', 'phone', 'search', 'url', 'description', 'number', 'file', 'checkbox', 'radio', 'date', 'datetime-local']),
+  type: PropTypes.oneOf(['text', 'textarea', 'email', 'password', 'otp', 'phone', 'search', 'url', 'description', 'number', 'file', 'checkbox', 'radio', 'date', 'datetime', 'datetime-local']),
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   checked: PropTypes.bool,
   onChange: PropTypes.func.isRequired,

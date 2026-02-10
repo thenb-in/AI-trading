@@ -13,14 +13,10 @@ import { ApiService } from "../../services/startup/ApiService";
 import { ChoicesUtil } from "./ChoicesUtil";
 import { STORAGE_KEYS } from "../../constants/startup";
 import { isDebugMode, subscribeToDebugMode, toggleDebugMode } from "../../services/debugModeService";
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TextField } from '@mui/material';
-import { format, parse, isValid } from 'date-fns';
+import { format} from 'date-fns';
 import { formatDate } from '@utils/startup/dateTimeUtils';
+import { DateTypeField } from '@startup/safe_choice/TextField/types/DateTypeField';
 import { toast } from 'react-toastify';
-import { colors, fontSize } from '@theme';
 import { TextField as SafeTextField } from '@startup/safe_choice';
 
 const Filter = ({
@@ -98,36 +94,6 @@ const Filter = ({
   const isDisabled = isApplyingFilters;
   const isBusy = isApplyingFilters || isLoadingFilters;
 
-  const renderDatePickerInput = useCallback((params, inputDisabled) => {
-    return (
-      <TextField
-        {...params}
-        size="small"
-        placeholder="DD/MM/YYYY"
-        fullWidth
-        sx={{
-          '& .MuiInputBase-root': {
-            height: '36px',
-            fontSize: fontSize.sm,
-            backgroundColor: inputDisabled ? colors.background.paper : colors.background.default,
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: inputDisabled ? colors.gray[200] : colors.gray[400],
-            },
-          },
-          '& .MuiInputBase-input': {
-            padding: '8px 12px',
-          },
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: colors.gray[300],
-          },
-          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: colors.primary.light,
-            borderWidth: '1px',
-          },
-        }}
-      />
-    );
-  }, []);
 
   useEffect(() => {
     const currentSearchParams = searchParams.toString();
@@ -326,24 +292,9 @@ const Filter = ({
 
   // input change for text inputs is currently not used
 
-  const handleDateChange = useCallback((name, date) => {
+  const handleDateChange = useCallback((name, value) => {
     if (isDisabled) return;
-    if (date && isValid(date)) {
-      // Ensure date is not in the future
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (date > today) {
-        // If date is in the future, set to today instead
-        const formattedDate = format(today, 'yyyy-MM-dd');
-        setFilters((prev) => ({ ...prev, [name]: formattedDate }));
-        return;
-      }
-      // Convert to yyyy-mm-dd format for backend
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      setFilters((prev) => ({ ...prev, [name]: formattedDate }));
-    } else {
-      setFilters((prev) => ({ ...prev, [name]: '' }));
-    }
+    setFilters((prev) => ({ ...prev, [name]: value }));
   }, [isDisabled]);
 
   const handleCheckboxChange = (e) => {
@@ -491,33 +442,17 @@ const Filter = ({
     const inputDisabled = isDisabled;
 
     switch (config.type) {
-      case "date": {
-        // Parse the date from yyyy-mm-dd string to Date object
-        const dateValue = filters[config.name]
-          ? parse(filters[config.name], 'yyyy-MM-dd', new Date())
-          : null;
-
-        const renderDateInput = (params) => {
-          return renderDatePickerInput(params, inputDisabled);
-        };
-
-        // Set max date to today
-        const maxDate = new Date();
-        maxDate.setHours(23, 59, 59, 999); // Set to end of today
-
+      case "date":
         return (
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <DatePicker
-              value={dateValue}
-              onChange={(newValue) => handleDateChange(config.name, newValue)}
-              disabled={inputDisabled}
-              format="dd/MM/yyyy"
-              maxDate={maxDate}
-              renderInput={renderDateInput}
-            />
-          </LocalizationProvider>
+          <DateTypeField
+            name={config.name}
+            value={filters[config.name] || ''}
+            onChange={(name, value) => handleDateChange(name, value)}
+            disabled={inputDisabled}
+            placeholder={config.placeholder || 'DD/MM/YYYY'}
+            maxToday={true}
+          />
         );
-      }
 
       case "select":
         return (
