@@ -10,9 +10,12 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "@context/startup/useDataContext";
 import { LogoutButton } from "../LogoutButton";
+import { SearchButton } from "../SearchButton";
+import { DebugModeIndicator } from "../DebugModeIndicator";
+import { isDebugMode, subscribeToDebugMode } from "@services/debugModeService";
 import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "@/constants/startup/index";
-
+import { useEffect, useState } from "react";
 
 function AdminSidebar({
   collapsed,
@@ -22,7 +25,13 @@ function AdminSidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userData } = useDataContext();
+  const { userData} = useDataContext();
+  const [showDebugIndicator, setShowDebugIndicator] = useState(() => isDebugMode());
+
+  useEffect(() => {
+    const unsubscribe = subscribeToDebugMode(setShowDebugIndicator);
+    return unsubscribe;
+  }, []);
 
   const dataContext = useDataContext();
   // Base menu items
@@ -32,29 +41,40 @@ function AdminSidebar({
       label: "User Management",
       icon: User,
       path: "/admin/users",
+      order: 5, // example order value
     },
     hasPermission("view_company_settings", dataContext) && {
       id: "company",
       label: "Company Settings",
       icon: Building,
       path: "/admin/company",
+      order: 6
     },
     hasPermission("view_role_permission_module", dataContext) && {
       id: "rolesAndPermissions",
       label: "Roles & Permissions",
       icon: Shield,
       path: "/admin/role-permissions",
+      order: 7,
     },
     userData?.isSadmin && {
       id: "multiCompanySetup",
       label: "Multi-Company Setup",
       icon: CopySlash,
       path: "/admin/multi-company-setup",
+      order: 8,
     },
   ].filter(Boolean);
 
   // Combine: additional items first, then base items
   const menuItems = [...additionalMenuItems, ...baseMenuItems];
+
+  // Sort menu items by optional 'order' key to control their positions
+  const sortedMenuItems = menuItems.sort((a, b) => {
+    const orderA = typeof a.order === 'number' ? a.order : 0;
+    const orderB = typeof b.order === 'number' ? b.order : 0;
+    return orderA - orderB;
+  });
 
   const handleNavigation = (item) => {
     if (item.onClick) {
@@ -79,6 +99,7 @@ function AdminSidebar({
   };
 
   return (
+    <>
     <div
         className={`
           bg-gray-800 text-white fixed top-0 left-0 flex flex-col z-[99999] sidebar-container
@@ -121,10 +142,10 @@ function AdminSidebar({
           <div className="h-full overflow-y-auto custom-scrollbar pr-1">
             <nav>
               <ul className="space-y-2">
-                {menuItems.length === 0 && (
+                {sortedMenuItems.length === 0 && (
                   <li className="text-sm text-gray-400 p-2">No menu items available</li>
                 )}
-                {menuItems.map((item) => (
+                {sortedMenuItems.map((item) => (
                   <li
                     key={item.id}
                     className="relative"
@@ -185,7 +206,6 @@ function AdminSidebar({
               </div>
             </div>
           )}
-          
           {/* Guide Button */}
           <a
             href="/app-guide"
@@ -207,10 +227,12 @@ function AdminSidebar({
               App Guide
             </span>
           </a>
-
+          {showDebugIndicator && <DebugModeIndicator collapsed={collapsed} />}
+          <SearchButton collapsed={collapsed} />
           <LogoutButton collapsed={collapsed} />
         </div>
       </div>
+    </>
   );
 }
 

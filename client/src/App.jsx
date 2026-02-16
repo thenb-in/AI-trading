@@ -10,11 +10,12 @@ import { OnboardingPage } from './pages/startup/OnboardingPage';
 import { AppGuide } from './pages/startup/AppGuide';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/startup/ProtectedRoute';
-
+import { GlobalSearchPalette } from './components/startup/GlobalSearchPalette/GlobalSearchPalette';
 
 export function App() {
   return (
     <>
+      <GlobalSearchPalette />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignupPage />} />

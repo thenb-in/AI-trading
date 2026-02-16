@@ -2,6 +2,7 @@ import {
   BarChart3,
   Layers,
   LayoutDashboard,
+  Navigation,
 } from "lucide-react";
 import {
   Category as CategoryIcon,
@@ -194,17 +195,26 @@ function useAppMenuItems() {
   };
 
   return [
+    {
+      id: "navigator",
+      label: "Navigator",
+      icon: Navigation,
+      path: "/admin/navigator",
+      order: 1,
+    },
     hasPermission("view_dashboard_module", dataContext) && {
       id: "dashboard",
       label: "Dashboards",
       icon: LayoutDashboard,
       path: "/admin/dashboard",
+      order: 2,
     },
     hasPermission("view_report_module", dataContext) && {
       id: "report",
       label: "Reports",
       icon: BarChart3,
       path: "/admin/report",
+      order: 3,
     },
     hasPermission("view_master_module", dataContext) && {
       id: "master",
@@ -218,6 +228,7 @@ function useAppMenuItems() {
       onMouseEnter: openFlyout,
       onMouseLeave: scheduleCloseFlyout,
       buttonRef: masterButtonRef,
+      order: 4,
     }
   ].filter(Boolean);
 }

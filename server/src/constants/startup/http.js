@@ -17,6 +17,9 @@ const HTTP_STATUS_NOT_FOUND = 404;
 const HTTP_STATUS_CONFLICT = 409;
 const HTTP_STATUS_INTERNAL_ERROR = 500;
 
+// Generic placeholder when a response body cannot be safely stringified
+const UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER = '[unstringifiable response body]';
+
 module.exports = {
   API_MESSAGE_SUCCESS,
   API_MESSAGE_ERROR,
@@ -32,6 +35,7 @@ module.exports = {
   HTTP_STATUS_FORBIDDEN,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_CONFLICT,
-  HTTP_STATUS_INTERNAL_ERROR
+  HTTP_STATUS_INTERNAL_ERROR,
+  UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER
 };
 

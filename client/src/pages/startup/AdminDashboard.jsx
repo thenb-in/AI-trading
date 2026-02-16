@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { AdminLayout } from "../../components/startup/Admin/AdminLayout";
 import { UserManagement } from "../../components/startup/Admin/UserManagement/UserManagement";
 import { CompanySettings } from "../../components/startup/Admin/CompanySettings";
@@ -11,14 +11,15 @@ import { MasterContent } from "./Masters";
 import { DashboardContent } from "./Dashboards";
 import { ActivityMaster } from "../../components/masters/startup/activityMaster/ActivityMaster";
 import { NBnextDriveMaster } from "../../components/masters/startup/nbnextDriveMaster/NBnextDriveMaster";
-
+import { Navigator } from "../navigator/Navigator";
 
 const AdminDashboard = () => {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
         {/* Base startup routes */}
-        <Route index element={<Navigate to="users" replace />} />
+         <Route index element={<Navigator />} />
+        <Route path="navigator" element={<Navigator />} />
         <Route path="dashboards" element={<DashboardContent />} />
         <Route path="dashboard/*" element={<DashboardContent />} />
         <Route path="reports" element={<ReportContent />} />

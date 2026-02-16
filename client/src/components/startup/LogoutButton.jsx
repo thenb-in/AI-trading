@@ -1,26 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import PropTypes from 'prop-types';
 import { ApiService } from "../../services/startup/ApiService";
-import { isDebugMode, subscribeToDebugMode } from "../../services/debugModeService";
 
 function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
-  
-  // Use debug mode service instead of local session storage management
-  const [isDebugModeState, setIsDebugModeState] = useState(() => isDebugMode());
-
-  // Subscribe to debug mode changes
-  useEffect(() => {
-    const unsubscribe = subscribeToDebugMode((newValue) => {
-      setIsDebugModeState(newValue);
-    });
-
-    return unsubscribe;
-  }, []);
 
   const confirmLogout = async () => {
     try {
@@ -35,18 +22,6 @@ function LogoutButton({ collapsed }) {
 
   return (
     <>
-      {/* Debug Mode Indicator */}
-      {isDebugModeState && (
-        <div className={`${collapsed ? "p-2" : "p-3"} border-b border-gray-600`}>
-          <div className={`flex items-center justify-center ${collapsed ? "text-xs" : "text-sm"} text-yellow-400 font-bold`}>
-            {!collapsed && <span className="mr-1">DEBUG</span>}
-            <span className="bg-yellow-400 text-gray-800 rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold">
-              D
-            </span>
-          </div>
-        </div>
-      )}
-      
       <button
         onClick={() => setShowConfirm(true)}
         className={`w-full flex items-center justify-center rounded-lg hover:bg-red-100 text-red-500 transition-colors font-bold ${collapsed ? 'p-2' : 'p-3'}`}
