@@ -78,7 +78,9 @@ fi
 # Replace nbnext_app_name with the name of the app
 # app name is the github repository name
 app_name=$(basename -s .git "$REMOTE_URL")
-log_info "App name: $app_name"
+# For nginx (and other configs): identifiers must be alphanumeric + underscore only
+app_name_safe="${app_name//[^a-zA-Z0-9]/_}"
+log_info "App name: $app_name (config-safe: $app_name_safe)"
 
 # Replace 3.110.76.178 with the IP address of the server
 # ask as input from user
@@ -88,8 +90,8 @@ if [ -z "$ip_address" ]; then
     error_exit "IP address cannot be empty"
 fi
 
-# Replace /app/nbnext_app_name with the path of the app on the server
-app_path="/app/$app_name"
+# Replace /app/nbnext_app_name with the path of the app on the server (use safe name for nginx compatibility)
+app_path="/app/$app_name_safe"
 
 # Replace /home/ubuntu/etime-payroll/server with the path of the app on the server
 # server path is .. of directory of this script
@@ -105,7 +107,7 @@ npm_path="$nvm_path/bin/npm"
 
 # console log the values
 log_info "Configuration:"
-log "  app_name: $app_name"
+log "  app_name: $app_name (safe for nginx: $app_name_safe)"
 log "  ip_address: $ip_address"
 log "  app_path: $app_path"
 log "  server_path: $server_path"
@@ -142,8 +144,8 @@ for file in ${files_to_replace[@]}; do
     # Read source file and perform all replacements using bash string substitution
     content=$(cat "$source_file")
     
-    # Perform all replacements using bash parameter expansion
-    replace_in_var "content" "nbnext_app_name" "$app_name"
+    # Perform all replacements using bash parameter expansion (use app_name_safe so nginx variables/upstream names are valid)
+    replace_in_var "content" "nbnext_app_name" "$app_name_safe"
     replace_in_var "content" "public_ip_address" "$ip_address"
     replace_in_var "content" "nbnext_app_name_path" "$app_path"
     replace_in_var "content" "server_path" "$server_path"
