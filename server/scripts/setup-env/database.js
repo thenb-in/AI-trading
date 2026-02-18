@@ -95,58 +95,53 @@ async function createDatabase(dbHost, dbPort, dbUser, dbPassword, dbName) {
 }
 
 async function validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbName) {
-  // Step 1: Test connection to PostgreSQL server (connect to default 'postgres' database)
+  // Step 1: Test connection to the user-supplied database first (user may only have access to this DB)
   logger.info('🔌 Testing database connection...');
-  const connectionTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, 'postgres');
-  
-  if (!connectionTest.success) {
-    return {
-      success: false,
-      error: `Failed to connect to PostgreSQL server: ${connectionTest.error}`
-    };
+  const targetDbTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
+
+  if (targetDbTest.success) {
+    logger.info(`✅ Connection to database '${dbName}' successful!`);
+    return { success: true, error: null };
   }
 
-  logger.info('✅ Database connection successful!');
-
-  // Step 2: Check if target database exists
-  logger.info(`🔍 Checking if database '${dbName}' exists...`);
+  // Step 2: Target DB connection failed - try connecting to 'postgres' to check/create target database
+  logger.info(`🔌 Could not connect to '${dbName}'. Checking if database exists (connecting to postgres)...`);
   try {
     const dbExists = await checkDatabaseExists(dbHost, dbPort, dbUser, dbPassword, dbName);
-    
+
     if (!dbExists) {
       logger.info(`📦 Database '${dbName}' not found. Creating new database...`);
       const createResult = await createDatabase(dbHost, dbPort, dbUser, dbPassword, dbName);
-      
+
       if (!createResult.success) {
         return {
           success: false,
-          error: `Failed to create database: ${createResult.error}`
+          error: `Failed to create database: ${createResult.error}. Also could not connect to existing database: ${targetDbTest.error}`
         };
       }
-      
+
       logger.info(`✅ Database '${dbName}' created successfully!`);
     } else {
       logger.info(`✅ Database '${dbName}' already exists.`);
     }
 
-    // Step 3: Test connection to the target database
+    // Step 3: Test connection to the target database again
     logger.info(`🔌 Testing connection to database '${dbName}'...`);
-    const targetDbTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
-    
-    if (!targetDbTest.success) {
+    const retryTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
+
+    if (!retryTest.success) {
       return {
         success: false,
-        error: `Failed to connect to target database '${dbName}': ${targetDbTest.error}`
+        error: `Failed to connect to database '${dbName}': ${retryTest.error}`
       };
     }
 
     logger.info(`✅ Connection to database '${dbName}' successful!`);
-
     return { success: true, error: null };
   } catch (error) {
     return {
       success: false,
-      error: `Database validation error: ${error.message}`
+      error: `Failed to connect to database '${dbName}': ${targetDbTest.error}. If your user only has access to this database, ensure it exists and credentials are correct.`
     };
   }
 }
