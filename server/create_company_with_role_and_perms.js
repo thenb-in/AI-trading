@@ -76,6 +76,7 @@ async function createUser(company, transaction) {
   const user = await signup(
     username,
     password,
+    company.id,
     { phone, name, role: superAdminRole.id },
     transaction
   );

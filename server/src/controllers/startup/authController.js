@@ -13,7 +13,7 @@ const authController = {
    * @returns {Promise<object>} Created user
    */
   async signup(username, password,  userData) {
-    return await authService.signup( username?.trim(), password?.trim(), userData);
+    return await authService.signup( username?.trim(), password?.trim(),null, userData);
   },
 
   /**

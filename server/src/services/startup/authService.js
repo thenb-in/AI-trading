@@ -15,7 +15,7 @@ const { getUserWithRoleInclude } = require('./rolePermissionService');
 const totpService = require('./totpService');
 const userService = require('./userService');
 
-const signup = async (username, password, { phone, name, role }, transaction) => {
+const signup = async (username, password, company_id, { phone, name, role }, transaction) => {
   logger.info(`Signup attempt: ${phone} - ${name} - ${role}`);
 
   const existingUser = await User.findOne({ where: { username } });
@@ -33,7 +33,7 @@ const signup = async (username, password, { phone, name, role }, transaction) =>
       return existingUser;
     } else {
       // User is already active, throw error
-      // throw new Error(`Phone number already exists ${phone}.`);
+      throw new Error(`UserName already exists ${username}.`);
     }
   }
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -42,7 +42,7 @@ const signup = async (username, password, { phone, name, role }, transaction) =>
     username,
     password: hashedPassword,
     name,
-    company_id: null,
+    company_id: company_id?company_id:null,
     role_id: role ?role : null,
     isActive: true,
     refresh_token: null,
@@ -54,7 +54,7 @@ const signup = async (username, password, { phone, name, role }, transaction) =>
   // Use userService and multiCompanyService for related operations
   // Only create profile and assign to company if companyId is provided
     // Create user profile without company
-  await userService.createUserProfile(user?.dataValues?.id, { currentCompany: null }, transaction);
+  await userService.createUserProfile(user?.dataValues?.id, { currentCompany: company_id?company_id:null }, transaction);
   return user;
 };
 
