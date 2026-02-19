@@ -45,13 +45,12 @@ function PasswordTypeField(props) {
     <FieldFrame inputId={inputId} label={label} required={required} error={error}>
       <div className="relative">
         {resolvedIcon ? (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
             {resolvedIcon}
           </div>
         ) : null}
 
         <input
-          type={showPassword ? 'text' : 'password'}
           id={inputId}
           name={name}
           value={value}
@@ -62,8 +61,9 @@ function PasswordTypeField(props) {
           maxLength={maxLength}
           minLength={minLength}
           autoFocus={autoFocus}
-          className={`${baseInputClasses} ${leftPad} ${rightPad}`}
+          className={`${baseInputClasses} ${leftPad} ${rightPad} relative z-0`}
           {...restProps}
+          type={showPassword ? 'text' : 'password'}
         />
 
         <button
@@ -72,7 +72,7 @@ function PasswordTypeField(props) {
           className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 transition"
           aria-label={showPassword ? 'Hide password' : 'Show password'}
         >
-          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {showPassword ? <EyeOff className="h-4 w-4 pointer-events-none" /> : <Eye className="h-4 w-4 pointer-events-none" />}
         </button>
       </div>
     </FieldFrame>
