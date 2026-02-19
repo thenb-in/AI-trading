@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Environment=PATH=nvm_path/bin:/usr/bin:/bin
-WorkingDirectory=server_path
+WorkingDirectory=server_path/server
 ExecStart=npm_path start
 Restart=always
 RestartSec=5
