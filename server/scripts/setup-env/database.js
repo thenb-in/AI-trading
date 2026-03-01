@@ -181,6 +181,14 @@ async function configureDatabase() {
   }
 
   let prompt = null;
+  const defaultDbName = getDefaultDbName();
+  let lastEntered = {
+    dbHost: 'localhost',
+    dbPort: '5432',
+    dbName: defaultDbName,
+    dbUser: 'postgres',
+    dbPassword: ''
+  };
 
   while (true) {
     try {
@@ -189,21 +197,20 @@ async function configureDatabase() {
         prompt = createPrompt();
       }
 
-      // Database host
-      const dbHost = await askQuestion(prompt, 'Database host', 'localhost');
+      // Database host (use last entered as default on retry)
+      const dbHost = await askQuestion(prompt, 'Database host', lastEntered.dbHost);
 
       // Database port
-      const dbPort = await askQuestion(prompt, 'Database port', '5432');
+      const dbPort = await askQuestion(prompt, 'Database port', lastEntered.dbPort);
 
       // Database name
-      const defaultDbName = getDefaultDbName();
-      const dbName = await askQuestion(prompt, 'Database name', defaultDbName);
+      const dbName = await askQuestion(prompt, 'Database name', lastEntered.dbName);
 
       // Database username
-      const dbUser = await askQuestion(prompt, 'Database username', 'postgres');
+      const dbUser = await askQuestion(prompt, 'Database username', lastEntered.dbUser);
 
       // Database password
-      const dbPassword = await askQuestion(prompt, 'Database password', '');
+      const dbPassword = await askQuestion(prompt, 'Database password', lastEntered.dbPassword);
 
       // Validate and setup database (test connection, check existence, create if needed)
       const validation = await validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbName);
@@ -223,7 +230,8 @@ async function configureDatabase() {
 
         return { databaseUrl, dbHost, dbPort, dbName, dbUser, dbPassword };
       } else {
-        // Show error and ask user to retry
+        // Show error and ask user to retry; use current values as defaults next time
+        lastEntered = { dbHost, dbPort, dbName, dbUser, dbPassword };
         logger.error(`❌ ${validation.error}`);
         logger.warn('⚠️  Please check your database credentials and try again.');
         logger.info('');
