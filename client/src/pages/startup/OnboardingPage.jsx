@@ -1,20 +1,29 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '@context/startup/useDataContext';
 import { FaBuilding, FaUsers, FaArrowRight } from 'react-icons/fa';
+import { QrCode, Upload, FileText } from 'lucide-react';
 import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
 import { CreateCompanyForm } from '../../components/startup/Auth/CreateCompanyForm';
 import { QRCodeScanner } from '../../components/common/QRCodeScanner';
+import { Html5Qrcode } from 'html5-qrcode';
 import { ApiService } from '@services/startup/ApiService';
 import { toast } from 'react-toastify';
+
+const JOIN_METHOD_PASTE = 'paste';
+const JOIN_METHOD_UPLOAD = 'upload';
+const JOIN_METHOD_SCAN = 'scan';
 
 function OnboardingPage() {
   const navigate = useNavigate();
   const { userData, setUserData } = useDataContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [joinMethod, setJoinMethod] = useState(JOIN_METHOD_PASTE);
+  const [pasteText, setPasteText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
   const handleBackToLogin = async () => {
     try {
@@ -73,6 +82,8 @@ function OnboardingPage() {
 
   const handleCloseQRScanner = () => {
     setIsQRScannerOpen(false);
+    setJoinMethod(JOIN_METHOD_PASTE);
+    setPasteText('');
     setError('');
   };
 
@@ -106,24 +117,13 @@ function OnboardingPage() {
     return null;
   };
 
-  const handleQRScanSuccess = async (qrData) => {
-    setIsQRScannerOpen(false);
+  const handleJoinWithCompanyId = async (companyId) => {
     setIsSubmitting(true);
     setError('');
 
     try {
-      const companyId = extractCompanyIdFromQR(qrData);
-      
-      if (!companyId) {
-        throw new Error('Invalid QR code. Please scan a valid company QR code.');
-      }
-
-      // Join the company
       const response = await ApiService.joinCompany(companyId);
-      
       toast.success(response.data.message || 'Successfully joined the company!');
-      
-      // Update user data
       if (response.data.updatedUser) {
         setUserData(prev => ({
           ...prev,
@@ -131,17 +131,75 @@ function OnboardingPage() {
           companyId: response.data.updatedUser.company?.id
         }));
       }
-
-      // Redirect to app guide
+      setIsQRScannerOpen(false);
       navigate('/app-guide', { replace: true });
     } catch (err) {
       const errorMessage = err.error || err.message || 'Failed to join company. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage);
-      setIsQRScannerOpen(true); // Reopen scanner on error
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleQRScanSuccess = async (qrData) => {
+    setIsQRScannerOpen(false);
+    const companyId = extractCompanyIdFromQR(qrData);
+    if (!companyId) {
+      setError('Invalid QR code. Please scan a valid company QR code.');
+      toast.error('Invalid QR code.');
+      setIsQRScannerOpen(true);
+      return;
+    }
+    await handleJoinWithCompanyId(companyId);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e?.target?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error('Please select an image file (e.g. PNG, JPG).');
+      return;
+    }
+    const readerEl = document.getElementById('qr-file-reader');
+    if (!readerEl) {
+      toast.error('Scanner not ready. Please try again.');
+      return;
+    }
+    setIsSubmitting(true);
+    setError('');
+    try {
+      const html5QrCode = new Html5Qrcode('qr-file-reader');
+      const decodedText = await html5QrCode.scanFile(file, false);
+      html5QrCode.clear();
+      const companyId = extractCompanyIdFromQR(decodedText);
+      if (!companyId) {
+        throw new Error('No valid company code found in the image.');
+      }
+      await handleJoinWithCompanyId(companyId);
+    } catch (err) {
+      const errorMessage = err.message || err.error || 'Could not read QR code from image. Please try another image.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePasteSubmit = async () => {
+    const trimmed = pasteText?.trim() || '';
+    if (!trimmed) {
+      setError('Please paste a sign-up link or company ID.');
+      toast.error('Please paste a link or company ID.');
+      return;
+    }
+    const companyId = extractCompanyIdFromQR(trimmed);
+    if (!companyId) {
+      setError('Invalid link or company ID. Use the sign-up link from your admin or a valid company ID (UUID).');
+      toast.error('Invalid link or company ID.');
+      return;
+    }
+    await handleJoinWithCompanyId(companyId);
   };
 
   return (
@@ -267,21 +325,135 @@ function OnboardingPage() {
       <MasterModal
         isOpen={isQRScannerOpen}
         onClose={handleCloseQRScanner}
-        title="Join Company via QR Code"
+        title="Join Company"
         maxWidth="sm"
       >
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
+        <div className="space-y-4">
+          {/* Method tabs: Paste, Upload, Scan */}
+          <div className="flex border-b border-gray-200">
+            <button
+              type="button"
+              onClick={() => setJoinMethod(JOIN_METHOD_PASTE)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 text-sm font-medium border-b-2 transition-colors ${
+                joinMethod === JOIN_METHOD_PASTE
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <FileText size={18} />
+              Paste
+            </button>
+            <button
+              type="button"
+              onClick={() => setJoinMethod(JOIN_METHOD_UPLOAD)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 text-sm font-medium border-b-2 transition-colors ${
+                joinMethod === JOIN_METHOD_UPLOAD
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Upload size={18} />
+              Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => setJoinMethod(JOIN_METHOD_SCAN)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 px-2 text-sm font-medium border-b-2 transition-colors ${
+                joinMethod === JOIN_METHOD_SCAN
+                  ? 'border-green-600 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <QrCode size={18} />
+              Scan
+            </button>
           </div>
-        )}
-        <QRCodeScanner
-          onScanSuccess={handleQRScanSuccess}
-          onClose={handleCloseQRScanner}
-          isOpen={isQRScannerOpen}
-          heading="Scan Company QR Code"
-          message="To join a company, a valid QR code is required. Please reach out to your administrator for access."
-        />
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {joinMethod === JOIN_METHOD_PASTE && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Paste the sign-up link (e.g. https://.../signup?company_id=...) or the company ID.
+              </p>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Paste link or company ID here..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                disabled={isSubmitting}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handlePasteSubmit}
+                  disabled={isSubmitting || !pasteText.trim()}
+                  className="flex-1 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Joining...' : 'Join company'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseQRScanner}
+                  className="py-2 px-4 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {joinMethod === JOIN_METHOD_UPLOAD && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Upload an image containing the company QR code (PNG, JPG, etc.).
+              </p>
+              <div
+                id="qr-file-reader"
+                className="w-full h-[1px] overflow-hidden opacity-0 pointer-events-none"
+                aria-hidden
+              />
+              <label className="flex flex-col items-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50/50 transition-colors cursor-pointer">
+                <Upload size={32} className="text-gray-400" />
+                <span className="text-sm font-medium text-gray-600">
+                  Choose image or drag and drop
+                </span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+              {isSubmitting && (
+                <p className="text-sm text-gray-500 text-center">Reading QR code...</p>
+              )}
+              <button
+                type="button"
+                onClick={handleCloseQRScanner}
+                className="w-full py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {joinMethod === JOIN_METHOD_SCAN && (
+            <QRCodeScanner
+              onScanSuccess={handleQRScanSuccess}
+              onClose={handleCloseQRScanner}
+              isOpen={isQRScannerOpen}
+              heading="Scan Company QR Code"
+              message="Point your camera at the QR code from your administrator."
+            />
+          )}
+        </div>
       </MasterModal>
     </div>
   );

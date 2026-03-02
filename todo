@@ -54,3 +54,4 @@ pre-commit hook: to not be in pre-push hook
 - company wise roles
 
 - Do not allow use of enum in model. use sequelize constraints instead.
+- Allow access to company only after that company access has been approved. Currently user just enters company id on frontend, and becomes a part of that company.
