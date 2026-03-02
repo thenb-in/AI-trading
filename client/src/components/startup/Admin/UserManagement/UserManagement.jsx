@@ -174,11 +174,11 @@ function UserManagement() {
       </button>
       <button
         onClick={handleShowQRCode}
-        className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"
+        className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs sm:text-base"
         title="Download QR code for sign-up link"
       >
         <QrCode size={16} className="mr-1" />
-        Download Company QR
+        QR
       </button>
       {bulkDeleteMode && selectedUsers.length > 0 && (
         <button
