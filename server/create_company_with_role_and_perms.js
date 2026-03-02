@@ -121,9 +121,12 @@ async function main() {
 
     const user = await createUser(company, null); // No transaction needed after commit
 
-    // approve user
-    await approveUser(user.id);
-    logger.info(`User ${user.username} approved successfully ${user.id}`);
+    if (user) {
+      await approveUser(user.id);
+      logger.info(`User ${user.username} approved successfully ${user.id}`);
+    } else {
+      logger.info(`Skipping user creation and approval (user chose not to create a user). user = ${user}`);
+    }
 
     // Always run createStartingAppData to ensure all default data exists
     // This will skip any data that already exists and only create new data
