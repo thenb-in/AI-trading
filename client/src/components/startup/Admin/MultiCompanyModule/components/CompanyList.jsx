@@ -69,6 +69,8 @@ CompanyCard.propTypes = {
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [debug, setDebug] = useState(false);
 
   const handleSwitchClick = useCallback((companyId) => {
     onSwitch(companyId);
@@ -87,6 +89,16 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
   const handleAssignmentSuccess = () => {
     // Could refresh company data if needed
   };
+
+  const filteredCompanies = (companies || []).filter((c) => {
+    const name = (c.name || '').toLowerCase();
+    const query = (searchText || '').trim().toLowerCase();
+    if (debug) {
+      return !query || name.includes(query);
+    }
+    return query && name === query;
+  });
+
   if (!companies?.length) {
     return (
       <div className="text-gray-500 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 text-center">
@@ -106,8 +118,36 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
     </p>
   </div>
 
+  <div className="mb-4">
+    <input
+      type="text"
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+      placeholder={debug ? 'Search company name...' : 'Type full company name to show'}
+      className="w-full max-w-md mx-auto block px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      aria-label="Filter companies by name"
+    />
+    <label className="flex items-center justify-center gap-2 mt-2 cursor-pointer text-sm text-gray-600">
+      <input
+        type="checkbox"
+        checked={debug}
+        onChange={(e) => setDebug(e.target.checked)}
+        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        aria-label="Debug mode: show all companies and allow partial search"
+      />
+      debug
+    </label>
+  </div>
+
+  {filteredCompanies.length === 0 ? (
+    <div className="text-gray-500 py-6 bg-gray-50 rounded-xl border border-gray-200 text-center">
+      {!debug && !(searchText || '').trim()
+        ? 'Type the full company name above to show it.'
+        : 'No companies match your search.'}
+    </div>
+  ) : (
   <ul className="grid gap-3">
-    {companies.map((c) => {
+    {filteredCompanies.map((c) => {
       const isActive = (activeCompanyId && c.id === activeCompanyId) || (activeCompanyName && c.name === activeCompanyName);
       return (
       <CompanyCard
@@ -121,6 +161,7 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
       />
     );})}
   </ul>
+  )}
 
   <UserCompanyAssignmentModal
     isOpen={assignmentModalOpen}
