@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus,Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
+import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode, Link as LinkIcon } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/startup/useDataContext';
 import { UserTable } from './components/UserTable';
@@ -90,12 +90,25 @@ function UserManagement() {
   };
 
   const handleShowQRCode = () => {
-
     if (!companyId) {
       toast.error('Company ID not found. Please try again.');
       return;
     }
     setShowQRModal(true);
+  };
+
+  const handleCopySignupLink = async () => {
+    try {
+      if (!companyId) {
+        toast.error('Company ID not found. Please try again.');
+        return;
+      }
+      const signupUrl = `${window.location.origin}/signup?company_id=${companyId}`;
+      await navigator.clipboard.writeText(signupUrl);
+      toast.success('Sign-up link copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy link. Please try again.');
+    }
   };
 
 
@@ -151,6 +164,14 @@ function UserManagement() {
       />
     </div>
     <div className="w-full sm:w-auto flex gap-2">
+      <button
+        onClick={handleCopySignupLink}
+        className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"
+        title="Copy sign-up link for current company"
+      >
+        <LinkIcon size={16} className="mr-1" />
+        Copy Sign-up Link
+      </button>
       <button
         onClick={handleShowQRCode}
         className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"

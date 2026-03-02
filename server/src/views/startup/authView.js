@@ -15,11 +15,12 @@ const allowedPermissions = require('../../utils/startup/allowedPermissions');
  */
 async function signup(req, res) {
   try {
-    // Extract data from request
-    const { phone, username, password, name, role } = req.body;
+    // Extract data from request (company_id optional, e.g. from /signup?company_id=uuid)
+    const { phone, username, password, name, role, company_id, companyId } = req.body;
+    const companyIdResolved = company_id ?? companyId ?? null;
 
     // Call controller
-    const user = await authController.signup(username, password, { phone, name, role });
+    const user = await authController.signup(username, password, companyIdResolved, { phone, name, role });
 
     // Build and send response
     res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
@@ -30,6 +31,9 @@ async function signup(req, res) {
 
     if (errorMessage.includes('Invalid role')) {
       return res.status(400).json({ error: errorMessage });
+    }
+    if (errorMessage.includes('Company not found')) {
+      return res.status(404).json({ error: errorMessage });
     }
     // eslint-disable-next-line custom/no-hardcoded-strings
     if (errorMessage.includes('Phone number already exists') || errorMessage.includes('username')) {

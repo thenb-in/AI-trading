@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {  FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
@@ -15,11 +15,25 @@ function Signup({ showRoleDropdown }) {
     phone: '',
     password: '',
     confirmPassword: '',
+    companyId: '',
   });
   const [error, setError] = useState('');
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Honor company_id from URL (e.g. /signup?company_id=uuid) for invite/signup links
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const companyIdFromUrl = params.get('company_id');
+    if (companyIdFromUrl?.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        companyId: companyIdFromUrl.trim(),
+      }));
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (showRoleDropdown) {
@@ -63,13 +77,17 @@ function Signup({ showRoleDropdown }) {
     }
 
     try {
-      await ApiService.signup({
+      const payload = {
         name: cleanedData.name,
         username: cleanedData.username,
         phone: cleanedData.phone,
         password: cleanedData.password,
         role: cleanedData.role,
-      });
+      };
+      if (cleanedData.companyId) {
+        payload.company_id = cleanedData.companyId;
+      }
+      await ApiService.signup(payload);
       toast.success('Signup successful! Awaiting admin approval.');
       navigate('/');
     } catch (err) {

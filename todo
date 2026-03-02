@@ -52,3 +52,5 @@ pre-commit hook: to not be in pre-push hook
 - ROLEPERMISSIONS: click on the master/module/report to show which all roles & users have those permissions.
 - ROLEPERMISSIONS: Route and data should be blocked if permission not present
 - company wise roles
+
+- Do not allow use of enum in model. use sequelize constraints instead.

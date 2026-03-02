@@ -36,6 +36,16 @@ const signup = async (username, password, company_id, { phone, name, role }, tra
       throw new Error(`UserName already exists ${username}.`);
     }
   }
+
+  // When company_id is provided (e.g. from signup link), validate company exists
+  if (company_id) {
+    const company = await companyService.existingCompany(company_id, transaction);
+    if (!company) {
+      logger.warn(`Signup with invalid company_id: ${company_id}`);
+      throw new Error(`Company not found ${company_id}`);
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
     phone,

@@ -9,11 +9,12 @@ const authController = {
    * Sign up a new user
    * @param {string} username - Username
    * @param {string} password - Password
+   * @param {string|null} companyId - Company ID (optional, e.g. from signup link)
    * @param {object} userData - User data (phone, name, role)
    * @returns {Promise<object>} Created user
    */
-  async signup(username, password,  userData) {
-    return await authService.signup( username?.trim(), password?.trim(),null, userData);
+  async signup(username, password, companyId, userData) {
+    return await authService.signup(username?.trim(), password?.trim(), companyId ?? null, userData);
   },
 
   /**
