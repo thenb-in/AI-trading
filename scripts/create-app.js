@@ -16,6 +16,7 @@ const CLIENT_ENV_EXAMPLE = path.join(ROOT_DIR, 'client', '.env.example');
 const SERVER_ENV_EXAMPLE = path.join(ROOT_DIR, 'server', '.env.example');
 const CLIENT_ENV = path.join(ROOT_DIR, 'client', '.env');
 const SERVER_ENV = path.join(ROOT_DIR, 'server', '.env');
+const CLIENT_VITE_CONFIG = path.join(ROOT_DIR, 'client', 'vite.config.js');
 const DEPLOY_BASE_CONF = path.join(ROOT_DIR, 'deploy', 'base.conf');
 
 const PORT_MIN = 4000;
@@ -111,11 +112,6 @@ function updateEnvFileWithPort(filePath, port, kind) {
         /^SERVER_URL=http:\/\/localhost:\d+\/?\s*$/m,
         `SERVER_URL=http://localhost:${port}\n`
       );
-    } else {
-      content = content.replace(
-        /^VITE_PROXY_URL=http:\/\/localhost:\d+\s*$/m,
-        `VITE_PROXY_URL=http://localhost:${port}\n`
-      );
     }
     fs.writeFileSync(filePath, content, 'utf8');
   } catch (error) {
@@ -169,15 +165,27 @@ function updatePackageJsonFiles(appName, port) {
   }
 }
 
+function updateViteConfigWithPort(filePath, port) {
+  if (!fs.existsSync(filePath)) return;
+  try {
+    let content = fs.readFileSync(filePath, 'utf8');
+    content = content.replace(
+      /(localServerUrl\s*=\s*['"])http:\/\/localhost:\d+(['"])/,
+      `$1http://localhost:${port}$2`
+    );
+    fs.writeFileSync(filePath, content, 'utf8');
+  } catch (error) {
+    console.error(`❌ Failed to update ${filePath}: ${error.message}`);
+    throw error;
+  }
+}
+
 function updatePortInConfigs(port) {
   updateEnvFileWithPort(SERVER_ENV_EXAMPLE, port, 'server');
-  updateEnvFileWithPort(CLIENT_ENV_EXAMPLE, port, 'client');
   if (fs.existsSync(SERVER_ENV)) {
     updateEnvFileWithPort(SERVER_ENV, port, 'server');
   }
-  if (fs.existsSync(CLIENT_ENV)) {
-    updateEnvFileWithPort(CLIENT_ENV, port, 'client');
-  }
+  updateViteConfigWithPort(CLIENT_VITE_CONFIG, port);
   updateDeployBaseConfWithPort(port);
 }
 
@@ -209,7 +217,7 @@ async function createApp() {
     // Update port in env files, deploy config, and server kill script
     console.log('📝 Updating server port in configs...');
     updatePortInConfigs(serverPort);
-    console.log('✅ Port updated in .env.example, deploy/base.conf');
+    console.log('✅ Port updated in server .env, client vite.config.js, deploy/base.conf');
 
     // Update client and server package.json (name, version 1.0.0, deploy script, kill script)
     console.log('📝 Updating package.json (client & server)...');
@@ -222,8 +230,8 @@ async function createApp() {
     console.log('📋 Files updated:');
     console.log('  - client/package.json (name, version 1.0.0)');
     console.log('  - server/package.json (name, version 1.0.0, kill script port)');
-    console.log('  - client/.env.example (VITE_PROXY_URL)');
     console.log('  - server/.env.example (PORT, SERVER_URL)');
+    console.log('  - client/vite.config.js (proxy target port)');
     console.log('  - deploy/base.conf (nginx upstream port)');
     console.log('');
     console.log('💡 Next steps:');

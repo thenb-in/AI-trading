@@ -24,6 +24,7 @@ export default ({ mode }) => {
   const clientVersion = clientPackageJson.version || '0.0.0';
   const serverVersion = serverPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
+  const localServerUrl = 'http://localhost:3000';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -36,12 +37,12 @@ export default ({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: process.env.VITE_PROXY_URL, // Backend server
+          target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/api/, ''), // Optional, remove '/api' prefix if needed
         },
         '/uploads': {
-          target: process.env.VITE_PROXY_URL, // Backend server
+          target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
         },
       },

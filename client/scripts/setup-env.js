@@ -87,7 +87,7 @@ function showSetupInstructions() {
   log('1. Copy .env.example to .env:', 'yellow');
   log('   cp .env.example .env', 'blue');
   log('\n2. Update .env with your values:', 'yellow');
-  log('   - Set VITE_PROXY_URL to your backend server URL', 'blue');
+  log('   - Update local server URL proxy in vite.config.js', 'blue');
   log('   - Update PORT if you want to use a different port', 'blue');
   log('\n3. Important notes:', 'yellow');
   log('   - All variables must be prefixed with VITE_ to be accessible in the browser', 'blue');
