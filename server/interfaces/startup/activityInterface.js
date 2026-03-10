@@ -1,6 +1,6 @@
 const axios = require('axios');
-const logger = require('../../../logger');
-const env = require('../../config/env');
+const logger = require('../../logger');
+const env = require('../../src/config/env');
 
 
 /**

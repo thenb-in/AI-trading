@@ -1,7 +1,7 @@
 /**
  * Data formatter for Activity responses
  */
-const activityColumns = require('../../columns/startup/activityColumns');
+const activityColumns = require('../../constants/columns/startup/activityColumns');
 
 
 function formatActivityResponse(activities) {

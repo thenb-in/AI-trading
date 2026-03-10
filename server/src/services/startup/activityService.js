@@ -1,8 +1,8 @@
 // services/startup/activityService.js
 const { Op: _Op } = require('sequelize');
-const logger = require('../../../logger');
 // Activity is the primary model for this service
-const { pushActivityToExternalServer } = require('../../interfaces/startup/activityInterface');
+const { pushActivityToExternalServer } = require('../../../interfaces/startup/activityInterface');
+const logger = require('../../../logger');
 const { Activity, User } = require('../../models');
 
 const activityService = {

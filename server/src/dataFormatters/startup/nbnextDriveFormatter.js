@@ -1,4 +1,4 @@
-const nbnextDriveColumns = require('../../columns/startup/nbnextDriveColumns');
+const nbnextDriveColumns = require('../../constants/columns/startup/nbnextDriveColumns');
 
 function formatFileSize(bytes) {
   if (bytes === 0) {
