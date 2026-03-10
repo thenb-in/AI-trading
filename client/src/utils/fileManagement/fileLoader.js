@@ -57,6 +57,14 @@ const loadFile = async (fileUrl, mimeType = '') => {
   }
 
   try {
+    // Already a blob URL (e.g. from File before upload) – use as-is
+    if (fileUrl.startsWith('blob:')) {
+      return {
+        blobUrl: fileUrl,
+        mimeType: mimeType || '',
+      };
+    }
+
     let response;
 
     if (isFullUrl(fileUrl)) {
@@ -106,11 +114,21 @@ const loadFile = async (fileUrl, mimeType = '') => {
     };
   } catch (error) {
     console.error('Error loading file:', error);
-    // Fallback to original URL if loading fails
-    return {
-      blobUrl: fileUrl,
-      mimeType: mimeType || '',
-    };
+    let message = 'Something went wrong. File may have been deleted or is unavailable.';
+    if (error instanceof Blob) {
+      try {
+        const text = await error.text();
+        const obj = JSON.parse(text);
+        message = obj.error || obj.message || message;
+      } catch {
+        message = 'Something went wrong. File may have been deleted or is unavailable.';
+      }
+    } else if (error && typeof error === 'object') {
+      message = error.error || error.message || message;
+    } else if (error?.message) {
+      message = error.message;
+    }
+    throw new Error(message);
   }
 };
 

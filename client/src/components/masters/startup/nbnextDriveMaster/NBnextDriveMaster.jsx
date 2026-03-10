@@ -16,7 +16,7 @@ const NBnextDriveMaster = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
   const [formData, setFormData] = useState({
     objectName: '',
@@ -62,8 +62,8 @@ const NBnextDriveMaster = () => {
     }));
   };
 
-  const handleFileChange = (file) => {
-    setSelectedFile(file);
+  const handleFileChange = (files) => {
+    setSelectedFiles(Array.isArray(files) ? files : []);
   };
 
   const handleAdd = () => {
@@ -71,25 +71,28 @@ const NBnextDriveMaster = () => {
       objectName: '',
       objectId: ''
     });
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setIsModalOpen(true);
   };
 
   const handleSave = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file to upload');
+    const toUpload = Array.isArray(selectedFiles) ? selectedFiles : [];
+    if (toUpload.length === 0) {
+      toast.error('Please select at least one file to upload');
       return;
     }
 
     try {
-      await nbnextDriveService.uploadFile(
-        selectedFile,
-        formData.objectName || null,
-        formData.objectId || null
-      );
-      toast.success('File uploaded successfully');
+      for (const file of toUpload) {
+        await nbnextDriveService.uploadFile(
+          file,
+          formData.objectName || null,
+          formData.objectId || null
+        );
+      }
+      toast.success(toUpload.length === 1 ? 'File uploaded successfully' : `${toUpload.length} files uploaded successfully`);
       setIsModalOpen(false);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       fetchFiles();
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to upload file');
@@ -98,7 +101,7 @@ const NBnextDriveMaster = () => {
 
   const handleClose = () => {
     setIsModalOpen(false);
-    setSelectedFile(null);
+    setSelectedFiles([]);
   };
 
   const handleView = async (id, file) => {

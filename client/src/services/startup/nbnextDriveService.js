@@ -11,6 +11,13 @@ const nbnextDriveService = {
     return response.data;
   },
 
+  async getFilesByObject(objectName, objectId) {
+    const response = await ApiService.request('GET', '/nbnext-drive/by-object', null, {
+      params: { objectName, objectId: String(objectId) }
+    });
+    return response.data;
+  },
+
   async uploadFile(file, objectName = null, objectId = null) {
     const formData = new FormData();
     formData.append('file', file);

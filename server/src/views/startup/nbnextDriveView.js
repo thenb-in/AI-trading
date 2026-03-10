@@ -38,6 +38,21 @@ async function getFileById(req, res) {
   }
 }
 
+async function getFilesByObject(req, res) {
+  try {
+    const companyId = req.user?.company_id || null;
+    const { objectName, objectId } = req.query;
+    if (!objectName || objectId === undefined || objectId === null || objectId === '') {
+      return res.status(400).json({ error: `objectName and objectId query parameters are required get objectName: ${objectName} , objectId: ${objectId}` });
+    }
+    const result = await nbnextDriveController.getFilesByObject(companyId, objectName, String(objectId));
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error('Get files by object error', error);
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
+  }
+}
+
 async function createFile(req, res) {
   try {
     if (!req.file) {
@@ -113,6 +128,7 @@ async function downloadFile(req, res) {
 module.exports = {
   getAllFiles,
   getFileById,
+  getFilesByObject,
   createFile,
   deleteFile,
   downloadFile

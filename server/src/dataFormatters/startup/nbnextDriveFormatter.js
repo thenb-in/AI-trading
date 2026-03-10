@@ -18,6 +18,7 @@ function formatNBnextDriveResponse(files) {
       fileName: fileData.fileName,
       filePath: fileData.filePath,
       fileSize: formatFileSize(fileData.fileSize),
+      mimeType: fileData.mimeType || null,
       createdByName: fileData.createdByUser?.name || null,
       createdAt: fileData.createdAt || null,
       updatedAt: fileData.updatedAt || null

@@ -12,6 +12,11 @@ const nbnextDriveController = {
     return nbnextDriveFormatter.formatSingleNBnextDriveResponse(file);
   },
 
+  async getFilesByObject(companyId, objectName, objectId) {
+    const files = await nbnextDriveService.getFilesByObject(companyId, objectName, objectId);
+    return nbnextDriveFormatter.formatNBnextDriveResponse(files);
+  },
+
   async createFile(fileData, createdBy, companyId) {
     return await nbnextDriveService.createFile(fileData, createdBy, companyId);
   },

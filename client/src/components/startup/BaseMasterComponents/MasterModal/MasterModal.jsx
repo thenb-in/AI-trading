@@ -10,6 +10,7 @@ const MasterModal = ({
   maxWidth = 'sm',
   actions,
   showCloseButton = true,
+  PaperProps: paperProps,
   ...props
 }) => {
   return (
@@ -18,6 +19,16 @@ const MasterModal = ({
       onClose={onClose}
       maxWidth={maxWidth}
       fullWidth
+      PaperProps={{
+        ...paperProps,
+        sx: {
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          ...paperProps?.sx
+        }
+      }}
       {...props}
     >
       {title && (
@@ -25,7 +36,8 @@ const MasterModal = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          pb: 1
+          pb: 1,
+          flexShrink: 0
         }}>
           {title}
           {showCloseButton && (
@@ -40,12 +52,12 @@ const MasterModal = ({
         </DialogTitle>
       )}
 
-      <DialogContent sx={{ pt: title ? 0 : 2 }}>
+      <DialogContent sx={{ pt: title ? 0 : 2, flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {children}
       </DialogContent>
 
       {actions && (
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 3, pb: 2, flexShrink: 0 }}>
           {actions}
         </DialogActions>
       )}
@@ -61,6 +73,7 @@ MasterModal.propTypes = {
   maxWidth: PropTypes.oneOf(['xs', 'sm', 'md', 'lg', 'xl']),
   actions: PropTypes.node,
   showCloseButton: PropTypes.bool,
+  PaperProps: PropTypes.object,
 };
 
 export { MasterModal };

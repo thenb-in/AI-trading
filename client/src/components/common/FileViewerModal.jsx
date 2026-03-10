@@ -17,9 +17,10 @@ import {
  * File Viewer Modal Component
  * Displays files in a modal with appropriate viewer based on file type
  */
-const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File' }) => {
+const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File', onLoadError }) => {
   const [blobUrl, setBlobUrl] = useState('');
   const [effectiveMime, setEffectiveMime] = useState(mimeType || '');
+  const [loadError, setLoadError] = useState(null);
 
   // Image zoom controls (only used for images)
   const imageZoomHook = useImageZoom(isOpen);
@@ -45,23 +46,22 @@ const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View Fil
   // Load file when modal opens or file changes
   useEffect(() => {
     let revokedUrl = '';
-    
+    setLoadError(null);
+
     const load = async () => {
       if (!isOpen || !fileUrl) return;
-      
       try {
         const { blobUrl: loadedBlobUrl, mimeType: loadedMimeType } = await loadFile(fileUrl, mimeType);
         setBlobUrl(loadedBlobUrl);
         setEffectiveMime(loadedMimeType);
-        
-        // Store URL for cleanup if it's a blob URL
         if (loadedBlobUrl.startsWith('blob:')) {
           revokedUrl = loadedBlobUrl;
         }
-      } catch {
-        // Fallback to original URL if loading fails
-        setBlobUrl(fileUrl);
-        setEffectiveMime(mimeType || '');
+      } catch (err) {
+        const msg = err?.error || err?.message || 'Something went wrong. File may have been deleted or is unavailable.';
+        setLoadError(msg);
+        setBlobUrl('');
+        if (onLoadError) onLoadError(msg);
       }
     };
 
@@ -72,8 +72,9 @@ const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View Fil
         URL.revokeObjectURL(revokedUrl);
       }
       setBlobUrl('');
+      setLoadError(null);
     };
-  }, [isOpen, fileUrl, mimeType]);
+  }, [isOpen, fileUrl, mimeType, onLoadError]);
 
   // Determine file type
   const fileType = useMemo(() => getFileType(effectiveMime, fileUrl), [effectiveMime, fileUrl]);
@@ -81,8 +82,15 @@ const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View Fil
 
   if (!isOpen) return null;
 
-  // Render appropriate viewer based on file type
   const renderFileContent = () => {
+    if (loadError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+          <p className="text-red-600 font-medium">Unable to load file</p>
+          <p className="text-sm text-gray-500 mt-1">{loadError}</p>
+        </div>
+      );
+    }
     switch (fileType) {
       case 'pdf':
         return <PdfViewer blobUrl={blobUrl} fileUrl={fileUrl} />;
@@ -180,6 +188,7 @@ FileViewerModal.propTypes = {
   fileUrl: PropTypes.string,
   mimeType: PropTypes.string,
   title: PropTypes.string,
+  onLoadError: PropTypes.func,
 };
 
 export { FileViewerModal };

@@ -4,7 +4,7 @@ const express = require('express');
 const multer = require('multer');
 const env = require('../../config/env');
 const authMiddleware = require('../../middleware/authMiddleware');
-const { getAllFiles, getFileById, createFile, deleteFile, downloadFile } = require('../../views/startup/nbnextDriveView');
+const { getAllFiles, getFileById, getFilesByObject, createFile, deleteFile, downloadFile } = require('../../views/startup/nbnextDriveView');
 
 const router = express.Router();
 
@@ -35,6 +35,7 @@ const upload = multer({
 });
 
 router.get('/', authMiddleware.protect, getAllFiles);
+router.get('/by-object', authMiddleware.protect, getFilesByObject);
 router.get('/:id', authMiddleware.protect, getFileById);
 router.post('/', authMiddleware.protect, upload.single('file'), createFile);
 router.delete('/:id', authMiddleware.protect, deleteFile);

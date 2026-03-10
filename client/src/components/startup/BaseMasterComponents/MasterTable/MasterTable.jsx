@@ -1,8 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Eye } from 'lucide-react';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import PropTypes from 'prop-types';
-import { TextField } from '@startup/safe_choice';
 
 // Utility function to format date for display
 const formatDateForDisplay = (dateValue) => {
@@ -58,10 +57,21 @@ const MasterTable = ({
   onRowClick,
   rowClickEnabled = false,
   selectRow = false,
-  onSelectedRowsChange
+  onSelectedRowsChange,
+  serverPagination = false,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onPageSizeChange,
+  infiniteScroll = false,
+  hasMore,
+  onLoadMore,
+  isLoadingMore = false
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
   const [selectedRows, setSelectedRows] = useState(new Set());
+  const loadMoreRef = useRef(null);
 
   // Handle close viewer
   const handleCloseViewer = useCallback(() => {
@@ -183,6 +193,54 @@ const MasterTable = ({
     );
   }, []);
 
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!infiniteScroll) return;
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    if (!onLoadMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting) return;
+        if (loading || isLoadingMore) return;
+        onLoadMore();
+      },
+      {
+        root: null,
+        rootMargin: '200px',
+        threshold: 0.1
+      }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [infiniteScroll, hasMore, onLoadMore, loading, isLoadingMore]);
+
+  const handlePreviousPageClick = useCallback(() => {
+    if (!serverPagination || !onPageChange || typeof page !== 'number') return;
+    onPageChange(Math.max(page - 1, 1));
+  }, [serverPagination, onPageChange, page]);
+
+  const handleNextPageClick = useCallback(() => {
+    if (!serverPagination || !onPageChange || typeof page !== 'number' || !pageSize || !total) return;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    onPageChange(Math.min(page + 1, totalPages));
+  }, [serverPagination, onPageChange, page, pageSize, total]);
+
+  const handlePageSizeSelectChange = useCallback(
+    (event) => {
+      if (!serverPagination || !onPageSizeChange) return;
+      const newSize = Number(event.target.value) || 25;
+      onPageSizeChange(newSize);
+    },
+    [serverPagination, onPageSizeChange]
+  );
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -199,6 +257,23 @@ const MasterTable = ({
       );
   }
 
+  const showServerPagination =
+    serverPagination &&
+    typeof page === 'number' &&
+    typeof pageSize === 'number' &&
+    typeof total === 'number' &&
+    onPageChange &&
+    onPageSizeChange;
+
+  const totalPages = showServerPagination
+    ? Math.max(1, Math.ceil((total || 0) / (pageSize || 1)))
+    : 1;
+
+  const startIndex =
+    showServerPagination && data.length > 0 ? (page - 1) * pageSize + 1 : 0;
+  const endIndex =
+    showServerPagination && data.length > 0 ? (page - 1) * pageSize + data.length : 0;
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white border border-gray-200">
@@ -206,11 +281,10 @@ const MasterTable = ({
           <tr>
             {selectRow && (
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">
-                <TextField
+                <input
                   type="checkbox"
-                  mode="bare"
                   checked={isAllSelected}
-                  inputRef={checkboxRef}
+                  ref={checkboxRef}
                   onChange={(e) => handleSelectAll(e.target.checked)}
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                 />
@@ -248,9 +322,8 @@ const MasterTable = ({
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-200"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <TextField
+                    <input
                       type="checkbox"
-                      mode="bare"
                       checked={isRowSelected}
                       onChange={(e) => handleRowSelect(item.id, e.target.checked)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
@@ -300,6 +373,60 @@ const MasterTable = ({
           })}
         </tbody>
       </table>
+      {showServerPagination && (
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600">
+            Showing{' '}
+            {startIndex}
+            {' - '}
+            {endIndex}
+            {' of '}
+            {total}
+            {' records'}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handlePreviousPageClick}
+              disabled={page === 1 || loading}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={handleNextPageClick}
+              disabled={page >= totalPages || loading}
+              className="px-3 py-1 text-sm border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Next
+            </button>
+            <select
+              value={pageSize}
+              onChange={handlePageSizeSelectChange}
+              className="px-2 py-1 border border-gray-300 rounded-md text-sm bg-white"
+            >
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={100}>100 / page</option>
+            </select>
+          </div>
+        </div>
+      )}
+      {infiniteScroll && (
+        <div ref={loadMoreRef} className="mt-4 h-10 flex items-center justify-center">
+          {isLoadingMore && (
+            <span className="text-sm text-gray-500">Loading more records...</span>
+          )}
+          {!isLoadingMore && !hasMore && data.length > 0 && (
+            <span className="text-sm text-gray-400">No more records to load.</span>
+          )}
+        </div>
+      )}
       <FileViewerModal
         isOpen={viewerState.open}
         onClose={handleCloseViewer}
@@ -333,7 +460,17 @@ MasterTable.propTypes = {
   onRowClick: PropTypes.func,
   rowClickEnabled: PropTypes.bool,
   selectRow: PropTypes.bool,
-  onSelectedRowsChange: PropTypes.func
+  onSelectedRowsChange: PropTypes.func,
+  serverPagination: PropTypes.bool,
+  page: PropTypes.number,
+  pageSize: PropTypes.number,
+  total: PropTypes.number,
+  onPageChange: PropTypes.func,
+  onPageSizeChange: PropTypes.func,
+  infiniteScroll: PropTypes.bool,
+  hasMore: PropTypes.bool,
+  onLoadMore: PropTypes.func,
+  isLoadingMore: PropTypes.bool
 };
 
 export { MasterTable };

@@ -124,6 +124,34 @@ const nbnextDriveService = {
     }
   },
 
+  async getFilesByObject(companyId, objectName, objectId) {
+    try {
+      const where = {
+        companyId,
+        objectName: objectName || null,
+        objectId: objectId !== null ? String(objectId) : null
+      };
+
+      const files = await NBnextDrive.findAll({
+        where,
+        order: [['createdAt', 'DESC']],
+        attributes: ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
+        include: [
+          {
+            model: User,
+            as: 'createdByUser',
+            required: false,
+            attributes: ['id', 'name']
+          }
+        ]
+      });
+      return files;
+    } catch (error) {
+      logger.error('Error fetching files by object', error);
+      throw new Error(`Failed to fetch files: ${error.message}`);
+    }
+  },
+
   async getFileStream(id, companyId, userId, showAll = false) {
     try {
       const where = {
@@ -154,6 +182,9 @@ const nbnextDriveService = {
       };
     } catch (error) {
       logger.error(`Error getting file stream: ${id}`, error);
+      if (error.message === NBNEXT_DRIVE_FILE_NOT_FOUND || error.message === NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK) {
+        throw error;
+      }
       throw new Error(`Failed to get file: ${error.message}`);
     }
   }
