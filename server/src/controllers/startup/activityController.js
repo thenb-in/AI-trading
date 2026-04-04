@@ -1,4 +1,4 @@
-const activityFormatter = require('../../dataFormatters/startup/activityFormatter');
+const activityFormatter = require('../../data_formatters/startup/activity_formatter');
 const activityService = require('../../services/startup/activityService');
 
 const activityController = {

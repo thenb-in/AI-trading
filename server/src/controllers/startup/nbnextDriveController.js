@@ -1,4 +1,4 @@
-const nbnextDriveFormatter = require('../../dataFormatters/startup/nbnextDriveFormatter');
+const nbnextDriveFormatter = require('../../data_formatters/startup/nbnext_drive_formatter');
 const nbnextDriveService = require('../../services/startup/nbnextDriveService');
 
 const nbnextDriveController = {
