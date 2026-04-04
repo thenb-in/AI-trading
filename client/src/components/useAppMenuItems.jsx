@@ -15,7 +15,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "../context/startup/useDataContext";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getMasterCategories } from "../data/getMasterModules";
+import { getMasterCategories } from "@data/getMasterModules";
 
 // Hook to get App-specific menu items
 function useAppMenuItems() {

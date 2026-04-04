@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { MasterCard } from "./MasterComponents/MasterCard";
 import { MasterSearchInput } from "../../components/startup/BaseMasterComponents/MasterSearchInput";
-import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
+import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { spacing } from "@theme";
 import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
 

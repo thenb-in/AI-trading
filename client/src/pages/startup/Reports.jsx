@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { ReportList } from './ReportComponents/ReportList';
 import { DummyComponent } from './DummyComponent';
 // import PastReportPage from './ReportComponents/PastReportPage';
-import { reports, categories } from '../../data/getReportModules';
+import { reports, categories } from '@data/getReportModules';
 
 const staticPages = ['past-report'];
 
