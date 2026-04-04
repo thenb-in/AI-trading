@@ -10,9 +10,6 @@ Restart=always
 RestartSec=5
 User=ubuntu
 Environment=NODE_ENV=production
-# Optional logging
-StandardOutput=syslog
-StandardError=syslog
 SyslogIdentifier=nbnext_app_name
 
 [Install]
