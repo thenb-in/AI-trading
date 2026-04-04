@@ -38,7 +38,7 @@ function setupHuskyHooks() {
     ensureDirectoryExists(huskyDir);
     
     // Create pre-commit hook content
-    const preCommitContent = 'npx lint-staged\n';
+    const preCommitContent = 'node scripts/check-lowercase-dirs.js\nnpx lint-staged\n';
     const preCommitPath = path.join(huskyDir, 'pre-commit');
     
     // Write pre-commit hook file
@@ -64,6 +64,19 @@ function setupHuskyHooks() {
     
     // Write prepare-commit-msg hook file
     fs.writeFileSync(prepareCommitMsgPath, prepareCommitMsgContent);
+
+    // Post-merge: fix local filename case vs Git after merges (macOS/Windows)
+    const postMergeContent = `#!/usr/bin/env sh
+set -e
+
+# ORIG_HEAD points to where HEAD was before the merge
+git rev-parse --verify ORIG_HEAD >/dev/null 2>&1 || exit 0
+
+# Only check files that changed in the merge (fast even in large repos)
+./node_modules/.bin/git-detect-case-change --fix-local --since ORIG_HEAD
+`;
+    const postMergePath = path.join(huskyDir, 'post-merge');
+    fs.writeFileSync(postMergePath, postMergeContent);
     
     // Make the files executable (Unix-like systems only)
     if (process.platform !== 'win32') {
@@ -79,6 +92,9 @@ function setupHuskyHooks() {
         
         fs.chmodSync(prepareCommitMsgPath, '755');
         log('✅ Made prepare-commit-msg hook executable', 'green');
+
+        fs.chmodSync(postMergePath, '755');
+        log('✅ Made post-merge hook executable', 'green');
       } catch (error) {
         log('⚠️  Could not make hooks executable (this is normal on Windows)', 'yellow');
       }
@@ -89,7 +105,8 @@ function setupHuskyHooks() {
     log('📝 Commit-msg hook created at: .husky/commit-msg', 'blue');
     log('📝 Pre-push hook created at: .husky/pre-push', 'blue');
     log('📝 Prepare-commit-msg hook created at: .husky/prepare-commit-msg', 'blue');
-    
+    log('📝 Post-merge hook created at: .husky/post-merge', 'blue');
+
     return true;
   } catch (error) {
     log('❌ Error setting up Husky hooks:', 'red');
@@ -188,6 +205,7 @@ function main() {
     log('   - Commit-msg: Validates commit messages with commitlint', 'cyan');
     log('   - Pre-push: Runs quick validation and checks client/server version bumps', 'cyan');
     log('   - Prepare-commit-msg: Interactive commit prompts', 'cyan');
+    log('   - Post-merge: git-detect-case-change --fix-local since ORIG_HEAD', 'cyan');
     process.exit(0);
   } else {
     log('\n❌ Some setup steps failed. Please check the error messages above.', 'red');

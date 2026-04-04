@@ -99,7 +99,7 @@ function checkGitHooks() {
     return false;
   }
   
-  const requiredHooks = ['pre-commit', 'commit-msg', 'pre-push', 'prepare-commit-msg'];
+  const requiredHooks = ['pre-commit', 'commit-msg', 'pre-push', 'prepare-commit-msg', 'post-merge'];
   let allHooksExist = true;
   
   requiredHooks.forEach(hook => {
