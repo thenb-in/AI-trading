@@ -19,12 +19,12 @@ else
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEPLOY_APP_NAME=$(node "$SCRIPT_DIR/scripts/ask-app-name.js" "$REMOTE_URL") || exit 1
-
 # Prompt user for GitHub Token securely
 read -p "Enter your GitHub Token for $GITHUB_OWNER/$GITHUB_REPO: " GITHUB_TOKEN
 echo ""
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPLOY_APP_NAME=$(node "$SCRIPT_DIR/scripts/ask-app-name.js" "$REMOTE_URL") || exit 1
 
 # Fetch the latest successful workflow run ID (guard against null workflow_runs)
 LATEST_RUN_ID=$(
