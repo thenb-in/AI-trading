@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
+const { askNamingChoice, sanitizeAppNameForPath } = require('./ask-app-name');
 
 /**
  * Script to create a new app from this starter template
@@ -21,82 +21,6 @@ const DEPLOY_BASE_CONF = path.join(ROOT_DIR, 'deploy', 'base.conf');
 
 const PORT_MIN = 4000;
 const PORT_MAX = 9999;
-
-function parseGitHubName(url) {
-  try {
-    let pathname = url;
-    if (url.includes(':')) {
-      pathname = url.split(':')[1] || '';
-    } else if (url.includes('github.com/')) {
-      pathname = (url.split('github.com/')[1] || '').replace(/^\//, '');
-    }
-    const withoutGit = (pathname || '').replace(/\.git$/i, '');
-    const base = withoutGit.split('/').filter(Boolean).pop() || '';
-    return base.replace(/[_-]/g, ' ').trim();
-  } catch (error) {
-    return '';
-  }
-}
-
-function getFolderName() {
-  try {
-    const folder = path.basename(ROOT_DIR);
-    return folder.replace(/[_-]/g, ' ').trim();
-  } catch (error) {
-    return '';
-  }
-}
-
-function askQuestion(rl, prompt, defaultValue = '') {
-  return new Promise((resolve) => {
-    const suffix = defaultValue ? ` [default: ${defaultValue}]` : '';
-    rl.question(`${prompt}${suffix}: `, (answer) => {
-      resolve(answer.trim() || defaultValue);
-    });
-  });
-}
-
-async function askNamingChoice(newAppUrl) {
-  const githubName = parseGitHubName(newAppUrl);
-  const folderName = getFolderName();
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-
-  console.log('');
-  console.log('App name options:');
-  console.log(`  1. GitHub name (from URL): ${githubName || '(could not parse)'}`);
-  console.log(`  2. Folder name: ${folderName || '(could not parse)'}`);
-  console.log('  Or type your app name directly');
-  console.log('');
-
-  const choice = await askQuestion(rl, 'Choose (1/2) or type app name', '');
-  const c = choice.toLowerCase().trim();
-
-  let appName;
-  if (c === '1') {
-    appName = githubName;
-    if (!appName) {
-      console.log('Could not parse GitHub name; please type app name.');
-      appName = await askQuestion(rl, 'App name');
-    }
-  } else if (c === '2') {
-    appName = folderName;
-    if (!appName) {
-      console.log('Could not parse folder name; please type app name.');
-      appName = await askQuestion(rl, 'App name');
-    }
-  } else if (c === '') {
-    appName = await askQuestion(rl, 'App name');
-  } else {
-    appName = choice.trim();
-  }
-
-  rl.close();
-  return appName.trim();
-}
-
-function sanitizeAppNameForPath(name) {
-  return name.trim().replace(/\s+/g, '_');
-}
 
 function randomPort() {
   return Math.floor(Math.random() * (PORT_MAX - PORT_MIN + 1)) + PORT_MIN;
@@ -203,7 +127,7 @@ async function createApp() {
     console.log('🚀 Creating new app from starter template...');
     console.log(`📝 New app URL: ${newAppUrl}`);
 
-    const appName = await askNamingChoice(newAppUrl);
+    const appName = await askNamingChoice(newAppUrl, ROOT_DIR);
     if (!appName) {
       console.error('❌ App name cannot be empty');
       process.exit(1);

@@ -3,7 +3,6 @@
 # Define repository details
 # Get the GitHub remote URL (assumes "origin" remote)
 REMOTE_URL=$(git config --get remote.origin.url)
-REPO_NAME=$(basename -s .git "$REMOTE_URL")
 
 # Strip the .git suffix if present
 REMOTE_URL=${REMOTE_URL%.git}
@@ -20,7 +19,8 @@ else
     exit 1
 fi
 
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPLOY_APP_NAME=$(node "$SCRIPT_DIR/scripts/ask-app-name.js" "$REMOTE_URL") || exit 1
 
 # Prompt user for GitHub Token securely
 read -p "Enter your GitHub Token for $GITHUB_OWNER/$GITHUB_REPO: " GITHUB_TOKEN
@@ -96,19 +96,19 @@ if [ -d "dist" ]; then
     echo "Removing existing dist directory..."
     sudo rm -rf dist
 fi
-# try to remove /app/$REPO_NAME directory if it exists
-if [ -d "/app/$REPO_NAME" ]; then
+# try to remove /app/$DEPLOY_APP_NAME directory if it exists
+if [ -d "/app/$DEPLOY_APP_NAME" ]; then
     echo "Removing existing app directory..."
-    sudo rm -rf /app/$REPO_NAME
+    sudo rm -rf "/app/$DEPLOY_APP_NAME"
 fi
 
-mkdir /app/$REPO_NAME
+mkdir "/app/$DEPLOY_APP_NAME"
 unzip artifact.zip -d dist
 rm artifact.zip
 
 # npm run deploy
-mv dist/* /app/$REPO_NAME/
+mv dist/* "/app/$DEPLOY_APP_NAME/"
 sudo systemctl restart nginx.service
 
 echo ""
-echo "Deployment complete. Deployed artifact built at $BUILT_AT (commit $SHORT_SHA)."
+echo "Deployment complete. Deployed artifact built at $BUILT_AT (commit $SHORT_SHA) at /app/$DEPLOY_APP_NAME."
