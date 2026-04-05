@@ -38,7 +38,7 @@ function askQuestion(rl, prompt, defaultValue = '') {
 }
 
 /**
- * Prompt for app name: GitHub-derived name, folder name, or custom (same UX as create-new-app).
+ * Prompt for app name: folder name (default), GitHub-derived name, or custom (same UX as create-new-app).
  * @param {string} newAppUrl - Git remote URL or any string parseable by parseGitHubName
  * @param {string} [rootDir] - Repo root for "folder name" option (default: parent of this script)
  * @param {{ uiStream?: import('stream').Writable }} [options] - uiStream: where prompts go (default stdout; use stderr when stdout is captured)
@@ -65,10 +65,10 @@ async function askNamingChoice(
   log('');
   log('App name options:');
   if (namesMatch) {
-    log(`  1. GitHub & folder name: ${githubName}`);
+    log(`  1. Folder & GitHub name: ${githubName}`);
   } else {
-    log(`  1. GitHub name (from URL): ${githubName || '(could not parse)'}`);
-    log(`  2. Folder name: ${folderName || '(could not parse)'}`);
+    log(`  1. Folder name: ${folderName || '(could not parse)'}`);
+    log(`  2. GitHub name (from URL): ${githubName || '(could not parse)'}`);
   }
   log('  Or type your app name directly');
   log('');
@@ -79,12 +79,6 @@ async function askNamingChoice(
 
   let appName;
   if (c === '1') {
-    appName = githubName;
-    if (!appName) {
-      log('Could not parse GitHub name; please type app name.');
-      appName = await askQuestion(rl, 'App name', folderName || githubName);
-    }
-  } else if (c === '2') {
     if (namesMatch) {
       appName = githubName;
     } else {
@@ -92,6 +86,16 @@ async function askNamingChoice(
       if (!appName) {
         log('Could not parse folder name; please type app name.');
         appName = await askQuestion(rl, 'App name', githubName || folderName);
+      }
+    }
+  } else if (c === '2') {
+    if (namesMatch) {
+      appName = githubName;
+    } else {
+      appName = githubName;
+      if (!appName) {
+        log('Could not parse GitHub name; please type app name.');
+        appName = await askQuestion(rl, 'App name', folderName || githubName);
       }
     }
   } else if (c === '') {
