@@ -8,7 +8,7 @@ WorkingDirectory=server_path/server
 ExecStart=npm_path start
 Restart=always
 RestartSec=5
-User=ubuntu
+User=system_user
 Environment=NODE_ENV=production
 SyslogIdentifier=nbnext_app_name
 

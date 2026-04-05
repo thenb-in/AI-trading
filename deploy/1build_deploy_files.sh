@@ -93,7 +93,7 @@ fi
 # Replace /app/nbnext_app_name with the path of the app on the server (use safe name for nginx compatibility)
 app_path="/app/$app_name_safe"
 
-# Replace /home/ubuntu/etime-payroll/server with the path of the app on the server
+# Replace /home/ubuntu/$app_name_safe/server with the path of the app on the server
 # server path is .. of directory of this script
 server_path=$(dirname $(dirname $(realpath $0)))
 
@@ -155,8 +155,7 @@ for file in ${files_to_replace[@]}; do
     # Additional replacements for service file
     if [[ "$file" == "base.service" ]]; then
         log "  Applying service-specific replacements"
-        replace_in_var "content" "/home/ubuntu/etime-payroll/server" "$server_path"
-        replace_in_var "content" "/home/ubuntu/.nvm/versions/node/v22.19.0" "$nvm_path"
+        replace_in_var "content" "system_user" "$system_user"
     fi
     
     # Write the modified content directly to the target file
