@@ -13,7 +13,7 @@
     "update-starter-app": "node scripts/update-starter-app.js",
     "migrate": "node scripts/migrate.js",
     "prepare": "husky",
-    "lint": "npm run lint:server && npm run lint:client",
+    "lint": "npm run eslint && npm run check-duplicates",
     "lint:fix": "npm run lint:server:fix && npm run lint:client:fix",
     "lint:errors": "npm run lint:server:errors && npm run lint:client:errors",
     "lint:server": "cd server && npm run lint",
@@ -22,10 +22,7 @@
     "lint:server:errors": "cd server && npm run lint:errors",
     "lint:client:errors": "cd client && npm run lint:errors",
     "lint:client:fix": "cd client && npm run lint:fix",
-    "lint:all": "npm run lint",
-    "lint:all:fix": "npm run lint:fix",
-    "validate": "npm run lint:all && npm run test && npm run setup-env:validate",
-    "validate:quick": "npm run lint:all",
+    "eslint": "npm run lint:server && npm run lint:client",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
@@ -48,7 +45,8 @@
     "dev-utils:lint": "node scripts/dev-utils.js lint",
     "dev-utils:test": "node scripts/dev-utils.js test",
     "dev-utils:build": "node scripts/dev-utils.js build",
-    "dev-utils:help": "node scripts/dev-utils.js help"
+    "dev-utils:help": "node scripts/dev-utils.js help",
+    "check-duplicates": "node scripts/check-duplicates.js"
   },
   "keywords": [],
   "author": "",
@@ -56,10 +54,13 @@
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
     "@commitlint/config-conventional": "^19.0.0",
+    "@eslint/js": "^9.34.0",
     "commitizen": "^4.3.1",
     "concurrently": "^8.2.2",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.34.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "rimraf": "^6.0.1"
@@ -132,5 +133,8 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
+  },
+  "dependencies": {
+    "jscpd": "^4.0.8"
   }
 }

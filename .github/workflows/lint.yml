@@ -40,3 +40,8 @@ jobs:
         run: npm run lint:client
         env:
           CI: true
+
+      - name: Check code duplication (jscpd)
+        run: npm run check-duplicates
+        env:
+          CI: true
