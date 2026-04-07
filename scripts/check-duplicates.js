@@ -25,6 +25,9 @@ const REPO_ROOT = path.join(__dirname, '..');
 /** Minimum clone line span to list (endLine − startLine, same as jscpd); FAIL if any file’s summed span from listed clones exceeds this (see violatingPathsFromListedClones). */
 const MAX_DUPLICATE_LINES_PER_FILE = 15;
 
+/** Lower threshold applied when either file in the clone pair is a utils file. */
+const MAX_DUPLICATE_LINES_UTILS = 3;
+
 /** Σ(span on file A + span on file B) for listed clones in the pair / (linesA+linesB) ≥ this ⇒ "Duplicates found". */
 const FILE_PAIR_DUPLICATION_LINE_RATIO = 0.8;
 
@@ -311,8 +314,18 @@ function printConsoleSummary(statistic) {
   console.log(`Found ${statistic.total.clones} clones.`);
 }
 
+function isUtilsFile(filePath) {
+  return /[/\\]utils[/\\]/i.test(filePath) || /[/\\]utils\.[^/\\]+$/.test(filePath);
+}
+
+function thresholdForClone(dup) {
+  return isUtilsFile(dup.firstFile.name) || isUtilsFile(dup.secondFile.name)
+    ? MAX_DUPLICATE_LINES_UTILS
+    : MAX_DUPLICATE_LINES_PER_FILE;
+}
+
 function cloneMeetsLineThreshold(dup) {
-  return cloneFragmentLineSpan(dup) >= MAX_DUPLICATE_LINES_PER_FILE;
+  return cloneFragmentLineSpan(dup) >= thresholdForClone(dup);
 }
 
 /**
