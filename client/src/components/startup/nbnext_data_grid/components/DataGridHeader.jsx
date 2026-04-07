@@ -5,7 +5,7 @@ import {
   getSortedHeaderStyle,
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
-import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField.jsx';
+import { TextTypeField } from '@base_components/fields/TextTypeField.jsx';
 
 import { useRef, useCallback, useState, useEffect } from "react";
 

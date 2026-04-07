@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import PropTypes from 'prop-types';
-import { GlobalSearchPalette } from "./GlobalSearchPalette/GlobalSearchPalette";
+import { GlobalSearchPalette } from "./global_search_palette/GlobalSearchPalette";
 
 function SearchButton({ collapsed }) {
   const [showSearchPalette, setShowSearchPalette] = useState(false);

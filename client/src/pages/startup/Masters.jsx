@@ -9,7 +9,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import { MasterCard } from "./MasterComponents/MasterCard";
+import { MasterCard } from "./master_components/MasterCard";
 import { MasterSearch } from "../../components/startup/base_components/master/MasterSearch";
 import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { spacing } from "@theme";

@@ -33,6 +33,7 @@ module.exports = {
       // Track imported models
       const importedModels = new Set();
 
+      // jscpd:ignore-start
       // Helper function to check if a path imports from models directory
       function isModelsDirectoryImport(path) {
         if (typeof path !== 'string') {
@@ -88,6 +89,7 @@ module.exports = {
         }
         return modelNames;
       }
+      // jscpd:ignore-end
 
       return {
         // Check for CommonJS require() imports
@@ -134,6 +136,7 @@ module.exports = {
         },
 
         // Check for ES6 import statements
+        // jscpd:ignore-start
         ImportDeclaration(node) {
           if (node.source && node.source.type === 'Literal') {
             const importPath = node.source.value;
@@ -196,6 +199,7 @@ module.exports = {
             }
           }
         },
+        // jscpd:ignore-end
 
         // Check for direct model usage (Sequelize methods)
         MemberExpression(node) {

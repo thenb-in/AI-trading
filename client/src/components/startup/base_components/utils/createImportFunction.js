@@ -50,19 +50,21 @@ const createImportFunction = ({
         let dataStartRow = 6;
         let headerRow = sheet.getRow(headerRowIndex);
 
+        const buildHeaderMap = (row, map) => {
+          row.eachCell((cell, colNumber) => {
+            const headerText = String(cell.value || '').trim();
+            const colDef = columns.find(c =>
+              c.label === headerText ||
+              c.id === headerText ||
+              c.name === headerText ||
+              c.headerName === headerText
+            );
+            if (colDef) map[colNumber] = colDef.id;
+          });
+        };
+
         // Build mapping from column index -> field id using current columns state
-        headerRow.eachCell((cell, colNumber) => {
-          const headerText = String(cell.value || '').trim();
-          const colDef = columns.find(c => 
-            c.label === headerText || 
-            c.id === headerText || 
-            c.name === headerText ||
-            c.headerName === headerText
-          );
-          if (colDef) {
-            headerToField[colNumber] = colDef.id;
-          }
-        });
+        buildHeaderMap(headerRow, headerToField);
 
         // Validate required columns at row 5
         let presentFields = Object.values(headerToField);
@@ -74,20 +76,7 @@ const createImportFunction = ({
           dataStartRow = 2;
           headerToField = {};
           headerRow = sheet.getRow(headerRowIndex);
-
-          headerRow.eachCell((cell, colNumber) => {
-            const headerText = String(cell.value || '').trim();
-            const colDef = columns.find(c => 
-              c.label === headerText || 
-              c.id === headerText || 
-              c.name === headerText ||
-              c.headerName === headerText
-            );
-            if (colDef) {
-              headerToField[colNumber] = colDef.id;
-            }
-          });
-
+          buildHeaderMap(headerRow, headerToField);
           presentFields = Object.values(headerToField);
           missing = requiredFields.filter(f => !presentFields.includes(f));
         }

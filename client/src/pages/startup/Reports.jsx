@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ReportList } from './ReportComponents/ReportList';
+import { ReportList } from './report_components/ReportList';
 import { DummyComponent } from './DummyComponent';
 // import PastReportPage from './ReportComponents/PastReportPage';
 import { reports, categories } from '@data/getReportModules';

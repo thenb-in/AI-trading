@@ -10,7 +10,7 @@ import { OnboardingPage } from './pages/startup/OnboardingPage';
 import { AppGuide } from './pages/startup/AppGuide';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/startup/ProtectedRoute';
-import { GlobalSearchPalette } from './components/startup/GlobalSearchPalette/GlobalSearchPalette';
+import { GlobalSearchPalette } from './components/startup/global_search_palette/GlobalSearchPalette';
 
 export function App() {
   return (

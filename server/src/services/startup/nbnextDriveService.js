@@ -6,6 +6,21 @@ const env = require('../../config/env');
 const { NBNEXT_DRIVE_FILE_NOT_FOUND, NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK } = require('../../constants/startup/errors');
 const { NBnextDrive, User } = require('../../models');
 
+const FILE_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
+const FILE_INCLUDE = [{ model: User, as: 'createdByUser', required: false, attributes: ['id', 'name'] }];
+
+async function findFileOrThrow(id, companyId, userId, showAll) {
+  const where = { id, companyId };
+  if (!showAll) {
+    where.createdBy = userId;
+  }
+  const file = await NBnextDrive.findOne({ where });
+  if (!file) {
+    throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+  }
+  return { file, where };
+}
+
 const nbnextDriveService = {
   async getAllFiles(companyId, userId, showAll = false) {
     try {
@@ -20,15 +35,8 @@ const nbnextDriveService = {
       const files = await NBnextDrive.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes: ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'createdByUser',
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ]
+        attributes: FILE_ATTRIBUTES,
+        include: FILE_INCLUDE
       });
       return files;
     } catch (error) {
@@ -50,15 +58,8 @@ const nbnextDriveService = {
 
       const file = await NBnextDrive.findOne({
         where,
-        attributes: ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'createdByUser',
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ]
+        attributes: FILE_ATTRIBUTES,
+        include: FILE_INCLUDE
       });
 
       if (!file) {
@@ -93,20 +94,7 @@ const nbnextDriveService = {
 
   async deleteFile(id, companyId, userId, showAll = false) {
     try {
-      const where = {
-        id,
-        companyId
-      };
-
-      if (!showAll) {
-        where.createdBy = userId;
-      }
-
-      const file = await NBnextDrive.findOne({ where });
-
-      if (!file) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
-      }
+      const { file, where } = await findFileOrThrow(id, companyId, userId, showAll);
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
 
@@ -135,15 +123,8 @@ const nbnextDriveService = {
       const files = await NBnextDrive.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes: ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'createdByUser',
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ]
+        attributes: FILE_ATTRIBUTES,
+        include: FILE_INCLUDE
       });
       return files;
     } catch (error) {
@@ -154,20 +135,7 @@ const nbnextDriveService = {
 
   async getFileStream(id, companyId, userId, showAll = false) {
     try {
-      const where = {
-        id,
-        companyId
-      };
-
-      if (!showAll) {
-        where.createdBy = userId;
-      }
-
-      const file = await NBnextDrive.findOne({ where });
-
-      if (!file) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
-      }
+      const { file } = await findFileOrThrow(id, companyId, userId, showAll);
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
 

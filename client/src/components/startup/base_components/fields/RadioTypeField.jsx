@@ -99,6 +99,7 @@ function RadioTypeField(props) {
   );
 }
 
+
 RadioTypeField.propTypes = {
   ...commonFieldPropTypes,
   checked: PropTypes.bool,

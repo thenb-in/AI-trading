@@ -3,7 +3,7 @@
  */
 
 import PropTypes from "prop-types";
-import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
+import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
 
 function ColumnMenu({
   normalizedColumns,

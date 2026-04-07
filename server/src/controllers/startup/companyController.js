@@ -8,6 +8,26 @@ const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
 
+function setAuthCookies(res, accessToken, refreshToken) {
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'strict',
+    maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
+  });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: env.isProduction,
+    sameSite: 'strict',
+    maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+  });
+  res.cookie('isLoggedIn', 'true', {
+    secure: env.isProduction,
+    sameSite: 'strict',
+    maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
+  });
+}
+
 const companyController = {
   async getCompanySettings(req, res) {
     try {
@@ -102,23 +122,7 @@ const companyController = {
       // Persist refresh token and activity
       await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
-      res.cookie('isLoggedIn', 'true', {
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
+      setAuthCookies(res, accessToken, refreshToken);
 
       return res.status(200).json({ updatedUser, message: `Company switched successfully to ${companyId}` });
     } catch (error) {
@@ -157,23 +161,7 @@ const companyController = {
       // Persist refresh token
       await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
-      res.cookie('isLoggedIn', 'true', {
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
+      setAuthCookies(res, accessToken, refreshToken);
 
       return res.status(201).json({
         message: `Company "${company.name}" created successfully!`,
@@ -219,23 +207,7 @@ const companyController = {
       // Persist refresh token
       await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
-      });
-      res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
-      res.cookie('isLoggedIn', 'true', {
-        secure: env.isProduction,
-        sameSite: 'strict',
-        maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-      });
+      setAuthCookies(res, accessToken, refreshToken);
 
       return res.status(200).json({
         updatedUser,

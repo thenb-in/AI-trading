@@ -95,6 +95,7 @@ function CheckboxTypeField(props) {
   );
 }
 
+
 CheckboxTypeField.propTypes = {
   ...commonFieldPropTypes,
   checked: PropTypes.bool,

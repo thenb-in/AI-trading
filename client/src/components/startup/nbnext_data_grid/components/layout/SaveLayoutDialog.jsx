@@ -3,7 +3,7 @@
  */
 
 import PropTypes from "prop-types";
-import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { TextTypeField } from '@base_components/fields/TextTypeField';
 
 function SaveLayoutDialog({
   selectedLayout,

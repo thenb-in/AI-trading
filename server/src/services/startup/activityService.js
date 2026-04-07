@@ -5,6 +5,19 @@ const { pushActivityToExternalServer } = require('../../../interfaces/startup/ac
 const logger = require('../../../logger');
 const { Activity, User } = require('../../models');
 
+const ACTIVITY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
+const ACTIVITY_INCLUDE = [{ model: User, as: 'createdByUser', required: false, attributes: ['id', 'name'] }];
+
+async function queryActivities(where, limit) {
+  return Activity.findAll({
+    where,
+    limit: parseInt(limit, 10),
+    order: [['timestamp', 'DESC']],
+    attributes: ACTIVITY_ATTRIBUTES,
+    include: ACTIVITY_INCLUDE
+  });
+}
+
 const activityService = {
   async getAllActivities(limit = 100, companyId = null) {
     try {
@@ -12,21 +25,7 @@ const activityService = {
       if (companyId) {
         where.companyId = companyId;
       }
-
-      const activities = await Activity.findAll({
-        where,
-        limit: parseInt(limit, 10),
-        order: [['timestamp', 'DESC']],
-        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'createdByUser',
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ]
-      });
+      const activities = await queryActivities(where, limit);
       return activities;
     } catch (error) {
       logger.error('Error fetching all activities', error);
@@ -40,21 +39,7 @@ const activityService = {
       if (companyId) {
         where.companyId = companyId;
       }
-
-      const activities = await Activity.findAll({
-        where,
-        limit: parseInt(limit, 10),
-        order: [['timestamp', 'DESC']],
-        attributes: ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'],
-        include: [
-          {
-            model: User,
-            as: 'createdByUser',
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ]
-      });
+      const activities = await queryActivities(where, limit);
       return activities;
     } catch (error) {
       logger.error(`Error fetching activities by head: ${head}`, error);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
-import { Signup } from '../../components/startup/Auth/Signup';
+import { AnimatedBackground } from '@startup/AnimatedBackground';
+import { Signup } from '@startup/auth/Signup';
 import { motion } from 'framer-motion';
 function SignupPage() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);

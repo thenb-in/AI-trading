@@ -17,13 +17,55 @@ import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
   MoreVert as MoreIcon,
-  Public as PublicIcon,
-  Lock as PrivateIcon,
-  Schedule as TempIcon,
   Star as StarIcon,
   StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
+import { getTypeIcon, getTypeColor } from './layoutTypeUtils';
 import { LayoutManager } from './LayoutManager';
+
+const LayoutListSection = ({ layouts: list, label, onLoadLayout, onSetDefault }) => (
+  <>
+    {list.length > 0 && (
+      <Box sx={{ px: 2, py: 1 }}>
+        <Typography variant="caption" color="text.secondary">
+          {label} ({list.length})
+        </Typography>
+      </Box>
+    )}
+    {list.map((layout) => (
+      <MenuItem key={layout.id} onClick={() => onLoadLayout(layout)} sx={{ px: 2 }}>
+        <ListItemIcon>{getTypeIcon(layout.type)}</ListItemIcon>
+        <ListItemText
+          primary={layout.layout_name}
+          secondary={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip label={layout.type} size="small" color={getTypeColor(layout.type)} variant="outlined" />
+              <Typography variant="caption">
+                {new Date(layout.created_at).toLocaleDateString()}
+              </Typography>
+            </Box>
+          }
+        />
+        <ListItemSecondaryAction>
+          <IconButton edge="end" size="small" onClick={(e) => onSetDefault(e, layout)} sx={{ mr: 1 }}>
+            {layout.is_default ? (
+              <StarIcon color="warning" fontSize="small" />
+            ) : (
+              <StarBorderIcon fontSize="small" />
+            )}
+          </IconButton>
+        </ListItemSecondaryAction>
+      </MenuItem>
+    ))}
+  </>
+);
+
+LayoutListSection.propTypes = {
+  layouts: PropTypes.array.isRequired,
+  label: PropTypes.string.isRequired,
+  onLoadLayout: PropTypes.func.isRequired,
+  onSetDefault: PropTypes.func.isRequired,
+};
 
 const LayoutToolbar = ({
   documentName,
@@ -95,32 +137,6 @@ const LayoutToolbar = ({
     }
   };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'public':
-        return <PublicIcon fontSize="small" />;
-      case 'private':
-        return <PrivateIcon fontSize="small" />;
-      case 'temp':
-        return <TempIcon fontSize="small" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'public':
-        return 'success';
-      case 'private':
-        return 'default';
-      case 'temp':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  };
-
   const allLayouts = [
     ...layouts.private.map(layout => ({ ...layout, section: 'private' })),
     ...layouts.public.map(layout => ({ ...layout, section: 'public' })),
@@ -168,105 +184,21 @@ const LayoutToolbar = ({
             </Box>
             <Divider />
 
-            {layouts.private.length > 0 && (
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Private ({layouts.private.length})
-                </Typography>
-              </Box>
-            )}
-            {layouts.private.map((layout) => (
-              <MenuItem
-                key={layout.id}
-                onClick={() => handleLoadLayout(layout)}
-                sx={{ px: 2 }}
-              >
-                <ListItemIcon>
-                  {getTypeIcon(layout.type)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={layout.layout_name}
-                  secondary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={layout.type}
-                        size="small"
-                        color={getTypeColor(layout.type)}
-                        variant="outlined"
-                      />
-                      <Typography variant="caption">
-                        {new Date(layout.created_at).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={(e) => handleSetDefault(e, layout)}
-                    sx={{ mr: 1 }}
-                  >
-                    {layout.is_default ? (
-                      <StarIcon color="warning" fontSize="small" />
-                    ) : (
-                      <StarBorderIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </MenuItem>
-            ))}
+            <LayoutListSection
+              layouts={layouts.private}
+              label="Private"
+              onLoadLayout={handleLoadLayout}
+              onSetDefault={handleSetDefault}
+            />
 
             {layouts.private.length > 0 && layouts.public.length > 0 && <Divider />}
-            
-            {layouts.public.length > 0 && (
-              <Box sx={{ px: 2, py: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Public ({layouts.public.length})
-                </Typography>
-              </Box>
-            )}
-            {layouts.public.map((layout) => (
-              <MenuItem
-                key={layout.id}
-                onClick={() => handleLoadLayout(layout)}
-                sx={{ px: 2 }}
-              >
-                <ListItemIcon>
-                  {getTypeIcon(layout.type)}
-                </ListItemIcon>
-                <ListItemText
-                  primary={layout.layout_name}
-                  secondary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={layout.type}
-                        size="small"
-                        color={getTypeColor(layout.type)}
-                        variant="outlined"
-                      />
-                      <Typography variant="caption">
-                        {new Date(layout.created_at).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <ListItemSecondaryAction>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={(e) => handleSetDefault(e, layout)}
-                    sx={{ mr: 1 }}
-                  >
-                    {layout.is_default ? (
-                      <StarIcon color="warning" fontSize="small" />
-                    ) : (
-                      <StarBorderIcon fontSize="small" />
-                    )}
-                  </IconButton>
-                </ListItemSecondaryAction>
-              </MenuItem>
-            ))}
+
+            <LayoutListSection
+              layouts={layouts.public}
+              label="Public"
+              onLoadLayout={handleLoadLayout}
+              onSetDefault={handleSetDefault}
+            />
 
             <Divider />
             <MenuItem onClick={() => setLayoutManagerOpen(true)} sx={{ px: 2 }}>

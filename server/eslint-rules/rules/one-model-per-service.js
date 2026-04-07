@@ -236,6 +236,31 @@ function shouldSkipFile(filename) {
   return false;
 }
 
+function reportDefaultImports(tracker, context) {
+  tracker.defaultImportNodes.forEach(node => {
+    context.report({
+      node,
+      messageId: 'defaultModelImport'
+    });
+  });
+}
+
+function reportModelCountViolation(tracker, context, messageId, threshold, maxThreshold) {
+  const modelCount = tracker.importedModels.size;
+  const exceedsMin = modelCount >= threshold;
+  const belowMax = maxThreshold === undefined || modelCount < maxThreshold;
+  if (exceedsMin && belowMax) {
+    const modelList = Array.from(tracker.importedModels).join(', ');
+    if (tracker.modelImportNodes.length > 0) {
+      context.report({
+        node: tracker.modelImportNodes[0].node,
+        messageId,
+        data: { count: modelCount, models: modelList }
+      });
+    }
+  }
+}
+
 // Schema for rule options
 const ruleSchema = [
   {
@@ -288,30 +313,9 @@ const warnRule = {
       return {
         ...handlers,
         'Program:exit'() {
-          // First, report errors for default imports (always an error)
-          tracker.defaultImportNodes.forEach(node => {
-            context.report({
-              node,
-              messageId: 'defaultModelImport'
-            });
-          });
-
-          const modelCount = tracker.importedModels.size;
-
+          reportDefaultImports(tracker, context);
           // Report warning for models >= warnThreshold and < errorThreshold
-          if (modelCount >= warnThreshold && modelCount < errorThreshold) {
-            const modelList = Array.from(tracker.importedModels).join(', ');
-            if (tracker.modelImportNodes.length > 0) {
-              context.report({
-                node: tracker.modelImportNodes[0].node,
-                messageId: 'twoModelsImported',
-                data: {
-                  count: modelCount,
-                  models: modelList
-                }
-              });
-            }
-          }
+          reportModelCountViolation(tracker, context, 'twoModelsImported', warnThreshold, errorThreshold);
         }
       };
     }
@@ -352,30 +356,9 @@ const errorRule = {
       return {
         ...handlers,
         'Program:exit'() {
-          // First, report errors for default imports (always an error)
-          tracker.defaultImportNodes.forEach(node => {
-            context.report({
-              node,
-              messageId: 'defaultModelImport'
-            });
-          });
-
-          const modelCount = tracker.importedModels.size;
-
+          reportDefaultImports(tracker, context);
           // Report error for models >= errorThreshold
-          if (modelCount >= errorThreshold) {
-            const modelList = Array.from(tracker.importedModels).join(', ');
-            if (tracker.modelImportNodes.length > 0) {
-              context.report({
-                node: tracker.modelImportNodes[0].node,
-                messageId: 'multipleModelsImported',
-                data: {
-                  count: modelCount,
-                  models: modelList
-                }
-              });
-            }
-          }
+          reportModelCountViolation(tracker, context, 'multipleModelsImported', errorThreshold);
         }
       };
     }

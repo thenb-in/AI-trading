@@ -1,6 +1,6 @@
-import { Login } from '../../components/startup/Auth/Login';
+import { Login } from '@startup/auth/Login';
 import { motion } from 'framer-motion';
-import { AnimatedBackground } from '../../components/startup/AnimatedBackground';
+import { AnimatedBackground } from '@startup/AnimatedBackground';
 
 function Home() {
   return (

@@ -1,16 +1,16 @@
 import { Routes, Route } from "react-router-dom";
-import { AdminLayout } from "../../components/startup/Admin/AdminLayout";
-import { UserManagement } from "../../components/startup/Admin/UserManagement/UserManagement";
-import { CompanySettings } from "../../components/startup/Admin/CompanySettings";
-import { RolePermissionsManagement } from "../../components/startup/Admin/RolePermissions";
-import { MultiCompanyModule } from "../../components/startup/Admin/MultiCompanyModule/MultiCompanyModule";
+import { AdminLayout } from "../../components/startup/admin/AdminLayout";
+import { UserManagement } from "../../components/startup/admin/user_management/UserManagement";
+import { CompanySettings } from "../../components/startup/admin/CompanySettings";
+import { RolePermissionsManagement } from "../../components/startup/admin/role_permissions";
+import { MultiCompanyModule } from "../../components/startup/admin/multi_company_module/MultiCompanyModule";
 // Import extra App routes
 import { appRoutes } from "../AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
 import { DashboardContent } from "./Dashboards";
-import { ActivityMaster } from "../../components/masters/startup/activityMaster/ActivityMaster";
-import { NBnextDriveMaster } from "../../components/masters/startup/nbnextDriveMaster/NBnextDriveMaster";
+import { ActivityMaster } from "../../components/masters/startup/activity_master/ActivityMaster";
+import { NBnextDriveMaster } from "../../components/masters/startup/nbnext_drive_master/NBnextDriveMaster";
 import { Navigator } from "../navigator/Navigator";
 
 const AdminDashboard = () => {

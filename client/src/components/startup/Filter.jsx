@@ -15,8 +15,8 @@ import { STORAGE_KEYS } from "../../constants/startup";
 import { isDebugMode, subscribeToDebugMode, toggleDebugMode } from "../../services/debugModeService";
 import { format} from 'date-fns';
 import { formatDate } from '@utils/startup/dateTimeUtils';
-import { DateTypeField } from '@/components/startup/base_components/fieldss/DateTypeField';
-import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
+import { DateTypeField } from '@base_components/fields/DateTypeField';
+import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
 import { toast } from 'react-toastify';
 
 const Filter = ({

@@ -1,4 +1,4 @@
-import { AdminSidebar } from "./startup/Admin/AdminSidebar";
+import { AdminSidebar } from "./startup/admin/AdminSidebar";
 import { useAppMenuItems } from "./useAppMenuItems"; //app-specific menu items
 import PropTypes from "prop-types";
 

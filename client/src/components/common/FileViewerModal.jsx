@@ -3,15 +3,15 @@ import { X, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useImageZoom } from '../../hooks/useImageZoom';
-import { getFileType } from '../../utils/fileManagement/fileTypeUtils';
-import { loadFile } from '../../utils/fileManagement/fileLoader';
+import { getFileType } from '../../utils/file_management/fileTypeUtils';
+import { loadFile } from '../../utils/file_management/fileLoader';
 import {
   ImageViewer,
   PdfViewer,
   VideoViewer,
   AudioViewer,
   UnsupportedViewer,
-} from './FileViewer';
+} from './file_viewer';
 
 /**
  * File Viewer Modal Component

@@ -5,6 +5,19 @@ const env = require('../../config/env');
 // User is the primary model for this service
 const { User } = require('../../models');
 
+function verifyTotpCode(secret, totpCode, username) {
+  const isValid = speakeasy.totp.verify({
+    secret,
+    encoding: 'base32',
+    token: totpCode,
+    window: env.TOTP_WINDOW
+  });
+  if (!isValid) {
+    logger.warn(`Invalid TOTP code for user: ${username}`);
+    throw new Error(`Invalid TOTP code: ${totpCode}`);
+  }
+}
+
 const generateTotpSecret = async (username) => {
   username = username?.trim();
   logger.info(`Generating TOTP secret for user: ${username}`);
@@ -65,17 +78,7 @@ const verifyAndEnableTotp = async (username, totpCode) => {
   }
 
   // Verify the TOTP code using the stored secret
-  const isValid = speakeasy.totp.verify({
-    secret: user.totp_secret,
-    encoding: 'base32',
-    token: totpCode,
-    window: env.TOTP_WINDOW
-  });
-
-  if (!isValid) {
-    logger.warn(`Invalid TOTP code for user: ${username}`);
-    throw new Error(`Invalid TOTP code: ${totpCode}`);
-  }
+  verifyTotpCode(user.totp_secret, totpCode, username);
 
   // Enable TOTP (secret is already stored)
   user.is_totp_enabled = true;
@@ -111,19 +114,9 @@ const verifyTotpOnly = async (username, totpCode) => {
   }
 
   // Verify the TOTP code using the stored secret
-  const isValid = speakeasy.totp.verify({
-    secret: user.totp_secret,
-    encoding: 'base32',
-    token: totpCode,
-    window: env.TOTP_WINDOW
-  });
+  verifyTotpCode(user.totp_secret, totpCode, username);
 
-  if (!isValid) {
-    logger.warn(`Invalid TOTP code for user: ${username}`);
-    throw new Error(`Invalid TOTP code: ${totpCode}`);
-  }
-
-  logger.info(`TOTP verification successful for password reset: ${username} , status: ${isValid}`);
+  logger.info(`TOTP verification successful for password reset: ${username}`);
   return {
     success: true,
     message: 'TOTP code verified successfully'

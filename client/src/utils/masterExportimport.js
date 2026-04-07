@@ -1,4 +1,4 @@
-import { handleExport as renderExcelExport } from './reportExport/index.js';
+import { handleExport as renderExcelExport } from './report_export/index.js';
 import { handleImport as genericImport } from './export_import_Utils.js';
 
 // Export master data to Excel

@@ -1,6 +1,28 @@
 const customPlugin = require('./eslint-rules/index.js');
 const importPlugin = require('eslint-plugin-import');
 
+const NODE_GLOBALS = {
+  // Node.js globals
+  global: 'readonly',
+  process: 'readonly',
+  Buffer: 'readonly',
+  __dirname: 'readonly',
+  __filename: 'readonly',
+  module: 'readonly',
+  require: 'readonly',
+  exports: 'readonly',
+  console: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  setInterval: 'readonly',
+  clearInterval: 'readonly',
+  setImmediate: 'readonly',
+  clearImmediate: 'readonly',
+  // ES2020 globals
+  BigInt: 'readonly',
+  globalThis: 'readonly'
+};
+
 module.exports = [
   { ignores: ['node_modules', 'logs', 'migrations', 'eslint.config.js', 'scripts'] },
 
@@ -9,27 +31,7 @@ module.exports = [
     files: ['**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: {
-        // Node.js globals
-        global: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'readonly',
-        console: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setImmediate: 'readonly',
-        clearImmediate: 'readonly',
-        // ES2020 globals
-        BigInt: 'readonly',
-        globalThis: 'readonly'
-      },
+      globals: NODE_GLOBALS,
       sourceType: 'commonjs' // Server uses CommonJS modules
     },
     plugins: {
@@ -144,27 +146,7 @@ module.exports = [
     files: ['scripts/**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: {
-        // Node.js globals
-        global: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'readonly',
-        console: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setImmediate: 'readonly',
-        clearImmediate: 'readonly',
-        // ES2020 globals
-        BigInt: 'readonly',
-        globalThis: 'readonly'
-      },
+      globals: NODE_GLOBALS,
       sourceType: 'commonjs'
     },
     plugins: {

@@ -29,12 +29,13 @@ import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
   Delete as DeleteIcon,
-  Public as PublicIcon,
   Lock as PrivateIcon,
+  Public as PublicIcon,
   Schedule as TempIcon,
 } from '@mui/icons-material';
+import { getTypeIcon, getTypeColor } from './layoutTypeUtils';
 import { ApiService } from '@services/startup/ApiService';
-import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
+import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
 
 const LayoutManager = ({
   open,
@@ -208,32 +209,6 @@ const LayoutManager = ({
         error: err.message,
       });
       setError(err.message || 'Failed to set default layout');
-    }
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'public':
-        return <PublicIcon fontSize="small" />;
-      case 'private':
-        return <PrivateIcon fontSize="small" />;
-      case 'temp':
-        return <TempIcon fontSize="small" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTypeColor = (type) => {
-    switch (type) {
-      case 'public':
-        return 'success';
-      case 'private':
-        return 'default';
-      case 'temp':
-        return 'warning';
-      default:
-        return 'default';
     }
   };
 

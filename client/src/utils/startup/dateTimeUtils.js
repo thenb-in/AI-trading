@@ -170,20 +170,18 @@ const parseDateValue = (dateValue) => {
   return null;
 };
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const formatDatePart = (date) =>
+  `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+
 // Format date for display in readable format: "2 Jan 2025"
 const formatDateForDisplay = (dateValue) => {
   if (!dateValue) return "-";
-  
   const date = parseDateValue(dateValue);
   if (!date) return "-";
-  
   try {
-    const day = date.getDate();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    
-    return `${day} ${month} ${year}`;
+    return formatDatePart(date);
   } catch (error) {
     console.log(`formatDateForDisplay ${error}`);
     return "-";
@@ -193,22 +191,13 @@ const formatDateForDisplay = (dateValue) => {
 // Format datetime for display in readable format: "2 Jan 2025 10:30:45" (date in readable format, time in HH:MM:SS)
 const formatDateTimeForDisplay = (dateValue) => {
   if (!dateValue) return "-";
-  
   const date = parseDateValue(dateValue);
   if (!date) return "-";
-  
   try {
-    const day = date.getDate();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[date.getMonth()];
-    const year = date.getFullYear();
-    
-    // Format time as HH:MM:SS
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    
-    return `${day} ${month} ${year} ${hours}:${minutes}:${seconds}`;
+    return `${formatDatePart(date)} ${hours}:${minutes}:${seconds}`;
   } catch (error) {
     console.log(`formatDateTimeForDisplay ${error}`);
     return "-";

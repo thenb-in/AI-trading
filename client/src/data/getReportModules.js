@@ -2,7 +2,7 @@ import {
   FileText,
 } from 'lucide-react';
 
-import { UserReport } from '../components/reports/userReport/UserReport';
+import { UserReport } from '../components/reports/user_report/UserReport';
 
 
 const reports = [

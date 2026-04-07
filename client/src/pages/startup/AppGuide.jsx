@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '@context/startup/useDataContext';
-import { AppGuide as AppGuideComponent } from '@startup/AppGuide';
+import { AppGuide as AppGuideComponent } from '@/components/startup/app_guide';
 
 function AppGuide() {
   const navigate = useNavigate();
