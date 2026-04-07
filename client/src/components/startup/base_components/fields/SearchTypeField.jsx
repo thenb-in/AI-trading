@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
-import { BaseInputField } from '../shared/BaseInputField';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { BaseInputField } from './shared/BaseInputField';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function SearchTypeField(props) {
   return (

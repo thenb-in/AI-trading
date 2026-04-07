@@ -6,7 +6,8 @@ import { ApiService } from '@services/startup/ApiService';
 import { useDataContext } from '@context/startup/useDataContext';
 import { cleanFormData } from '@utils/startup/authformvalidation';
 import { SetupTotpPopup } from './SetupTotpPopup';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { PasswordTypeField } from '@/components/startup/base_components/fieldss/PasswordTypeField';
 
 function Login() {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -150,9 +151,8 @@ function Login() {
 
           {/* Username field */}
           <div className="mb-4">
-            <TextField
-            icon={<FaUser className="text-gray-400" />}
-              type="text"
+            <TextTypeField
+              icon={<FaUser className="text-gray-400" />}
               name="username"
               id="username"
               placeholder="Username"
@@ -164,9 +164,8 @@ function Login() {
 
           {/* Password field */}
           <div className="mb-4">
-            <TextField
-              type="password"
-              icon={ <FaLock className="text-gray-400" />}
+            <PasswordTypeField
+              icon={<FaLock className="text-gray-400" />}
               name="password"
               id="password"
               placeholder="Password"

@@ -34,7 +34,7 @@ import {
   Schedule as TempIcon,
 } from '@mui/icons-material';
 import { ApiService } from '@services/startup/ApiService';
-import { TextField as SafeTextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 const LayoutManager = ({
   open,
@@ -251,8 +251,7 @@ const LayoutManager = ({
           {layoutList.map((layout) => (
             <ListItem key={layout.id} sx={{ px: 0 }}>
               <ListItemIcon>
-                <SafeTextField
-                  type="checkbox"
+                <CheckboxTypeField
                   mode="bare"
                   checked={layout.is_default || false}
                   onChange={(e) => handleSetDefault(layout, e.target.checked)}

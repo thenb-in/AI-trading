@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
+import { MasterModal } from '@startup/base_components/master/MasterModal/MasterModal';
 import { useCameraDetection } from './hooks/useCameraDetection';
 import { useCameraStream } from './hooks/useCameraStream';
 import { useVideoRecording } from './hooks/useVideoRecording';

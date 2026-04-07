@@ -4,7 +4,9 @@ import {  FaLock, FaArrowLeft, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
 import { cleanFormData } from '@utils/startup/authformvalidation';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { PasswordTypeField } from '@/components/startup/base_components/fieldss/PasswordTypeField';
+import { OtpTypeField } from '@/components/startup/base_components/fieldss/OtpTypeField';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -97,9 +99,8 @@ const ForgotPassword = () => {
 
           {/* Username Input */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaUser className="text-gray-400" />}
-              type="text"
+            <TextTypeField
+              icon={<FaUser className="text-gray-400" />}
               name="username"
               id="username"
               placeholder="Username"
@@ -112,9 +113,8 @@ const ForgotPassword = () => {
 
           {/* New Password */}
           <div className="mb-4">
-            <TextField
-            icon={  <FaLock className="text-gray-400" />}
-              type="password"
+            <PasswordTypeField
+              icon={<FaLock className="text-gray-400" />}
               name="newPassword"
               id="newPassword"
               placeholder="New Password"
@@ -126,9 +126,8 @@ const ForgotPassword = () => {
 
           {/* Confirm Password */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaLock className="text-gray-400" />}
-              type="password"
+            <PasswordTypeField
+              icon={<FaLock className="text-gray-400" />}
               name="confirmPassword"
               id="confirmPassword"
               placeholder="Confirm New Password"
@@ -141,8 +140,7 @@ const ForgotPassword = () => {
           {/* OTP Input - only show when not first login */}
           {!isFirstLogin && (
             <div className="mb-4">
-              <TextField
-                type="otp"
+              <OtpTypeField
                 name="otp"
                 id="otp"
                 value={formData.otp}

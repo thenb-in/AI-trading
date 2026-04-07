@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MasterHeader } from '@startup/BaseMasterComponents/MasterHeader/MasterHeader';
-import { MasterSearchInput } from '@startup/BaseMasterComponents/MasterSearchInput';
-import { MasterTable } from '@startup/BaseMasterComponents/MasterTable/MasterTable';
-import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
+import { MasterHeader } from '@startup/base_components/master/MasterHeader/MasterHeader';
+import { MasterSearch } from '@startup/base_components/master/MasterSearch';
+import { MasterTable } from '@startup/base_components/master/MasterTable/MasterTable';
+import { MasterModal } from '@startup/base_components/master/MasterModal/MasterModal';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import { NBnextDriveForm } from './NBnextDriveForm';
 import { nbnextDriveService } from '@/services/startup/nbnextDriveService';
@@ -221,7 +221,7 @@ const NBnextDriveMaster = () => {
       />
 
       <div className="mb-4 justify-center flex">
-        <MasterSearchInput
+        <MasterSearch
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search files by name or created by..."

@@ -5,7 +5,9 @@ import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
 import PropTypes from "prop-types";
 import { cleanFormData } from '@utils/startup/authformvalidation';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { PhoneTypeField } from '@/components/startup/base_components/fieldss/PhoneTypeField';
+import { PasswordTypeField } from '@/components/startup/base_components/fieldss/PasswordTypeField';
 
 
 function Signup({ showRoleDropdown }) {
@@ -136,9 +138,8 @@ function Signup({ showRoleDropdown }) {
 
           {/* Full Name */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaUser className="text-gray-400" />}
-              type="text"
+            <TextTypeField
+              icon={<FaUser className="text-gray-400" />}
               name="name"
               id="name"
               placeholder="Full Name"
@@ -150,9 +151,8 @@ function Signup({ showRoleDropdown }) {
 
           {/* Username */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaUser className="text-gray-400" />}
-              type="text"
+            <TextTypeField
+              icon={<FaUser className="text-gray-400" />}
               name="username"
               id="username"
               placeholder="Username"
@@ -164,9 +164,8 @@ function Signup({ showRoleDropdown }) {
 
           {/* Phone */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaPhone className="text-gray-400" />}
-              type="phone"
+            <PhoneTypeField
+              icon={<FaPhone className="text-gray-400" />}
               name="phone"
               id="phone"
               placeholder="Phone Number"
@@ -178,9 +177,8 @@ function Signup({ showRoleDropdown }) {
 
           {/* Password */}
           <div className="mb-4">
-            <TextField
-            icon={ <FaLock className="text-gray-400" />}
-              type="password"
+            <PasswordTypeField
+              icon={<FaLock className="text-gray-400" />}
               name="password"
               id="password"
               placeholder="Password"
@@ -192,9 +190,8 @@ function Signup({ showRoleDropdown }) {
 
           {/* Confirm Password */}
           <div className="mb-4">
-            <TextField
-            icon={   <FaLock className="text-gray-400" />}
-              type="password"
+            <PasswordTypeField
+              icon={<FaLock className="text-gray-400" />}
               name="confirmPassword"
               id="confirmPassword"
               placeholder="Confirm Password"

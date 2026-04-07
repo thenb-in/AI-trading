@@ -3,7 +3,7 @@
  */
 
 import PropTypes from "prop-types";
-import { TextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 function ColumnMenu({
   normalizedColumns,
@@ -23,8 +23,7 @@ function ColumnMenu({
           key={c.field}
           className="flex items-center gap-2 mb-1.5"
         >
-          <TextField
-            type="checkbox"
+          <CheckboxTypeField
             mode="bare"
             checked={!!columnVisibility[c.field]}
             onChange={() => toggleColumnVisibility(c.field)}

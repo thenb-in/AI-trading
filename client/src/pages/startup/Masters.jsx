@@ -10,7 +10,7 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { MasterCard } from "./MasterComponents/MasterCard";
-import { MasterSearchInput } from "../../components/startup/BaseMasterComponents/MasterSearchInput";
+import { MasterSearch } from "../../components/startup/base_components/master/MasterSearch";
 import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { spacing } from "@theme";
 import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
@@ -153,7 +153,7 @@ const MasterContent = () => {
           </div>
 
           <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-            <MasterSearchInput
+            <MasterSearch
               value={searchTerm}
               onChange={handleSearchChange}
               placeholder="Search modules..."

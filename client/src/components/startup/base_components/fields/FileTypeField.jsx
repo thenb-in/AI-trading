@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { Paperclip } from 'lucide-react';
 
-import { BaseInputField } from '../shared/BaseInputField';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { BaseInputField } from './shared/BaseInputField';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 import PropTypes from 'prop-types';
 
 

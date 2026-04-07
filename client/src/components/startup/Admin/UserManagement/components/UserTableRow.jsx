@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { hasPermission, useDataContext } from '@context/startup/useDataContext';
-import { TextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 const UserTableRow = ({ 
   user, 
@@ -132,8 +132,7 @@ const UserTableRow = ({
     >
       {bulkDeleteMode && (
         <td className="px-4 py-4 whitespace-nowrap">
-          <TextField
-            type="checkbox"
+          <CheckboxTypeField
             mode="bare"
             checked={isSelected}
             onClick={handleCheckboxClick}
@@ -193,8 +192,7 @@ const UserTableRow = ({
         {editingDevice ? (
           <div className="flex flex-col gap-1 text-sm">
             <label className="flex items-center gap-2">
-              <TextField
-                type="checkbox"
+              <CheckboxTypeField
                 mode="bare"
                 checked={!!user.mobileApp}
                 onClick={handleStopPropagation}
@@ -203,8 +201,7 @@ const UserTableRow = ({
               <Smartphone size={14} className="text-blue-500" /> Mobile App
             </label>
             <label className="flex items-center gap-2">
-              <TextField
-                type="checkbox"
+              <CheckboxTypeField
                 mode="bare"
                 checked={!!user.desktopWeb}
                 onClick={handleStopPropagation}
@@ -213,8 +210,7 @@ const UserTableRow = ({
               <Monitor size={14} className="text-green-500" /> Desktop Web
             </label>
             <label className="flex items-center gap-2">
-              <TextField
-                type="checkbox"
+              <CheckboxTypeField
                 mode="bare"
                 checked={!!user.mobileWeb}
                 onClick={handleStopPropagation}

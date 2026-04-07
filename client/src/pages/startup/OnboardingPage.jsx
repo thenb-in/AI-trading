@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDataContext } from '@context/startup/useDataContext';
 import { FaBuilding, FaUsers, FaArrowRight } from 'react-icons/fa';
 import { QrCode, Upload, FileText } from 'lucide-react';
-import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
+import { MasterModal } from '@startup/base_components/master/MasterModal/MasterModal';
 import { CreateCompanyForm } from '../../components/startup/Auth/CreateCompanyForm';
 import { QRCodeScanner } from '../../components/common/QRCodeScanner';
 import { Html5Qrcode } from 'html5-qrcode';

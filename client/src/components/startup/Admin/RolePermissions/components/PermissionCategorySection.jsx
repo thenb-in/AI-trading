@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { isPermissionAssigned } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
 import { hasPermission } from '@utils/startup/hasPermission';
-import { TextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 const categoryIcons = {
   module: Layers,
@@ -165,8 +165,7 @@ function PermissionCategorySection({
                 return (
                   <tr key={permission.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="p-1.5 text-center border-r border-gray-200">
-                      <TextField
-                        type="checkbox"
+                      <CheckboxTypeField
                         mode="bare"
                         checked={assigned}
                         onChange={() => handlePermissionToggle(permission.id, assigned)}
@@ -250,8 +249,7 @@ function PermissionCategorySection({
               className="flex items-center gap-1 p-1 bg-white rounded border border-gray-200 hover:border-blue-300 cursor-pointer"
               title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
             >
-              <TextField
-                type="checkbox"
+              <CheckboxTypeField
                 mode="bare"
                 checked={assigned}
                 onChange={() => handlePermissionToggle(permission.id, assigned)}

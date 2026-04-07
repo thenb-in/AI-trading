@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../Admin/ToggleSwitch';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 
@@ -48,8 +48,7 @@ const CreateCompanyForm = ({ onSubmit, isSubmitting, error }) => {
       )}
 
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           label="Company Name"
           placeholder="Enter company name"
           value={form.name}

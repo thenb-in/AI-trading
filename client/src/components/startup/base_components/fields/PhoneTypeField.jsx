@@ -1,6 +1,6 @@
 import { Phone } from 'lucide-react';
-import { BaseInputField } from '../shared/BaseInputField';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { BaseInputField } from './shared/BaseInputField';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function normalizePhone(rawValue) {
   let next = String(rawValue ?? '').replace(/[^\d+]/g, '');

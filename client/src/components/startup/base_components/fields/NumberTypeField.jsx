@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Hash } from 'lucide-react';
 
-import { BaseInputField } from '../shared/BaseInputField';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { BaseInputField } from './shared/BaseInputField';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function isFiniteNumber(n) {
   return typeof n === 'number' && Number.isFinite(n);

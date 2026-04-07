@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useState } from 'react';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
 import { FilesSection } from './FilesSection';
 
 const NBnextDriveForm = ({ formData, onChange, onFileChange, multiple = true }) => {
@@ -24,8 +24,7 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange, multiple = true }) 
       />
 
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           name="objectName"
           label="Object Name"
           value={formData.objectName || ''}
@@ -35,8 +34,7 @@ const NBnextDriveForm = ({ formData, onChange, onFileChange, multiple = true }) 
       </div>
 
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           name="objectId"
           label="Object ID"
           value={formData.objectId || ''}

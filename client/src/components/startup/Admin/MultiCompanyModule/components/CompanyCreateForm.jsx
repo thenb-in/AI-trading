@@ -2,7 +2,7 @@ import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../../ToggleSwitch';
 import { AlertMessage } from '../../RolePermissions/components/AlertMessage';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
 
 const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
 const sanitizeCompanyId = (value) => value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
@@ -55,8 +55,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
 
       <form onSubmit={handleSubmit} className="grid gap-4">
        <div>
-          <TextField
-            type="text"
+          <TextTypeField
             placeholder="Company ID (optional - will be auto-generated if not provided)"
             value={form.companyId}
             onChange={handleCompanyIdChange}
@@ -64,8 +63,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
           <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate a unique ID. If provided, must be at least 2 characters (letters, numbers, underscores, hyphens only).</p>
         </div>
         <div>
-          <TextField
-            type="text"
+          <TextTypeField
             placeholder="Company name"
             value={form.name}
             onChange={handleNameChange}

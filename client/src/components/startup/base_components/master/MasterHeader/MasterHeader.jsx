@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { hasPermission } from "@utils/startup/hasPermission";
 import { exportMaster, importMaster } from "@utils/masterExportimport.js";
-import { TextField } from '@startup/safe_choice';
+import { FileTypeField } from '@/components/startup/base_components/fieldss/FileTypeField';
 
 const MasterHeader = ({
   title,
@@ -105,8 +105,7 @@ const MasterHeader = ({
         )}
         {showImport && (
           <>
-            <TextField
-              type="file"
+            <FileTypeField
               id="master-import-file"
               name="masterImportFile"
               inputRef={importInputRef}

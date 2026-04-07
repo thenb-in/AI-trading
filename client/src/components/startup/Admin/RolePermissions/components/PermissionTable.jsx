@@ -6,7 +6,7 @@ import {
   getOperationDisplayName,
   isPermissionAssigned,
 } from '../utils/permissionUtils';
-import { TextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 function PermissionTable({
   groups,
@@ -145,8 +145,7 @@ function PermissionTable({
                             
                             return (
                               <div key={uniqueKey} className="flex items-center gap-0.5">
-                                <TextField
-                                  type="checkbox"
+                                <CheckboxTypeField
                                   mode="bare"
                                   checked={assigned}
                                   onChange={() => onTogglePermission(permission.id, assigned)}

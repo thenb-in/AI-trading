@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { MasterHeader } from '@startup/BaseMasterComponents/MasterHeader/MasterHeader';
-import { MasterSearchInput } from '@startup/BaseMasterComponents/MasterSearchInput';
-import { MasterTable } from '@startup/BaseMasterComponents/MasterTable/MasterTable';
-import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
+import { MasterHeader } from '@startup/base_components/master/MasterHeader/MasterHeader';
+import { MasterSearch } from '@startup/base_components/master/MasterSearch';
+import { MasterTable } from '@startup/base_components/master/MasterTable/MasterTable';
+import { MasterModal } from '@startup/base_components/master/MasterModal/MasterModal';
 import { ActivityForm } from './ActivityForm';
 import { activityService } from '@/services/startup/activityService';
 import { useDataContext, hasPermission } from '@/context/startup/useDataContext';
@@ -153,7 +153,7 @@ const ActivityMaster = () => {
 
       {/* Search Input */}
       <div className="mb-4 justify-center flex">
-        <MasterSearchInput
+        <MasterSearch
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search activities by head, log, object name, object ID, or created by..."

@@ -1,5 +1,7 @@
 import PropTypes from 'prop-types';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { TextareaTypeField } from '@/components/startup/base_components/fieldss/TextareaTypeField';
+import { NumberTypeField } from '@/components/startup/base_components/fieldss/NumberTypeField';
 
 const ActivityForm = ({ formData, onChange }) => {
   const handleChange = (e) => {
@@ -10,8 +12,7 @@ const ActivityForm = ({ formData, onChange }) => {
   return (
     <div className="space-y-4">
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           name="head"
           label="Head"
           value={formData.head}
@@ -21,8 +22,7 @@ const ActivityForm = ({ formData, onChange }) => {
         />
       </div>
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           name="objectName"
           label="Object Name"
           value={formData.objectName}
@@ -31,8 +31,7 @@ const ActivityForm = ({ formData, onChange }) => {
         />
       </div>
       <div>
-        <TextField
-          type="text"
+        <TextTypeField
           name="objectId"
           label="Object ID"
           value={formData.objectId}
@@ -41,8 +40,7 @@ const ActivityForm = ({ formData, onChange }) => {
         />
       </div>
       <div>
-        <TextField
-          type="textarea"
+        <TextareaTypeField
           name="log"
           label="Log Message"
           value={formData.log}
@@ -53,8 +51,7 @@ const ActivityForm = ({ formData, onChange }) => {
         />
       </div>
       <div>
-        <TextField
-          type="number"
+        <NumberTypeField
           name="timestamp"
           label="Timestamp (milliseconds)"
           value={formData.timestamp}

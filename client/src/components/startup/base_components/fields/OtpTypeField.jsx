@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FieldFrame } from '../shared/FieldFrame';
-import { emitChange } from '../shared/emitChange';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { FieldFrame } from './shared/FieldFrame';
+import { emitChange } from './shared/emitChange';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function OtpTypeField(props) {
   const {

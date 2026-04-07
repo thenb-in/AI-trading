@@ -5,7 +5,7 @@ import {
   getSortedHeaderStyle,
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
-import { TextField } from "@startup/safe_choice";
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField.jsx';
 
 import { useRef, useCallback, useState, useEffect } from "react";
 
@@ -244,8 +244,7 @@ function DataGridHeader({
 
     return (
       <th key={`filter-${col.field}`} style={filterCellStyle}>
-        <TextField
-          type="text"
+        <TextTypeField
           name={col.field}
           value={filterModel[col.field] || ""}
           onChange={handleFilterChangeEvent}

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
 import { Lock, LockOpen, Filter } from "lucide-react";
-import { MasterSearchInput } from "@startup/BaseMasterComponents";
+import { MasterSearchInput } from "@startup/base_components";
 
 const SearchHeader = ({
   searchTerm,

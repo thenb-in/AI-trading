@@ -1,14 +1,13 @@
 import { motion } from 'framer-motion';
 import PropTypes from 'prop-types';
-import { TextField } from '@startup/safe_choice';
+import { CheckboxTypeField } from '@/components/startup/base_components/fieldss/CheckboxTypeField';
 
 function ToggleSwitch({ label, checked, onChange, description }) {
   return (
     <div className="mb-4">
       <label className="flex items-center text-gray-700 font-medium cursor-pointer">
         <div className="relative inline-block w-10 mr-2 align-middle select-none">
-          <TextField
-            type="checkbox"
+          <CheckboxTypeField
             mode="bare"
             checked={checked}
             onChange={onChange}

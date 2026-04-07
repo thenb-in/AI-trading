@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { Search, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 
-const MasterSearchInput = forwardRef(({ value, onChange, placeholder = 'Search...', className = '', autoFocus = false }, ref) => {
+const MasterSearch = forwardRef(({ value, onChange, placeholder = 'Search...', className = '', autoFocus = false }, ref) => {
   return (
     <div className={`w-full md:max-w-sm relative ${className}`}>
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -31,9 +31,9 @@ const MasterSearchInput = forwardRef(({ value, onChange, placeholder = 'Search..
   );
 });
 
-MasterSearchInput.displayName = 'MasterSearchInput';
+MasterSearch.displayName = 'MasterSearch';
 
-MasterSearchInput.propTypes = {
+MasterSearch.propTypes = {
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
@@ -41,5 +41,4 @@ MasterSearchInput.propTypes = {
   autoFocus: PropTypes.bool,
 };
 
-export { MasterSearchInput };
-
+export { MasterSearch };

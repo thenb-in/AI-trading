@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
 import { hasPermission, useDataContext } from '@context/startup/useDataContext';
-import { TextField } from '@startup/safe_choice';
+import { SearchTypeField } from '@/components/startup/base_components/fieldss/SearchTypeField';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,9 +60,8 @@ const ReportList = ({ reports, categories }) => {
           ))}
         </div>
         <div className="w-64">
-          <TextField
-            icon={<Search className="w-4 h-4 text-gray-400" />} 
-            type="search"
+          <SearchTypeField
+            icon={<Search className="w-4 h-4 text-gray-400" />}
             placeholder="Search reports..."
             value={searchTerm}
             onChange={handleSearchChange}

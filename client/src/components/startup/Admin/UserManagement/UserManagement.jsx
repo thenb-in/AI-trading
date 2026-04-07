@@ -7,9 +7,9 @@ import { getUserManagementExtraColumns } from '@/components/userManagementExtraC
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
-import { MasterModal } from '@startup/BaseMasterComponents/MasterModal/MasterModal';
+import { MasterModal } from '@startup/base_components/master/MasterModal/MasterModal';
 import { toast } from 'react-toastify';
-import { TextField } from '@startup/safe_choice';
+import { SearchTypeField } from '@/components/startup/base_components/fieldss/SearchTypeField';
 
 function UserManagement() {
   const {
@@ -154,9 +154,8 @@ function UserManagement() {
 
     <div className="flex flex-col sm:flex-row sm:ml-auto gap-2 w-full sm:w-auto">
     <div className="relative w-full sm:w-[20rem] md:w-[24rem]">
-      <TextField
-        icon={<Search className="w-4 h-4 text-gray-400" />} 
-        type="search"
+      <SearchTypeField
+        icon={<Search className="w-4 h-4 text-gray-400" />}
         placeholder="Search users Name or Phone Number.."
         value={searchQuery}
         onChange={handleSearchChange}

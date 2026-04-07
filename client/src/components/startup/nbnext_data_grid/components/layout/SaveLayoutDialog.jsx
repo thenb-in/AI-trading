@@ -3,7 +3,7 @@
  */
 
 import PropTypes from "prop-types";
-import { TextField } from "@startup/safe_choice";
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
 
 function SaveLayoutDialog({
   selectedLayout,
@@ -37,8 +37,7 @@ function SaveLayoutDialog({
           Updating: <strong>{selectedLayout.layout_name}</strong>
         </div>
       )}
-      <TextField
-        type="text"
+      <TextTypeField
         value={newLayoutName}
         onChange={handleLayoutNameChange}
         placeholder="Layout name"

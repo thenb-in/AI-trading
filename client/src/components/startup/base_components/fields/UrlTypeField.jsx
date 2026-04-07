@@ -1,6 +1,6 @@
 import { Link as LinkIcon } from 'lucide-react';
-import { BaseInputField } from '../shared/BaseInputField';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { BaseInputField } from './shared/BaseInputField';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function normalizeUrl(rawValue) {
   return String(rawValue ?? '').trim();

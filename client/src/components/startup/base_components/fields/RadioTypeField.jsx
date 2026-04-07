@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 
-import { FieldFrame } from '../shared/FieldFrame';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
-import { emitChange } from '../shared/emitChange';
+import { FieldFrame } from './shared/FieldFrame';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
+import { emitChange } from './shared/emitChange';
 
 function RadioTypeField(props) {
   const {

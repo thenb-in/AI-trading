@@ -10,7 +10,7 @@ import {
 import { getMasterModules } from "@data/getMasterModules";
 import { reports, categories as reportCategories } from "@data/getReportModules";
 import { useDataContext, hasPermission } from "@context/startup/useDataContext";
-import { MasterModal, MasterSearchInput } from "../BaseMasterComponents";
+import { MasterModal, MasterSearchInput } from "../base_components";
 import { SearchResultItem } from "./SearchResultItem";
 import { filterAndSortItems } from "@utils/startup/searchUtils";
 

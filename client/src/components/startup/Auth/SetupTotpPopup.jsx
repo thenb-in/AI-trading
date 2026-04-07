@@ -3,8 +3,8 @@ import { FaQrcode, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/startup/ApiService';
-import { MasterModal } from '../BaseMasterComponents/MasterModal/MasterModal';
-import { TextField } from '@startup/safe_choice';
+import { MasterModal } from '../base_components/master/MasterModal/MasterModal';
+import { OtpTypeField } from '@/components/startup/base_components/fieldss/OtpTypeField';
 
 const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
   const [totpData, setTotpData] = useState(null);
@@ -138,8 +138,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
             </div>
 
             <div>
-              <TextField
-                type="otp"
+              <OtpTypeField
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 otpLength={6}

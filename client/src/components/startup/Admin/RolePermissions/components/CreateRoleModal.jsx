@@ -4,7 +4,8 @@ import { X, Loader2 } from 'lucide-react';
 import { ApiService } from '@services/startup/ApiService';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
-import { TextField } from '@startup/safe_choice';
+import { TextTypeField } from '@/components/startup/base_components/fieldss/TextTypeField';
+import { TextareaTypeField } from '@/components/startup/base_components/fieldss/TextareaTypeField';
 
 function CreateRoleModal({ isOpen, onClose, onSuccess }) {
   const [name, setName] = useState('');
@@ -132,8 +133,7 @@ function CreateRoleModal({ isOpen, onClose, onSuccess }) {
             <label className="block text-xs font-medium text-gray-700 mb-1">
               Role Name <span className="text-red-500">*</span>
             </label>
-            <TextField
-              type="text"
+            <TextTypeField
               value={name}
               onChange={handleNameChange}
               disabled={submitting}
@@ -151,8 +151,7 @@ function CreateRoleModal({ isOpen, onClose, onSuccess }) {
             <label className="block text-xs font-medium text-gray-700 mb-1">
               Description
             </label>
-            <TextField
-              type="textarea"
+            <TextareaTypeField
               value={description}
               onChange={handleDescriptionChange}
               disabled={submitting}

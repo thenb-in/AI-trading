@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Eye, EyeOff, Lock } from 'lucide-react';
-import { FieldFrame } from '../shared/FieldFrame';
-import { getBaseInputClasses } from '../shared/getBaseInputClasses';
-import { commonFieldPropTypes } from '../shared/fieldPropTypes';
+import { FieldFrame } from './shared/FieldFrame';
+import { getBaseInputClasses } from './shared/getBaseInputClasses';
+import { commonFieldPropTypes } from './shared/fieldPropTypes';
 
 function PasswordTypeField(props) {
   const {
