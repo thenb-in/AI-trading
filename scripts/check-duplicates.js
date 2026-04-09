@@ -405,7 +405,7 @@ function runJscpd(projectDir) {
       printCloneBlock(dup, nearDuplicatePairPercentByKey);
     }
 
-    printConsoleSummary(displayStatistics);
+    printConsoleSummary(rulePass ? report.statistics : displayStatistics);
     console.log(`Detection time:: ${elapsedMs.toFixed(3)}ms`);
     console.log(rulePass ? 'PASS' : 'FAIL');
 
