@@ -73,14 +73,15 @@ const useMultiCompanyModule = () => {
     setError(null);
     try {
       const response = await ApiService.switchCompany(companyId);
-      setUserData(prev => ({
-        ...prev,
-        companyId: response.data.updatedUser.companyId,
-        company: response.data.updatedUser.company
-      }));
       // Persist active company name for fallback display
       if (response?.data?.updatedUser?.company?.name && typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME, response.data.updatedUser.company.name);
+      }
+      // Refetch full user data (including role & permissions for the new company)
+      const userResponse = await ApiService.getUser();
+      const user = userResponse?.data ?? null;
+      if (user) {
+        setUserData(user);
       }
       await fetchCompanies();
     } catch (e) {
