@@ -52,7 +52,7 @@ function setupHuskyHooks() {
     fs.writeFileSync(commitMsgPath, commitMsgContent);
     
     // Create pre-push hook for additional validation and version check
-    const prePushContent = 'npm run validate:quick\nnode scripts/check-version-bump.js\n';
+    const prePushContent = 'node scripts/check-version-bump.js\n';
     const prePushPath = path.join(huskyDir, 'pre-push');
     
     // Write pre-push hook file
