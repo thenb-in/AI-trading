@@ -1,46 +1,20 @@
-import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../admin/ToggleSwitch';
 import { TextTypeField } from '@base_components/fields/TextTypeField';
-
-const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
+import { useCompanyForm } from '@/hooks/useCompanyForm';
 
 const CreateCompanyForm = ({ onSubmit, isSubmitting, error }) => {
-  const [form, setForm] = useState({ 
-    name: '', 
-    mobileApp: false, 
-    desktopWeb: true, 
-    mobileWeb: false 
-  });
-  const [touched, setTouched] = useState(false);
-
-  const isValid = form.name.trim().length >= 2;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setTouched(true);
-    if (!isValid) return;
-    await onSubmit(form);
-  };
-
-  const handleNameChange = (e) => {
-    setForm((f) => ({ ...f, name: sanitizeName(e.target.value) }));
-  };
-
-  const handleMobileAppChange = (e) => {
-    setForm((f) => ({ ...f, mobileApp: e.target.checked }));
-  };
-
-  const handleDesktopWebChange = (e) => {
-    setForm((f) => ({ ...f, desktopWeb: e.target.checked }));
-  };
-
-  const handleMobileWebChange = (e) => {
-    setForm((f) => ({ ...f, mobileWeb: e.target.checked }));
-  };
+  const {
+    form,
+    touched,
+    isValid,
+    handleNameChange,
+    handleToggleChange,
+    handleSubmit,
+  } = useCompanyForm();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
@@ -65,19 +39,19 @@ const CreateCompanyForm = ({ onSubmit, isSubmitting, error }) => {
         <ToggleSwitch
           label="Mobile App"
           checked={form.mobileApp}
-          onChange={handleMobileAppChange}
+          onChange={handleToggleChange('mobileApp')}
           description="Allow access via native mobile app."
         />
         <ToggleSwitch
           label="Desktop Web"
           checked={form.desktopWeb}
-          onChange={handleDesktopWebChange}
+          onChange={handleToggleChange('desktopWeb')}
           description="Allow access via desktop browser."
         />
         <ToggleSwitch
           label="Mobile Web"
           checked={form.mobileWeb}
-          onChange={handleMobileWebChange}
+          onChange={handleToggleChange('mobileWeb')}
           description="Allow access via mobile browser."
         />
       </div>
@@ -102,4 +76,3 @@ CreateCompanyForm.propTypes = {
 };
 
 export { CreateCompanyForm };
-

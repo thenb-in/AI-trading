@@ -1,19 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@services/startup/ApiService";
 
+const INITIAL_CONFIRM_DIALOG = { show: false, userId: null, action: null, username: "", userRole: null };
+
 const useUserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [confirmDialog, setConfirmDialog] = useState({
-    show: false,
-    userId: null,
-    action: null,
-    username: "",
-    userRole: null,
-  });
+  const [confirmDialog, setConfirmDialog] = useState(INITIAL_CONFIRM_DIALOG);
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState({
@@ -68,13 +64,7 @@ const useUserManagement = () => {
     } catch (err) {
       setError(err.message || "Failed to approve user");
     } finally {
-      setConfirmDialog({
-        show: false,
-        userId: null,
-        action: null,
-        username: "",
-        userRole: null,
-      });
+      setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
   };
 
@@ -90,13 +80,7 @@ const useUserManagement = () => {
     } catch (err) {
       setError(err?.error || "Failed to deactivate user");
     } finally {
-      setConfirmDialog({
-        show: false,
-        userId: null,
-        action: null,
-        username: "",
-        userRole: null,
-      });
+      setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
   };
 
@@ -108,13 +92,7 @@ const useUserManagement = () => {
     } catch (err) {
       setError(err.error || "Failed to delete user");
     } finally {
-      setConfirmDialog({
-        show: false,
-        userId: null,
-        action: null,
-        username: "",
-        userRole: null,
-      });
+      setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
   };
   const handleBulkDelete = async () => {

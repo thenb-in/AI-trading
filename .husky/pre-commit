@@ -1,3 +1,2 @@
 node scripts/check-lowercase-dirs.js
 npx lint-staged
-node scripts/check-duplicates.js

@@ -1,45 +1,23 @@
-import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ToggleSwitch } from '../../ToggleSwitch';
 import { AlertMessage } from '../../role_permissions/components/AlertMessage';
 import { TextTypeField } from '@base_components/fields/TextTypeField';
-
-const sanitizeName = (value) => value.replace(/[<>&]/g, '').slice(0, 80);
-const sanitizeCompanyId = (value) => value.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
+import { useCompanyForm } from '@/hooks/useCompanyForm';
 
 const CompanyCreateForm = ({ onCreate, creating, createError }) => {
-  const [form, setForm] = useState({ name: '', companyId: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
-  const [touched, setTouched] = useState(false);
+  const {
+    form,
+    touched,
+    handleNameChange,
+    handleCompanyIdChange,
+    handleToggleChange,
+    handleSubmit,
+    resetForm,
+  } = useCompanyForm();
 
-  const isValid = form.name.trim().length >= 2;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setTouched(true);
-    if (!isValid) return;
-    await onCreate(form);
-    setForm({ name: '', companyId: '', mobileApp: false, desktopWeb: true, mobileWeb: false });
-    setTouched(false);
-  };
-
-  const handleNameChange = (e) => {
-    setForm((f) => ({ ...f, name: sanitizeName(e.target.value) }));
-  };
-
-  const handleCompanyIdChange = (e) => {
-    setForm((f) => ({ ...f, companyId: sanitizeCompanyId(e.target.value) }));
-  };
-
-  const handleMobileAppChange = (e) => {
-    setForm((f) => ({ ...f, mobileApp: e.target.checked }));
-  };
-
-  const handleDesktopWebChange = (e) => {
-    setForm((f) => ({ ...f, desktopWeb: e.target.checked }));
-  };
-
-  const handleMobileWebChange = (e) => {
-    setForm((f) => ({ ...f, mobileWeb: e.target.checked }));
+  const onSubmit = async (formData) => {
+    await onCreate(formData);
+    resetForm();
   };
 
   return (
@@ -53,7 +31,7 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="grid gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
        <div>
           <TextTypeField
             placeholder="Company ID (optional - will be auto-generated if not provided)"
@@ -71,25 +49,23 @@ const CompanyCreateForm = ({ onCreate, creating, createError }) => {
           />
         </div>
 
-       
-
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ToggleSwitch
             label="Mobile App"
             checked={form.mobileApp}
-            onChange={handleMobileAppChange}
+            onChange={handleToggleChange('mobileApp')}
             description="Allow access via native mobile app."
           />
           <ToggleSwitch
             label="Desktop Web"
             checked={form.desktopWeb}
-            onChange={handleDesktopWebChange}
+            onChange={handleToggleChange('desktopWeb')}
             description="Allow access via desktop browser."
           />
           <ToggleSwitch
             label="Mobile Web"
             checked={form.mobileWeb}
-            onChange={handleMobileWebChange}
+            onChange={handleToggleChange('mobileWeb')}
             description="Allow access via mobile browser."
           />
         </div>
@@ -115,5 +91,3 @@ CompanyCreateForm.propTypes = {
 };
 
 export { CompanyCreateForm };
-
-

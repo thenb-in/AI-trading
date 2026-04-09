@@ -1,4 +1,5 @@
 const nbnextDriveColumns = require('../../constants/columns/startup/nbnextDriveColumns');
+const { formatResponse } = require('../formatResponse');
 
 function formatFileSize(bytes) {
   if (bytes === 0) {
@@ -10,25 +11,21 @@ function formatFileSize(bytes) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-function formatNBnextDriveResponse(files) {
-  const rows = files.map(file => {
-    const fileData = file.toJSON ? file.toJSON() : file;
-    return {
-      id: fileData.id,
-      fileName: fileData.fileName,
-      filePath: fileData.filePath,
-      fileSize: formatFileSize(fileData.fileSize),
-      mimeType: fileData.mimeType || null,
-      createdByName: fileData.createdByUser?.name || null,
-      createdAt: fileData.createdAt || null,
-      updatedAt: fileData.updatedAt || null
-    };
-  });
-
+function mapFileRow(data) {
   return {
-    columns: nbnextDriveColumns,
-    data: rows
+    id: data.id,
+    fileName: data.fileName,
+    filePath: data.filePath,
+    fileSize: formatFileSize(data.fileSize),
+    mimeType: data.mimeType || null,
+    createdByName: data.createdByUser?.name || null,
+    createdAt: data.createdAt || null,
+    updatedAt: data.updatedAt || null
   };
+}
+
+function formatNBnextDriveResponse(files) {
+  return formatResponse(files, nbnextDriveColumns, mapFileRow);
 }
 
 function formatSingleNBnextDriveResponse(file) {
@@ -52,4 +49,3 @@ module.exports = {
   formatNBnextDriveResponse,
   formatSingleNBnextDriveResponse
 };
-

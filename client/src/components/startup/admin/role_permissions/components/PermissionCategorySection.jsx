@@ -20,6 +20,50 @@ const categoryColors = {
   other: 'bg-yellow-50 border-yellow-200',
 };
 
+const CategoryHeader = ({ icon: Icon, title, badge, assignedCount, totalCount, onToggleAll, allAssigned, disabled, readOnly, updating }) => (
+  <div className="flex items-center justify-between mb-2">
+    <div className="flex items-center gap-1.5">
+      <Icon className="w-4 h-4 text-gray-700" />
+      <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
+      {badge}
+    </div>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-gray-600">
+        {assignedCount}/{totalCount}
+      </span>
+      {totalCount > 0 && (
+        <button
+          onClick={onToggleAll}
+          disabled={disabled}
+          className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+          title={readOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
+        >
+          {updating ? (
+            <Loader2 className="w-3 h-3 animate-spin inline" />
+          ) : allAssigned ? (
+            'Deselect All'
+          ) : (
+            'Select All'
+          )}
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+CategoryHeader.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string.isRequired,
+  badge: PropTypes.node,
+  assignedCount: PropTypes.number.isRequired,
+  totalCount: PropTypes.number.isRequired,
+  onToggleAll: PropTypes.func.isRequired,
+  allAssigned: PropTypes.bool.isRequired,
+  disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
+  updating: PropTypes.bool,
+};
+
 function PermissionCategorySection({
   title,
   permissions,
@@ -100,48 +144,37 @@ function PermissionCategorySection({
     );
   }
 
+  // For module and other categories (array-based permissions)
+  const assignedCount = permissions.filter((p) =>
+    isPermissionAssigned(selectedRole, p.id)
+  ).length;
+  const allCategoryAssigned = permissions.length > 0 && permissions.every((p) =>
+    isPermissionAssigned(selectedRole, p.id)
+  );
+
+  const headerProps = {
+    icon: Icon,
+    title,
+    assignedCount,
+    totalCount: permissions.length,
+    onToggleAll: handleCategoryToggle,
+    allAssigned: allCategoryAssigned,
+    disabled: updating || !selectedRole || isRoleReadOnly,
+    readOnly: isRoleReadOnly,
+    updating,
+  };
+
   // For "other" category - detailed table view with all information
   if (category === 'other') {
-    const assignedCount = permissions.filter((p) =>
-      isPermissionAssigned(selectedRole, p.id)
-    ).length;
-    const allCategoryAssigned = permissions.length > 0 && permissions.every((p) =>
-      isPermissionAssigned(selectedRole, p.id)
-    );
     const canDeletePermission = hasPermission(userData, 'delete_permission');
 
     return (
       <div className={`border rounded p-2 ${colorClass}`}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Icon className="w-4 h-4 text-gray-700" />
-            <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
-            <span className="text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded">
-              Investigation Needed
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">
-              {assignedCount}/{permissions.length}
-            </span>
-            {permissions.length > 0 && (
-              <button
-                onClick={handleCategoryToggle}
-                disabled={updating || !selectedRole || isRoleReadOnly}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
-              >
-                {updating ? (
-                  <Loader2 className="w-3 h-3 animate-spin inline" />
-                ) : allCategoryAssigned ? (
-                  'Deselect All'
-                ) : (
-                  'Select All'
-                )}
-              </button>
-            )}
-          </div>
-        </div>
+        <CategoryHeader {...headerProps} badge={
+          <span className="text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded">
+            Investigation Needed
+          </span>
+        } />
 
         <div className="overflow-x-auto border border-gray-200 rounded bg-white">
           <table className="w-full border-collapse text-xs">
@@ -203,42 +236,9 @@ function PermissionCategorySection({
   }
 
   // For module permissions - simple list view
-  const assignedCount = permissions.filter((p) =>
-    isPermissionAssigned(selectedRole, p.id)
-  ).length;
-  const allCategoryAssigned = permissions.length > 0 && permissions.every((p) =>
-    isPermissionAssigned(selectedRole, p.id)
-  );
-
   return (
     <div className={`border rounded p-2 ${colorClass}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Icon className="w-4 h-4 text-gray-700" />
-          <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-600">
-            {assignedCount}/{permissions.length}
-          </span>
-          {permissions.length > 0 && (
-            <button
-              onClick={handleCategoryToggle}
-              disabled={updating || !selectedRole || isRoleReadOnly}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-              title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : ''}
-            >
-              {updating ? (
-                <Loader2 className="w-3 h-3 animate-spin inline" />
-              ) : allCategoryAssigned ? (
-                'Deselect All'
-              ) : (
-                'Select All'
-              )}
-            </button>
-          )}
-        </div>
-      </div>
+      <CategoryHeader {...headerProps} />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
         {permissions.map((permission) => {

@@ -1,6 +1,17 @@
 import { getReportDisplayName } from '@data/getReportModules';
 
 /**
+ * Convert a snake_case or kebab-case string to Title Case
+ * e.g. "role_permission" -> "Role Permission", "detailed-attendance" -> "Detailed Attendance"
+ */
+function toTitleCase(str) {
+  return str
+    .split(/[-_]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
  * Organizes permissions by type (module, report, master)
  * and groups master permissions by entity
  * Also includes linked permissions (duplicates) in master section
@@ -152,11 +163,7 @@ function extractReportId(permissionName) {
   // If display_name is provided and it's in format "Read <Report Name>", extract the report name
   // Example: "Read detailed-attendance-report" -> "Detailed Attendance Report"
   if (permissionName.toLowerCase().startsWith('read ')) {
-    const reportName = permissionName.substring(5); // Remove "Read " prefix
-    return reportName
-      .split(/[-_\s]+/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    return toTitleCase(permissionName.substring(5));
   }
   
   // Pattern: read_<report-name-with-hyphens> (e.g., read_detailed-attendance-report)
@@ -165,12 +172,7 @@ function extractReportId(permissionName) {
   const hyphenMatch = permissionName.match(hyphenReportPattern);
   
   if (hyphenMatch && hyphenMatch[1]) {
-    const reportName = hyphenMatch[1];
-    // Convert hyphens and underscores to spaces and format properly
-    return reportName
-      .split(/[-_]/)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    return toTitleCase(hyphenMatch[1]);
   }
   
   // Pattern: read_user_report, read_company_report (entity between operation and _report)
@@ -178,11 +180,7 @@ function extractReportId(permissionName) {
   const entityBeforeMatch = permissionName.match(entityBeforeReportPattern);
   
   if (entityBeforeMatch && entityBeforeMatch[1]) {
-    const reportName = entityBeforeMatch[1];
-    return reportName
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ') + ' Report';
+    return toTitleCase(entityBeforeMatch[1]) + ' Report';
   }
   
   // Pattern: read_report_1, download_report_1, view_report_1, export_report_1
@@ -190,16 +188,10 @@ function extractReportId(permissionName) {
   const match = permissionName.match(reportPattern);
   
   if (match && match[1]) {
-    const reportNum = match[1];
-    // If it's a number, format as "Report 1", "Report 2", etc.
-    if (/^\d+$/.test(reportNum)) {
-      return `Report ${reportNum}`;
+    if (/^\d+$/.test(match[1])) {
+      return `Report ${match[1]}`;
     }
-    // If it's a name, format it nicely
-    return reportNum
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ') + ' Report';
+    return toTitleCase(match[1]) + ' Report';
   }
 
   // Pattern: report_1, report_2
@@ -207,14 +199,10 @@ function extractReportId(permissionName) {
   const simpleMatch = permissionName.match(simplePattern);
   
   if (simpleMatch && simpleMatch[1]) {
-    const reportNum = simpleMatch[1];
-    if (/^\d+$/.test(reportNum)) {
-      return `Report ${reportNum}`;
+    if (/^\d+$/.test(simpleMatch[1])) {
+      return `Report ${simpleMatch[1]}`;
     }
-    return reportNum
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ') + ' Report';
+    return toTitleCase(simpleMatch[1]) + ' Report';
   }
 
   // Default: use the permission name or a generic identifier
@@ -263,85 +251,57 @@ function extractEntityFromPermission(permissionName) {
     }
   }
 
-  // Convert to title case for display
-  return entity
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return toTitleCase(entity);
+}
+
+/**
+ * Generic helper: groups permissions by a classifier function.
+ * classifyFn(name) should return the category string for a given lowercase permission name.
+ */
+function groupPermissionsByOperation(permissions, classifyFn) {
+  const grouped = {};
+
+  permissions.forEach((permission) => {
+    const category = classifyFn(permission.name.toLowerCase());
+    if (!grouped[category]) grouped[category] = [];
+    grouped[category].push(permission);
+  });
+
+  return Object.fromEntries(
+    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
+  );
+}
+
+function classifyMasterOperation(name) {
+  if (name.startsWith('create_')) return 'create';
+  if (name.startsWith('read_') || name.startsWith('view_')) return 'read';
+  if (name.startsWith('update_')) return 'update';
+  if (name.startsWith('delete_')) return 'delete';
+  if (name.startsWith('approve_')) return 'approve';
+  if (name.startsWith('deactivate_')) return 'deactivate';
+  return 'other';
+}
+
+function classifyReportOperation(name) {
+  if (name.startsWith('view_report') || name.includes('view_report')) return 'view';
+  if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) return 'read';
+  if (name.startsWith('download_report') || name.includes('download_report')) return 'download';
+  if (name.startsWith('export_report') || name.includes('export_report')) return 'export';
+  return 'other';
 }
 
 /**
  * Groups master permissions by operation type (CRUD, approve, etc.)
  */
 function groupMasterPermissionsByOperation(permissions) {
-  const grouped = {
-    create: [],
-    read: [],
-    update: [],
-    delete: [],
-    approve: [],
-    deactivate: [],
-    other: [],
-  };
-
-  permissions.forEach((permission) => {
-    const name = permission.name.toLowerCase();
-    
-    if (name.startsWith('create_')) {
-      grouped.create.push(permission);
-    } else if (name.startsWith('read_') || name.startsWith('view_')) {
-      grouped.read.push(permission);
-    } else if (name.startsWith('update_')) {
-      grouped.update.push(permission);
-    } else if (name.startsWith('delete_')) {
-      grouped.delete.push(permission);
-    } else if (name.startsWith('approve_')) {
-      grouped.approve.push(permission);
-    } else if (name.startsWith('deactivate_')) {
-      grouped.deactivate.push(permission);
-    } else {
-      grouped.other.push(permission);
-    }
-  });
-
-  // Remove empty groups
-  return Object.fromEntries(
-    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
-  );
+  return groupPermissionsByOperation(permissions, classifyMasterOperation);
 }
 
 /**
  * Groups report permissions by operation type (view, download, export, etc.)
  */
 function groupReportPermissionsByOperation(permissions) {
-  const grouped = {
-    view: [],
-    read: [],
-    download: [],
-    export: [],
-    other: [],
-  };
-
-  permissions.forEach((permission) => {
-    const name = permission.name.toLowerCase();
-    
-    if (name.startsWith('view_report') || name.includes('view_report')) {
-      grouped.view.push(permission);
-    } else if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) {
-      grouped.read.push(permission);
-    } else if (name.startsWith('download_report') || name.includes('download_report')) {
-      grouped.download.push(permission);
-    } else if (name.startsWith('export_report') || name.includes('export_report')) {
-      grouped.export.push(permission);
-    } else {
-      grouped.other.push(permission);
-    }
-  });
-
-  // Remove empty groups
-  return Object.fromEntries(
-    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
-  );
+  return groupPermissionsByOperation(permissions, classifyReportOperation);
 }
 
 
@@ -401,12 +361,7 @@ function getLinkedContexts(permissionName) {
 function convertContextToEntityDisplay(context) {
   if (!context) return null;
   const entity = context.split('.')[0];
-  const entityLower = entity.toLowerCase();
-  // Convert "ROLE_PERMISSION" to "Role Permission" format
-  return entityLower
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return toTitleCase(entity);
 }
 
 /**

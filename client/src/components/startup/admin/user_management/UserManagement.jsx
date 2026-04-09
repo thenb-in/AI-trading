@@ -113,6 +113,18 @@ function UserManagement() {
 
 
 
+  const sharedTableProps = {
+    roles,
+    bulkDeleteMode,
+    selectedUsers,
+    toggleUserSelection,
+    showConfirmation,
+    selectAllUsersFromTable,
+    deselectAllUsersFromTable,
+    handleRoleChange,
+    handleDeviceOptionUpdate,
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
@@ -202,20 +214,11 @@ function UserManagement() {
 
 
       <UserTable
+        {...sharedTableProps}
         users={activeUsers}
-        roles={roles}
         title="Active Users"
         emptyMessage="No active users found."
         statusColor="bg-emerald-100"
-        bulkDeleteMode={bulkDeleteMode}
-        selectedUsers={selectedUsers}
-        toggleUserSelection={toggleUserSelection}
-        showConfirmation={showConfirmation}
-        selectAllUsersFromTable={selectAllUsersFromTable}
-        deselectAllUsersFromTable={deselectAllUsersFromTable}
-        handleRoleChange={handleRoleChange}
-      //  deviceAccessOptions ={deviceAccessOptions}
-        handleDeviceOptionUpdate={handleDeviceOptionUpdate}
         extraColumns={getUserManagementExtraColumns(updateUserProfileInState)}
       />
 
@@ -226,20 +229,11 @@ function UserManagement() {
         </button>
         {showNewUsers && (
           <UserTable
+            {...sharedTableProps}
             users={newUsers}
-            roles={roles}
             title="New Users (Never Signed In)"
             emptyMessage="No new users found."
             statusColor="bg-purple-100"
-            bulkDeleteMode={bulkDeleteMode}
-            selectedUsers={selectedUsers}
-            toggleUserSelection={toggleUserSelection}
-            showConfirmation={showConfirmation}
-            selectAllUsersFromTable={selectAllUsersFromTable}
-            deselectAllUsersFromTable={deselectAllUsersFromTable}
-            handleRoleChange={handleRoleChange}
-            // deviceAccessOptions={deviceAccessOptions}
-            handleDeviceOptionUpdate={handleDeviceOptionUpdate}
             extraColumns={getUserManagementExtraColumns()}
           />
         )}
@@ -252,20 +246,11 @@ function UserManagement() {
         </button>
         {showInactive && (
           <UserTable
+            {...sharedTableProps}
             users={inactiveUsers}
-            roles={roles}
             title="Inactive Users"
             emptyMessage="No inactive users found."
             statusColor="bg-red-100"
-            bulkDeleteMode={bulkDeleteMode}
-            selectedUsers={selectedUsers}
-            toggleUserSelection={toggleUserSelection}
-            showConfirmation={showConfirmation}
-            selectAllUsersFromTable={selectAllUsersFromTable}
-            deselectAllUsersFromTable={deselectAllUsersFromTable}
-            handleRoleChange={handleRoleChange}
-            // deviceAccessOptions={deviceAccessOptions}
-            handleDeviceOptionUpdate={handleDeviceOptionUpdate}
             extraColumns={getUserManagementExtraColumns()}
           />
         )}
@@ -278,20 +263,11 @@ function UserManagement() {
         </button>
         {showAllUsers && (
           <UserTable
+            {...sharedTableProps}
             users={filteredUsers}
-            roles={roles}
             title="All Users"
             emptyMessage="No users found."
             statusColor="bg-gray-100"
-            bulkDeleteMode={bulkDeleteMode}
-            selectedUsers={selectedUsers}
-            toggleUserSelection={toggleUserSelection}
-            showConfirmation={showConfirmation}
-            selectAllUsersFromTable={selectAllUsersFromTable}
-            deselectAllUsersFromTable={deselectAllUsersFromTable}
-            handleRoleChange={handleRoleChange}
-            // deviceAccessOptions={deviceAccessOptions}
-            handleDeviceOptionUpdate={handleDeviceOptionUpdate}
             extraColumns={getUserManagementExtraColumns()}
           />
         )}

@@ -1,12 +1,11 @@
 // services/startup/activityService.js
-const { Op: _Op } = require('sequelize');
-// Activity is the primary model for this service
 const { pushActivityToExternalServer } = require('../../../interfaces/startup/activityInterface');
 const logger = require('../../../logger');
+const { createdByUserInclude } = require('../../constants/query_includes');
 const { Activity, User } = require('../../models');
 
 const ACTIVITY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
-const ACTIVITY_INCLUDE = [{ model: User, as: 'createdByUser', required: false, attributes: ['id', 'name'] }];
+const ACTIVITY_INCLUDE = [createdByUserInclude(User)];
 
 async function queryActivities(where, limit) {
   return Activity.findAll({

@@ -1,30 +1,22 @@
-/**
- * Data formatter for Activity responses
- */
 const activityColumns = require('../../constants/columns/startup/activityColumns');
+const { formatResponse } = require('../formatResponse');
 
+function mapActivityRow(data) {
+  return {
+    id: data.id,
+    head: data.head,
+    log: data.log,
+    objectName: data.objectName || null,
+    createdByName: data.createdByUser?.name || null,
+    createdAt: data.createdAt || null,
+    updatedAt: data.updatedAt || null
+  };
+}
 
 function formatActivityResponse(activities) {
-  const rows = activities.map(activity => {
-    const activityData = activity.toJSON ? activity.toJSON() : activity;
-    return {
-      id: activityData.id,
-      head: activityData.head,
-      log: activityData.log,
-      objectName: activityData.objectName || null,
-      createdByName: activityData.createdByUser?.name || null,
-      createdAt: activityData.createdAt || null,
-      updatedAt: activityData.updatedAt || null
-    };
-  });
-
-  return {
-    columns: activityColumns,
-    data: rows
-  };
+  return formatResponse(activities, activityColumns, mapActivityRow);
 }
 
 module.exports = {
   formatActivityResponse
 };
-

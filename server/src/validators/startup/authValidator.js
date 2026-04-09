@@ -2,7 +2,8 @@
  * Validators for authentication operations
  * Uses express-validator for request validation
  */
-const { body, validationResult } = require('express-validator');
+const { body } = require('express-validator');
+const { handleValidationErrors } = require('../../middleware/validationErrorsMiddleware');
 
 const signupValidation = [
   body('phone').isMobilePhone().withMessage(`Invalid phone number for signup ${body('phone').value}.`),
@@ -40,18 +41,6 @@ const verifyTotpValidation = [
   body('username').notEmpty().withMessage('Username is required'),
   body('totpCode').isLength({ min: 6, max: 6 }).withMessage(`TOTP code must be exactly 6 digits , provide :${ body('totpCode').length}`).isNumeric().withMessage(`TOTP code must contain only numeric characters , provide :${ body('totpCode').value}`)
 ];
-
-/**
- * Middleware to handle validation results
- * Returns 400 with errors if validation fails
- */
-const handleValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
 
 module.exports = {
   signupValidation: [...signupValidation, handleValidationErrors],

@@ -4,7 +4,7 @@ import { useDataContext } from '@context/startup/useDataContext';
 import { FaBuilding, FaUsers, FaArrowRight } from 'react-icons/fa';
 import { QrCode, Upload, FileText } from 'lucide-react';
 import { MasterModal } from '@base_components/master/master_modal/MasterModal';
-import { CreateCompanyForm } from '@startup/auth/CreateCompanyForm';
+import { CreateCompanyForm } from '@/components/startup/onboarding/CreateCompanyForm';
 import { QRCodeScanner } from '../../components/common/QRCodeScanner';
 import { Html5Qrcode } from 'html5-qrcode';
 import { ApiService } from '@services/startup/ApiService';

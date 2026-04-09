@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { MasterHeader } from '@base_components/master/master_header/MasterHeader';
 import { MasterSearch } from '@startup/base_components/master/MasterSearch';
 import { MasterTable } from '@base_components/master/master_table/MasterTable';
@@ -9,20 +9,21 @@ import { nbnextDriveService } from '@/services/startup/nbnextDriveService';
 import { useDataContext, hasPermission } from '@/context/startup/useDataContext';
 import { Download, Trash2, Eye } from 'lucide-react';
 import { MasterModalActions } from '@base_components/master/MasterModalActions';
+import { useMasterData } from '@/hooks/useMasterData';
 import { toast } from 'react-toastify';
 
+const INITIAL_FORM = {
+  objectName: '',
+  objectId: ''
+};
+
+const SEARCH_KEYS = ['fileName', 'objectName', 'createdByName'];
+
+const fetchFiles = () => nbnextDriveService.getAllFiles();
+
 const NBnextDriveMaster = () => {
-  const [columns, setColumns] = useState([]);
-  const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
-  const [formData, setFormData] = useState({
-    objectName: '',
-    objectId: ''
-  });
   const dataContext = useDataContext();
 
   const canCreate = hasPermission('create_nbnext_drive', dataContext);
@@ -34,46 +35,37 @@ const NBnextDriveMaster = () => {
 
   const showAll = canReadAll;
 
-  useEffect(() => {
-    fetchFiles();
-  }, []);
+  const {
+    tableColumns,
+    filteredData,
+    loading,
+    searchQuery,
+    setSearchQuery,
+    isModalOpen,
+    formData,
+    handleFormChange,
+    openModal: baseOpenModal,
+    closeModal: baseCloseModal,
+    fetchData,
+  } = useMasterData({
+    fetchService: fetchFiles,
+    initialFormData: INITIAL_FORM,
+    searchKeys: SEARCH_KEYS,
+    errorMessage: 'Failed to fetch files',
+  });
 
-  const fetchFiles = async () => {
-    try {
-      setLoading(true);
-      const response = await nbnextDriveService.getAllFiles();
-
-      if (response.columns && response.data) {
-        setColumns(response.columns);
-        setFiles(response.data);
-      } else {
-        setFiles(response.data || response || []);
-      }
-    } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to fetch files');
-    } finally {
-      setLoading(false);
-    }
+  const openModal = () => {
+    setSelectedFiles([]);
+    baseOpenModal();
   };
 
-  const handleFormChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value
-    }));
+  const closeModal = () => {
+    setSelectedFiles([]);
+    baseCloseModal();
   };
 
   const handleFileChange = (files) => {
     setSelectedFiles(Array.isArray(files) ? files : []);
-  };
-
-  const handleAdd = () => {
-    setFormData({
-      objectName: '',
-      objectId: ''
-    });
-    setSelectedFiles([]);
-    setIsModalOpen(true);
   };
 
   const handleSave = async () => {
@@ -92,20 +84,14 @@ const NBnextDriveMaster = () => {
         );
       }
       toast.success(toUpload.length === 1 ? 'File uploaded successfully' : `${toUpload.length} files uploaded successfully`);
-      setIsModalOpen(false);
-      setSelectedFiles([]);
-      fetchFiles();
+      closeModal();
+      fetchData();
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to upload file');
     }
   };
 
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setSelectedFiles([]);
-  };
-
-  const handleView = async (id, file) => {
+  const handleView = async (_id, file) => {
     try {
       const fileUrl = `/uploads/${file.filePath}`;
       setViewerState({
@@ -146,26 +132,11 @@ const NBnextDriveMaster = () => {
     try {
       await nbnextDriveService.deleteFile(id);
       toast.success('File deleted successfully');
-      fetchFiles();
+      fetchData();
     } catch (error) {
       toast.error(error?.response?.data?.error || 'Failed to delete file');
     }
   };
-
-  const filteredFiles = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return files;
-    }
-
-    const query = searchQuery.toLowerCase();
-    return files.filter(file => {
-      return (
-        (file.fileName && file.fileName.toLowerCase().includes(query)) ||
-        (file.objectName && file.objectName.toLowerCase().includes(query)) ||
-        (file.createdByName && file.createdByName.toLowerCase().includes(query))
-      );
-    });
-  }, [files, searchQuery]);
 
   if (!canRead) {
     return (
@@ -174,14 +145,6 @@ const NBnextDriveMaster = () => {
       </div>
     );
   }
-
-  const tableColumns = columns.length > 0
-    ? columns.map(col => ({
-        key: col.key,
-        label: col.display_name || col.label || col.key,
-        type: col.type || 'string'
-      }))
-    : [];
 
   const actions = [];
   if (canDownload) {
@@ -212,8 +175,8 @@ const NBnextDriveMaster = () => {
       <MasterHeader
         title="NBnext Drive"
         description={`${showAll ? 'View and manage all files' : 'View and manage your personal files'} in NBnext Drive. Upload, view, download, and delete files.`}
-        onAdd={canCreate ? handleAdd : null}
-        onRefresh={fetchFiles}
+        onAdd={canCreate ? openModal : null}
+        onRefresh={fetchData}
         userData={dataContext.userData}
         permissionKey="create_nbnext_drive"
         addButtonText="Upload File"
@@ -231,7 +194,7 @@ const NBnextDriveMaster = () => {
 
       <MasterTable
         columns={tableColumns}
-        data={filteredFiles}
+        data={filteredData}
         loading={loading}
         actions={actions}
         emptyMessage="No files found"
@@ -241,10 +204,10 @@ const NBnextDriveMaster = () => {
       {canCreate && (
         <MasterModal
           isOpen={isModalOpen}
-          onClose={handleClose}
+          onClose={closeModal}
           title="Upload File"
           maxWidth="md"
-          actions={<MasterModalActions onCancel={handleClose} onConfirm={handleSave} confirmLabel="Upload" />}
+          actions={<MasterModalActions onCancel={closeModal} onConfirm={handleSave} confirmLabel="Upload" />}
         >
           <NBnextDriveForm
             formData={formData}
@@ -266,4 +229,3 @@ const NBnextDriveMaster = () => {
 };
 
 export { NBnextDriveMaster };
-

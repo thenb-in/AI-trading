@@ -5,3 +5,5 @@ uploads/
 
 test-results/
 playwright-report/
+
+.claude

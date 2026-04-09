@@ -1,13 +1,13 @@
 const fs = require('fs');
 const path = require('path');
-const { Op: _Op } = require('sequelize');
 const logger = require('../../../logger');
 const env = require('../../config/env');
+const { createdByUserInclude } = require('../../constants/query_includes');
 const { NBNEXT_DRIVE_FILE_NOT_FOUND, NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK } = require('../../constants/startup/errors');
 const { NBnextDrive, User } = require('../../models');
 
 const FILE_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
-const FILE_INCLUDE = [{ model: User, as: 'createdByUser', required: false, attributes: ['id', 'name'] }];
+const FILE_INCLUDE = [createdByUserInclude(User)];
 
 async function findFileOrThrow(id, companyId, userId, showAll) {
   const where = { id, companyId };
