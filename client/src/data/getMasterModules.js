@@ -32,6 +32,17 @@ const getMasterModules = (handleOpenMaster) => [
 }
 ];
 
+/**
+ * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
+ * Used by AppGuide to show Department, Position, Employee steps.
+ * @param {function(string)} handleOpenMaster - (path) => void, e.g. navigate to /admin/master/{path}
+ */
+const getOnboardingMasters = (handleOpenMaster) => {
+  const all = getMasterModules(handleOpenMaster);
+  return all
+    .filter((m) => m.onboarding != null)
+    .sort((a, b) => a.onboarding - b.onboarding);
+};
 
 const getMasterCategories = () => {
   const categoryCounts = {};
@@ -57,5 +68,38 @@ const getMasterCategories = () => {
   return [...orderedCategories, ...orderedRemainingCategories];
 };
 
+/**
+ * Returns only categories where the user has permission to at least one master,
+ * with count = number of permitted masters in that category.
+ * @param {function(string, object)} hasPermissionFn - (permissionName, dataContext) => boolean
+ * @param {object} dataContext - from useDataContext()
+ * @returns {Array<{ name: string, count: number }>} categories with permitted count
+ */
+const getMasterCategoriesForUser = (hasPermissionFn, dataContext) => {
+  if (!hasPermissionFn || !dataContext) return [];
+  const masterModules = getMasterModules(() => { });
+  const categoryCounts = {};
 
-export { getMasterModules, getMasterCategories };
+  masterModules.forEach((module) => {
+    const permission = module.permissionName
+      || (module.id ? `read_${module.id}` : `read_${module.title.toLowerCase().replace(/ /g, "_")}`);
+    const allowed = module.skipPermissionCheck || hasPermissionFn(permission, dataContext);
+    if (allowed) {
+      const cat = module.category || "Uncategorized";
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    }
+  });
+
+  const categoryOrder = ["Common Masters", "Management", "Raw Data"];
+  const ordered = categoryOrder
+    .filter((name) => categoryCounts[name])
+    .map((name) => ({ name, count: categoryCounts[name] }));
+  const remaining = Object.entries(categoryCounts)
+    .filter(([name]) => !categoryOrder.includes(name))
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([name, count]) => ({ name, count }));
+
+  return [...ordered, ...remaining];
+};
+
+export { getMasterModules, getMasterCategories, getMasterCategoriesForUser, getOnboardingMasters };

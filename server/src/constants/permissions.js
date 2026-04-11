@@ -37,8 +37,22 @@ const MASTER_PERMISSION_CONSTANTS = {
   }
 };
 
+const create_module_permission = (module, displayName) => {
+  const moduleKey = module.toLowerCase().replace(/-/g, '_');
+  const formattedDisplayName = displayName || module.split('-').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1)
+  ).join(' ');
+  return {
+    name: `view_${moduleKey}_module`,
+    display_name: `View ${formattedDisplayName} Module`,
+    description: `Permission to view ${formattedDisplayName.toLowerCase()} module`
+  };
+};
+
 const MODULE_PERMISSION_CONSTANTS = {
-  ...basePermissions.MODULE_PERMISSION_CONSTANTS
+  ...basePermissions.MODULE_PERMISSION_CONSTANTS,
+  ...MASTER_PERMISSION_CONSTANTS,
+  VIEW_ACTIVITIES_MODULE: create_module_permission('activities', 'Activities')
 };
 
 const REPORT_PERMISSION_CONSTANTS = {

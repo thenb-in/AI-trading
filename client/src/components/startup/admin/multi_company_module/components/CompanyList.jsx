@@ -1,9 +1,11 @@
 import PropTypes from 'prop-types';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { UserCompanyAssignmentModal } from './UserCompanyAssignmentModal';
+import { CompanySubscriptionSelector } from './CompanySubscriptionSelector';
+import { ApiService } from '@services/startup/ApiService';
 
-const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignClick }) => {
+const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignClick, onSubscriptionUpdate, availableSubscriptions }) => {
   const handleCardClick = useCallback(() => {
     onAssignClick(company);
   }, [onAssignClick, company]);
@@ -43,7 +45,12 @@ const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignCl
           ) : null}
         </div>
       </div>
-      <div className="flex flex-col gap-2 ml-4">
+      <div className="flex items-center gap-2 ml-4">
+        <CompanySubscriptionSelector
+          companyId={company.id}
+          availableSubscriptions={availableSubscriptions}
+          onUpdate={onSubscriptionUpdate}
+        />
         <button
           onClick={handleSwitchButtonClick}
           disabled={isActive || loading}
@@ -64,13 +71,37 @@ CompanyCard.propTypes = {
   loading: PropTypes.bool,
   handleSwitchClick: PropTypes.func.isRequired,
   onAssignClick: PropTypes.func.isRequired,
+  onSubscriptionUpdate: PropTypes.func,
+  availableSubscriptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+      name: PropTypes.string.isRequired,
+      description: PropTypes.string,
+    })
+  ),
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [searchText, setSearchText] = useState('');
+    const [searchText, setSearchText] = useState('');
   const [debug, setDebug] = useState(false);
+  const [availableSubscriptions, setAvailableSubscriptions] = useState([]);
+
+  useEffect(() => {
+    const fetchAvailableSubscriptions = async () => {
+      try {
+        const response = await ApiService.getAvailableSubscriptions();
+        const subscriptions = response?.data?.data || [];
+        setAvailableSubscriptions(subscriptions);
+      } catch (error) {
+        console.error('Error fetching available subscriptions', error);
+        toast.error(error?.message || 'Failed to load available subscriptions');
+      }
+    };
+
+    fetchAvailableSubscriptions();
+  }, []);
 
   const handleSwitchClick = useCallback((companyId) => {
     onSwitch(companyId);
@@ -158,6 +189,8 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
         loading={loading}
         handleSwitchClick={handleSwitchClick}
         onAssignClick={handleAssignClick}
+        onSubscriptionUpdate={handleAssignmentSuccess}
+        availableSubscriptions={availableSubscriptions}
       />
     );})}
   </ul>

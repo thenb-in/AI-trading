@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/startup/ApiService';
+import { useDataContext } from '@context/startup/useDataContext';
 
 function useRolePermissions() {
+  const { userData } = useDataContext();
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
+  const [companySubscriptions, setCompanySubscriptions] = useState([]);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,16 +17,30 @@ function useRolePermissions() {
     setLoading(true);
     setError(null);
     try {
-      const [rolesResponse, permissionsResponse] = await Promise.all([
+      const companyId = userData?.companyId || userData?.company?.id;
+      
+      const promises = [
         ApiService.getRoles(),
         ApiService.getPermissions(),
-      ]);
+      ];
+
+      // Fetch company subscriptions if companyId is available
+      if (companyId) {
+        promises.push(ApiService.getCompanySubscriptions(companyId));
+      }
+
+      const responses = await Promise.all(promises);
+      const rolesResponse = responses[0];
+      const permissionsResponse = responses[1];
+      const subscriptionsResponse = companyId ? responses[2] : null;
 
       const rolesData = rolesResponse.data?.data || rolesResponse.data || [];
       const permissionsData = permissionsResponse.data?.data || permissionsResponse.data || [];
+      const subscriptionsData = subscriptionsResponse?.data?.data || subscriptionsResponse?.data || [];
 
       setRoles(rolesData);
       setPermissions(permissionsData);
+      setCompanySubscriptions(subscriptionsData || []);
 
       // Reset selected role if it's not in the new list, or auto-select first if none selected
       setSelectedRoleId((prevSelectedRoleId) => {
@@ -47,7 +64,7 @@ function useRolePermissions() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userData]);
 
   useEffect(() => {
     fetchData();
@@ -56,14 +73,14 @@ function useRolePermissions() {
   const selectedRole = roles.find((r) => r.id === selectedRoleId) || null;
 
   const togglePermission = useCallback(
-    async (permissionId, isAssigned) => {
+    async (permission_id, isAssigned) => {
       if (!selectedRoleId) {
         toast.error('Please select a role first');
         return;
       }
 
       // Find the permission object to add/remove
-      const permission = permissions.find((p) => p.id === permissionId);
+      const permission = permissions.find((p) => p.id === permission_id);
       if (!permission) {
         toast.error('Permission not found');
         return;
@@ -78,7 +95,7 @@ function useRolePermissions() {
               // Remove permission
               return {
                 ...role,
-                permissions: currentPermissions.filter((p) => p.id !== permissionId),
+                permissions: currentPermissions.filter((p) => p.id !== permission_id),
               };
             } else {
               // Add permission
@@ -99,15 +116,15 @@ function useRolePermissions() {
         if (isAssigned) {
           // Remove permission (linked permissions have the same ID, so removing one removes all)
           await ApiService.removeRolePermission({
-            roleId: selectedRoleId,
-            permissionId,
+            role_id: selectedRoleId,
+            permission_id,
           });
           toast.success('Permission removed successfully');
         } else {
           // Add permission (linked permissions have the same ID, so adding one adds all)
           await ApiService.addRolePermissions({
-            roleId: selectedRoleId,
-            permissionIds: [permissionId],
+            role_id: selectedRoleId,
+            permission_ids: [permission_id],
           });
           toast.success('Permission added successfully');
         }
@@ -124,14 +141,14 @@ function useRolePermissions() {
   );
 
   const toggleMultiplePermissions = useCallback(
-    async (permissionIds, shouldAssign) => {
+    async (permission_ids, shouldAssign) => {
       if (!selectedRoleId) {
         toast.error('Please select a role first');
         return;
       }
 
       // Find the permission objects to add/remove
-      const permissionsToToggle = permissions.filter((p) => permissionIds.includes(p.id));
+      const permissionsToToggle = permissions.filter((p) => permission_ids.includes(p.id));
 
       // Optimistically update the local state
       setRoles((prevRoles) =>
@@ -150,7 +167,7 @@ function useRolePermissions() {
               // Remove permissions
               return {
                 ...role,
-                permissions: currentPermissions.filter((p) => !permissionIds.includes(p.id)),
+                permissions: currentPermissions.filter((p) => !permission_ids.includes(p.id)),
               };
             }
           }
@@ -163,20 +180,20 @@ function useRolePermissions() {
         if (shouldAssign) {
           // Add permissions
           await ApiService.addRolePermissions({
-            roleId: selectedRoleId,
-            permissionIds,
+            role_id: selectedRoleId,
+            permission_ids,
           });
-          toast.success(`${permissionIds.length} permission(s) added successfully`);
+          toast.success(`${permission_ids.length} permission(s) added successfully`);
         } else {
           // Remove permissions one by one (API might not support bulk remove)
-          const promises = permissionIds.map((permissionId) =>
+          const promises = permission_ids.map((permission_id) =>
             ApiService.removeRolePermission({
-              roleId: selectedRoleId,
-              permissionId,
+              role_id: selectedRoleId,
+              permission_id,
             })
           );
           await Promise.all(promises);
-          toast.success(`${permissionIds.length} permission(s) removed successfully`);
+          toast.success(`${permission_ids.length} permission(s) removed successfully`);
         }
       } catch (err) {
         // On error, revert the optimistic update by refetching
@@ -191,19 +208,19 @@ function useRolePermissions() {
   );
 
   const deletePermission = useCallback(
-    async (permissionId) => {
+    async (permission_id) => {
       // Optimistically remove the permission from local state
       setPermissions((prevPermissions) =>
-        prevPermissions.filter((p) => p.id !== permissionId)
+        prevPermissions.filter((p) => p.id !== permission_id)
       );
 
       // Also remove the permission from all roles that have it assigned
       setRoles((prevRoles) =>
         prevRoles.map((role) => {
-          if (role.permissions && role.permissions.some((p) => p.id === permissionId)) {
+          if (role.permissions && role.permissions.some((p) => p.id === permission_id)) {
             return {
               ...role,
-              permissions: role.permissions.filter((p) => p.id !== permissionId),
+              permissions: role.permissions.filter((p) => p.id !== permission_id),
             };
           }
           return role;
@@ -212,7 +229,7 @@ function useRolePermissions() {
 
       setUpdating(true);
       try {
-        const response = await ApiService.deletePermission(permissionId);
+        const response = await ApiService.deletePermission(permission_id);
         if (response.data?.success) {
           toast.success(response.data.message || 'Permission deleted successfully');
         } else {
@@ -235,6 +252,7 @@ function useRolePermissions() {
   return {
     roles,
     permissions,
+    companySubscriptions,
     selectedRoleId,
     selectedRole,
     loading,

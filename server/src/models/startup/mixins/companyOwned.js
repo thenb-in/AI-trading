@@ -6,7 +6,7 @@
 function companyOwnedFields(DataTypes) {
   return {
     createdBy: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
       field: 'created_by'
     },

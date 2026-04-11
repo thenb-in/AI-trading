@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { Home } from './pages/startup/Home';
@@ -11,8 +12,13 @@ import { AppGuide } from './pages/startup/AppGuide';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/startup/ProtectedRoute';
 import { GlobalSearchPalette } from './components/startup/global_search_palette/GlobalSearchPalette';
+import { consoleLogBufferService } from './utils/startup/consoleLogBufferService';
 
 export function App() {
+  useEffect(() => {
+    consoleLogBufferService.start();
+  }, []);
+
   return (
     <>
       <GlobalSearchPalette />

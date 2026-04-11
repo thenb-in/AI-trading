@@ -394,6 +394,7 @@ const FilesSection = ({
           onCapture={handleCameraCapture}
           onClose={handleCloseCamera}
           mode={cameraMode}
+          cameraContainerClassName="relative w-full aspect-[3/5] sm:aspect-[3/3] bg-black"
         />
       )}
 

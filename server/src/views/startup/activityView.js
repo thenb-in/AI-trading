@@ -7,10 +7,11 @@ async function getAllActivities(req, res) {
   try {
     // Extract data from request
     const limit = req.query.limit || 100;
+    const offset = req.query.offset || 0;
     const companyId = req.user?.company_id || null;
 
     // Call controller
-    const result = await activityController.getAllActivities(limit, companyId);
+    const result = await activityController.getAllActivities(limit, offset, companyId);
 
     // Build and send response
     res.status(200).json(result);
@@ -26,15 +27,31 @@ async function getActivitiesByHead(req, res) {
     // Extract data from request
     const { head } = req.params;
     const limit = req.query.limit || 100;
+    const offset = req.query.offset || 0;
     const companyId = req.user?.company_id || null;
 
     // Call controller
-    const result = await activityController.getActivitiesByHead(head, limit, companyId);
+    const result = await activityController.getActivitiesByHead(head, limit, offset, companyId);
 
     // Build and send response
     res.status(200).json(result);
   } catch (error) {
     logger.error(`Get activities by head error: ${req.params.head}`, error);
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
+  }
+}
+
+async function getActivitiesByHeadAndObjectId(req, res) {
+  try {
+    const { head, objectId } = req.params;
+    const limit = req.query.limit || 100;
+    const offset = req.query.offset || 0;
+    const companyId = req.user?.company_id || null;
+
+    const result = await activityController.getActivitiesByHeadAndObjectId(head, objectId, limit, offset, companyId);
+    res.status(200).json(result);
+  } catch (error) {
+    logger.error(`Get activities by head/objectId error: head=${req.params?.head} objectId=${req.params?.objectId}`, error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }
@@ -69,6 +86,7 @@ async function createActivity(req, res) {
 module.exports = {
   getAllActivities,
   getActivitiesByHead,
+  getActivitiesByHeadAndObjectId,
   createActivity
 };
 

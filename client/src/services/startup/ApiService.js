@@ -1,83 +1,22 @@
-import axios from 'axios';
+import { api } from './axiosConfig';
 import { toast } from 'react-toastify';
-import { API_CONFIG } from '../../constants/startup/';
-
-const API_URL = API_CONFIG.BASE_URL;
 
 const ApiService = {
   async request(method, url, data = null, config = {}) {
-    const headers = {
-      ...config.headers,
-      'Content-Type': 'application/json',
-    };
-
-    // Log the request
-    console.log(`📡 API ${method} ${url}`, {
-      data,
-      headers,
-      withCredentials: true,
-      ...config
+    return api({
+      method,
+      url,
+      ...(data && { data }),
+      ...(config.params && { params: config.params }),
+      ...config,
     });
-
-    try {
-      // Check if URL is already absolute (starts with http:// or https://)
-      const isAbsoluteUrl = url.startsWith('http://') || url.startsWith('https://');
-      const requestUrl = isAbsoluteUrl ? url : `${API_URL}${url}`;
-      
-      const response = await axios({
-        method,
-        url: requestUrl,
-        ...(data && { data }),
-        ...(config.params && { params: config.params }),
-        headers,
-        withCredentials: true,
-        ...config,
-      });
-      
-      // Log successful response
-      console.log(`✅ ${method} ${url} success:`, {
-        status: response.status,
-        data: response.data,
-        headers: response.headers
-      });
-      
-      return response;
-      
-    } catch (error) {
-      // Log error response (only for non-session-expired errors to reduce noise)
-      const errorData = error.response?.data || {};
-      const isSessionExpired = error.response?.status === 400 && errorData.requiresLogin;
-      
-      if (!isSessionExpired) {
-        console.error(`❌ ${method} ${url} error:`, {
-          status: error.response?.status,
-          data: errorData,
-          message: error.message
-        });
-      }
-      
-      // Handle session expiration - don't throw, let the caller handle it
-      if (isSessionExpired || error.response?.status === 401) {
-        // Clear any stale auth data
-        if (typeof window !== 'undefined') {
-          // Clear cookies if possible
-          document.cookie.split(";").forEach((c) => {
-            document.cookie = c
-              .replace(/^ +/, "")
-              .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-          });
-        }
-      }
-      
-      throw error.response?.data || error;
-    }
   },
   // Authentication
   signup(data) {
     return this.request('POST', '/auth/signup', data);
   },
 
-  async login(data) {
+   async login(data) {
     const response = await this.request('POST', '/auth/login', data);
     
     // Check if wallet is insufficient and show toast
@@ -159,8 +98,8 @@ const ApiService = {
     return this.request('GET',`/users/${userId}`)
   },
 
-  approveUser(userId, requirePasswordReset = false, roleId = null) {
-    return this.request('POST', `/auth/approve/${userId}`, { requirePasswordReset, roleId });
+  approveUser(userId, requirePasswordReset = false, role_id = null) {
+    return this.request('POST', `/auth/approve/${userId}`, { requirePasswordReset, role_id });
   },
 
   deactivateUser(userId) {
@@ -191,12 +130,12 @@ const ApiService = {
     return this.request('POST', '/admin/roles', data);
   },
 
-  updateRole(roleId, data) {
-    return this.request('PUT', `/admin/roles/${roleId}`, data);
+  updateRole(role_id, data) {
+    return this.request('PUT', `/admin/roles/${role_id}`, data);
   },
 
-  deleteRole(roleId) {
-    return this.request('DELETE', `/admin/roles/${roleId}`);
+  deleteRole(role_id) {
+    return this.request('DELETE', `/admin/roles/${role_id}`);
   },
 
   // Admin - Permissions
@@ -208,12 +147,12 @@ const ApiService = {
     return this.request('POST', '/admin/permissions', data);
   },
 
-  updatePermission(permissionId, data) {
-    return this.request('PUT', `/admin/permissions/${permissionId}`, data);
+  updatePermission(permission_id, data) {
+    return this.request('PUT', `/admin/permissions/${permission_id}`, data);
   },
 
-  deletePermission(permissionId) {
-    return this.request('DELETE', `/admin/permissions/${permissionId}`);
+  deletePermission(permission_id) {
+    return this.request('DELETE', `/admin/permissions/${permission_id}`);
   },
 
   // Admin - Role Permissions
@@ -278,6 +217,40 @@ const ApiService = {
   // Unset default layout for a document
   unsetDefaultLayout(documentName) {
     return this.request('POST', '/layouts/unset-default', { document_name: documentName });
+  },
+
+  // Admin - Subscriptions
+  getSubscriptions() {
+    return this.request('GET', '/admin/subscriptions');
+  },
+
+  createSubscription(data) {
+    return this.request('POST', '/admin/subscriptions', data);
+  },
+
+  updateSubscriptionPermissionStatus(data) {
+    return this.request('POST', '/admin/subscription-permissions/update', data);
+  },
+
+  updateMultipleSubscriptionPermissionStatuses(data) {
+    return this.request('POST', '/admin/subscription-permissions/update-multiple', data);
+  },
+
+  // Company-Subscription methods
+  getCompanySubscriptions(companyId) {
+    return this.request('GET', `/admin/companies/${companyId}/subscriptions`);
+  },
+
+  getAvailableSubscriptions() {
+    return this.request('GET', '/admin/subscriptions/available');
+  },
+
+  setCompanySubscriptions(companyId, subscriptionIds) {
+    return this.request('PUT', `/admin/companies/${companyId}/subscriptions`, { subscriptionIds });
+  },
+
+  openHelpSupportTicket(data) {
+    return this.request('POST', '/help-support/open-ticket', data);
   },
   
 };

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import { ChevronDown, X ,Search} from 'lucide-react';
-import { SearchTypeField } from '@base_components/fields/SearchTypeField';
+import { Box } from '@mui/material';
+import { ChevronDown, X, Search } from 'lucide-react';
 
 function SearchableDropdown({
   options = [],
@@ -13,12 +14,27 @@ function SearchableDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dropdownPos, setDropdownPos] = useState(null);
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const updatePosition = useCallback(() => {
+    if (!dropdownRef.current) return;
+    const rect = dropdownRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(event.target) &&
+        menuRef.current && !menuRef.current.contains(event.target)
+      ) {
         setIsOpen(false);
         setSearchTerm('');
       }
@@ -26,12 +42,16 @@ function SearchableDropdown({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
     };
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   // Filter options based on search term
   const filteredOptions = options.filter((option) =>
@@ -40,6 +60,7 @@ function SearchableDropdown({
 
   const handleToggle = () => {
     if (!disabled) {
+      if (!isOpen) updatePosition();
       setIsOpen(!isOpen);
     }
   };
@@ -144,19 +165,32 @@ function SearchableDropdown({
         />
       </div>
 
-      {/* Dropdown Menu */}
-      {isOpen && !disabled && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-hidden">
+      {/* Dropdown Menu - rendered via portal so it appears above modals */}
+      {isOpen && !disabled && dropdownPos && createPortal(
+        <Box
+          ref={menuRef}
+          sx={{
+            position: 'absolute',
+            top: dropdownPos.top + 4,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+            zIndex: 9999,
+          }}
+          className="bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-hidden"
+        >
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200">
-            <SearchTypeField
-              icon={<Search className="w-4 h-4 text-gray-400" />}
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Search..."
-              autoFocus={true}
-              className="w-full text-sm py-1.5"
-            />
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={handleSearchChange}
+                placeholder="Search..."
+                className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                autoFocus
+              />
+            </div>
           </div>
 
           {/* Options List */}
@@ -191,7 +225,8 @@ function SearchableDropdown({
               })
             )}
           </div>
-        </div>
+        </Box>,
+        document.body
       )}
     </div>
   );

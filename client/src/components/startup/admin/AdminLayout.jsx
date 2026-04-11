@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AppSideBar } from "../../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDebugMode } from "@/hooks/useDebugMode";
+import { useHelpSupportShortcut } from "@/hooks/useHelpSupportShortcut";
 
 
 function AdminLayout() {
@@ -16,9 +17,17 @@ function AdminLayout() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Expose sidebar width for modals (MasterModal) so they size/position to the right of sidebar
+  useEffect(() => {
+    const width = collapsed ? '3.5rem' : isMobileView ? '12rem' : '16rem';
+    document.documentElement.style.setProperty('--app-sidebar-width', width);
+    return () => document.documentElement.style.removeProperty('--app-sidebar-width');
+  }, [collapsed, isMobileView]);
   
   // Initialize global debug mode to ensure Alt+D keyboard handler is always active
   useDebugMode();
+  useHelpSupportShortcut();
 
   const renderSidebar = () => (
     <AppSideBar

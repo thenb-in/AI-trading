@@ -3,14 +3,19 @@ const activityService = require('../../services/startup/activityService');
 
 const activityController = {
 
-  async getAllActivities(limit, companyId) {
-    const activities = await activityService.getAllActivities(limit, companyId);
+  async getAllActivities(limit, offset, companyId) {
+    const activities = await activityService.getAllActivities(limit, offset, companyId);
     return activityFormatter.formatActivityResponse(activities);
   },
 
 
-  async getActivitiesByHead(head, limit, companyId) {
-    const activities = await activityService.getActivitiesByHead(head, limit, companyId);
+  async getActivitiesByHead(head, limit, offset, companyId) {
+    const activities = await activityService.getActivitiesByHead(head, limit, offset, companyId);
+    return activityFormatter.formatActivityResponse(activities);
+  },
+
+  async getActivitiesByHeadAndObjectId(head, objectId, limit, offset, companyId) {
+    const activities = await activityService.getActivitiesByHeadAndObjectId(head, objectId, limit, offset, companyId);
     return activityFormatter.formatActivityResponse(activities);
   },
 

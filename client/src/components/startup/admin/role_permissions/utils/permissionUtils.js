@@ -15,8 +15,11 @@ function toTitleCase(str) {
  * Organizes permissions by type (module, report, master)
  * and groups master permissions by entity
  * Also includes linked permissions (duplicates) in master section
+ * @param {Array} permissions - Array of permissions to organize
+ * @param {Array} companySubscriptions - Optional array of company subscriptions to filter hidden permissions
+ * @param {Object} userData - Optional user data object with isSadmin flag
  */
-function organizePermissions(permissions) {
+function organizePermissions(permissions, companySubscriptions = null, userData = null) {
   if (!Array.isArray(permissions)) {
     return {
       module: [],
@@ -26,6 +29,12 @@ function organizePermissions(permissions) {
     };
   }
 
+  // Filter out hidden permissions if subscriptions are provided
+  // Exception: Show hidden permissions if user is superadmin and permission is global
+  const filteredPermissions = companySubscriptions 
+    ? filterPermissionsBySubscription(permissions, companySubscriptions, userData)
+    : permissions;
+
   const organized = {
     module: [],
     report: {},
@@ -33,7 +42,7 @@ function organizePermissions(permissions) {
     other: [],
   };
 
-  permissions.forEach((permission) => {
+  filteredPermissions.forEach((permission) => {
     const type = permission.type?.toLowerCase();
     const name = permission.name.toLowerCase();
 
@@ -46,7 +55,7 @@ function organizePermissions(permissions) {
       inferredType = 'module';
     } else if (name.includes('report') || name.startsWith('read_report') || name.startsWith('download_report') || name.startsWith('view_report') || name.startsWith('export_report')) {
       inferredType = 'report';
-    } else if (name.match(/^(create|read|update|delete|approve|deactivate)_/)) {
+    } else if (name.match(/^(create|read|update|delete|approve|deactivate|reject|import)_/)) {
       inferredType = 'master';
     } else {
       // If no pattern matches, categorize as "other"
@@ -145,6 +154,8 @@ function organizePermissions(permissions) {
  * Extracts report identifier from permission name
  * Uses the report permission name map from getReportModules.js for accurate mapping
  * Examples:
+ * - "read_detailed-attendance-report" -> "Detailed Attendance Report"
+ * - "read_checkin-checkout-report" -> "Check-in/Check-out Report"
  * - "read_report_1" -> "Report 1"
  * - "read_report-2" -> "Report 2"
  * - "view_report_user" -> "User Report"
@@ -224,6 +235,8 @@ function extractEntityFromPermission(permissionName) {
   const prefixes = [
     'deactivate_',
     'approve_',
+    'reject_',
+    'import_',
     'create_',
     'read_',
     'update_',
@@ -258,52 +271,76 @@ function extractEntityFromPermission(permissionName) {
  * Generic helper: groups permissions by a classifier function.
  * classifyFn(name) should return the category string for a given lowercase permission name.
  */
-function groupPermissionsByOperation(permissions, classifyFn) {
-  const grouped = {};
+function groupMasterPermissionsByOperation(permissions) {
+  const grouped = {
+    create: [],
+    read: [],
+    update: [],
+    delete: [],
+    approve: [],
+    deactivate: [],
+    other: [],
+  };
 
   permissions.forEach((permission) => {
-    const category = classifyFn(permission.name.toLowerCase());
-    if (!grouped[category]) grouped[category] = [];
-    grouped[category].push(permission);
+    const name = permission.name.toLowerCase();
+    
+    if (name.startsWith('create_')) {
+      grouped.create.push(permission);
+    } else if (name.startsWith('read_') || name.startsWith('view_')) {
+      grouped.read.push(permission);
+    } else if (name.startsWith('update_')) {
+      grouped.update.push(permission);
+    } else if (name.startsWith('delete_')) {
+      grouped.delete.push(permission);
+    } else if (name.startsWith('approve_')) {
+      grouped.approve.push(permission);
+    } else if (name.startsWith('deactivate_')) {
+      grouped.deactivate.push(permission);
+    } else {
+      grouped.other.push(permission);
+    }
   });
 
+  // Remove empty groups
   return Object.fromEntries(
     Object.entries(grouped).filter(([, perms]) => perms.length > 0)
   );
-}
-
-function classifyMasterOperation(name) {
-  if (name.startsWith('create_')) return 'create';
-  if (name.startsWith('read_') || name.startsWith('view_')) return 'read';
-  if (name.startsWith('update_')) return 'update';
-  if (name.startsWith('delete_')) return 'delete';
-  if (name.startsWith('approve_')) return 'approve';
-  if (name.startsWith('deactivate_')) return 'deactivate';
-  return 'other';
-}
-
-function classifyReportOperation(name) {
-  if (name.startsWith('view_report') || name.includes('view_report')) return 'view';
-  if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) return 'read';
-  if (name.startsWith('download_report') || name.includes('download_report')) return 'download';
-  if (name.startsWith('export_report') || name.includes('export_report')) return 'export';
-  return 'other';
-}
-
-/**
- * Groups master permissions by operation type (CRUD, approve, etc.)
- */
-function groupMasterPermissionsByOperation(permissions) {
-  return groupPermissionsByOperation(permissions, classifyMasterOperation);
 }
 
 /**
  * Groups report permissions by operation type (view, download, export, etc.)
  */
 function groupReportPermissionsByOperation(permissions) {
-  return groupPermissionsByOperation(permissions, classifyReportOperation);
-}
+  const grouped = {
+    view: [],
+    read: [],
+    download: [],
+    export: [],
+    other: [],
+  };
 
+  permissions.forEach((permission) => {
+    const name = permission.name.toLowerCase();
+    
+    if (name.startsWith('view_report') || name.includes('view_report')) {
+      grouped.view.push(permission);
+    } else if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) {
+      grouped.read.push(permission);
+    } else if (name.startsWith('download_report') || name.includes('download_report')) {
+      grouped.download.push(permission);
+    } else if (name.startsWith('export_report') || name.includes('export_report')) {
+      grouped.export.push(permission);
+    } else {
+      grouped.other.push(permission);
+    }
+  });
+
+  // Remove empty groups
+  return Object.fromEntries(
+    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
+  );
+}
 
 /**
  * Gets display name for permission operation
@@ -327,9 +364,9 @@ function getOperationDisplayName(operation) {
 /**
  * Checks if a permission is assigned to a role
  */
-function isPermissionAssigned(role, permissionId) {
+function isPermissionAssigned(role, permission_id) {
   if (!role || !role.permissions) return false;
-  return role.permissions.some((p) => p.id === permissionId);
+  return role.permissions.some((p) => p.id === permission_id);
 }
 
 /**
@@ -405,6 +442,107 @@ function getLinkedPermissionDisplayContext(permissionName) {
   return convertContextToEntityDisplay(context);
 }
 
+/**
+ * Gets the subscription status for a permission from company subscriptions
+ * Priority: subscribed > not_subscribed > hidden
+ * @param {Array} companySubscriptions - Array of subscriptions with permissions
+ * @param {number} permissionId - The permission ID
+ * @returns {string} The status: 'subscribed', 'not_subscribed', or 'hidden'
+ */
+function getPermissionSubscriptionStatus(companySubscriptions, permissionId) {
+  if (!companySubscriptions || !Array.isArray(companySubscriptions) || companySubscriptions.length === 0) {
+    return 'not_subscribed';
+  }
+
+  const statuses = [];
+  
+  // Collect all statuses for this permission across all subscriptions
+  companySubscriptions.forEach(subscription => {
+    if (subscription.permissions && Array.isArray(subscription.permissions)) {
+      const permission = subscription.permissions.find(p => p.id === permissionId);
+      if (permission && permission.subscriptionStatus) {
+        statuses.push(permission.subscriptionStatus);
+      }
+    }
+  });
+
+  if (statuses.length === 0) {
+    return 'not_subscribed';
+  }
+
+  // Priority: subscribed > not_subscribed > hidden
+  if (statuses.includes('subscribed')) {
+    return 'subscribed';
+  }
+  if (statuses.includes('not_subscribed')) {
+    return 'not_subscribed';
+  }
+  if (statuses.includes('hidden')) {
+    return 'hidden';
+  }
+
+  return 'not_subscribed';
+}
+
+/**
+ * Checks if a permission is from a global subscription
+ * @param {Array} companySubscriptions - Array of subscriptions with permissions
+ * @param {number} permissionId - The permission ID
+ * @returns {boolean} True if the permission is from a global subscription
+ */
+function isPermissionFromGlobalSubscription(companySubscriptions, permissionId) {
+  if (!companySubscriptions || !Array.isArray(companySubscriptions) || companySubscriptions.length === 0) {
+    return false;
+  }
+
+  // Check if permission exists in any global subscription
+  return companySubscriptions.some(subscription => {
+    if (subscription.isGlobal && subscription.permissions && Array.isArray(subscription.permissions)) {
+      return subscription.permissions.some(p => p.id === permissionId);
+    }
+    return false;
+  });
+}
+
+/**
+ * Filters permissions based on subscription status
+ * Removes permissions with 'hidden' status
+ * Exception: If user is superadmin, show hidden permissions (hidden means subscribed but hidden)
+ * @param {Array} permissions - Array of permissions
+ * @param {Array} companySubscriptions - Array of subscriptions with permissions
+ * @param {Object} userData - User data object with isSadmin flag
+ * @returns {Array} Filtered permissions array
+ */
+function filterPermissionsBySubscription(permissions, companySubscriptions, userData = null) {
+  if (!permissions || !Array.isArray(permissions)) {
+    return [];
+  }
+
+  if (!companySubscriptions || !Array.isArray(companySubscriptions) || companySubscriptions.length === 0) {
+    // If no subscriptions, show all permissions (they'll be disabled)
+    return permissions;
+  }
+
+  const isSuperAdmin = userData?.isSadmin === true;
+
+  return permissions.filter(permission => {
+    const status = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
+    
+    // If permission is hidden
+    if (status === 'hidden') {
+      // Show hidden permission if user is superadmin (hidden means subscribed but hidden)
+      if (isSuperAdmin) {
+        return true;
+      }
+      // Otherwise, filter it out
+      return false;
+    }
+    
+    // Show all non-hidden permissions
+    return true;
+  });
+}
+
 export {
   organizePermissions,
   groupMasterPermissionsByOperation,
@@ -413,5 +551,8 @@ export {
   isPermissionAssigned,
   isLinkedPermission,
   getLinkedPermissionDisplayContext,
+  getPermissionSubscriptionStatus,
+  filterPermissionsBySubscription,
+  isPermissionFromGlobalSubscription,
 };
 

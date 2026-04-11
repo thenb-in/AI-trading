@@ -10,8 +10,8 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { MasterCard } from "./master_components/MasterCard";
-import { MasterSearch } from "../../components/startup/base_components/master/MasterSearch";
-import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
+import { SearchFilter } from "./master_components/SearchFilter";
+import { getMasterModules, getMasterCategories } from "../../data/getMasterModules";
 import { spacing } from "@theme";
 import { useDataContext, hasPermission } from "../../context/startup/useDataContext";
 
@@ -20,7 +20,7 @@ const MasterContent = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Common Masters");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
   const dataContext = useDataContext();
@@ -31,16 +31,15 @@ const MasterContent = () => {
   const masterModules = getMasterModules(handleOpenMaster);
   const categories = getMasterCategories();
 
-  // Sync selectedCategory with URL query param `category`
+  // Sync selectedCategory with URL query param `category` (no param = show All masters)
   useEffect(() => {
     const categoryParam = searchParams.get("category");
-    if (categoryParam && categoryParam !== selectedCategory) {
+    if (categoryParam) {
       setSelectedCategory(categoryParam);
+    } else {
+      setSelectedCategory("All");
     }
-    if (!categoryParam && selectedCategory !== "Common Masters") {
-      // keep default if no param
-    }
-  }, [searchParams, selectedCategory]);
+  }, [searchParams]);
 
   const filteredMasterModules = useMemo(() => {
     let filtered = masterModules;
@@ -80,6 +79,10 @@ const MasterContent = () => {
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   const handleCategoryChange = (category) => {
@@ -152,30 +155,13 @@ const MasterContent = () => {
             </div>
           </div>
 
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
-            <MasterSearch
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Search modules..."
-              className=""
-              autoFocus={true}
-              active={true}
-              module="masters"
-              level="page"
-            />
-          </Box>
-          {searchTerm && (
-            <Box sx={{ mb: 2, textAlign: "center" }}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {filteredMasterModules.length} of {masterModules.length} modules
-                {filteredMasterModules.length === 0 && (
-                  <Typography component="span" color="text.primary" sx={{ ml: 1 }}>
-                    - Try adjusting your search terms
-                  </Typography>
-                )}
-              </Typography>
-            </Box>
-          )}
+          <SearchFilter
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            onClear={handleClearSearch}
+            totalCards={masterModules.length}
+            filteredCount={filteredMasterModules.length}
+          />
 
           <Divider
             sx={{

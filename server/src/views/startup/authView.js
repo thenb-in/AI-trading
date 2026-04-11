@@ -82,7 +82,7 @@ async function login(req, res) {
     });
 
     // Build and send response
-    const response = { user };
+    const response = { user ,accessToken, refreshToken };
     if (insufficientWallet !== undefined) {
       response.insufficientWallet = insufficientWallet;
     }

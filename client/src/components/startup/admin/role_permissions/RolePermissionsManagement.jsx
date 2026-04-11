@@ -14,6 +14,7 @@ function RolePermissionsManagement() {
   const {
     roles,
     permissions,
+    companySubscriptions,
     selectedRoleId,
     selectedRole,
     loading,
@@ -26,7 +27,7 @@ function RolePermissionsManagement() {
     deletePermission,
   } = useRolePermissions();
 
-  const organizedPermissions = organizePermissions(permissions);
+  const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
 
   const handleRoleCreated = () => {
     refetch();
@@ -124,6 +125,7 @@ function RolePermissionsManagement() {
               onToggleOperation={toggleMultiplePermissions}
               userData={userData}
               updating={updating}
+              companySubscriptions={companySubscriptions}
             />
           )}
 
@@ -138,6 +140,7 @@ function RolePermissionsManagement() {
               onToggleOperation={toggleMultiplePermissions}
               userData={userData}
               updating={updating}
+              companySubscriptions={companySubscriptions}
             />
           )}
 
@@ -152,6 +155,7 @@ function RolePermissionsManagement() {
               onToggleOperation={toggleMultiplePermissions}
               userData={userData}
               updating={updating}
+              companySubscriptions={companySubscriptions}
             />
           )}
 
@@ -167,6 +171,7 @@ function RolePermissionsManagement() {
               onDeletePermission={deletePermission}
               userData={userData}
               updating={updating}
+              companySubscriptions={companySubscriptions}
             />
           )}
 

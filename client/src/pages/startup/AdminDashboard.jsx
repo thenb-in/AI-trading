@@ -12,6 +12,9 @@ import { DashboardContent } from "./Dashboards";
 import { ActivityMaster } from "../../components/masters/startup/activity_master/ActivityMaster";
 import { NBnextDriveMaster } from "../../components/masters/startup/nbnext_drive_master/NBnextDriveMaster";
 import { Navigator } from "../navigator/Navigator";
+import { AppGuide } from "./AppGuide";
+import { HelpSupportPage } from "@/components/startup/admin/help_support/HelpSupportPage";
+import {SubscriptionPage} from '@/components/startup/admin/subscription_module/SubscriptionPage';
 
 const AdminDashboard = () => {
   return (
@@ -34,7 +37,9 @@ const AdminDashboard = () => {
         <Route path="company" element={<CompanySettings />} />
         <Route path="role-permissions" element={<RolePermissionsManagement />} />
         <Route path="multi-company-setup" element={<MultiCompanyModule />} />
-
+        <Route path="subscription" element={<SubscriptionPage/>}/>
+        <Route path="app-guide" element={<AppGuide />} />
+        <Route path="help-support" element={<HelpSupportPage />} />
 
         {/* Add APP extra routes */}
         {appRoutes.map((route) => (

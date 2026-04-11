@@ -5,8 +5,8 @@ import {
   groupReportPermissionsByOperation,
   getOperationDisplayName,
   isPermissionAssigned,
+  getPermissionSubscriptionStatus,
 } from '../utils/permissionUtils';
-import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
 
 function PermissionTable({
   groups,
@@ -16,6 +16,7 @@ function PermissionTable({
   updating,
   groupByOperation,
   userData,
+  companySubscriptions,
 }) {
   // Check if the role is read-only (default role and user is not superadmin)
   const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSadmin;
@@ -53,24 +54,44 @@ function PermissionTable({
     return a.localeCompare(b);
   });
 
+  // Helper function to filter subscribed permissions
+  const getSubscribedPermissions = (permissionsList) => {
+    return permissionsList.filter((p) => {
+      const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
+      return status === 'subscribed';
+    });
+  };
+
   // Handler functions for toggle operations
   const handleOperationToggle = (operationPermissions, allOperationAssigned) => {
-    const permIds = operationPermissions.map((p) => p.id);
+    // Only toggle subscribed permissions
+    const subscribedPerms = getSubscribedPermissions(operationPermissions);
+    if (subscribedPerms.length === 0) return;
+    const permIds = subscribedPerms.map((p) => p.id);
     onToggleOperation(permIds, !allOperationAssigned);
   };
 
   const handleGroupToggle = (groupPermissions, allGroupAssigned) => {
-    const allPermIds = groupPermissions.map((p) => p.id);
+    // Only toggle subscribed permissions
+    const subscribedPerms = getSubscribedPermissions(groupPermissions);
+    if (subscribedPerms.length === 0) return;
+    const allPermIds = subscribedPerms.map((p) => p.id);
     onToggleOperation(allPermIds, !allGroupAssigned);
   };
 
   const handleFooterOperationToggle = (allOperationPerms, allAssigned) => {
-    const permIds = allOperationPerms.map((p) => p.id);
+    // Only toggle subscribed permissions
+    const subscribedPerms = getSubscribedPermissions(allOperationPerms);
+    if (subscribedPerms.length === 0) return;
+    const permIds = subscribedPerms.map((p) => p.id);
     onToggleOperation(permIds, !allAssigned);
   };
 
   const handleFooterAllToggle = (allPerms, allAssigned) => {
-    const permIds = allPerms.map((p) => p.id);
+    // Only toggle subscribed permissions
+    const subscribedPerms = getSubscribedPermissions(allPerms);
+    if (subscribedPerms.length === 0) return;
+    const permIds = subscribedPerms.map((p) => p.id);
     onToggleOperation(permIds, !allAssigned);
   };
 
@@ -103,9 +124,15 @@ function PermissionTable({
           {Object.keys(groups).sort().map((groupName) => {
             const groupPermissions = groups[groupName];
             const operationGroups = groupFunction(groupPermissions);
-            const allGroupAssigned = groupPermissions.every((p) =>
+            // Only check subscribed permissions for "all assigned" status
+            const subscribedGroupPermissions = groupPermissions.filter((p) => {
+              const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
+              return status === 'subscribed';
+            });
+            const allGroupAssigned = subscribedGroupPermissions.length > 0 && subscribedGroupPermissions.every((p) =>
               isPermissionAssigned(selectedRole, p.id)
             );
+            const hasSubscribedInGroup = subscribedGroupPermissions.length > 0;
 
             return (
               <tr
@@ -117,9 +144,15 @@ function PermissionTable({
                 </td>
                 {operations.map((operation) => {
                   const operationPermissions = operationGroups[operation] || [];
-                  const allOperationAssigned = operationPermissions.length > 0 && 
-                    operationPermissions.every((p) => isPermissionAssigned(selectedRole, p.id));
+                  // Only check subscribed permissions for "all assigned" status
+                  const subscribedOperationPermissions = operationPermissions.filter((p) => {
+                    const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
+                    return status === 'subscribed';
+                  });
+                  const allOperationAssigned = subscribedOperationPermissions.length > 0 && 
+                    subscribedOperationPermissions.every((p) => isPermissionAssigned(selectedRole, p.id));
                   const hasPermissions = operationPermissions.length > 0;
+                  const hasSubscribedInOperation = subscribedOperationPermissions.length > 0;
 
                   return (
                     <td
@@ -131,12 +164,25 @@ function PermissionTable({
                           {operationPermissions.map((permission, index) => {
                             const assigned = isPermissionAssigned(selectedRole, permission.id);
                             const isLinked = permission._isLinked;
+                            const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
+                            const isHidden = subscriptionStatus === 'hidden';
+                            // Hidden means subscribed but hidden - enable for superadmins
+                            const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSadmin);
+                            const isDisabled = updating || !selectedRole || isRoleReadOnly || !isSubscribed;
                             const displayName = permission.display_name 
                               ? permission.display_name 
                               : (permission.name || 'Unknown Permission');
-                            const tooltipText = isLinked 
+                            let tooltipText = isLinked 
                               ? `${displayName} (Linked to Module Permission - toggling this will also toggle the module permission)`
                               : displayName;
+                            
+                            if (!isSubscribed) {
+                              tooltipText = `You don't have subscription to use this permission. Upgrade to use.`;
+                            } else if (isHidden && userData?.isSadmin) {
+                              tooltipText = `${tooltipText} (Hidden permission - visible to superadmins only)`;
+                            } else if (isRoleReadOnly) {
+                              tooltipText = `${tooltipText} (Read-only: Only superadmins can modify default roles)`;
+                            }
                             
                             // Use a unique key that includes the linked context to avoid React key conflicts
                             const uniqueKey = permission._linkedContext 
@@ -145,13 +191,13 @@ function PermissionTable({
                             
                             return (
                               <div key={uniqueKey} className="flex items-center gap-0.5">
-                                <CheckboxTypeField
-                                  mode="bare"
+                                <input
+                                  type="checkbox"
                                   checked={assigned}
                                   onChange={() => onTogglePermission(permission.id, assigned)}
-                                  disabled={updating || !selectedRole || isRoleReadOnly}
+                                  disabled={isDisabled}
                                   className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 cursor-pointer"
-                                  title={isRoleReadOnly ? `${tooltipText} (Read-only: Only superadmins can modify default roles)` : tooltipText}
+                                  title={tooltipText}
                                 />
                                 {isLinked && (
                                   <Link2 
@@ -165,9 +211,15 @@ function PermissionTable({
                           {operationPermissions.length > 1 && (
                             <button
                               onClick={() => handleOperationToggle(operationPermissions, allOperationAssigned)}
-                              disabled={updating || !selectedRole || isRoleReadOnly}
+                              disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedInOperation}
                               className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 ml-1"
-                              title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allOperationAssigned ? 'Deselect all' : 'Select all')}
+                              title={
+                                !hasSubscribedInOperation 
+                                  ? 'No subscribed permissions available' 
+                                  : isRoleReadOnly 
+                                    ? 'Read-only: Only superadmins can modify default roles' 
+                                    : (allOperationAssigned ? 'Deselect all' : 'Select all')
+                              }
                             >
                               {updating ? (
                                 <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -188,9 +240,15 @@ function PermissionTable({
                 <td className="p-1 text-center">
                   <button
                     onClick={() => handleGroupToggle(groupPermissions, allGroupAssigned)}
-                    disabled={updating || !selectedRole || isRoleReadOnly}
+                    disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedInGroup}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                    title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allGroupAssigned ? 'Deselect all' : 'Select all')}
+                    title={
+                      !hasSubscribedInGroup 
+                        ? 'No subscribed permissions available' 
+                        : isRoleReadOnly 
+                          ? 'Read-only: Only superadmins can modify default roles' 
+                          : (allGroupAssigned ? 'Deselect all' : 'Select all')
+                    }
                   >
                     {updating ? (
                       <Loader2 className="w-3 h-3 animate-spin mx-auto" />
@@ -219,17 +277,29 @@ function PermissionTable({
                   allOperationPerms.push(...operationGroups[operation]);
                 }
               });
-              const allAssigned = allOperationPerms.length > 0 && 
-                allOperationPerms.every((p) => isPermissionAssigned(selectedRole, p.id));
+              // Only check subscribed permissions for "all assigned" status
+              const subscribedOperationPerms = allOperationPerms.filter((p) => {
+                const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
+                return status === 'subscribed';
+              });
+              const allAssigned = subscribedOperationPerms.length > 0 && 
+                subscribedOperationPerms.every((p) => isPermissionAssigned(selectedRole, p.id));
+              const hasSubscribedInOperation = subscribedOperationPerms.length > 0;
 
               return (
                 <td key={operation} className="p-1 text-center border-r border-gray-200 last:border-r-0">
                   {allOperationPerms.length > 0 ? (
                     <button
                       onClick={() => handleFooterOperationToggle(allOperationPerms, allAssigned)}
-                      disabled={updating || !selectedRole || isRoleReadOnly}
+                      disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedInOperation}
                       className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                      title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allAssigned ? 'Deselect all' : 'Select all')}
+                      title={
+                        !hasSubscribedInOperation 
+                          ? 'No subscribed permissions available' 
+                          : isRoleReadOnly 
+                            ? 'Read-only: Only superadmins can modify default roles' 
+                            : (allAssigned ? 'Deselect all' : 'Select all')
+                      }
                     >
                       {updating ? (
                         <Loader2 className="w-2.5 h-2.5 animate-spin mx-auto" />
@@ -249,14 +319,26 @@ function PermissionTable({
               {/* Select all for entire category */}
               {(() => {
                 const allPerms = Object.values(groups).flat();
-                const allAssigned = allPerms.length > 0 && 
-                  allPerms.every((p) => isPermissionAssigned(selectedRole, p.id));
+                // Only check subscribed permissions for "all assigned" status
+                const subscribedAllPerms = allPerms.filter((p) => {
+                  const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
+                  return status === 'subscribed';
+                });
+                const allAssigned = subscribedAllPerms.length > 0 && 
+                  subscribedAllPerms.every((p) => isPermissionAssigned(selectedRole, p.id));
+                const hasSubscribedAll = subscribedAllPerms.length > 0;
                 return (
                   <button
                     onClick={() => handleFooterAllToggle(allPerms, allAssigned)}
-                    disabled={updating || !selectedRole || isRoleReadOnly}
+                    disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedAll}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                    title={isRoleReadOnly ? 'Read-only: Only superadmins can modify default roles' : (allAssigned ? 'Deselect all' : 'Select all')}
+                    title={
+                      !hasSubscribedAll 
+                        ? 'No subscribed permissions available' 
+                        : isRoleReadOnly 
+                          ? 'Read-only: Only superadmins can modify default roles' 
+                          : (allAssigned ? 'Deselect all' : 'Select all')
+                    }
                   >
                     {updating ? (
                       <Loader2 className="w-3 h-3 animate-spin mx-auto" />
@@ -284,6 +366,7 @@ PermissionTable.propTypes = {
   updating: PropTypes.bool,
   groupByOperation: PropTypes.oneOf(['master', 'report']).isRequired,
   userData: PropTypes.object,
+  companySubscriptions: PropTypes.array,
 };
 
 export { PermissionTable };

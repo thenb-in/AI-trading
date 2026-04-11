@@ -10,7 +10,7 @@ function AppSideBar({ collapsed, setCollapsed, isMobileView }) {
       collapsed={collapsed}
       setCollapsed={setCollapsed} 
       isMobileView={isMobileView}
-      additionalMenuItems={appMenuItems} // Inject app-specific items
+      menuItems={appMenuItems}
     />
   );
 }

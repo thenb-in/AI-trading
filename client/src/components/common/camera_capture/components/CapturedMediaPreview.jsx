@@ -7,7 +7,7 @@ const CapturedMediaPreview = ({ capturedMedia, mode }) => {
   if (!capturedMedia) return null;
 
   return (
-    <div className="relative w-full aspect-video">
+    <div className="relative w-full aspect-[3/4] sm:aspect-video bg-black">
       {mode === 'photo' ? (
         <img
           src={capturedMedia}

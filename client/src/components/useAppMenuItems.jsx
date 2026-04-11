@@ -1,34 +1,35 @@
-import {
-  BarChart3,
-  Layers,
-  LayoutDashboard,
-  Navigation,
-} from "lucide-react";
+import { Headset } from "lucide-react";
 import {
   Category as CategoryIcon,
   Settings as SettingsIcon,
   Storage as StorageIcon,
   SupervisorAccount as ManagementIcon,
   Build as CommonMastersIcon,
+  AccountBalance as AccountBalanceIcon,
   CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "../context/startup/useDataContext";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { getMasterCategories } from "@data/getMasterModules";
+import { getMasterCategoriesForUser } from "../data/getMasterModules";
+import { getAppModuleDefinitions, isAppModuleVisible } from "../data/getAppModules";
 
-// Hook to get App-specific menu items
+// Hook to get App-specific menu items (single source: getAppModuleDefinitions)
 function useAppMenuItems() {
   const navigate = useNavigate();
   const location = useLocation();
   const dataContext = useDataContext();
+  const { userData } = dataContext;
 
-  const categories = getMasterCategories();
+  const categories = getMasterCategoriesForUser(hasPermission, dataContext);
 
   const [showMasterFlyout, setShowMasterFlyout] = useState(false);
+  const [showMasterSubmenu, setShowMasterSubmenu] = useState(false);
   const [flyoutPosition, setFlyoutPosition] = useState({ top: 0, left: 0 });
   const flyoutHideTimeoutRef = useRef(null);
   const masterButtonRef = useRef(null);
+
+  const toggleMasterSubmenu = () => setShowMasterSubmenu((prev) => !prev);
 
   const updateFlyoutPosition = useCallback(() => {
     if (masterButtonRef.current) {
@@ -88,6 +89,10 @@ function useAppMenuItems() {
         return <ManagementIcon className="h-4 w-4" />;
       case "Common Masters":
         return <CommonMastersIcon className="h-4 w-4" />;
+      case "Payroll & Calculations":
+        return <AccountBalanceIcon className="h-4 w-4" />;
+      case "CallBuddy":
+         return <Headset className="h-4 w-4"/>
       case 'File Management':
         return <CloudUploadIcon className="h-4 w-4"/>;
       default:
@@ -96,22 +101,8 @@ function useAppMenuItems() {
   };
 
   const searchParams = new URLSearchParams(location.search);
-  const isMasterPage = location.pathname.startsWith("/admin/master");
-  const activeCategory = searchParams.get("category") || (isMasterPage ? "Common Masters" : null);
+  const activeCategory = searchParams.get("category") || null;
 
-  // Handle click on Masters button - navigate to first category
-  const handleMasterButtonClick = useCallback(() => {
-    if (categories && categories.length > 0) {
-      const firstCategory = categories[0];
-      const path = `/admin/master?category=${encodeURIComponent(firstCategory.name)}`;
-      navigate(path);
-    } else {
-      // Fallback to master page if no categories
-      navigate("/admin/master");
-    }
-  }, [categories, navigate]);
-
-  // Master Categories Submenu Component
   const MasterSubmenu = () => {
     const handleCategoryClick = (categoryName) => {
       const path = `/admin/master?category=${encodeURIComponent(categoryName)}`;
@@ -128,13 +119,15 @@ function useAppMenuItems() {
                 onClick={() => handleCategoryClick(category.name)}
                 className={`w-full flex items-center p-2 rounded-md text-sm transition-colors 
                   ${isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"}`}
-                title={`${category.name} (${category.count})`}
+                title={category.count != null ? `${category.name} (${category.count})` : category.name}
               >
                 <span className="mr-2">{getCategoryIcon(category.name)}</span>
                 <span className="flex-1 truncate">{category.name}</span>
-                <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
-                  {category.count}
-                </span>
+                {category.count != null && category.count > 0 && (
+                  <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
+                    {category.count}
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -143,7 +136,6 @@ function useAppMenuItems() {
     );
   };
 
-  // Master Categories Flyout Component
   const MasterFlyout = () => {
     const flyoutRef = useRef(null);
 
@@ -152,7 +144,8 @@ function useAppMenuItems() {
         flyoutRef.current.style.top = `${flyoutPosition.top}px`;
         flyoutRef.current.style.left = `${flyoutPosition.left}px`;
       }
-    }, [flyoutPosition.top, flyoutPosition.left, showMasterFlyout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reposition when flyout opens or position updates
+    }, [showMasterFlyout, flyoutPosition]);
 
     const handleCategoryClick = (categoryName) => {
       const path = `/admin/master?category=${encodeURIComponent(categoryName)}`;
@@ -178,13 +171,15 @@ function useAppMenuItems() {
                   onClick={() => handleCategoryClick(category.name)}
                   className={`w-full flex items-center p-2 rounded-md text-sm transition-colors ${isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"
                     }`}
-                  title={`${category.name} (${category.count})`}
+                  title={category.count != null ? `${category.name} (${category.count})` : category.name}
                 >
                   <span className="mr-2">{getCategoryIcon(category.name)}</span>
                   <span className="flex-1 truncate">{category.name}</span>
-                  <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
-                    {category.count}
-                  </span>
+                  {category.count != null && category.count > 0 && (
+                    <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
+                      {category.count}
+                    </span>
+                  )}
                 </button>
               </li>
             );
@@ -194,43 +189,43 @@ function useAppMenuItems() {
     );
   };
 
-  return [
-    {
-      id: "navigator",
-      label: "Navigator",
-      icon: Navigation,
-      path: "/admin/navigator",
-      order: 1,
-    },
-    hasPermission("view_dashboard_module", dataContext) && {
-      id: "dashboard",
-      label: "Dashboards",
-      icon: LayoutDashboard,
-      path: "/admin/dashboard",
-      order: 2,
-    },
-    hasPermission("view_report_module", dataContext) && {
-      id: "report",
-      label: "Reports",
-      icon: BarChart3,
-      path: "/admin/report",
-      order: 3,
-    },
-    hasPermission("view_master_module", dataContext) && {
-      id: "master",
-      label: "Masters",
-      icon: Layers,
-      path: "/admin/master",
-      hasSubmenu: true,
-      submenu: <MasterSubmenu />,
-      flyout: <MasterFlyout />,
-      onClick: handleMasterButtonClick,
-      onMouseEnter: openFlyout,
-      onMouseLeave: scheduleCloseFlyout,
-      buttonRef: masterButtonRef,
-      order: 4,
-    }
-  ].filter(Boolean);
+  const access = {
+    hasPermissionFn: hasPermission,
+    dataContext,
+    userData,
+  };
+
+  return getAppModuleDefinitions()
+    .filter((def) => isAppModuleVisible(def, access))
+    .map((def) => {
+      const base = {
+        id: def.id,
+        label: def.title,
+        icon: def.icon,
+        order: def.order,
+      };
+
+      if (def.id === "mastersListing") {
+        // todo: make flyout generic so other flyouts can be made with same boilerplate
+        return {
+          ...base,
+          path: def.navigatePath,
+          hasSubmenu: true,
+          submenuOpen: showMasterSubmenu,
+          onSubmenuToggle: toggleMasterSubmenu,
+          submenu: <MasterSubmenu />,
+          flyout: <MasterFlyout />,
+          onMouseEnter: openFlyout,
+          onMouseLeave: scheduleCloseFlyout,
+          buttonRef: masterButtonRef,
+        };
+      }
+
+      return {
+        ...base,
+        path: def.navigatePath,
+      };
+    });
 }
 
 export { useAppMenuItems };

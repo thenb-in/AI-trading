@@ -22,28 +22,51 @@ const COLOR_CLASSES = {
 const ModuleCard = ({ module, type, onClick }) => {
   const Icon = module.icon;
   const isDisabled = !module.hasAccess;
-  const colorKey = module.color || (type === "master" ? "primary" : "secondary");
+  const isSubscribed = module.isSubscribed !== false; // Default to true if not set
+  const isHidden = module.isHidden === true;
+  const isDisabledBySubscription = !isSubscribed && !isHidden; // Hidden permissions are subscribed, so don't disable them
+  const colorKey = module.color || (type === "master" ? "primary" : type === "module" ? "indigo" : "secondary");
   const gradientClass = COLOR_CLASSES[colorKey] || COLOR_CLASSES.primary;
 
+  // Determine tooltip text
+  // Check subscription first, then permission (so unsubscribed modules don't show "Access denied")
+  const getTooltipText = () => {
+    // If they have permission but not subscription, show subscription message
+    if (isDisabledBySubscription) {
+      return "Not subscribed. Please upgrade your plan to access this module.";
+    }
+    // If they don't have permission at all, show access denied
+    if (!module.hasPermissionAccess) {
+      return `Access denied. Required permission: ${module.permissionName}`;
+    }
+    // If it's a hidden permission, show that info
+    if (isHidden) {
+      return "Hidden permission (visible to superadmins only)";
+    }
+    return undefined;
+  };
+
   const handleClick = () => {
-    if (!isDisabled && onClick) {
+    if (!isDisabled && !isDisabledBySubscription && onClick) {
       onClick();
     }
   };
 
   const handleKeyPress = (e) => {
-    if ((e.key === "Enter" || e.key === " ") && !isDisabled && onClick) {
+    if ((e.key === "Enter" || e.key === " ") && !isDisabled && !isDisabledBySubscription && onClick) {
       e.preventDefault();
       onClick();
     }
   };
+
+  const isFullyDisabled = isDisabled || isDisabledBySubscription;
 
   return (
     <div
       className={`
         h-full transition-all duration-200 ease-in-out
         border rounded-lg relative overflow-hidden
-        ${isDisabled
+        ${isFullyDisabled
           ? "cursor-not-allowed opacity-50 bg-gray-50 border-gray-300"
           : "cursor-pointer bg-white border-gray-200 hover:shadow-md hover:border-gray-300"
         }
@@ -51,12 +74,12 @@ const ModuleCard = ({ module, type, onClick }) => {
       onClick={handleClick}
       onKeyPress={handleKeyPress}
       role="button"
-      tabIndex={isDisabled ? -1 : 0}
-      aria-disabled={isDisabled}
-      title={isDisabled ? `Access denied. Required permission: ${module.permissionName}` : undefined}
+      tabIndex={isFullyDisabled ? -1 : 0}
+      aria-disabled={isFullyDisabled}
+      title={getTooltipText()}
     >
       {/* Top gradient bar */}
-      {!isDisabled && (
+      {!isFullyDisabled && (
         <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${gradientClass} opacity-60`} />
       )}
 
@@ -65,7 +88,7 @@ const ModuleCard = ({ module, type, onClick }) => {
           <div className={`
             p-2 rounded flex items-center justify-center
             min-w-[28px] min-h-[28px] flex-shrink-0
-            ${isDisabled
+            ${isFullyDisabled
               ? "bg-gradient-to-br from-gray-400 to-gray-500"
               : `bg-gradient-to-br ${gradientClass}`
             }
@@ -82,12 +105,12 @@ const ModuleCard = ({ module, type, onClick }) => {
               <h3 className={`
                 text-xs font-medium flex-1
                 overflow-hidden text-ellipsis whitespace-nowrap
-                ${isDisabled ? "text-gray-400" : "text-gray-900"}
+                ${isFullyDisabled ? "text-gray-400" : "text-gray-900"}
               `}>
                 {module.title}
               </h3>
               <div className="flex-shrink-0 ml-1">
-                {isDisabled ? (
+                {isFullyDisabled ? (
                   <Lock size={10} className="text-gray-400" />
                 ) : (
                   <LockOpen size={10} className="text-green-600" />
@@ -98,7 +121,7 @@ const ModuleCard = ({ module, type, onClick }) => {
             {/* Category badge below title */}
             <span className={`
               text-[10px] font-medium px-1.5 py-0.5 rounded-full inline-block
-              ${isDisabled
+              ${isFullyDisabled
                 ? "bg-gray-200 text-gray-500"
                 : "bg-gray-100 text-gray-600"
               }
@@ -119,11 +142,15 @@ ModuleCard.propTypes = {
     description: PropTypes.string,
     desc: PropTypes.string,
     hasAccess: PropTypes.bool.isRequired,
+    hasPermissionAccess: PropTypes.bool,
     permissionName: PropTypes.string.isRequired,
     color: PropTypes.string,
     category: PropTypes.string,
+    isSubscribed: PropTypes.bool,
+    subscriptionStatus: PropTypes.string,
+    isHidden: PropTypes.bool,
   }).isRequired,
-  type: PropTypes.oneOf(["master", "report"]).isRequired,
+  type: PropTypes.oneOf(["master", "report", "module"]).isRequired,
   onClick: PropTypes.func,
 };
 

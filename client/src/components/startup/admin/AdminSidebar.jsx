@@ -1,15 +1,13 @@
 import {
-  User,
-  Building,
+  Shield,
   ChevronLeft,
   ChevronRight,
-  Shield,
-  CopySlash,
-  BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "@context/startup/useDataContext";
+import { useDataContext } from "@context/startup/useDataContext";
 import { LogoutButton } from "../LogoutButton";
+import { HelpSupportButton } from "../HelpSupportButton";
 import { SearchButton } from "../SearchButton";
 import { DebugModeIndicator } from "../DebugModeIndicator";
 import { isDebugMode, subscribeToDebugMode } from "@services/debugModeService";
@@ -21,11 +19,11 @@ function AdminSidebar({
   collapsed,
   setCollapsed,
   isMobileView,
-  additionalMenuItems = [], // Accept additional menu items from app
+  menuItems = [],
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { userData} = useDataContext();
+  const { userData } = useDataContext();
   const [showDebugIndicator, setShowDebugIndicator] = useState(() => isDebugMode());
 
   useEffect(() => {
@@ -33,46 +31,9 @@ function AdminSidebar({
     return unsubscribe;
   }, []);
 
-  const dataContext = useDataContext();
-  // Base menu items
-  const baseMenuItems = [
-    hasPermission("view_user_module", dataContext) && {
-      id: "users",
-      label: "User Management",
-      icon: User,
-      path: "/admin/users",
-      order: 5, // example order value
-    },
-    hasPermission("view_company_settings", dataContext) && {
-      id: "company",
-      label: "Company Settings",
-      icon: Building,
-      path: "/admin/company",
-      order: 6
-    },
-    hasPermission("view_role_permission_module", dataContext) && {
-      id: "rolesAndPermissions",
-      label: "Roles & Permissions",
-      icon: Shield,
-      path: "/admin/role-permissions",
-      order: 7,
-    },
-    userData?.isSadmin && {
-      id: "multiCompanySetup",
-      label: "Multi-Company Setup",
-      icon: CopySlash,
-      path: "/admin/multi-company-setup",
-      order: 8,
-    },
-  ].filter(Boolean);
-
-  // Combine: additional items first, then base items
-  const menuItems = [...additionalMenuItems, ...baseMenuItems];
-
-  // Sort menu items by optional 'order' key to control their positions
-  const sortedMenuItems = menuItems.sort((a, b) => {
-    const orderA = typeof a.order === 'number' ? a.order : 0;
-    const orderB = typeof b.order === 'number' ? b.order : 0;
+  const sortedMenuItems = [...menuItems].sort((a, b) => {
+    const orderA = typeof a.order === "number" ? a.order : 0;
+    const orderB = typeof b.order === "number" ? b.order : 0;
     return orderA - orderB;
   });
 
@@ -89,7 +50,6 @@ function AdminSidebar({
     return location.pathname.startsWith(path);
   };
 
-
   const handleToggleClick = () => {
     setCollapsed(!collapsed);
   };
@@ -98,8 +58,12 @@ function AdminSidebar({
     handleNavigation(item);
   };
 
+  const handleSubmenuToggle = (item, e) => {
+    e.stopPropagation();
+    item.onSubmenuToggle?.();
+  };
+
   return (
-    <>
     <div
         className={`
           bg-gray-800 text-white fixed top-0 left-0 flex flex-col z-[99999] sidebar-container
@@ -145,42 +109,77 @@ function AdminSidebar({
                 {sortedMenuItems.length === 0 && (
                   <li className="text-sm text-gray-400 p-2">No menu items available</li>
                 )}
-                {sortedMenuItems.map((item) => (
-                  <li
-                    key={item.id}
-                    className="relative"
-                    onMouseEnter={item.onMouseEnter}
-                    onMouseLeave={item.onMouseLeave}
-                  >
-                    <button
-                      ref={item.buttonRef || null}
-                      onClick={handleItemClick(item)}
-                      title={item.label}
-                      aria-label={collapsed ? item.label : undefined}
-                      className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors ${
-                        isActive(item.path)
-                          ? "bg-blue-600 text-white"
-                          : "hover:bg-gray-700"
-                        } ${collapsed ? "justify-center" : "justify-start"}`}
+                {sortedMenuItems.map((item) => {
+                  const showArrowRow = item.hasSubmenu && !collapsed;
+                  return (
+                    <li
+                      key={item.id}
+                      className="relative"
+                      onMouseEnter={item.onMouseEnter}
+                      onMouseLeave={item.onMouseLeave}
                     >
-                      {item.icon && (
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {showArrowRow ? (
+                        <>
+                          <div
+                            className={`w-full flex items-center rounded-md h-10 overflow-hidden transition-colors ${
+                              isActive(item.path) ? "bg-blue-600 text-white" : "hover:bg-gray-700"
+                            }`}
+                          >
+                            <button
+                              ref={item.buttonRef || null}
+                              onClick={handleItemClick(item)}
+                              title={item.label}
+                              className="flex-1 min-w-0 h-full inline-flex items-center px-2.5 text-sm font-medium justify-start bg-transparent border-0 text-inherit cursor-pointer"
+                            >
+                              {item.icon && (
+                                <item.icon className="w-5 h-5 flex-shrink-0" />
+                              )}
+                              <span className="ml-3 truncate">{item.label}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleSubmenuToggle(item, e)}
+                              title={item.submenuOpen ? "Hide master list" : "Show master list"}
+                              aria-expanded={item.submenuOpen}
+                              className="h-full w-8 flex-shrink-0 flex items-center justify-center bg-transparent border-0 text-inherit cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              <ChevronDown
+                                size={18}
+                                className={`transition-transform duration-200 ${item.submenuOpen ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
+                          {item.submenu && item.submenuOpen && <>{item.submenu}</>}
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            ref={item.buttonRef || null}
+                            onClick={handleItemClick(item)}
+                            title={item.label}
+                            aria-label={collapsed ? item.label : undefined}
+                            className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors ${
+                              isActive(item.path)
+                                ? "bg-blue-600 text-white"
+                                : "hover:bg-gray-700"
+                            } ${collapsed ? "justify-center" : "justify-start"}`}
+                          >
+                            {item.icon && (
+                              <item.icon className="w-5 h-5 flex-shrink-0" />
+                            )}
+                            <span
+                              className={`ml-3 truncate transition-all duration-300 sidebar-label-transition
+                                ${collapsed ? "opacity-0 -translate-x-3 pointer-events-none hidden" : "opacity-100 translate-x-0 pointer-events-auto inline"}`}
+                            >
+                              {item.label}
+                            </span>
+                          </button>
+                          {item.flyout && collapsed && <>{item.flyout}</>}
+                        </>
                       )}
-                      <span
-                        className={`ml-3 truncate transition-all duration-300 sidebar-label-transition
-                          ${collapsed ? 'opacity-0 -translate-x-3 pointer-events-none hidden' : 'opacity-100 translate-x-0 pointer-events-auto inline'}`}
-                      >
-                        {item.label}
-                      </span>
-                    </button>
-
-                    {/* Render submenu if provided */}
-                    {item.submenu && !collapsed && <>{item.submenu}</>}
-
-                    {/* Render flyout if provided */}
-                    {item.flyout && collapsed && <>{item.flyout}</>}
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </nav>
           </div>
@@ -206,33 +205,12 @@ function AdminSidebar({
               </div>
             </div>
           )}
-          {/* Guide Button */}
-          <a
-            href="/app-guide"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={collapsed ? "App Guide" : undefined}
-            aria-label="Open App Guide"
-            className={`w-full h-10 inline-flex items-center rounded-md px-2.5 text-sm font-medium transition-colors mb-2 ${
-              location.pathname === '/app-guide'
-                ? "bg-blue-600 text-white"
-                : "text-gray-300 hover:bg-gray-700 hover:text-white"
-            } ${collapsed ? "justify-center" : "justify-start"}`}
-          >
-            <BookOpen className="w-5 h-5 flex-shrink-0" />
-            <span
-              className={`ml-3 truncate transition-all duration-300 sidebar-label-transition
-                ${collapsed ? 'opacity-0 -translate-x-3 pointer-events-none hidden' : 'opacity-100 translate-x-0 pointer-events-auto inline'}`}
-            >
-              App Guide
-            </span>
-          </a>
           {showDebugIndicator && <DebugModeIndicator collapsed={collapsed} />}
+          <HelpSupportButton collapsed={collapsed} />
           <SearchButton collapsed={collapsed} />
           <LogoutButton collapsed={collapsed} />
         </div>
       </div>
-    </>
   );
 }
 
@@ -240,13 +218,16 @@ AdminSidebar.propTypes = {
   collapsed: PropTypes.bool.isRequired,
   setCollapsed: PropTypes.func.isRequired,
   isMobileView: PropTypes.bool.isRequired,
-  additionalMenuItems: PropTypes.arrayOf(
+  menuItems: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
       icon: PropTypes.elementType.isRequired,
-      path: PropTypes.string.isRequired,
+      path: PropTypes.string,
+      order: PropTypes.number,
       hasSubmenu: PropTypes.bool,
+      submenuOpen: PropTypes.bool,
+      onSubmenuToggle: PropTypes.func,
       submenu: PropTypes.node,
       flyout: PropTypes.node,
       onClick: PropTypes.func,

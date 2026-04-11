@@ -7,6 +7,7 @@ const ROUTE_SETUP_TOTP = '/setup-totp';
 const ROUTE_ADMIN_DASHBOARD = '/admin';
 const ROUTE_USER_MANAGEMENT = '/admin/users';
 const ROUTE_ROLES_PERMISSIONS = '/admin/roles';
+const ROUTE_HELP_SUPPORT = '/admin/help-support';
 
 export {
   ROUTE_HOME,
@@ -16,6 +17,7 @@ export {
   ROUTE_SETUP_TOTP,
   ROUTE_ADMIN_DASHBOARD,
   ROUTE_USER_MANAGEMENT,
-  ROUTE_ROLES_PERMISSIONS
+  ROUTE_ROLES_PERMISSIONS,
+  ROUTE_HELP_SUPPORT
 };
 

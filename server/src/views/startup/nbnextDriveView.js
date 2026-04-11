@@ -1,7 +1,10 @@
 const fs = require('fs');
+const path = require('path');
 const logger = require('../../../logger');
+const env = require('../../config/env');
 const { NBNEXT_DRIVE_FILE_NOT_FOUND, NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK } = require('../../constants/startup/errors');
 const nbnextDriveController = require('../../controllers/startup/nbnextDriveController');
+
 
 async function getAllFiles(req, res) {
   try {
@@ -65,7 +68,7 @@ async function createFile(req, res) {
 
     const fileData = {
       fileName: req.file.originalname,
-      filePath: req.file.filename,
+      filePath: path.relative(env.UPLOADS_DIR, req.file.path).replace(/\\/g, '/'),
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       objectName: objectName || null,

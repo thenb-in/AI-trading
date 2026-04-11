@@ -12,32 +12,32 @@ const activityColumns = [
     hidden: false
   },
   {
-    key: 'log',
-    display_name: 'Log',
+    key: 'type',
+    display_name: 'Type',
     type: 'string',
     hidden: false
   },
   {
     key: 'objectName',
-    display_name: 'Object Name',
+    display_name: 'Message',
+    type: 'string',
+    hidden: false
+  },
+  {
+    key: 'objectId',
+    display_name: 'Record ID',
     type: 'string',
     hidden: false
   },
   {
     key: 'createdByName',
-    display_name: 'Created By',
+    display_name: 'Audit By',
     type: 'string',
     hidden: false
   },
   {
     key: 'createdAt',
-    display_name: 'Created At',
-    type: 'datetime',
-    hidden: false
-  },
-  {
-    key: 'updatedAt',
-    display_name: 'Updated At',
+    display_name: 'Audit At',
     type: 'datetime',
     hidden: false
   }

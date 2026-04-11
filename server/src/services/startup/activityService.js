@@ -1,5 +1,5 @@
 // services/startup/activityService.js
-const { pushActivityToExternalServer } = require('../../../interfaces/startup/activityInterface');
+const { pushActivityToExternalServer } = require('../../../interfaces/startup/wallet/activityInterface');
 const logger = require('../../../logger');
 const { createdByUserInclude } = require('../../constants/query_includes');
 const { Activity, User } = require('../../models');
@@ -7,10 +7,11 @@ const { Activity, User } = require('../../models');
 const ACTIVITY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
 const ACTIVITY_INCLUDE = [createdByUserInclude(User)];
 
-async function queryActivities(where, limit) {
+async function queryActivities(where, limit,offset) {
   return Activity.findAll({
     where,
     limit: parseInt(limit, 10),
+    offset: parseInt(offset, 10),
     order: [['timestamp', 'DESC']],
     attributes: ACTIVITY_ATTRIBUTES,
     include: ACTIVITY_INCLUDE
@@ -18,13 +19,13 @@ async function queryActivities(where, limit) {
 }
 
 const activityService = {
-  async getAllActivities(limit = 100, companyId = null) {
+  async getAllActivities(limit = 100,offset = 0, companyId = null) {
     try {
       const where = {};
       if (companyId) {
         where.companyId = companyId;
       }
-      const activities = await queryActivities(where, limit);
+      const activities = await queryActivities(where, limit,offset);
       return activities;
     } catch (error) {
       logger.error('Error fetching all activities', error);
@@ -32,13 +33,13 @@ const activityService = {
     }
   },
 
-  async getActivitiesByHead(head, limit = 100, companyId = null) {
+  async getActivitiesByHead(head, limit = 100,offset = 0, companyId = null) {
     try {
       const where = { head };
       if (companyId) {
         where.companyId = companyId;
       }
-      const activities = await queryActivities(where, limit);
+      const activities = await queryActivities(where, limit,offset);
       return activities;
     } catch (error) {
       logger.error(`Error fetching activities by head: ${head}`, error);
@@ -46,6 +47,20 @@ const activityService = {
     }
   },
 
+  async getActivitiesByHeadAndObjectId(head, objectId, limit = 100, offset = 0, companyId = null) {
+    try {
+      const where = { head, objectId: String(objectId) };
+      if (companyId) {
+        where.companyId = companyId;
+      }
+      const activities = await queryActivities(where, limit,offset);
+
+      return activities;
+    } catch (error) {
+      logger.error(`Error fetching activities by head/objectId: head=${head} objectId=${objectId}`, error);
+      throw new Error(`Failed to fetch activities: ${error.message}`);
+    }
+  },
   async createActivity(head, log, objectName = null, objectId = null, createdBy = null, companyId = null, type = null, transaction = null) {
     try {
       const options = transaction ? { transaction } : {};
