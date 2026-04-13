@@ -27,6 +27,36 @@ const getAppModuleColorByNature = (module) => {
 const isSuperadminCategory = (module) =>
   (module?.category || "").toLowerCase() === "superadmin";
 
+/**
+ * Resolves subscription status for a permission.
+ * Returns null if the module should be hidden from the current user.
+ */
+function resolveSubscriptionStatus(permissionId, companySubscriptions, userData) {
+  let subscriptionStatus = null;
+  let isSubscribed = true;
+  let isHidden = false;
+
+  if (permissionId && companySubscriptions.length > 0) {
+    subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
+    isHidden = subscriptionStatus === 'hidden';
+
+    if (isHidden) {
+      if (!userData?.isSadmin) return null;
+      isSubscribed = true;
+    } else {
+      isSubscribed = subscriptionStatus === 'subscribed';
+    }
+  }
+
+  return { subscriptionStatus, isSubscribed, isHidden };
+}
+
+function buildTextBucket(module) {
+  return [module.title, module.description, module.keywords, ...(module.tags || [])]
+    .filter(Boolean)
+    .join(' ');
+}
+
 const useNavigatorData = (searchTerm, categoryFilter) => {
   const navigate = useNavigate();
   const dataContext = useDataContext();
@@ -138,36 +168,11 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
         
         // Check subscription status
         const permissionId = permissionNameToIdMap[permission.toLowerCase()];
-        let subscriptionStatus = null;
-        let isSubscribed = true;
-        let isHidden = false;
-        
-        if (permissionId && companySubscriptions.length > 0) {
-          subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
-          isHidden = subscriptionStatus === 'hidden';
-          
-          // Hidden means subscribed but hidden - only show to superadmins
-          if (isHidden) {
-            if (!userData?.isSadmin) {
-              return null; // Hide this module from non-superadmins
-            }
-            // For superadmins, hidden permissions are subscribed (enabled)
-            isSubscribed = true;
-          } else {
-            isSubscribed = subscriptionStatus === 'subscribed';
-          }
-        }
+        const subStatus = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
+        if (!subStatus) return null;
+        const { subscriptionStatus, isSubscribed, isHidden } = subStatus;
 
-        const textBucket = [
-          module.title,
-          module.description,
-          module.keywords,
-          ...(module.tags || []),
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        if (!matchesSearch(textBucket)) return null;
+        if (!matchesSearch(buildTextBucket(module))) return null;
 
         // hasAccess = has permission AND is subscribed (for enabling/disabling)
         // hasPermissionAccess = whether they have the role permission (for showing correct message)
@@ -211,34 +216,11 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
           : (module.skipPermissionCheck || hasPermission(permissionName, dataContext));
 
         const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
-        let subscriptionStatus = null;
-        let isSubscribed = true;
-        let isHidden = false;
+        const subStatus = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
+        if (!subStatus) return null;
+        const { subscriptionStatus, isSubscribed, isHidden } = subStatus;
 
-        if (permissionId && companySubscriptions.length > 0) {
-          subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
-          isHidden = subscriptionStatus === "hidden";
-
-          if (isHidden) {
-            if (!userData?.isSadmin) {
-              return null;
-            }
-            isSubscribed = true;
-          } else {
-            isSubscribed = subscriptionStatus === "subscribed";
-          }
-        }
-
-        const textBucket = [
-          module.title,
-          module.description,
-          module.keywords,
-          ...(module.tags || []),
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        if (!matchesSearch(textBucket)) return null;
+        if (!matchesSearch(buildTextBucket(module))) return null;
 
         const enrichedModule = {
           ...module,

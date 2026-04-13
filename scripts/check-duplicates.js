@@ -1,5 +1,26 @@
 #!/usr/bin/env node
 /**
+ * HOW TO FIX DUPLICATES
+ *
+ * When this check fails, don't just mechanically move duplicated code into shared functions.
+ * Shared functions only make sense if they represent a meaningful concept or operation.
+ *
+ * Instead, look for the right approach based on context:
+ *  - Parameterize: If two functions do nearly the same thing with small variations, add
+ *    useful parameters (options, callbacks, config) to ONE function so it handles both cases.
+ *    Example: a modal component that takes `entityName` and `onSubmitApi` instead of two
+ *    near-identical modal components.
+ *  - Extract meaningful operations: If the shared code represents a real domain concept
+ *    (e.g. "rotate auth tokens", "resolve subscription status"), extract it as a named
+ *    function that carries that meaning.
+ *  - Don't extract noise: If the overlap is just boilerplate (error checks, response
+ *    formatting), inlining it in each caller is often clearer than a shared wrapper with
+ *    no real name or purpose.
+ *
+ * The goal is code that's easy to understand and maintain, not just code that passes this check.
+ */
+
+/**
  * Runs jscpd with `-r json --silent` (no clone spam to the terminal), reads the report, then prints:
  * 1) Only "Clone found" (or "Duplicates found" when two different files reach FILE_PAIR_DUPLICATION_LINE_RATIO of
  *    summed clone spans on both files vs combined line count linesA+linesB) blocks in the same shape as jscpd’s
@@ -408,6 +429,13 @@ function runJscpd(projectDir) {
     printConsoleSummary(rulePass ? report.statistics : displayStatistics);
     console.log(`Detection time:: ${elapsedMs.toFixed(3)}ms`);
     console.log(rulePass ? 'PASS' : 'FAIL');
+    if (!rulePass) {
+      console.log('');
+      console.log('Fix guidance: Parameterize functions with useful options instead of');
+      console.log('mechanically extracting shared code. Shared functions should represent');
+      console.log('meaningful operations, not just "code that was the same in two places."');
+      console.log('See the top of scripts/check-duplicates.js for details.');
+    }
 
     return { ok: true, exitCode: rulePass ? 0 : 1, rulePass };
   } finally {

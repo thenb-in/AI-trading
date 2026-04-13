@@ -1,4 +1,4 @@
-import { organizePermissions } from '../../role_permissions/utils/permissionUtils';
+import { organizePermissions, hasNoOrganizedPermissions } from '../../role_permissions/utils/permissionUtils';
 
 /**
  * Gets the subscription status for a permission
@@ -14,6 +14,7 @@ function getSubscriptionPermissionStatus(subscription, permission_id) {
 
 export {
   organizePermissions,
+  hasNoOrganizedPermissions,
   getSubscriptionPermissionStatus
 };
 

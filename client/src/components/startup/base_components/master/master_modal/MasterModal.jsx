@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { AuditHistoryModal } from '@startup/admin/audit_timeline/AuditHistoryModal';
+import { getDialogSidebarSx } from '@startup/base_components/utils/dialogSx';
 
 const MasterModal = ({
   isOpen,
@@ -40,23 +41,7 @@ const MasterModal = ({
         maxWidth={maxWidth}
         fullWidth
         fullScreen={fullScreen}
-        sx={{
-          zIndex: 50,
-          '& .MuiBackdrop-root': {
-            left: 'var(--app-sidebar-width, 0)',
-            width: 'calc(100% - var(--app-sidebar-width, 0))',
-          },
-          '& .MuiDialog-container': {
-            alignItems: fullScreen ? 'stretch' : 'center',
-            marginLeft: 'var(--app-sidebar-width, 0)',
-            width: 'calc(100% - var(--app-sidebar-width, 0))',
-            maxWidth: 'calc(100% - var(--app-sidebar-width, 0))',
-          },
-          '& .MuiPaper-root': {
-            maxHeight: fullScreen ? '100%' : '90vh',
-            ...(fullScreen && { height: '100dvh', maxHeight: '100dvh' }),
-          },
-        }}
+        sx={getDialogSidebarSx(fullScreen)}
         {...props}
       >
         {hasTitle && (

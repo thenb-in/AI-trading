@@ -5,7 +5,7 @@ import { SubscriptionSelector } from './components/SubscriptionSelector';
 import { SubscriptionPermissionSection } from './components/SubscriptionPermissionSection';
 import { AlertMessage } from '../role_permissions/components/AlertMessage';
 import { CreateSubscriptionModal } from './components/CreateSubscriptionModal';
-import { organizePermissions } from './utils/permissionUtils';
+import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/startup/useDataContext';
   
 function SubscriptionPage() {
@@ -27,17 +27,11 @@ function SubscriptionPage() {
 
   const organizedPermissions = organizePermissions(permissions);
 
-  const handleSubscriptionCreated = () => {
-    refetch();
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-center">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-600">Loading...</p>
-        </div>
+        <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto mb-2" />
+        <p className="text-xs text-gray-600">Loading...</p>
       </div>
     );
   }
@@ -164,10 +158,7 @@ function SubscriptionPage() {
             />
           )}
 
-          {organizedPermissions.module.length === 0 &&
-            Object.keys(organizedPermissions.report).length === 0 &&
-            Object.keys(organizedPermissions.master).length === 0 &&
-            (!organizedPermissions.other || organizedPermissions.other.length === 0) && (
+          {hasNoOrganizedPermissions(organizedPermissions) && (
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-center">
                 <p className="text-xs text-gray-600">No permissions found.</p>
               </div>
@@ -196,7 +187,7 @@ function SubscriptionPage() {
       <CreateSubscriptionModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleSubscriptionCreated}
+        onSuccess={refetch}
       />
     </div>
   );

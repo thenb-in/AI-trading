@@ -1,34 +1,7 @@
-const { DataTypes } = require('sequelize');
+const { companyOwnedEntityFields } = require('../../utils/startup/modelFieldDefinitions');
 
 module.exports = (sequelize) => {
-  const Role = sequelize.define('Role', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
-    },
-    description: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    companyId: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      references: {
-        model: 'nbnext_company',
-        key: 'id'
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
-    }
-  }, {
+  const Role = sequelize.define('Role', companyOwnedEntityFields, {
     tableName: 'nbnext_roles',
     indexes: [
       {

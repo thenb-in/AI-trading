@@ -5,7 +5,7 @@ import { RoleSelector } from './components/RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
 import { CreateRoleModal } from './components/CreateRoleModal';
-import { organizePermissions } from './utils/permissionUtils';
+import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/startup/useDataContext';
   
 function RolePermissionsManagement() {
@@ -28,10 +28,6 @@ function RolePermissionsManagement() {
   } = useRolePermissions();
 
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
-
-  const handleRoleCreated = () => {
-    refetch();
-  };
 
   if (loading) {
     return (
@@ -175,10 +171,7 @@ function RolePermissionsManagement() {
             />
           )}
 
-          {organizedPermissions.module.length === 0 &&
-            Object.keys(organizedPermissions.report).length === 0 &&
-            Object.keys(organizedPermissions.master).length === 0 &&
-            (!organizedPermissions.other || organizedPermissions.other.length === 0) && (
+          {hasNoOrganizedPermissions(organizedPermissions) && (
               <div className="bg-gray-50 border border-gray-200 rounded p-3 text-center">
                 <p className="text-xs text-gray-600">No permissions found.</p>
               </div>
@@ -207,7 +200,7 @@ function RolePermissionsManagement() {
       <CreateRoleModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleRoleCreated}
+        onSuccess={refetch}
       />
     </div>
   );

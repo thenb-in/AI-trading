@@ -270,76 +270,41 @@ function extractEntityFromPermission(permissionName) {
 /**
  * Generic helper: groups permissions by a classifier function.
  * classifyFn(name) should return the category string for a given lowercase permission name.
+ * Only returns groups that have at least one permission.
  */
-function groupMasterPermissionsByOperation(permissions) {
-  const grouped = {
-    create: [],
-    read: [],
-    update: [],
-    delete: [],
-    approve: [],
-    deactivate: [],
-    other: [],
-  };
-
+function groupPermissionsByClassifier(permissions, classifyFn) {
+  const grouped = {};
   permissions.forEach((permission) => {
-    const name = permission.name.toLowerCase();
-    
-    if (name.startsWith('create_')) {
-      grouped.create.push(permission);
-    } else if (name.startsWith('read_') || name.startsWith('view_')) {
-      grouped.read.push(permission);
-    } else if (name.startsWith('update_')) {
-      grouped.update.push(permission);
-    } else if (name.startsWith('delete_')) {
-      grouped.delete.push(permission);
-    } else if (name.startsWith('approve_')) {
-      grouped.approve.push(permission);
-    } else if (name.startsWith('deactivate_')) {
-      grouped.deactivate.push(permission);
-    } else {
-      grouped.other.push(permission);
-    }
+    const category = classifyFn(permission.name.toLowerCase());
+    if (!grouped[category]) grouped[category] = [];
+    grouped[category].push(permission);
   });
+  return grouped;
+}
 
-  // Remove empty groups
-  return Object.fromEntries(
-    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
-  );
+function groupMasterPermissionsByOperation(permissions) {
+  return groupPermissionsByClassifier(permissions, (name) => {
+    if (name.startsWith('create_')) return 'create';
+    if (name.startsWith('read_') || name.startsWith('view_')) return 'read';
+    if (name.startsWith('update_')) return 'update';
+    if (name.startsWith('delete_')) return 'delete';
+    if (name.startsWith('approve_')) return 'approve';
+    if (name.startsWith('deactivate_')) return 'deactivate';
+    return 'other';
+  });
 }
 
 /**
  * Groups report permissions by operation type (view, download, export, etc.)
  */
 function groupReportPermissionsByOperation(permissions) {
-  const grouped = {
-    view: [],
-    read: [],
-    download: [],
-    export: [],
-    other: [],
-  };
-
-  permissions.forEach((permission) => {
-    const name = permission.name.toLowerCase();
-    
-    if (name.startsWith('view_report') || name.includes('view_report')) {
-      grouped.view.push(permission);
-    } else if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) {
-      grouped.read.push(permission);
-    } else if (name.startsWith('download_report') || name.includes('download_report')) {
-      grouped.download.push(permission);
-    } else if (name.startsWith('export_report') || name.includes('export_report')) {
-      grouped.export.push(permission);
-    } else {
-      grouped.other.push(permission);
-    }
+  return groupPermissionsByClassifier(permissions, (name) => {
+    if (name.startsWith('view_report') || name.includes('view_report')) return 'view';
+    if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) return 'read';
+    if (name.startsWith('download_report') || name.includes('download_report')) return 'download';
+    if (name.startsWith('export_report') || name.includes('export_report')) return 'export';
+    return 'other';
   });
-
-  // Remove empty groups
-  return Object.fromEntries(
-    Object.entries(grouped).filter(([, perms]) => perms.length > 0)
-  );
 }
 
 /**
@@ -543,6 +508,16 @@ function filterPermissionsBySubscription(permissions, companySubscriptions, user
   });
 }
 
+/**
+ * Checks if organized permissions has no entries in any category.
+ */
+function hasNoOrganizedPermissions(organized) {
+  return organized.module.length === 0 &&
+    Object.keys(organized.report).length === 0 &&
+    Object.keys(organized.master).length === 0 &&
+    (!organized.other || organized.other.length === 0);
+}
+
 export {
   organizePermissions,
   groupMasterPermissionsByOperation,
@@ -554,5 +529,6 @@ export {
   getPermissionSubscriptionStatus,
   filterPermissionsBySubscription,
   isPermissionFromGlobalSubscription,
+  hasNoOrganizedPermissions,
 };
 

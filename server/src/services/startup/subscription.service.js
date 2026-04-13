@@ -3,6 +3,37 @@ const logger = require('../../../logger');
 const { Subscription, Permission, User,SubscriptionPermission } = require('../../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../../utils/startup/modelHelpers');
 
+const VALID_STATUSES = ['subscribed', 'not_subscribed', 'hidden'];
+
+const validateSubscriptionUpdate = async (subscription_id, status, userId) => {
+  const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
+
+  if (subscription.companyId === null) {
+    const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
+    if (!user.isSadmin) {
+      throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
+    }
+  }
+
+  if (!VALID_STATUSES.includes(status)) {
+    throw { status: 400, message: 'Invalid status. Must be one of: subscribed, not_subscribed, hidden' };
+  }
+
+  return subscription;
+};
+
+const upsertSubscriptionPermission = async (subscription_id, permission_id, status) => {
+  const [subscriptionPermission, created] = await SubscriptionPermission.findOrCreate({
+    where: { subscription_id, permission_id },
+    defaults: { subscription_id, permission_id, status }
+  });
+
+  if (!created) {
+    subscriptionPermission.status = status;
+    await subscriptionPermission.save();
+  }
+};
+
 const checkSubscriptionExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
   if (companyId) {
@@ -98,41 +129,9 @@ const getAllPermissions = async () => {
 
 const updateSubscriptionPermissionStatus = async (subscription_id, permission_id, status, userId) => {
   try {
-    const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
-
-    // Check if subscription is a default/global subscription (companyId is null)
-    if (subscription.companyId === null) {
-      // Only superadmins can modify default subscriptions
-      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
-      if (!user.isSadmin) {
-        throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
-      }
-    }
-
-    // Validate status
-    if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
-      throw { status: 400, message: 'Invalid status. Must be one of: subscribed, not_subscribed, hidden' };
-    }
-
+    await validateSubscriptionUpdate(subscription_id, status, userId);
     await findModelByIdOrThrow(Permission, permission_id, {}, 'Permission');
-
-
-    const [subscriptionPermission, created] = await SubscriptionPermission.findOrCreate({
-      where: {
-        subscription_id: subscription_id,
-        permission_id: permission_id
-      },
-      defaults: {
-        subscription_id: subscription_id,
-        permission_id: permission_id,
-        status: status
-      }
-    });
-
-    if (!created) {
-      subscriptionPermission.status = status;
-      await subscriptionPermission.save();
-    }
+    await upsertSubscriptionPermission(subscription_id, permission_id, status);
 
     return {
       message: `Permission status updated to ${status} successfully`
@@ -144,59 +143,23 @@ const updateSubscriptionPermissionStatus = async (subscription_id, permission_id
 
 const updateMultipleSubscriptionPermissionStatuses = async (subscription_id, permission_ids, status, userId) => {
   try {
-    const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
+    await validateSubscriptionUpdate(subscription_id, status, userId);
 
-    // Check if subscription is a default/global subscription (companyId is null)
-    if (subscription.companyId === null) {
-      // Only superadmins can modify default subscriptions
-      const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
-      if (!user.isSadmin) {
-        throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
-      }
-    }
-
-    // Validate status
-    if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
-      throw { status: 400, message: 'Invalid status. Must be one of: subscribed, not_subscribed, hidden' };
-    }
-
-    // Ensure permission_ids is an array
     const permission_idArray = Array.isArray(permission_ids) ? permission_ids : [permission_ids];
 
-    // Find all permissions at once
     const permissions = await Permission.findAll({
-      where: {
-        id: permission_idArray
-      }
+      where: { id: permission_idArray }
     });
 
-    // Check if all permissions were found
     if (permissions.length !== permission_idArray.length) {
       const foundIds = permissions.map(p => p.id);
       const missingIds = permission_idArray.filter(id => !foundIds.includes(id));
       throw { status: 404, message: `Permissions with ids ${missingIds.join(', ')} not found` };
     }
 
-    const promises = permission_idArray.map(async (permission_id) => {
-      const [subscriptionPermission, created] = await SubscriptionPermission.findOrCreate({
-        where: {
-          subscription_id: subscription_id,
-          permission_id: permission_id
-        },
-        defaults: {
-          subscription_id: subscription_id,
-          permission_id: permission_id,
-          status: status
-        }
-      });
-
-      if (!created) {
-        subscriptionPermission.status = status;
-        await subscriptionPermission.save();
-      }
-    });
-
-    await Promise.all(promises);
+    await Promise.all(
+      permission_idArray.map((permission_id) => upsertSubscriptionPermission(subscription_id, permission_id, status))
+    );
 
     return {
       message: `Successfully updated ${permission_idArray.length} permission(s) status to ${status}`

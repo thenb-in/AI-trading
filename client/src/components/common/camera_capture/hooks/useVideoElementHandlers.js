@@ -8,7 +8,7 @@ import { ERROR_MESSAGES } from '../constants/cameraConstants';
  * - error → set a standardized playback error
  */
 const useVideoElementHandlers = ({ videoRef, mountedRef, setIsVideoReady, setError }) => {
-  const handleVideoLoadedMetadata = useCallback(
+  const handleVideoReadyCheck = useCallback(
     (e) => {
       const video = e.target;
       if (video.videoWidth > 0 && video.videoHeight > 0) {
@@ -25,22 +25,9 @@ const useVideoElementHandlers = ({ videoRef, mountedRef, setIsVideoReady, setErr
     [mountedRef, setIsVideoReady],
   );
 
-  const handleVideoCanPlay = useCallback(
-    (e) => {
-      const video = e.target;
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        setTimeout(() => {
-          if (mountedRef.current) {
-            setIsVideoReady(true);
-          }
-        }, 100);
-        if (video.paused) {
-          video.play().catch(() => {});
-        }
-      }
-    },
-    [mountedRef, setIsVideoReady],
-  );
+  // Both loadedmetadata and canplay use the same readiness check
+  const handleVideoLoadedMetadata = handleVideoReadyCheck;
+  const handleVideoCanPlay = handleVideoReadyCheck;
 
   const handleVideoPlaying = useCallback(
     (e) => {

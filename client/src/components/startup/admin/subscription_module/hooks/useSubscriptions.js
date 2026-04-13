@@ -55,18 +55,24 @@ function useSubscriptions() {
 
   const selectedSubscription = subscriptions.find((s) => s.id === selectedSubscriptionId) || null;
 
-  const updatePermissionStatus = useCallback(
-    async (permission_id, status) => {
+  const isValidStatusUpdate = useCallback(
+    (status) => {
       if (!selectedSubscriptionId) {
         toast.error('Please select a subscription first');
-        return;
+        return false;
       }
-
-      // Validate status
       if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
         toast.error('Invalid status');
-        return;
+        return false;
       }
+      return true;
+    },
+    [selectedSubscriptionId]
+  );
+
+  const updatePermissionStatus = useCallback(
+    async (permission_id, status) => {
+      if (!isValidStatusUpdate(status)) return;
 
       // Optimistically update the local state
       setSubscriptions((prevSubscriptions) =>
@@ -118,21 +124,12 @@ function useSubscriptions() {
         setUpdating(false);
       }
     },
-    [selectedSubscriptionId, permissions, fetchData]
+    [isValidStatusUpdate, selectedSubscriptionId, permissions, fetchData]
   );
 
   const updateMultiplePermissionStatuses = useCallback(
     async (permission_ids, status) => {
-      if (!selectedSubscriptionId) {
-        toast.error('Please select a subscription first');
-        return;
-      }
-
-      // Validate status
-      if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
-        toast.error('Invalid status');
-        return;
-      }
+      if (!isValidStatusUpdate(status)) return;
 
       // Optimistically update the local state
       setSubscriptions((prevSubscriptions) =>
@@ -181,7 +178,7 @@ function useSubscriptions() {
         setUpdating(false);
       }
     },
-    [selectedSubscriptionId, permissions, fetchData]
+    [isValidStatusUpdate, selectedSubscriptionId, permissions, fetchData]
   );
 
   return {
