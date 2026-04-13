@@ -1,7 +1,13 @@
 import PropTypes from "prop-types";
-import { useCallback } from "react";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { Maximize2, Minimize2, LayoutGrid, SlidersHorizontal, FilterX } from "lucide-react";
 import { PaginationControls } from "./PaginationControls.jsx";
+import { ToolbarExportButtons } from "./ToolbarExportButtons.jsx";
+import {
+  TOOLBAR_BTN_CLASS,
+  TOOLBAR_DIVIDER_CLASS,
+  TOOLBAR_HIGHLIGHT_BTN_CLASS,
+} from "../utils/toolbarStyles.js";
 
 function Toolbar({
   totalRows,
@@ -19,19 +25,21 @@ function Toolbar({
   fullScreen = false,
   onToggleFullScreen = null,
   position = "top",
+  showExcelExport = false,
+  onExcelExport,
+  isExcelExporting = false,
+  hasData = true,
+  getExportPayload = null,
+  renderToolbarExtras = null,
+  hasActiveFilters = false,
+  onClearFilters = null,
 }) {
-
-  const borderClass = position === "top" ? "border-b" : "border-t";
-  const gradientClass = position === "top" ? "bg-gradient-to-b" : "bg-gradient-to-t";
+  const isTop = position === "top";
 
   const toggleColumnMenu = useCallback((v) => !v, []);
 
   const handleColumnMenuClick = useCallback(() => {
-    // Close layout menu if open
-    if (showLayoutMenu) {
-      setShowLayoutMenu(false);
-    }
-    // Toggle column menu
+    if (showLayoutMenu) setShowLayoutMenu(false);
     setShowColumnMenu(toggleColumnMenu);
   }, [showLayoutMenu, setShowLayoutMenu, setShowColumnMenu, toggleColumnMenu]);
 
@@ -42,40 +50,74 @@ function Toolbar({
       alert("Layout functionality requires a documentName prop to be passed to NbNextDataGrid");
       return;
     }
-    // Close column menu if open
-    if (showColumnMenu) {
-      setShowColumnMenu(false);
-    }
-    // Toggle layout menu
+    if (showColumnMenu) setShowColumnMenu(false);
     setShowLayoutMenu(toggleLayoutMenu);
   }, [documentName, showColumnMenu, setShowColumnMenu, setShowLayoutMenu, toggleLayoutMenu]);
 
-  const baseButtonClasses = "px-2.5 py-1.5 rounded-md border border-gray-200";
+  const extrasNode = useMemo(() => {
+    if (typeof renderToolbarExtras !== "function" || typeof getExportPayload !== "function") {
+      return null;
+    }
+    return renderToolbarExtras({
+      getExportPayload,
+      disabled: !hasData,
+      position,
+    });
+  }, [renderToolbarExtras, getExportPayload, hasData, position]);
+
+  const showExport = showExcelExport || Boolean(extrasNode);
+  const layoutDisabled = !documentName;
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 ${borderClass} border-slate-200 ${gradientClass} from-slate-50 to-slate-100`}>
-      <div className="flex items-center gap-2.5">
-        <strong className="text-sm">NbNext DataGrid</strong>
-        <span className="text-xs text-gray-600">
-          {totalRows} rows • {visibleColumnsCount} columns
+    <div
+      className={`flex items-center justify-between min-h-[44px] bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200 ${isTop ? "px-4 py-2.5 border-b" : "px-4 py-2 border-t"}`}
+    >
+      <div className="flex items-center gap-3 min-w-0 flex-wrap">
+        {hasActiveFilters && typeof onClearFilters === "function" && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className={TOOLBAR_HIGHLIGHT_BTN_CLASS}
+            title="Remove all column filters"
+            aria-label="Clear all filters"
+          >
+            <FilterX size={14} strokeWidth={2} className="text-amber-800" aria-hidden />
+            Clear filters
+          </button>
+        )}
+        <span className="text-sm font-semibold text-slate-800 tracking-tight">NbNext DataGrid</span>
+        <span className="text-[13px] text-slate-600" aria-live="polite">
+          {totalRows} rows · {visibleColumnsCount} columns
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleColumnMenuClick}
-          className={`${baseButtonClasses} bg-white cursor-pointer`}
-        >
-          Columns
-        </button>
-        <button
-          type="button"
-          onClick={handleLayoutMenuClick}
-          className={documentName ? `${baseButtonClasses} bg-white cursor-pointer` : `${baseButtonClasses} bg-gray-100 cursor-not-allowed text-gray-400 opacity-60`}
-          title={!documentName ? "Layout functionality requires documentName prop" : "Manage layouts"}
-        >
-          Layouts
-        </button>
+
+      <div className="flex items-center">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleColumnMenuClick}
+            className={TOOLBAR_BTN_CLASS}
+            title="Show or hide columns"
+            aria-label="Columns"
+          >
+            <SlidersHorizontal size={14} strokeWidth={2} />
+            Columns
+          </button>
+          <button
+            type="button"
+            onClick={handleLayoutMenuClick}
+            disabled={layoutDisabled}
+            className={TOOLBAR_BTN_CLASS}
+            title={layoutDisabled ? "Set documentName to manage layouts" : "Manage saved layouts"}
+            aria-label="Layouts"
+          >
+            <LayoutGrid size={14} strokeWidth={2} />
+            Layouts
+          </button>
+        </div>
+
+        <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
+
         <PaginationControls
           page={page}
           totalPages={totalPages}
@@ -85,26 +127,40 @@ function Toolbar({
           fullScreen={fullScreen}
           totalRows={totalRows}
         />
+
+        {showExport && (
+          <>
+            <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
+            <div className="flex items-center gap-1.5">
+              <ToolbarExportButtons
+                showExcel={showExcelExport}
+                onExcelExport={onExcelExport}
+                isExcelExporting={isExcelExporting}
+                disabled={!hasData}
+              />
+              {extrasNode}
+            </div>
+          </>
+        )}
+
         {onToggleFullScreen && (
-          <button
-            type="button"
-            onClick={onToggleFullScreen}
-            className="px-2.5 py-1.5 rounded-md border border-gray-300 bg-white cursor-pointer hover:bg-gray-50 flex items-center gap-1.5"
-            title={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
-            aria-label={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            {fullScreen ? (
-              <>
-                <Minimize2 size={16} />
-                <span className="text-xs">Exit</span>
-              </>
-            ) : (
-              <>
-                <Maximize2 size={16} />
-                <span className="text-xs">Fullscreen</span>
-              </>
-            )}
-          </button>
+          <>
+            <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
+            <button
+              type="button"
+              onClick={onToggleFullScreen}
+              className={TOOLBAR_BTN_CLASS}
+              title={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+              aria-label={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {fullScreen ? (
+                <Minimize2 size={14} strokeWidth={2} />
+              ) : (
+                <Maximize2 size={14} strokeWidth={2} />
+              )}
+              <span>{fullScreen ? "Exit" : "Fullscreen"}</span>
+            </button>
+          </>
         )}
       </div>
     </div>
@@ -118,7 +174,7 @@ Toolbar.propTypes = {
   showColumnMenu: PropTypes.bool,
   showLayoutMenu: PropTypes.bool,
   setShowLayoutMenu: PropTypes.func,
-  documentName: PropTypes.string, // Required for layout functionality
+  documentName: PropTypes.string,
   page: PropTypes.number.isRequired,
   totalPages: PropTypes.number.isRequired,
   autoPageSize: PropTypes.number.isRequired,
@@ -127,7 +183,14 @@ Toolbar.propTypes = {
   fullScreen: PropTypes.bool,
   onToggleFullScreen: PropTypes.func,
   position: PropTypes.oneOf(["top", "bottom"]),
+  showExcelExport: PropTypes.bool,
+  onExcelExport: PropTypes.func,
+  isExcelExporting: PropTypes.bool,
+  hasData: PropTypes.bool,
+  getExportPayload: PropTypes.func,
+  renderToolbarExtras: PropTypes.func,
+  hasActiveFilters: PropTypes.bool,
+  onClearFilters: PropTypes.func,
 };
 
 export { Toolbar };
-

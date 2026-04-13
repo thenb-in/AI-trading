@@ -1,0 +1,239 @@
+import { useCallback, useImperativeHandle, useState } from "react";
+import {
+  calculateTotals,
+  filterRows,
+  indexRows,
+  normalizeColumns,
+  sortRows,
+} from "../utils/helpers.js";
+import { detectConstantColumns } from "../utils/constantColumnsUtils.js";
+import {
+  handleExport as handleExcelExportToFile,
+  handleMultiSheetExport,
+} from "../../BaseReport/reportExport/index.js";
+
+// Resolve a tab's effective (rows, columns, summary). Mirrors useTabsState's
+// resolver but as a pure helper so export can iterate every tab, not just the
+// active one. Columns is filtered/ordered by `columnFields` when provided, or
+// fully overridden by `columns`, or falls back to the top-level set.
+const resolveTabTriple = (tab, rowsProp, columnsProp, summaryProp) => {
+  const rows = Array.isArray(tab?.rows) ? tab.rows : rowsProp || [];
+  const summary = tab?.summary != null ? tab.summary : summaryProp;
+  let columns;
+  if (Array.isArray(tab?.columns)) {
+    columns = tab.columns;
+  } else if (Array.isArray(tab?.columnFields)) {
+    const byField = new Map((columnsProp || []).map((c) => [c.field, c]));
+    columns = tab.columnFields.map((f) => byField.get(f)).filter(Boolean);
+  } else {
+    columns = columnsProp || [];
+  }
+  return { rows, columns, summary };
+};
+
+// Runs the export pipeline (normalize → detect constants → filter → sort →
+// column visibility → total row) over a raw (rows, columns) pair, returning
+// the shape expected by reportExport's populateReportSheet helper.
+const buildSheetFromRaw = (
+  rawRows,
+  rawColumns,
+  { filterModel, sortModel, hideConstantColumns, columnVisibility, showTotalRow }
+) => {
+  const normalized = normalizeColumns(rawColumns || []);
+  const { constantColumns, filteredColumns } = detectConstantColumns(rawRows || [], normalized);
+
+  const shouldHideConstants = hideConstantColumns && (rawRows?.length || 0) > 1;
+  const colsToUse = shouldHideConstants ? filteredColumns : normalized;
+
+  const indexed = indexRows(rawRows || []);
+  const filtered = filterRows(indexed, filterModel || {}, colsToUse);
+  const sorted = sortRows(filtered, sortModel || { field: null, sort: null }, colsToUse);
+  const unwrapped = sorted.map((w) => w._row || w);
+
+  const visibleCols = columnVisibility
+    ? colsToUse.filter((c) => columnVisibility[c.field] !== false)
+    : colsToUse;
+
+  const totalRow =
+    showTotalRow && unwrapped.length > 1 ? calculateTotals(unwrapped, visibleCols) : null;
+
+  return {
+    rows: unwrapped,
+    columns: visibleCols,
+    constantColumns,
+    totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+  };
+};
+
+// Centralizes the export surface: getExportPayload (for toolbar buttons),
+// the imperatively-exposed getExportData (via ref), and the Excel handler.
+// When `tabs` contains >1 tab, Excel export produces one sheet per tab via
+// handleMultiSheetExport; otherwise the single-sheet path is used.
+const useGridExport = ({
+  ref,
+  groupedRows,
+  sortedRows,
+  visibleColumns,
+  summary,
+  constantColumns,
+  showTotalRow,
+  onExcelExport,
+  exportReport,
+  // Tabs-aware multi-sheet inputs
+  tabs,
+  rowsProp,
+  columnsProp,
+  summaryProp,
+  filterModel,
+  sortModel,
+  columnVisibility,
+  hideConstantColumns,
+}) => {
+  const getExportPayload = useCallback(() => {
+    const unwrappedRows = (groupedRows || sortedRows).map(
+      (wrapped) => wrapped._row || wrapped
+    );
+    const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
+    const totalRow =
+      showTotalRow && dataRowsOnly.length > 1
+        ? calculateTotals(dataRowsOnly, visibleColumns)
+        : null;
+    return {
+      rows: unwrappedRows,
+      columns: visibleColumns,
+      summary: summary || {},
+      constantColumns,
+      totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+    };
+  }, [groupedRows, sortedRows, visibleColumns, summary, constantColumns, showTotalRow]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getExportData: () => {
+        const unwrappedRows = (groupedRows || sortedRows).map(
+          (wrapped) => wrapped._row || wrapped
+        );
+        const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
+        const totalRow =
+          showTotalRow && dataRowsOnly.length > 1
+            ? calculateTotals(dataRowsOnly, visibleColumns)
+            : null;
+        return {
+          rows: unwrappedRows,
+          columns: visibleColumns,
+          summary,
+          constantColumns,
+          totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+        };
+      },
+    }),
+    [groupedRows, sortedRows, visibleColumns, summary, constantColumns, showTotalRow]
+  );
+
+  // Build one Excel-sheet payload per tab. For each tab we run the export
+  // pipeline fresh over the tab's effective (rows, columns) — this keeps all
+  // sheets consistent w.r.t. the user's current filter/sort/visibility state
+  // without inheriting active-tab-only concepts like row grouping.
+  const getMultiSheetPayload = useCallback(() => {
+    const hasMultiTabs = Array.isArray(tabs) && tabs.length > 1;
+    if (!hasMultiTabs) return null;
+
+    const pipeline = { filterModel, sortModel, hideConstantColumns, columnVisibility, showTotalRow };
+
+    return tabs.map((tab) => {
+      const { rows: tabRows, columns: tabColumns, summary: tabSummary } = resolveTabTriple(
+        tab,
+        rowsProp,
+        columnsProp,
+        summaryProp
+      );
+      const sheetData = buildSheetFromRaw(tabRows, tabColumns, pipeline);
+      return {
+        name: typeof tab?.label === "string" ? tab.label : String(tab?.id ?? ""),
+        rows: sheetData.rows,
+        columns: sheetData.columns,
+        summary: tabSummary || {},
+        constantColumns: sheetData.constantColumns,
+        totalRow: sheetData.totalRow,
+      };
+    });
+  }, [
+    tabs,
+    rowsProp,
+    columnsProp,
+    summaryProp,
+    filterModel,
+    sortModel,
+    columnVisibility,
+    hideConstantColumns,
+    showTotalRow,
+  ]);
+
+  const [isExcelExporting, setIsExcelExporting] = useState(false);
+
+  const handleExcelExport = useCallback(async () => {
+    const multiSheets = getMultiSheetPayload();
+    const payload = getExportPayload();
+
+    // Multi-sheet path: one sheet per tab.
+    if (multiSheets && multiSheets.length > 0) {
+      if (typeof onExcelExport === "function") {
+        setIsExcelExporting(true);
+        try {
+          await onExcelExport({ sheets: multiSheets });
+        } finally {
+          setIsExcelExporting(false);
+        }
+        return;
+      }
+      if (exportReport?.title && exportReport?.slug) {
+        setIsExcelExporting(true);
+        try {
+          await handleMultiSheetExport({
+            report: exportReport,
+            sheets: multiSheets,
+            currentUrl: typeof window !== "undefined" ? window.location.href : "",
+          });
+        } finally {
+          setIsExcelExporting(false);
+        }
+      }
+      return;
+    }
+
+    // Single-sheet path.
+    if (!payload.rows?.length) return;
+
+    if (typeof onExcelExport === "function") {
+      setIsExcelExporting(true);
+      try {
+        await onExcelExport(payload);
+      } finally {
+        setIsExcelExporting(false);
+      }
+      return;
+    }
+
+    if (exportReport?.title && exportReport?.slug) {
+      setIsExcelExporting(true);
+      try {
+        await handleExcelExportToFile(
+          exportReport,
+          payload.rows,
+          payload.columns,
+          typeof window !== "undefined" ? window.location.href : "",
+          payload.summary,
+          payload.constantColumns,
+          payload.totalRow
+        );
+      } finally {
+        setIsExcelExporting(false);
+      }
+    }
+  }, [onExcelExport, exportReport, getExportPayload, getMultiSheetPayload]);
+
+  return { isExcelExporting, handleExcelExport, getExportPayload };
+};
+
+export { useGridExport };

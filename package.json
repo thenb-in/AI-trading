@@ -1,6 +1,6 @@
 {
   "name": "nbnext-startup-app",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "description": "NB Next application with client and server made with Startup App Template",
   "main": "index.js",
   "scripts": {

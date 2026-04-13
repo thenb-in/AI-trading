@@ -1,18 +1,17 @@
 // ===== FORMATTING UTILITIES =====
 
+import { convertCellToText } from '../ReportUtils.js';
+import { getColumnForFormatting, toValidNumber } from '../../nbnext_data_grid/utils/helpers.js';
+
 /**
- * Format cell value based on column type
+ * Format cell value based on column type (legacy path — prefer getExportDisplayString for new code)
  */
 const formatCellValue = (value, columnType) => {
-  // console.log('columnType',columnType,'value',value)
-  // if (!value) return null;
-
   try {
     switch (columnType) {
-      case 'boolean': {
-        console.log(value)
+      case 'boolean':
         return value ? 'Yes' : 'No';
-      }
+
       case 'date': {
         const date = new Date(value);
         if (!isNaN(date)) {
@@ -24,7 +23,7 @@ const formatCellValue = (value, columnType) => {
         }
         break;
       }
-      
+
       case 'datetime': {
         const dateTime = new Date(value);
         if (!isNaN(dateTime)) {
@@ -39,7 +38,7 @@ const formatCellValue = (value, columnType) => {
         }
         break;
       }
-      
+
       case 'time': {
         const time = new Date(value);
         if (!isNaN(time)) {
@@ -51,38 +50,34 @@ const formatCellValue = (value, columnType) => {
         }
         break;
       }
-      
+
       case 'number': {
-        const num = parseFloat(value);
-        if (!isNaN(num)) {
+        const num = toValidNumber(value);
+        if (typeof num === 'number' && !Number.isNaN(num)) {
           return num.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
           });
         }
-        break;
+        return value;
       }
-      
+
       case 'html':
-        // For HTML columns, extract text content if it's HTML, otherwise return as-is
         if (typeof value === 'string' && value.includes('<')) {
-          // Try to extract text from HTML tags
           const textMatch = value.match(/>([^<]+)</);
           if (textMatch && textMatch[1]) {
-            // Remove symbols like *, ✓ that might be in the status
             return textMatch[1].replace(/[*✓]/g, '').trim();
           }
-          // Fallback: remove all HTML tags
           return value.replace(/<[^>]*>/g, '').trim();
         }
         return value;
+
       case 'string':
         return value;
 
       case 'duration': {
         const duration = parseFloat(value) / 3600;
-        // get the decimal part
-        const decimalPart = (duration % 1) * 60/100;
+        const decimalPart = ((duration % 1) * 60) / 100;
         const integerPart = Math.floor(duration);
         const time_duration = integerPart + decimalPart;
         if (!isNaN(time_duration)) {
@@ -95,13 +90,12 @@ const formatCellValue = (value, columnType) => {
       }
 
       default:
-        console.log('formatCellValue: default', value, columnType);
         return value;
     }
   } catch {
     // Keep original value if formatting fails
   }
-  
+
   return value;
 };
 
@@ -127,18 +121,18 @@ const getColumnWidth = (columnType) => {
 const extractDateRangeFromUrl = (currentUrl) => {
   let startDate = '';
   let endDate = '';
-  
+
   if (currentUrl) {
     try {
       const url = new URL(currentUrl);
       const params = new URLSearchParams(url.search);
       startDate = params.get('start_date') || '';
       endDate = params.get('end_date') || '';
-    } catch (e) {
-      console.log('Error parsing URL:', e);
+    } catch {
+      // Ignore URL parse errors
     }
   }
-  
+
   return { startDate, endDate };
 };
 
@@ -158,68 +152,125 @@ const getDateRangeText = (startDate, endDate) => {
 };
 
 /**
- * Map row data to match column keys
+ * Raw cell value for a column (matches grid data source before valueGetter / formatting).
+ */
+const getRawCellValue = (row, col) => {
+  const fieldKey = col.field || col.key;
+  const exportField = col.export;
+  let value = null;
+
+  if (exportField && exportField !== fieldKey) {
+    value = row[exportField];
+
+    // If export field value is missing and column type is html, extract text from main field
+    if ((value === undefined || value === null || value === '') && col.type === 'html') {
+      const mainFieldValue = row[fieldKey];
+      if (typeof mainFieldValue === 'string' && mainFieldValue.includes('<')) {
+        const textMatch = mainFieldValue.match(/>([^<]+)</);
+        if (textMatch && textMatch[1]) {
+          value = textMatch[1].replace(/[*✓]/g, '').trim();
+        } else {
+          value = mainFieldValue.replace(/<[^>]*>/g, '').trim();
+        }
+      } else {
+        value = mainFieldValue;
+      }
+    }
+  }
+
+  if (value === undefined || value === null) {
+    value = row[fieldKey] ?? row[col.name];
+  }
+
+  return value === undefined || value === '' ? null : value;
+};
+
+/**
+ * Plain text for Excel for HTML columns (grid renders HTML; Excel should not store tags).
+ */
+const htmlToPlainTextForExcel = (htmlString) => {
+  if (typeof htmlString !== 'string' || !htmlString.trim()) {
+    return '';
+  }
+  if (htmlString.includes('<')) {
+    const textMatch = htmlString.match(/>([^<]+)</);
+    if (textMatch && textMatch[1]) {
+      return textMatch[1].replace(/[*✓]/g, '').trim();
+    }
+    return htmlString.replace(/<[^>]*>/g, '').trim();
+  }
+  return htmlString.trim();
+};
+
+/**
+ * Display string for Excel: same pipeline as the grid (convertCellToText), except HTML is plain text.
+ * Optional column.getExportValue({ row, field }) overrides when a custom renderCell cannot be mirrored.
+ */
+const getExportDisplayString = (col, row) => {
+  const formatCol = getColumnForFormatting(col);
+
+  if (typeof col.getExportValue === 'function') {
+    try {
+      const v = col.getExportValue({ row, field: col.field });
+      if (v !== undefined && v !== null && v !== '') {
+        return String(v);
+      }
+    } catch {
+      // Silently fall through to default handling
+    }
+  }
+
+  if (formatCol.type === 'html') {
+    const raw = getRawCellValue(row, col);
+    if (raw == null || raw === '') {
+      return '';
+    }
+    return htmlToPlainTextForExcel(typeof raw === 'string' ? raw : String(raw));
+  }
+
+  let rawValue;
+  if (typeof col.valueGetter === 'function') {
+    rawValue = col.valueGetter({ row, field: col.field });
+  } else {
+    rawValue = getRawCellValue(row, col);
+  }
+
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return '';
+  }
+
+  const text = convertCellToText(formatCol, rawValue);
+  return text === '-' ? '' : text;
+};
+
+/**
+ * Map row data to match column keys (raw values; used where display strings are not needed)
  */
 const mapRowData = (row, columns) => {
   const mappedRow = {};
-  columns?.forEach(col => {
+  columns?.forEach((col) => {
     const fieldKey = col.field || col.key;
-    
-    // Use export field if available (for export-specific field mapping)
-    const exportField = col.export;
-    let value = null;
-    
-    if (exportField && exportField !== fieldKey) {
-      // Try to get value from export field first
-      value = row[exportField];
-      
-      // If export field value is missing and column type is html, 
-      // try to extract text from the main field (for status columns)
-      if ((value === undefined || value === null || value === '') && col.type === 'html') {
-        const mainFieldValue = row[fieldKey];
-        if (typeof mainFieldValue === 'string' && mainFieldValue.includes('<')) {
-          // Extract text from HTML
-          const textMatch = mainFieldValue.match(/>([^<]+)</);
-          if (textMatch && textMatch[1]) {
-            value = textMatch[1].replace(/[*✓]/g, '').trim();
-          } else {
-            // Fallback: remove all HTML tags
-            value = mainFieldValue.replace(/<[^>]*>/g, '').trim();
-          }
-        } else {
-          value = mainFieldValue;
-        }
-      }
-    }
-    
-    // Fallback to fieldKey if value is still null/undefined
-    if (value === undefined || value === null) {
-      value = row[fieldKey] ?? row[col.name];
-    }
-
-    // Convert only undefined or empty string to null
-    mappedRow[fieldKey] = (value === undefined || value === '') ? null : value;
+    mappedRow[fieldKey] = getRawCellValue(row, col);
   });
   return mappedRow;
 };
-
 
 /**
  * Get current date and time formatted
  */
 const getCurrentDateTime = () => {
-  const reportDate = new Date().toLocaleDateString("en-US", { 
-    weekday: "long", 
-    year: "numeric", 
-    month: "long", 
-    day: "numeric" 
+  const reportDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
   });
-  const reportTime = new Date().toLocaleTimeString("en-US", { 
-    hour: "2-digit", 
-    minute: "2-digit", 
-    second: "2-digit" 
+  const reportTime = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
   });
-  
+
   return { reportDate, reportTime };
 };
 
@@ -232,4 +283,15 @@ const generateFileName = (report) => {
   return `${reportName}_export_${timestamp}.xlsx`;
 };
 
-export { formatCellValue, getColumnWidth, extractDateRangeFromUrl, getDateRangeText, mapRowData, getCurrentDateTime, generateFileName };
+export {
+  formatCellValue,
+  getColumnWidth,
+  extractDateRangeFromUrl,
+  getDateRangeText,
+  mapRowData,
+  getRawCellValue,
+  getExportDisplayString,
+  htmlToPlainTextForExcel,
+  getCurrentDateTime,
+  generateFileName
+};
