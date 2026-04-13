@@ -1,5 +1,13 @@
 const logger = require('../../logger');
 
+/**
+ * Centralized error-handling middleware. Catches all errors that reach the end of the
+ * middleware chain and sends a structured JSON response. Includes stack trace in development only.
+ * @param {Error} err - The error object
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Function} _next - Next middleware (unused but required by Express error handler signature)
+ */
 const errorMiddleware = (err, req, res, _next) => {
   const status = err.status || err.statusCode || 500;
   const message = err.message || 'Something went wrong';

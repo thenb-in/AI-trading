@@ -6,6 +6,12 @@ const companyService = require('./companyService');
 const rolePermissionService = require('./rolePermissionService');
 const userService = require('./userService');
 
+/**
+ * Retrieves all companies a user is linked to via MultiCompanyModule.
+ * @param {string|number} userId - User ID
+ * @returns {Promise<Array<{ id: string, name: string }>>} List of company summaries
+ * @notes Performs N+1 queries (one per company link); see TODO for optimization
+ */
 async function getUserCompanies(userId) {
   // MultiCompanyModule is imported for operations
   // Fetch links and then get companies through companyService
@@ -31,6 +37,15 @@ async function getUserCompanies(userId) {
   return companies;
 }
 
+/**
+ * Switches a user's active company. Validates the link exists, updates company_id,
+ * syncs device access settings from the new company, and returns the updated user.
+ * @param {string|number} userId - User ID
+ * @param {string} companyId - Target company ID to switch to
+ * @returns {Promise<Object>} Updated user object with company info
+ * @throws {Error} If user is not linked to the company or is inactive
+ * @side_effects Updates User.company_id, UserProfile.currentCompany, and device access flags
+ */
 async function switchUserCompany(userId, companyId) {
   // Use userService and companyService functions
   // Ensure the user is linked to the company
@@ -64,6 +79,13 @@ async function switchUserCompany(userId, companyId) {
   };
 }
 
+/**
+ * Creates a MultiCompanyModule link between a user and a company.
+ * @param {string|number} userId - User ID
+ * @param {string} companyId - Company ID
+ * @param {Object|null} transaction - Optional Sequelize transaction
+ * @returns {Promise<void>}
+ */
 async function assignUserToCompany(userId, companyId, transaction = null) {
   await MultiCompanyModule.create(
     { userId, companyId },
@@ -71,10 +93,21 @@ async function assignUserToCompany(userId, companyId, transaction = null) {
   );
 }
 
+/**
+ * Finds an existing user-company link in MultiCompanyModule.
+ * @param {string|number} userId - User ID
+ * @param {string} companyId - Company ID
+ * @returns {Promise<Object|null>} Link record or null
+ */
 async function findUserCompanyLink(userId, companyId) {
   return await MultiCompanyModule.findOne({ where: { userId, companyId } });
 }
 
+/**
+ * Removes all MultiCompanyModule associations for a user.
+ * @param {string|number} userId - User ID
+ * @returns {Promise<void>}
+ */
 async function removeAllUserCompanyLinks(userId) {
   // Remove all MultiCompanyModule associations for a user
   await MultiCompanyModule.destroy({ where: { user_id: userId } });
@@ -182,6 +215,12 @@ async function removeUserFromCompany(userId, companyId) {
 }
 
 
+/**
+ * Fetches all users for a company, enriched with company info and role details.
+ * @param {string} companyId - Company ID
+ * @returns {Promise<{ users: Array<Object>, roles: Array<{ id: number, name: string }> }>}
+ * @throws {Error} If companyId is missing
+ */
 async function getAllUsers(companyId) {
   if (!companyId) {
     throw new Error(`Company ID is required ${companyId}.`);
@@ -212,6 +251,19 @@ async function getAllUsers(companyId) {
   return { users: usersWithRelations, roles };
 }
 
+/**
+ * Creates a new company, its profile, and links the creating user to it — all within a transaction.
+ * @param {Object} data - Company creation data
+ * @param {string} data.name - Company name
+ * @param {string|null} data.companyId - Custom company ID (auto-generated if null)
+ * @param {boolean} data.mobileApp - Mobile app access flag
+ * @param {boolean} data.desktopWeb - Desktop web access flag
+ * @param {boolean} data.mobileWeb - Mobile web access flag
+ * @param {string|number} userId - User ID of the creator
+ * @returns {Promise<Object>} Created Company model instance
+ * @throws {Error} If company ID is already taken or creation fails
+ * @side_effects Creates Company, CompanyProfile, and MultiCompanyModule records
+ */
 async function createCompanyAndLink(data, userId) {
   // CompanyProfile and MultiCompanyModule are part of Company operations
   const transaction = await MultiCompanyModule.sequelize.transaction();

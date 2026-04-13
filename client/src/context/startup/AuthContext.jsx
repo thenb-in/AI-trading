@@ -5,6 +5,13 @@ import { isAllowedDevice } from "../../utils/startup/deviceUtils";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
 
+/**
+ * Root authentication and data provider. Manages user session state, device access
+ * authorization, and auth-checked loading states. On mount, fetches the current user
+ * from /users/me and handles session expiration, device restriction, and routing.
+ * Provides userData, logout, loading, and hamburgerMenu state via DataContext.
+ * @param {{ children: React.ReactNode }} props
+ */
 const DataProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);

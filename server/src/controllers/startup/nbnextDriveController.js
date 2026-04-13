@@ -1,7 +1,18 @@
 const nbnextDriveFormatter = require('../../data_formatters/startup/nbnext_drive_formatter');
 const nbnextDriveService = require('../../services/startup/nbnextDriveService');
 
+/**
+ * Controller layer for NBnext Drive file operations.
+ * Delegates to nbnextDriveService and formats responses via nbnextDriveFormatter.
+ */
 const nbnextDriveController = {
+  /**
+   * Retrieves all files for a company, optionally filtered by user ownership.
+   * @param {string} companyId - Company scope
+   * @param {string|number} userId - Requesting user's ID
+   * @param {boolean} showAll - If true, return all company files regardless of uploader
+   * @returns {Promise<Array<Object>>} Formatted file list
+   */
   async getAllFiles(companyId, userId, showAll) {
     const files = await nbnextDriveService.getAllFiles(companyId, userId, showAll);
     return nbnextDriveFormatter.formatNBnextDriveResponse(files);

@@ -5,13 +5,25 @@ const userService = require('../services/startup/userService');
 const allowedPermissions = require('../utils/startup/allowedPermissions');
 const { verifyToken, generateAccessToken, generateRefreshToken } = require('../utils/startup/authUtils');
 
+/** In-memory map to deduplicate concurrent refresh token rotations per user. */
 const refreshTokenLocks = new Map();
 
+/**
+ * Sets access token, refresh token, and isLoggedIn cookies on the response.
+ * @param {Object} res - Express response object
+ * @param {{ access: string, refresh: string }} tokens - Token values to set
+ * @param {{ access: Object, refresh: Object, isLoggedIn: Object }} options - Cookie options per token
+ */
 const setAuthCookies = (res, tokens, options) => {
   res.cookie('accessToken', tokens.access, options.access);
   res.cookie('refreshToken', tokens.refresh, options.refresh);
   res.cookie('isLoggedIn', 'true', options.isLoggedIn);
 };
+/**
+ * Checks if a user is active and approved in the database.
+ * @param {string|number} userId - User ID to check
+ * @returns {Promise<boolean>} True if the user is active and approved
+ */
 const checkUserActive = async (userId) => {
   const { isActive, user } = await userService.checkUserActive(userId);
   if (!isActive) {
@@ -20,6 +32,11 @@ const checkUserActive = async (userId) => {
   }
   return true;
 };
+/**
+ * Validates a JWT access token and returns the decoded payload.
+ * @param {string|null} accessToken - JWT access token string
+ * @returns {Object|null} Decoded token payload { id, company_id } or null if invalid/missing
+ */
 const validateAccessToken = (accessToken) => {
   if (!accessToken) {
     return null;
@@ -32,6 +49,17 @@ const validateAccessToken = (accessToken) => {
   }
 };
 
+/**
+ * Handles refresh token rotation with concurrency-safe deduplication.
+ * Uses a deferred promise pattern: the first request performs the DB rotation within a
+ * transaction (with row-level locking), and concurrent requests for the same token
+ * reuse the same promise. A short grace window prevents the lock from being cleaned up
+ * too early.
+ * @param {string} refreshToken - Current refresh token from the client
+ * @returns {Promise<{ user: Object, tokens: Object, options: Object }>} New tokens and cookie options
+ * @throws {Error} If refresh token is invalid, user is inactive, or token was already rotated
+ * @side_effects Rotates the stored refresh token in the database
+ */
 const handleRefreshToken = async (refreshToken) => {
   // verify refresh token first
   let decoded;
@@ -161,6 +189,15 @@ const handleRefreshToken = async (refreshToken) => {
   return deferredPromise;
 };
 
+/**
+ * Authentication middleware. Validates the access token from cookies (or Authorization header
+ * for mobile clients). If the access token is expired, attempts to rotate the refresh token.
+ * On success, sets req.user = { id, company_id } and calls next().
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Function} next - Next middleware
+ * @returns {Promise<void>}
+ */
 exports.protect = async (req, res, next) => {
   try {
     const { accessToken, refreshToken } = req.cookies || {};
@@ -202,6 +239,14 @@ exports.protect = async (req, res, next) => {
   }
 };
 
+/**
+ * Admin authorization middleware. Checks that the authenticated user has the "Admin" permission.
+ * Must be used after the protect middleware.
+ * @param {Object} req - Express request (must have req.user.id)
+ * @param {Object} res - Express response
+ * @param {Function} next - Next middleware
+ * @returns {Promise<void>}
+ */
 exports.admin = async (req, res, next) => {
   const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
   if (!hasPermission) {

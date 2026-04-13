@@ -1,7 +1,19 @@
 import { api } from './axiosConfig';
 import { toast } from 'react-toastify';
 
+/**
+ * Centralized API service object. All HTTP calls to the backend go through this service.
+ * Methods are organized by domain: Authentication, Company, Users, Admin, Layouts, Subscriptions, Help.
+ */
 const ApiService = {
+  /**
+   * Generic request wrapper around the configured Axios instance.
+   * @param {string} method - HTTP method (GET, POST, PUT, DELETE, PATCH)
+   * @param {string} url - API endpoint path (relative to base URL)
+   * @param {Object|null} data - Request body
+   * @param {Object} config - Additional Axios config (params, headers, etc.)
+   * @returns {Promise<Object>} Axios response
+   */
   async request(method, url, data = null, config = {}) {
     return api({
       method,

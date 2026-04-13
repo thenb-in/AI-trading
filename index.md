@@ -1,0 +1,129 @@
+# NB Next — Starter Application Template
+
+> A production-ready, full-stack monorepo template for rapidly building secure web applications with Node.js, Express, React, and PostgreSQL.
+
+---
+
+## What Is This?
+
+**NB Next** is a starter application template that provides a fully wired foundation for new web applications. Instead of building authentication, user management, role-based access control, and admin dashboards from scratch every time, NB Next gives you all of these out of the box so you can focus on your business logic.
+
+## Who Is This For?
+
+- **Development teams** bootstrapping a new SaaS or internal tool
+- **Solo developers** who want a battle-tested starting point with best practices baked in
+- **Organizations** standardizing their application architecture across projects
+
+## Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **JWT Authentication** | Access + refresh token rotation with secure httpOnly cookies |
+| **Two-Factor Auth (TOTP)** | Optional authenticator-app-based 2FA |
+| **Role-Based Access Control** | Granular permissions with global and company-specific roles |
+| **Multi-Company Support** | Users can belong to and switch between multiple companies |
+| **Admin Dashboard** | User management, role/permission editor, subscription management |
+| **Layout System** | Per-user customizable data grid column layouts |
+| **File Management (NBnext Drive)** | Upload, browse, and serve files with company-scoped access |
+| **Activity Audit Log** | Automatic tracking of user actions with before/after diffs |
+| **Help & Support Tickets** | In-app support ticket submission with screenshot capture |
+| **Data Grid** | Filterable, sortable, paginated data tables with Excel/PDF export |
+| **Onboarding Flow** | Guided first-time user and company setup |
+| **Global Search** | Keyboard-shortcut-triggered search palette across modules |
+| **Device Access Control** | Restrict users to desktop web, mobile web, or mobile app |
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, Vite, Material-UI, Tailwind CSS |
+| Backend | Node.js, Express 5, Sequelize ORM |
+| Database | PostgreSQL |
+| Real-time | Socket.io |
+| Auth | JWT, bcrypt, Speakeasy (TOTP) |
+| Code Quality | ESLint (custom rules), Prettier, Husky, Commitlint |
+
+## Quick Links
+
+| Document | Description |
+|----------|-------------|
+| [APPLICATION_DOC.md](./APPLICATION_DOC.md) | Business & functional overview — what the app does |
+| [TECHNICAL_DOC.md](./TECHNICAL_DOC.md) | Architecture, data models, API reference, security design |
+| [USER_DOCS.md](./USER_DOCS.md) | End-user guides for every screen and feature |
+| [TODO.md](./TODO.md) | Actionable issues and improvements found in the codebase |
+| [ROADMAP.md](./ROADMAP.md) | Suggested evolution path for the project |
+| [REPO_SUMMARY.md](./REPO_SUMMARY.md) | Compact one-page summary of the repository |
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL 14+
+- npm 9+
+
+### Installation
+
+```bash
+# Clone and install dependencies
+git clone <repo-url> && cd startup
+npm install
+
+# Configure environment
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+# Edit both .env files with your database credentials, JWT secrets, etc.
+
+# Run database migrations (if any)
+npm run migrate
+
+# Start development servers (client + server concurrently)
+npm run dev
+```
+
+### Creating a New App From This Template
+
+```bash
+npm run create-app
+# Follow the interactive prompts to set your app name and configuration
+```
+
+### Useful Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start client + server in development mode |
+| `npm run lint` | Lint both client and server |
+| `npm run build` | Production build |
+| `npm run clean` | Remove build artifacts |
+| `npm run test` | Run all tests |
+| `npm run dev-utils` | Run development health checks |
+| `npm run create-app` | Create a new app from this template |
+| `npm run update-starter-app` | Pull updates from the starter template |
+
+## Repository Maturity & Status
+
+| Attribute | Status |
+|-----------|--------|
+| **Stage** | Active Development — Template |
+| **Version** | 1.0.35 (root) / 1.0.2 (client) / 1.0.14 (server) |
+| **Test Coverage** | E2E and integration test scaffolding present; test suites need expansion |
+| **CI/CD** | GitHub Actions for linting, client builds, server tests |
+| **Documentation** | Inline code comments + generated docs (this set) |
+
+## Project Structure (High Level)
+
+```
+startup/
+├── client/          # React frontend (Vite)
+├── server/          # Express backend
+├── scripts/         # Build, lint, migration, and utility scripts
+├── tests/           # E2E and integration test suites
+├── deploy/          # Nginx config, systemd service, build scripts
+├── db-scripts/      # Manual SQL migration scripts
+└── .github/         # CI/CD workflows
+```
+
+---
+
+*This documentation was auto-generated by analyzing the full codebase. See individual docs for deep dives into each area.*

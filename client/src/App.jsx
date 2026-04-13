@@ -14,6 +14,12 @@ import { ProtectedRoute } from './components/startup/ProtectedRoute';
 import { GlobalSearchPalette } from './components/startup/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/startup/consoleLogBufferService';
 
+/**
+ * Root application component. Defines all top-level routes, initializes the console log
+ * buffer service, and renders the global search palette and toast notification container.
+ * Protected routes are wrapped with ProtectedRoute for auth enforcement.
+ * @returns {JSX.Element} The complete application route tree
+ */
 export function App() {
   useEffect(() => {
     consoleLogBufferService.start();

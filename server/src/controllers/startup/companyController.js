@@ -8,6 +8,13 @@ const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../../utils/startup/authUtils');
 
+/**
+ * Sets JWT access/refresh tokens and login status as HTTP cookies on the response.
+ * @param {Object} res - Express response
+ * @param {string} accessToken - JWT access token
+ * @param {string} refreshToken - JWT refresh token
+ * @side_effects Sets three cookies: accessToken (httpOnly), refreshToken (httpOnly), isLoggedIn
+ */
 function setAuthCookies(res, accessToken, refreshToken) {
   res.cookie('accessToken', accessToken, {
     httpOnly: true,

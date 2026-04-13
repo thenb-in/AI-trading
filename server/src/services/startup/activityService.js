@@ -7,6 +7,13 @@ const { Activity, User } = require('../../models');
 const ACTIVITY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
 const ACTIVITY_INCLUDE = [createdByUserInclude(User)];
 
+/**
+ * Shared query helper for fetching activities with pagination, ordering, and user includes.
+ * @param {Object} where - Sequelize where clause
+ * @param {number|string} limit - Maximum number of records to return
+ * @param {number|string} offset - Number of records to skip
+ * @returns {Promise<Array<Object>>} Array of Activity model instances
+ */
 async function queryActivities(where, limit,offset) {
   return Activity.findAll({
     where,

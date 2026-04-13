@@ -9,6 +9,15 @@ const { NBnextDrive, User } = require('../../models');
 const FILE_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
 const FILE_INCLUDE = [createdByUserInclude(User)];
 
+/**
+ * Finds a file by ID within a company scope. Restricts to user's own files unless showAll is true.
+ * @param {number} id - File record ID
+ * @param {string} companyId - Company scope
+ * @param {string|number} userId - Requesting user's ID
+ * @param {boolean} showAll - If true, skip user ownership filter (admin mode)
+ * @returns {Promise<{ file: Object, where: Object }>} File instance and the where clause used
+ * @throws {Error} If file not found
+ */
 async function findFileOrThrow(id, companyId, userId, showAll) {
   const where = { id, companyId };
   if (!showAll) {

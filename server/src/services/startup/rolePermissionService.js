@@ -8,6 +8,12 @@ const companyService = require('./companyService');
 const permissionService = require('./permissionService');
 const userService = require('./userService');
 
+/**
+ * Checks if a role with the given name already exists for the specified company (or globally).
+ * @param {string} name - Role name to check (trimmed)
+ * @param {string|null} companyId - Company scope (null for global roles)
+ * @returns {Promise<Object|null>} Existing role instance or null
+ */
 const checkRoleExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
   if (companyId) {
@@ -19,6 +25,14 @@ const checkRoleExists = async (name, companyId = null) => {
   return existingRole;
 };
 
+/**
+ * Creates a new role, validating name uniqueness within the company scope.
+ * @param {string} name - Role name (2-50 chars, alphanumeric + spaces/hyphens/underscores)
+ * @param {string|null} description - Optional role description (max 500 chars)
+ * @param {string|null} companyId - Company scope (null for global role)
+ * @returns {Promise<Object>} Created Role model instance
+ * @throws {Error} If a role with the same name already exists in the same scope
+ */
 const createRole = async (name, description, companyId = null) => {
   const trimmedName = validateName(name, { fieldName: 'Role name' });
   const trimmedDescription = validateDescription(description);
@@ -64,6 +78,13 @@ const fetchAllUsers = async () => {
   }
 };
 
+/**
+ * Retrieves all roles visible to a company (global + company-specific), with permissions eagerly loaded.
+ * Adds an `isGlobal` flag to each role for frontend differentiation.
+ * @param {string|null} companyId - Company ID to scope by
+ * @returns {Promise<Array<Object>>} Array of role objects with permissions and isGlobal flag
+ * @throws {{ status: number, message: string }} On query failure
+ */
 const getRolesAndPermissions = async (companyId) => {
   try {
     // All users see global roles (default roles) + company-specific roles
@@ -109,6 +130,14 @@ const getAllPermissions = async () => {
   return await permissionService.getAllPermissions();
 };
 
+/**
+ * Removes a permission from a role. Only super admins can modify global/default roles.
+ * @param {number} roleId - Role ID
+ * @param {number} permissionId - Permission ID to remove
+ * @param {string|number} userId - ID of the user performing the action (for sadmin check)
+ * @returns {Promise<{ message: string }>} Success message
+ * @throws {{ status: number, message: string }} If role/permission not found or unauthorized
+ */
 const removePermissionFromRole = async (roleId, permissionId, userId) => {
   try {
     const role = await findModelByIdOrThrow(Role, roleId, {}, 'Role');
@@ -131,6 +160,14 @@ const removePermissionFromRole = async (roleId, permissionId, userId) => {
   }
 };
 
+/**
+ * Adds one or more permissions to a role. Only super admins can modify global/default roles.
+ * @param {number} roleId - Role ID
+ * @param {number|Array<number>} permissionIds - Permission ID(s) to add
+ * @param {string|number} userId - ID of the user performing the action (for sadmin check)
+ * @returns {Promise<{ message: string }>} Success message with count
+ * @throws {{ status: number, message: string }} If role/permissions not found, unauthorized, or duplicate
+ */
 const addPermissionToRole = async (roleId, permissionIds, userId) => {
   try {
     // Ensure permissionIds is an array

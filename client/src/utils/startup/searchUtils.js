@@ -1,3 +1,10 @@
+/**
+ * Calculates a relevance score for a search item against a search term.
+ * Scores are weighted by match location: title > tags > keywords > category > description.
+ * @param {Object} item - Searchable item with title, description, category, tags, keywords
+ * @param {string} term - Lowercase search term
+ * @returns {number} Relevance score (0 = no match, higher = more relevant)
+ */
 const calculateMatchScore = (item, term) => {
   if (!term) return 0;
   

@@ -62,6 +62,13 @@ const directories = fs.readdirSync(__dirname)
 
 
 // Helper function to load models from a directory
+/**
+ * Loads all Sequelize model definition files from a directory, initializes them
+ * with the sequelize instance, and adds them to the db object.
+ * @param {string} dirPath - Absolute path to the directory containing model files
+ * @param {string} dirName - Directory name (used for debug logging)
+ * @side_effects Populates the db object with model instances keyed by model name
+ */
 const loadModelsFromDirectory = (dirPath, dirName) => {
   fs.readdirSync(dirPath)
     .filter(

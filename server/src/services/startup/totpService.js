@@ -5,6 +5,13 @@ const env = require('../../config/env');
 // User is the primary model for this service
 const { User } = require('../../models');
 
+/**
+ * Verifies a TOTP code against the stored secret using the configured window tolerance.
+ * @param {string} secret - Base32-encoded TOTP secret
+ * @param {string} totpCode - 6-digit TOTP code from authenticator app
+ * @param {string} username - Username for logging purposes
+ * @throws {Error} If the TOTP code is invalid
+ */
 function verifyTotpCode(secret, totpCode, username) {
   const isValid = speakeasy.totp.verify({
     secret,
@@ -18,6 +25,14 @@ function verifyTotpCode(secret, totpCode, username) {
   }
 }
 
+/**
+ * Generates a new TOTP secret for a user, stores it in the database, and returns a QR code.
+ * If the user already has a secret, it is regenerated (overwritten).
+ * @param {string} username - Username to generate the secret for
+ * @returns {Promise<{ secret: string, qrCodeUrl: string, otpauthUrl: string, message: string }>}
+ * @throws {Error} If user not found
+ * @side_effects Stores totp_secret on the User record
+ */
 const generateTotpSecret = async (username) => {
   username = username?.trim();
   logger.info(`Generating TOTP secret for user: ${username}`);
@@ -55,6 +70,14 @@ const generateTotpSecret = async (username) => {
   };
 };
 
+/**
+ * Verifies a TOTP code and enables 2FA for the user. Must be called after generateTotpSecret.
+ * @param {string} username - Username
+ * @param {string} totpCode - TOTP code from authenticator app
+ * @returns {Promise<{ success: boolean, message: string }>}
+ * @throws {Error} If user not found, TOTP already enabled, no secret exists, or code is invalid
+ * @side_effects Sets is_totp_enabled=true on the User record
+ */
 const verifyAndEnableTotp = async (username, totpCode) => {
   username = username?.trim();
   logger.info(`Verifying TOTP code for user: ${username}`);
@@ -91,6 +114,14 @@ const verifyAndEnableTotp = async (username, totpCode) => {
   };
 };
 
+/**
+ * Verifies a TOTP code without changing the user's 2FA status. Used during password resets
+ * to allow immediate approval without admin intervention.
+ * @param {string} username - Username
+ * @param {string} totpCode - TOTP code from authenticator app
+ * @returns {Promise<{ success: boolean, message: string }>}
+ * @throws {Error} If user not found, TOTP not enabled, no secret exists, or code is invalid
+ */
 const verifyTotpOnly = async (username, totpCode) => {
   username = username?.trim();
   logger.info(`Verifying TOTP code for password reset: ${username}`);

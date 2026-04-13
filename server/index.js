@@ -20,6 +20,11 @@ const layoutRoutes = require('./src/routes/startup/layoutRoutes');
 const nbnextDriveRoutes = require('./src/routes/startup/nbnextDriveRoutes');
 const userRoutes = require('./src/routes/startup/userRoutes');
 
+/**
+ * Express application instance and HTTP server.
+ * Configures middleware, routes, CORS, and static file serving,
+ * then connects to the database and starts listening.
+ */
 const app = express();
 const server = http.createServer(app);
 
@@ -83,6 +88,12 @@ app.get('/healthz', (req, res) => {
 const PORT = env.PORT;
 
 // Test DB connection and start server
+/**
+ * Initializes the database connection, synchronizes models (non-production only),
+ * and starts the HTTP server on the configured port.
+ * @returns {Promise<void>}
+ * @side_effects Syncs database schema in non-production, starts HTTP listener
+ */
 const startServer = async () => {
   // Synchronize models
   // sync only if not in production

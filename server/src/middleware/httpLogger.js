@@ -1,5 +1,13 @@
 const logger = require('../../logger');
 
+/**
+ * HTTP request/response logging middleware. Logs incoming requests and response outcomes
+ * with timing information. Skips noisy endpoints (/health, /favicon.ico).
+ * Avoids logging request body for GET/DELETE methods.
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @param {Function} next - Next middleware
+ */
 const httpLogger = (req, res, next) => {
   // Skip logging for health checks or other noisy endpoints
   if (req.path === '/health' || req.path === '/favicon.ico') {

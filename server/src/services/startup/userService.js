@@ -5,6 +5,12 @@ const { User, UserProfile } = require('../../models');
 const { findModelByIdOrThrow } = require('../../utils/startup/modelHelpers');
 const roleService = require('./roleService');
 
+/**
+ * Permanently deletes a user and their profile from the database.
+ * @param {string|number} userId - ID of the user to delete
+ * @returns {Promise<void>}
+ * @side_effects Destroys UserProfile and User rows; cascaded associations cleaned by DB constraints
+ */
 async function deleteUser(userId) {
   // Delete user profile - UserProfile is imported for includes, use directly here
   await UserProfile.destroy({ where: { userId: userId } });
@@ -14,6 +20,13 @@ async function deleteUser(userId) {
   await User.destroy({ where: { id: userId } });
 }
 
+/**
+ * Updates a user's assigned role after validating the role exists for the user's company.
+ * @param {string|number} userId - User ID
+ * @param {number|null} newRoleId - New role ID, or null to unassign
+ * @returns {Promise<void>}
+ * @throws {Error} If user or role not found
+ */
 async function updateUserRole(userId, newRoleId) {
   const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
@@ -33,6 +46,17 @@ async function updateUserRole(userId, newRoleId) {
   await user.save();
 }
 
+/**
+ * Updates a user's device access flags (desktop web, mobile web, mobile app).
+ * Only updates fields present in the payload.
+ * @param {string|number} userId - User ID
+ * @param {Object} deviceAccess - Partial device flags to update
+ * @param {boolean} [deviceAccess.desktopWeb] - Desktop web access
+ * @param {boolean} [deviceAccess.mobileWeb] - Mobile web access
+ * @param {boolean} [deviceAccess.mobileApp] - Mobile app access
+ * @returns {Promise<Object>} Updated User instance
+ * @throws {Error} If user not found
+ */
 async function updateUserDeviceAccess(userId, deviceAccess) {
   const user = await findModelByIdOrThrow(User, userId, {}, 'User');
 
@@ -51,10 +75,22 @@ async function updateUserDeviceAccess(userId, deviceAccess) {
   return user;
 }
 
+/**
+ * Retrieves a user by primary key. Throws if not found.
+ * @param {string|number} userId - User ID
+ * @returns {Promise<Object>} User model instance
+ * @throws {Error} If user not found
+ */
 const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
+/**
+ * Retrieves all active users for a given company, ordered by last_active descending.
+ * Includes the user's profile via eager loading.
+ * @param {string} companyId - Company ID to filter by
+ * @returns {Promise<Array<Object>>} Array of User model instances with userProfile
+ */
 const getAllUsers = async (companyId) => {
   const users = await User.findAll({
     where: { isActive: true, company_id: companyId },
@@ -67,6 +103,13 @@ const getAllUsers = async (companyId) => {
   return users;
 };
 
+/**
+ * Updates both the User's company_id and the UserProfile's currentCompany to the given company.
+ * @param {string|number} userId - User ID
+ * @param {string} companyId - New company ID to set
+ * @returns {Promise<Object>} Updated User instance
+ * @side_effects Updates both User and UserProfile tables
+ */
 async function updateUserCurrentCompany(userId, companyId) {
   // Update user's company_id
   const user = await findModelByIdOrThrow(User, userId, {}, 'User');
@@ -80,6 +123,13 @@ async function updateUserCurrentCompany(userId, companyId) {
   return user;
 }
 
+/**
+ * Creates or updates a user's profile. If the profile exists, it is updated; otherwise a new one is created.
+ * @param {string|number} userId - User ID
+ * @param {Object} userProfile - Profile fields to set
+ * @returns {Promise<Object>} Updated User instance with userProfile included
+ * @throws {Error} If user not found or update fails
+ */
 const updateUserProfile = async (userId, userProfile) => {
   // UserProfile is imported for includes
   const user = await findModelByIdOrThrow(User, userId, {
@@ -114,6 +164,12 @@ const updateUserProfile = async (userId, userProfile) => {
   }
 };
 
+/**
+ * Stores a new refresh token and updates the last_active timestamp for a user.
+ * @param {string|number} userId - User ID
+ * @param {string} refreshToken - New refresh token to persist
+ * @returns {Promise<boolean>} True if the update affected at least one row
+ */
 const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
   const [updated] = await User.update(
     { refresh_token: refreshToken, last_active: new Date() },
@@ -123,6 +179,11 @@ const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
   return updated > 0;
 };
 
+/**
+ * Checks whether a user is approved (used by auth middleware to gate access).
+ * @param {string|number} userId - User ID
+ * @returns {Promise<{ isActive: boolean, user: Object|null }>} Active status and user reference
+ */
 const checkUserActive = async (userId) => {
   const user = await User.findByPk(userId, {
     attributes: ['is_approved', 'username']
@@ -133,6 +194,16 @@ const checkUserActive = async (userId) => {
   return { isActive: true, user };
 };
 
+/**
+ * Fetches a user by primary key with optional row-level locking for transaction safety.
+ * Used during refresh token rotation to prevent race conditions.
+ * @param {string|number} userId - User ID
+ * @param {Object} options - Query options
+ * @param {Array<string>} [options.attributes] - Columns to select
+ * @param {Object} [options.lock] - Sequelize lock type (e.g., transaction.LOCK.UPDATE)
+ * @param {Object} [options.transaction] - Sequelize transaction instance
+ * @returns {Promise<Object|null>} User instance or null
+ */
 const getUserByPkWithLock = async (userId, options = {}) => {
   const { attributes, lock, transaction } = options;
   const queryOptions = {
@@ -144,6 +215,14 @@ const getUserByPkWithLock = async (userId, options = {}) => {
   return await User.findByPk(userId, queryOptions);
 };
 
+/**
+ * Updates a user's refresh token and last_active within an existing transaction.
+ * @param {string|number} userId - User ID
+ * @param {string} refreshToken - New refresh token value
+ * @param {Object} transaction - Active Sequelize transaction
+ * @returns {Promise<Object>} Updated User instance
+ * @throws {Error} If user not found
+ */
 const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
   const user = await findModelByIdOrThrow(User, userId, { transaction }, 'User');
 
@@ -153,6 +232,11 @@ const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
   return user;
 };
 
+/**
+ * Revokes a user's refresh token by setting it to null in the database.
+ * @param {string|number} userId - User ID
+ * @returns {Promise<boolean>} True if revocation affected at least one row
+ */
 const revokeRefreshToken = async (userId) => {
   const [updated] = await User.update(
     { refresh_token: null },
@@ -165,6 +249,16 @@ const revokeRefreshToken = async (userId) => {
   return updated > 0;
 };
 
+/**
+ * Atomically rotates a user's refresh token within a database transaction with row-level locking.
+ * Validates the current token matches before rotating to prevent replay attacks.
+ * @param {string|number} userId - User ID
+ * @param {string} currentRefreshToken - Token the client presented (must match DB)
+ * @param {string} newRefreshToken - New token to store
+ * @param {string|null} companyId - Company ID for context
+ * @returns {Promise<{ id: number, company_id: string, username: string }>} User summary
+ * @throws {Error} If user not found, inactive, or token mismatch
+ */
 const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefreshToken, companyId) => {
   const tx = await User.sequelize.transaction();
   try {
@@ -204,11 +298,23 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
   }
 };
 
+/**
+ * Fetches a user's profile record.
+ * @param {string|number} userId - User ID
+ * @returns {Promise<Object|null>} UserProfile instance or null if not found
+ */
 const getUserProfile = async (userId) => {
   // UserProfile is imported for includes
   return await UserProfile.findOne({ where: { userId } });
 };
 
+/**
+ * Creates a new UserProfile record for a user.
+ * @param {string|number} userId - User ID to create the profile for
+ * @param {Object} data - Additional profile data (e.g., currentCompany)
+ * @param {Object|null} transaction - Optional Sequelize transaction
+ * @returns {Promise<Object>} Created UserProfile instance
+ */
 const createUserProfile = async (userId, data = {}, transaction = null) => {
   // UserProfile is imported for includes
   const options = transaction ? { transaction } : {};

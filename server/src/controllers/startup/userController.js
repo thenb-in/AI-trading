@@ -5,6 +5,11 @@ const multiCompanyService = require('../../services/startup/multiCompanyService'
 const userService = require('../../services/startup/userService');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
 
+/**
+ * Handles GET /users — returns all users in the requesting user's company.
+ * @param {Object} req - Express request (req.user.company_id required)
+ * @param {Object} res - Express response
+ */
 const getAllUsers = async (req, res) => {
   // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);
   // if (!hasPermission) {
@@ -21,6 +26,12 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+/**
+ * Handles POST /users/:userId/deactivate — deactivates a user by revoking approval and clearing tokens.
+ * Requires the User.deactivate permission.
+ * @param {Object} req - Express request (req.params.userId, req.user.id)
+ * @param {Object} res - Express response
+ */
 const deactivateUser = async (req, res) => {
   const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.deactivate.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
@@ -47,6 +58,11 @@ const deactivateUser = async (req, res) => {
   }
 };
 
+/**
+ * Handles GET /users/me — returns the authenticated user's full profile with role and company info.
+ * @param {Object} req - Express request (req.user.id required)
+ * @param {Object} res - Express response
+ */
 const getMe = async (req, res) => {
   try {
     const userData=req.user;
@@ -59,6 +75,12 @@ const getMe = async (req, res) => {
 };
 
 
+/**
+ * Handles DELETE /users/:userId — permanently deletes a user and their profile.
+ * Requires the User.delete permission.
+ * @param {Object} req - Express request (req.params.userId, req.user.id)
+ * @param {Object} res - Express response
+ */
 const deleteUser = async (req, res) => {
   const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.delete.name;
   const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
@@ -75,6 +97,11 @@ const deleteUser = async (req, res) => {
   }
 };
 
+/**
+ * Handles PUT /users/:userId/role — updates a user's assigned role.
+ * @param {Object} req - Express request (req.params.userId, req.body.role)
+ * @param {Object} res - Express response
+ */
 const updateUserRole=async(req,res)=>{
   try {
     const { userId } = req.params;
@@ -86,6 +113,11 @@ const updateUserRole=async(req,res)=>{
     res.status(500).json({ error: `Error in updating user role ${error.message}` });
   }
 };
+/**
+ * Handles PUT /users/:userId/deviceAccess — updates a user's device access flags.
+ * @param {Object} req - Express request (req.params.userId, req.body.deviceAccess)
+ * @param {Object} res - Express response
+ */
 const updateUserDeviceAccess=async(req,res)=>{
   try {
     const { userId } = req.params;
@@ -98,6 +130,11 @@ const updateUserDeviceAccess=async(req,res)=>{
   }
 };
 
+/**
+ * Handles POST /users/userProfile — creates or updates a user's extended profile.
+ * @param {Object} req - Express request (req.body.userId, req.body.userProfile)
+ * @param {Object} res - Express response
+ */
 const updateUserProfile=async(req,res)=>{
   try {
 

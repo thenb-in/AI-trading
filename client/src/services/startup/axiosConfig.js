@@ -4,7 +4,11 @@ import { toast } from 'react-toastify';
 // URLs
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-// Create Axios instances
+/**
+ * Pre-configured Axios instance for API communication.
+ * Sends cookies with all requests, auto-sets JSON headers (except for FormData),
+ * and handles 401 redirects and validation error toasts via interceptors.
+ */
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Send cookies with cross-origin requests
