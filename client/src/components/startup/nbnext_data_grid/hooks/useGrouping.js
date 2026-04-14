@@ -2,9 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { convertCellToText } from "../../BaseReport/ReportUtils.js";
 import { calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
 
-// Manages row grouping by a single column. When a group-by field is active:
-//   - Sorts ascending by that field (via setSortModelProgrammatic)
-//   - Injects a synthetic "_isGroupTotal" summary row after each group
 const useGrouping = (columnsToUse, sortedRows, setSortModelProgrammatic) => {
   const [groupByField, setGroupByField] = useState(null);
 
@@ -18,6 +15,7 @@ const useGrouping = (columnsToUse, sortedRows, setSortModelProgrammatic) => {
     setSortModelProgrammatic({ field: groupByField, sort: "asc" });
   }, [groupByField, setSortModelProgrammatic]);
 
+  // Inject a synthetic "group total" row after each contiguous group of rows.
   const groupedRows = useMemo(() => {
     if (!groupByField) return sortedRows;
     const groupCol = columnsToUse.find((c) => c.field === groupByField);

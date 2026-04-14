@@ -4,6 +4,7 @@
 
 import PropTypes from "prop-types";
 import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
+import { parseDateValue } from "@utils/startup/dateTimeUtils";
 
 function LayoutItem({
   layout,
@@ -24,7 +25,7 @@ function LayoutItem({
           )}
         </div>
         <div className="text-gray-500 text-xs">
-          {layout.type} • {new Date(layout.created_at).toLocaleDateString()}
+          {layout.type} • {parseDateValue(layout.created_at)?.toLocaleDateString() ?? ""}
         </div>
       </div>
       <label

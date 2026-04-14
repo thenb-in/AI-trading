@@ -1,11 +1,10 @@
 import PropTypes from "prop-types";
-import { ArrowUpDown, ArrowUp, ArrowDown, Pin, PinOff } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Pin, PinOff, Layers } from "lucide-react";
 import {
   headerCellBaseStyle,
   getSortedHeaderStyle,
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
-import { TextTypeField } from '@base_components/fields/TextTypeField.jsx';
 
 import { useRef, useCallback, useState, useEffect } from "react";
 
@@ -23,6 +22,9 @@ function DataGridHeader({
   fullScreen = false,
   filterModel = {},
   handleFilterChange,
+  groupByField = null,
+  toggleGroupBy = null,
+  onColumnReorder = null,
 }) {
   // Optimized column resizing refs (shared across all columns)
   const resizeStateRef = useRef({});
@@ -30,9 +32,20 @@ function DataGridHeader({
   const filterRowRef = useRef(null);
   const [headerRowHeight, setHeaderRowHeight] = useState(48); // Default estimate
 
+  // Drag-and-drop state
+  const [dragField, setDragField] = useState(null);
+  const [dragOverField, setDragOverField] = useState(null);
+
   const handleToggleFrozen = (field) => (e) => {
     e.stopPropagation();
     toggleFrozen(field);
+  };
+
+  const handleToggleGroupBy = (field) => (e) => {
+    e.stopPropagation();
+    if (typeof toggleGroupBy === "function") {
+      toggleGroupBy(field);
+    }
   };
 
   const onResizeStart = (field, e) => {
@@ -73,10 +86,44 @@ function DataGridHeader({
     window.addEventListener('mouseup', onMouseUp);
   };
 
+  const handleDragStart = useCallback((field, e) => {
+    setDragField(field);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", field);
+  }, []);
+
+  const handleDragOver = useCallback((field, e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverField(field);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverField(null);
+  }, []);
+
+  const handleDrop = useCallback((targetField, e) => {
+    e.preventDefault();
+    const sourceField = e.dataTransfer.getData("text/plain");
+    if (sourceField && sourceField !== targetField && onColumnReorder) {
+      onColumnReorder(sourceField, targetField);
+    }
+    setDragField(null);
+    setDragOverField(null);
+  }, [onColumnReorder]);
+
+  const handleDragEnd = useCallback(() => {
+    setDragField(null);
+    setDragOverField(null);
+  }, []);
+
   const renderHeaderCell = (col, isFrozen) => {
     const isSorted = sortModel.field === col.field ? sortModel.sort : null;
     const sortedStyle = getSortedHeaderStyle(isSorted);
     const left = isFrozen ? cumulativeFrozenLeftOffsets[col.field] || 0 : undefined;
+    const isGrouped = groupByField === col.field;
+    const isDragging = dragField === col.field;
+    const isDragOver = dragOverField === col.field && dragField !== col.field;
 
     // Use server-provided width and add icon space
     // Use columnWidths if present, else fallback
@@ -95,6 +142,10 @@ function DataGridHeader({
         position: "sticky",
         left,
       }),
+      // Drag visual feedback
+      ...(isDragging && { opacity: 0.4 }),
+      ...(isDragOver && { borderLeft: "3px solid #3b82f6" }),
+      cursor: "grab",
     };
 
     // --- Column resizing logic ---
@@ -144,7 +195,16 @@ function DataGridHeader({
     // End optimized column resizing
 
     return (
-      <th key={col.field} style={cellStyle}>
+      <th
+        key={col.field}
+        style={cellStyle}
+        draggable
+        onDragStart={(e) => handleDragStart(col.field, e)}
+        onDragOver={(e) => handleDragOver(col.field, e)}
+        onDragLeave={handleDragLeave}
+        onDrop={(e) => handleDrop(col.field, e)}
+        onDragEnd={handleDragEnd}
+      >
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -183,6 +243,19 @@ function DataGridHeader({
               <PinOff size={14} color="#e2e8f0" strokeWidth={2} />
             )}
           </button>
+          <button
+            type="button"
+            onClick={handleToggleGroupBy(col.field)}
+            className={`p-1 ml-2 cursor-pointer rounded-md border inline-flex items-center justify-center transition-all duration-120 ${
+              isGrouped
+                ? "bg-green-100 border-green-600"
+                : "bg-transparent border-white/20"
+            }`}
+            title={isGrouped ? "Ungroup column" : "Group by this column"}
+            aria-label={isGrouped ? `Ungroup ${col.headerName}` : `Group by ${col.headerName}`}
+          >
+            <Layers size={14} color={isGrouped ? "#16a34a" : "#e2e8f0"} strokeWidth={2} />
+          </button>
           <div
             className="absolute right-0 top-0 h-full w-2 cursor-col-resize z-10 column-resizer"
             data-field={col.field}
@@ -198,10 +271,6 @@ function DataGridHeader({
       handleFilterChange(field, value);
     }
   }, [handleFilterChange]);
-
-  const handleFilterChangeEvent = useCallback((e) => {
-    handleFilterInputChange(e.target.name, e.target.value);
-  }, [handleFilterInputChange]);
 
   const handleFilterInputClick = useCallback((e) => {
     e.stopPropagation();
@@ -244,12 +313,12 @@ function DataGridHeader({
 
     return (
       <th key={`filter-${col.field}`} style={filterCellStyle}>
-        <TextTypeField
-          name={col.field}
+        <input
+          type="text"
           value={filterModel[col.field] || ""}
-          onChange={handleFilterChangeEvent}
+          onChange={(e) => handleFilterInputChange(col.field, e.target.value)}
           placeholder="Filter..."
-          className="w-full px-2 py-1 text-xs"
+          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
           onClick={handleFilterInputClick}
         />
       </th>
@@ -287,6 +356,9 @@ DataGridHeader.propTypes = {
   fullScreen: PropTypes.bool,
   filterModel: PropTypes.object,
   handleFilterChange: PropTypes.func,
+  groupByField: PropTypes.string,
+  toggleGroupBy: PropTypes.func,
+  onColumnReorder: PropTypes.func,
 };
 
 export { DataGridHeader };

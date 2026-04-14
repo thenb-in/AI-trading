@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-// Provides internal fullscreen state with Alt+F keyboard shortcut.
-// If the parent controls fullScreen via prop, the shortcut is disabled
-// and the external value wins.
+// Provides internal fullscreen state + Alt+F keyboard shortcut. If the parent
+// controls fullScreen via prop, the shortcut is disabled and external value wins.
 const useFullScreenToggle = (externalFullScreen) => {
   const [internalFullScreen, setInternalFullScreen] = useState(false);
   const fullScreen =
@@ -13,7 +12,9 @@ const useFullScreenToggle = (externalFullScreen) => {
   }, []);
 
   useEffect(() => {
-    if (externalFullScreen !== undefined) return undefined;
+    if (externalFullScreen !== undefined) {
+      return undefined;
+    }
 
     const handleKeyDown = (event) => {
       const isAltF = event.altKey && event.code === "KeyF";

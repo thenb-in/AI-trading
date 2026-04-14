@@ -7,16 +7,19 @@ const resolveColumnSubset = (allColumns, fields) => {
   return fields.map((f) => byField.get(f)).filter(Boolean);
 };
 
-// When `tabs` is provided, owns the active-tab state and derives the
-// rows / summary / columns that flow into the rest of the grid pipeline.
-// Only the active tab's data enters sort/filter/render — inactive tabs
-// stay inert in props.
+// When `tabs` is provided, this hook owns the active-tab state and derives the
+// rows / summary / columns that flow into the rest of the grid pipeline. Only
+// the active tab's data enters sort/filter/render — inactive tabs stay inert
+// in props.
 //
 // A tab may optionally override any of:
 //   - `rows`         (full row override; otherwise shares top-level rows)
 //   - `summary`      (override or share top-level summary)
 //   - `columnFields` (subset + ordering of top-level columns by field name)
 //   - `columns`      (full column override; wins over `columnFields`)
+//
+// The common case — one shared dataset, different column subsets per tab —
+// only needs `columnFields`, so callers don't have to ship redundant rows.
 const useTabsState = ({ tabs, defaultActiveTabId, rowsProp, summaryProp, columnsProp }) => {
   const hasTabs = Array.isArray(tabs) && tabs.length > 0;
 
@@ -36,9 +39,12 @@ const useTabsState = ({ tabs, defaultActiveTabId, rowsProp, summaryProp, columns
   }, [tabs, hasTabs, activeTabId]);
 
   const activeTab = hasTabs ? (tabs.find((t) => t.id === activeTabId) ?? tabs[0]) : null;
-  const rows    = hasTabs ? (activeTab?.rows    ?? rowsProp)    : rowsProp;
+  const rows = hasTabs ? (activeTab?.rows ?? rowsProp) : rowsProp;
   const summary = hasTabs ? (activeTab?.summary ?? summaryProp) : summaryProp;
 
+  // Memoize the subset-resolved columns so a tab that only filters by field
+  // names still hands a stable array reference to downstream hooks across
+  // unrelated re-renders.
   const columns = useMemo(() => {
     if (!hasTabs) return columnsProp;
     if (Array.isArray(activeTab?.columns)) return activeTab.columns;

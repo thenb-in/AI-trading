@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
-// Measures the scroll area's clientHeight in fullscreen mode, feeding virtual
-// scrolling with an accurate container height.
+// Measures the scroll area's clientHeight in fullscreen, feeding virtual scrolling.
 const useScrollContainerHeight = (fullScreen, scrollAreaRef, computedContainerHeight) => {
   const [scrollContainerHeight, setScrollContainerHeight] = useState(0);
 

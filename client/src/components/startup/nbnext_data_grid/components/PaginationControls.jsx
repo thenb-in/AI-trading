@@ -1,45 +1,44 @@
 import PropTypes from "prop-types";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+const BTN_CLASS =
+  "inline-flex items-center justify-center h-8 w-8 shrink-0 text-slate-700 rounded-md border border-slate-200 bg-white transition-colors hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none";
 
 function PaginationControls({ page, totalPages, autoPageSize, goToPrevPage, goToNextPage, fullScreen = false, totalRows = 0 }) {
-  // In fullscreen, show "All rows" instead of pagination
   if (fullScreen) {
     return (
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-600">
-          Showing all {totalRows} rows
-        </span>
+      <div className="flex items-center h-8 px-3 rounded-md border border-slate-200 bg-slate-50 text-sm font-medium text-slate-700">
+        All {totalRows} rows
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-600">
-        Rows/page (auto): {autoPageSize}
-      </span>
-      <button
-        type="button"
-        onClick={goToPrevPage}
-        disabled={page <= 0}
-        className={`px-2.5 py-1.5 rounded-md border border-gray-300 bg-white ${
-          page <= 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'
-        }`}
-      >
-        Prev
-      </button>
-      <span className="text-xs">
-        Page {page + 1} of {totalPages}
-      </span>
-      <button
-        type="button"
-        onClick={goToNextPage}
-        disabled={page >= totalPages - 1}
-        className={`px-2.5 py-1.5 rounded-md border border-gray-300 bg-white ${
-          page >= totalPages - 1 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-gray-50'
-        }`}
-      >
-        Next
-      </button>
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-slate-600 shrink-0">Rows/page: {autoPageSize}</span>
+      <div className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 overflow-hidden">
+        <button
+          type="button"
+          onClick={goToPrevPage}
+          disabled={page <= 0}
+          className={BTN_CLASS}
+          aria-label="Previous page"
+        >
+          <ChevronLeft size={16} strokeWidth={2} />
+        </button>
+        <span className="min-w-[4rem] py-1 text-center text-sm font-medium text-slate-700 tabular-nums">
+          {page + 1} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={goToNextPage}
+          disabled={page >= totalPages - 1}
+          className={BTN_CLASS}
+          aria-label="Next page"
+        >
+          <ChevronRight size={16} strokeWidth={2} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -55,4 +54,3 @@ PaginationControls.propTypes = {
 };
 
 export { PaginationControls };
-

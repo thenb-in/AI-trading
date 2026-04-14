@@ -23,10 +23,21 @@ const useScrollToTopOnPagination = ({ page, fullScreen, goToNextPage, goToPrevPa
     [goToPrevPage]
   );
 
-  const handleTopGoToNextPage = useCallback(() => handleGoToNextPage("top"),   [handleGoToNextPage]);
-  const handleTopGoToPrevPage = useCallback(() => handleGoToPrevPage("top"),   [handleGoToPrevPage]);
-  const handleBottomGoToNextPage = useCallback(() => handleGoToNextPage("bottom"), [handleGoToNextPage]);
-  const handleBottomGoToPrevPage = useCallback(() => handleGoToPrevPage("bottom"), [handleGoToPrevPage]);
+  const handleTopGoToNextPage = useCallback(() => {
+    handleGoToNextPage("top");
+  }, [handleGoToNextPage]);
+
+  const handleTopGoToPrevPage = useCallback(() => {
+    handleGoToPrevPage("top");
+  }, [handleGoToPrevPage]);
+
+  const handleBottomGoToNextPage = useCallback(() => {
+    handleGoToNextPage("bottom");
+  }, [handleGoToNextPage]);
+
+  const handleBottomGoToPrevPage = useCallback(() => {
+    handleGoToPrevPage("bottom");
+  }, [handleGoToPrevPage]);
 
   useEffect(() => {
     if (fullScreen) {
@@ -48,10 +59,15 @@ const useScrollToTopOnPagination = ({ page, fullScreen, goToNextPage, goToPrevPa
   useEffect(() => {
     if (!fullScreen && showScrollToTop) {
       const handleScroll = () => {
-        if (window.scrollY === 0) setShowScrollToTop(false);
+        if (window.scrollY === 0) {
+          setShowScrollToTop(false);
+        }
       };
+
       window.addEventListener("scroll", handleScroll, { passive: true });
-      return () => window.removeEventListener("scroll", handleScroll);
+      return () => {
+        window.removeEventListener("scroll", handleScroll);
+      };
     }
     return undefined;
   }, [showScrollToTop, fullScreen]);

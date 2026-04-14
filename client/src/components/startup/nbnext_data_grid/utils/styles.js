@@ -7,7 +7,7 @@ const getGridContainerStyle = (computedContainerHeight, fullScreen = false, side
     left: fullScreen ? sidebarWidth : undefined,
     right: fullScreen ? 0 : undefined,
     bottom: fullScreen ? 0 : undefined,
-    zIndex: fullScreen ? 9999 : undefined,
+    zIndex: fullScreen ? 5 : undefined,
     border: fullScreen ? "none" : "1px solid #e2e8f0",
     borderRadius: fullScreen ? 0 : 12,
     overflow: "hidden",
@@ -62,7 +62,7 @@ const headerCellBaseStyle = {
   position: "sticky",
   top: 0,
   zIndex: 2,
-  background: "linear-gradient(180deg, #2563eb 0%, #1e40af 100%)",
+  background: "#1e40af", // Solid dark blue
   borderBottom: "3px solid #3b82f6",
   borderRight: "2px solid rgba(59, 130, 246, 0.3)",
   padding: "12px 16px",
@@ -84,7 +84,7 @@ const cellBaseStyle = (rowHeight) => ({
   padding: "12px 16px",
   height: rowHeight,
   boxSizing: "border-box",
-  background: "#fff",
+  // background is set via CSS custom property --cell-bg
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
@@ -139,25 +139,23 @@ const getSortedHeaderStyle = (isSorted) => {
   };
 };
 
-const getRowStyle = (isEven, isSelected, isHovered) => {
-  const baseBg = isEven ? "#ffffff" : "#f9fafb";
-  const hoverBg = "#eff6ff";
+const getRowStyle = (isEven, isSelected, isHovered, evenRowColor = "#ffffff", oddRowColor = "#eff6ff") => {
+  const baseBg = isEven ? evenRowColor : oddRowColor;
   const selectedBg = "#dbeafe";
 
   return {
-    background: isSelected ? selectedBg : isHovered ? hoverBg : baseBg,
+    background: isSelected ? selectedBg : baseBg,
     transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
     cursor: "pointer",
     boxShadow: isSelected ? "inset 4px 0 0 0 #2563eb" : undefined,
-    transform: isHovered && !isSelected ? "translateX(2px)" : undefined,
+    // Removed hover color and transform effects
   };
 };
 
-const getCellBackgroundColor = (isEven, isSelected, isHovered) => {
-  const baseBg = isEven ? "#ffffff" : "#f9fafb";
-  const hoverBg = "#eff6ff";
+const getCellBackgroundColor = (isEven, isSelected, isHovered, evenRowColor = "#ffffff", oddRowColor = "#eff6ff") => {
+  const baseBg = isEven ? evenRowColor : oddRowColor;
   const selectedBg = "#dbeafe";
-  return isSelected ? selectedBg : isHovered ? hoverBg : baseBg;
+  return isSelected ? selectedBg : baseBg;
 };
 
 const totalRowStyle = {

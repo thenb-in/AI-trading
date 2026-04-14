@@ -10,7 +10,7 @@ import { detectConstantColumns } from "../utils/constantColumnsUtils.js";
 import {
   handleExport as handleExcelExportToFile,
   handleMultiSheetExport,
-} from "../../BaseReport/reportExport/index.js";
+} from "../report_export/index.js";
 
 // Resolve a tab's effective (rows, columns, summary). Mirrors useTabsState's
 // resolver but as a pure helper so export can iterate every tab, not just the
@@ -50,6 +50,8 @@ const buildSheetFromRaw = (
   const sorted = sortRows(filtered, sortModel || { field: null, sort: null }, colsToUse);
   const unwrapped = sorted.map((w) => w._row || w);
 
+  // Respect the user's column visibility toggles. Unknown fields (not in the
+  // state map) default to visible.
   const visibleCols = columnVisibility
     ? colsToUse.filter((c) => columnVisibility[c.field] !== false)
     : colsToUse;
@@ -176,7 +178,7 @@ const useGridExport = ({
     const multiSheets = getMultiSheetPayload();
     const payload = getExportPayload();
 
-    // Multi-sheet path: one sheet per tab.
+    // Multi-sheet path: one sheet per tab. Used when the grid has 2+ tabs.
     if (multiSheets && multiSheets.length > 0) {
       if (typeof onExcelExport === "function") {
         setIsExcelExporting(true);
@@ -202,7 +204,7 @@ const useGridExport = ({
       return;
     }
 
-    // Single-sheet path.
+    // Single-sheet path: unchanged behavior when there are 0 or 1 tabs.
     if (!payload.rows?.length) return;
 
     if (typeof onExcelExport === "function") {

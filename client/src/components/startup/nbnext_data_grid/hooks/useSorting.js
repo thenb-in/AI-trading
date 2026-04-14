@@ -67,9 +67,16 @@ const useSorting = (initialSortModel, onSortModelChange) => {
     });
   }, []);
 
+  // Programmatic sort setter (does not mark as "manual" sort)
+  const setSortModelProgrammatic = useCallback((nextSortModel) => {
+    if (!nextSortModel || !nextSortModel.field || !nextSortModel.sort) return;
+    setSortModel({ field: nextSortModel.field, sort: nextSortModel.sort });
+  }, []);
+
   return {
     sortModel,
     handleHeaderClick,
+    setSortModelProgrammatic,
   };
 };
 

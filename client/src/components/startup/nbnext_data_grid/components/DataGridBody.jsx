@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { cellBaseStyle, getRowStyle, getCellBackgroundColor, totalRowStyle } from "../utils/styles.js";
-import { renderCellContent, getKeyForRow, getColumnWidthWithIcons, calculateTotals } from "../utils/helpers.js";
+import { renderCellContent, getKeyForRow, getColumnWidthWithIcons, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
 import { convertCellToText } from "../../BaseReport/ReportUtils.js";
 
 function DataGridBody({
@@ -26,6 +26,9 @@ function DataGridBody({
   showTotalRow = false,
   allRows = [],
   allColumns = [],
+  // Row color props
+  evenRowColor = "#ffffff",
+  oddRowColor = "#eff6ff",
 }) {
   const baseCellStyle = cellBaseStyle(rowHeight);
 
@@ -55,12 +58,25 @@ function DataGridBody({
     const totalValue = totals[col.field];
     if (totalValue !== undefined && totalValue !== null) {
       // Format the total value similar to regular cells
-      const formatted = convertCellToText(col, totalValue);
+      const formatted = convertCellToText(getColumnForFormatting(col), totalValue);
       return formatted != null ? String(formatted) : '';
     }
     // For non-numeric columns, show empty or "Total" label for first column
     if (col === frozenColumns[0] || col === nonFrozenColumns[0]) {
       return 'Total';
+    }
+    return '';
+  };
+
+  const renderGroupTotalCell = (col, row) => {
+    const groupTotals = row?._groupTotals || {};
+    const totalValue = groupTotals[col.field];
+    if (totalValue !== undefined && totalValue !== null) {
+      const formatted = convertCellToText(getColumnForFormatting(col), totalValue);
+      return formatted != null ? String(formatted) : '';
+    }
+    if (col === frozenColumns[0] || col === nonFrozenColumns[0]) {
+      return row?._groupLabel != null ? String(row._groupLabel) : '';
     }
     return '';
   };
@@ -79,15 +95,24 @@ function DataGridBody({
       {pagedRows.map((wrapped, idx) => {
         const row = wrapped._row;
         const key = getKeyForRow(row, wrapped._origIndex, getRowIdFunc);
-        // Use original index for isEven calculation in virtual scrolling
-        const originalIndex = virtualScrolling ? startIndex + idx : wrapped._origIndex;
-        const isEven = originalIndex % 2 === 0;
+        const isGroupTotal = row?._isGroupTotal === true;
+        // Use current display index for alternating colors (not original index)
+        // This ensures alternating colors work correctly after filtering/sorting/grouping
+        const displayIndex = virtualScrolling ? startIndex + idx : idx;
+        const isEven = displayIndex % 2 === 0;
         const isSelected = key === selectedRowId;
         const isHovered = key === hoveredRowId;
-        const isDisabled = row._isDisabled === true;
+        const isDisabled = row._isDisabled === true || isGroupTotal === true;
 
         const rowStyle = {
-          ...getRowStyle(isEven, isSelected, isHovered),
+          ...getRowStyle(isEven, isSelected, isHovered, evenRowColor, oddRowColor),
+          ...(isGroupTotal && {
+            background: "#f3f4f6",
+            fontWeight: 600,
+            cursor: "default",
+            transform: undefined,
+            boxShadow: undefined,
+          }),
           ...(isDisabled && {
             opacity: 0.5,
             pointerEvents: 'none',
@@ -127,7 +152,7 @@ function DataGridBody({
           >
             {frozenColumns.map((col) => {
               const left = cumulativeFrozenLeftOffsets[col.field] || 0;
-              const cellBg = getCellBackgroundColor(isEven, isSelected, isHovered);
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, isHovered, evenRowColor, oddRowColor);
               const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
               
               const setCellStyles = (element) => {
@@ -136,6 +161,10 @@ function DataGridBody({
                   element.style.setProperty('--cell-left', `${left}px`);
                   element.style.setProperty('--cell-width', `${totalWidth}px`);
                   element.style.setProperty('--cell-bg', cellBg);
+                  if (isGroupTotal) {
+                    element.style.fontWeight = '600';
+                    element.style.color = '#1f2937';
+                  }
                 }
               };
               
@@ -144,14 +173,14 @@ function DataGridBody({
                   key={col.field}
                   ref={setCellStyles}
                   className="data-grid-cell-frozen"
-                  title={renderCellContent(col, row)}
+                  title={isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
                 >
-                  {renderCellContent(col, row)}
+                  {isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
                 </td>
               );
             })}
             {nonFrozenColumns.map((col) => {
-              const cellBg = getCellBackgroundColor(isEven, isSelected, isHovered);
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, isHovered, evenRowColor, oddRowColor);
               const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
               
               const setCellStyles = (element) => {
@@ -159,6 +188,10 @@ function DataGridBody({
                   Object.assign(element.style, baseCellStyle);
                   element.style.setProperty('--cell-width', `${totalWidth}px`);
                   element.style.setProperty('--cell-bg', cellBg);
+                  if (isGroupTotal) {
+                    element.style.fontWeight = '600';
+                    element.style.color = '#1f2937';
+                  }
                 }
               };
               
@@ -169,7 +202,7 @@ function DataGridBody({
                   className="data-grid-cell"
                   // title={renderCellContent(col, row)}
                 >
-                  {renderCellContent(col, row)}
+                  {isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
                 </td>
               );
             })}
@@ -262,6 +295,8 @@ DataGridBody.propTypes = {
   showTotalRow: PropTypes.bool,
   allRows: PropTypes.array,
   allColumns: PropTypes.array,
+  evenRowColor: PropTypes.string,
+  oddRowColor: PropTypes.string,
 };
 
 export { DataGridBody };

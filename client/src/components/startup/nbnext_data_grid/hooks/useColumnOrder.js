@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-// Manages the user-defined column order. Preserves existing order for known
-// fields and appends newly-added columns at the end. Supports drag-and-drop
-// reordering via handleColumnReorder.
 const useColumnOrder = (columnsToUse, columnVisibility) => {
   const [columnOrder, setColumnOrder] = useState([]);
 

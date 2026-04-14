@@ -5,22 +5,19 @@ import { toValidNumber } from "@utils/toValidNumber.js";
 import { DEFAULT_COLUMN_WIDTH } from "./constants.js";
 
 /**
- * Returns the effective format type for a column, preferring `nature` over `type`.
- * This allows backend columns to carry a display hint (nature) that differs from
- * their storage type.
+ * Format a cell value for plain-text display (e.g. in Insights panel).
+ * Uses the same logic as the data grid (convertCellToText); for HTML columns strips tags.
+ * @param {Object} columnDef - Column definition with at least .type (e.g. 'date', 'datetime', 'duration', 'html', 'number')
+ * @param {*} value - Raw cell value
+ * @returns {string} Formatted string safe for display in insights
  */
 const getColumnFormatType = (columnDef) => {
-  const formatType =
-    typeof columnDef?.nature === "string" && columnDef.nature.trim()
-      ? columnDef.nature.trim()
-      : columnDef?.type;
+  const formatType = typeof columnDef?.nature === "string" && columnDef.nature.trim()
+    ? columnDef.nature.trim()
+    : columnDef?.type;
   return typeof formatType === "string" ? formatType : null;
 };
 
-/**
- * Returns a column definition with `type` set to the effective format type
- * (from `getColumnFormatType`). Used to drive convertCellToText and sort logic.
- */
 const getColumnForFormatting = (columnDef) => {
   const effectiveType = getColumnFormatType(columnDef);
   if (!columnDef) {
@@ -32,10 +29,6 @@ const getColumnForFormatting = (columnDef) => {
   return { ...columnDef, type: effectiveType };
 };
 
-/**
- * Format a cell value for plain-text display (e.g. in Insights panel).
- * Uses the same logic as the data grid (convertCellToText); for HTML columns strips tags.
- */
 const formatCellValueForInsight = (columnDef, value) => {
   if (!columnDef) return "—";
   const col = getColumnForFormatting(columnDef);
@@ -76,15 +69,15 @@ const renderCellContent = (col, row) => {
   } else {
     rawValue = row?.[col.field];
   }
-
+  
   // Handle HTML type columns - render with dangerouslySetInnerHTML
   if (formatCol.type === "html" && typeof rawValue === "string" && rawValue.trim()) {
     return React.createElement("div", {
       dangerouslySetInnerHTML: { __html: rawValue },
-      style: { display: "flex", alignItems: "center", justifyContent: "center" },
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'center' }
     });
   }
-
+  
   const formatted = convertCellToText(formatCol, rawValue);
   return formatted == null ? "" : String(formatted);
 };
@@ -125,6 +118,7 @@ const filterRows = (indexedRows, filterModel, columns) => {
       const col = columns.find((c) => c.field === field);
       if (!col) return true;
 
+      // Get the cell value
       let cellValue;
       if (typeof col.valueGetter === "function") {
         cellValue = col.valueGetter({ row: indexedRow._row, field: col.field });
@@ -132,11 +126,13 @@ const filterRows = (indexedRows, filterModel, columns) => {
         cellValue = indexedRow._row?.[field];
       }
 
+      // Convert to string for filtering
       const formatCol = getColumnForFormatting(col);
       const cellText = convertCellToText(formatCol, cellValue);
       const cellString = cellText == null ? "" : String(cellText).toLowerCase();
       const filterString = String(filterValue).toLowerCase();
 
+      // Case-insensitive contains match
       return cellString.includes(filterString);
     });
   });
@@ -149,7 +145,7 @@ const sortRows = (indexedRows, sortModel, columns) => {
   if (!sortModel.field || !sortModel.sort) {
     return indexedRows;
   }
-
+  
   const col = columns.find((c) => c.field === sortModel.field);
   if (!col) return indexedRows;
 
@@ -169,6 +165,7 @@ const sortRows = (indexedRows, sortModel, columns) => {
     const va = getter(a);
     const vb = getter(b);
 
+    // null handling
     if (va == null && vb == null) return 0;
     if (va == null) return -1 * dir;
     if (vb == null) return 1 * dir;
@@ -180,17 +177,25 @@ const sortRows = (indexedRows, sortModel, columns) => {
       const isNa = typeof na === "number" && !Number.isNaN(na);
       const isNb = typeof nb === "number" && !Number.isNaN(nb);
 
-      if (!isNa && !isNb) return String(na).localeCompare(String(nb)) * dir;
+      // ✅ both invalid → fallback to string sort
+      if (!isNa && !isNb) {
+        return String(na).localeCompare(String(nb)) * dir;
+      }
+
+      // ✅ push invalid to bottom
       if (!isNa) return 1 * dir;
       if (!isNb) return -1 * dir;
 
+      // ✅ numeric compare
       if (na < nb) return -1 * dir;
       if (na > nb) return 1 * dir;
       return 0;
     }
 
+    // default string sorting
     return String(va).localeCompare(String(vb)) * dir;
   });
+
   return copy;
 };
 
@@ -204,37 +209,39 @@ const calculateFrozenOffsets = (frozenColumns, columnWidths = null) => {
   let current = 0;
   frozenColumns.forEach((c) => {
     offsets[c.field] = current;
-    const width =
-      columnWidths && columnWidths[c.field]
-        ? columnWidths[c.field]
-        : getColumnWidthWithIcons(c);
+    // Use columnWidths if provided (actual rendered width), otherwise fallback to getColumnWidthWithIcons
+    const width = columnWidths && columnWidths[c.field] 
+      ? columnWidths[c.field]
+      : getColumnWidthWithIcons(c);
     current += width;
   });
   return offsets;
 };
 
 /**
- * Calculate total column width including space for sorting, freeze, and group icons.
+ * Calculate total column width including space for sorting and freeze icons
  * Sorting icon: ~16px + 6px margin = ~22px (only if sortable)
  * Freeze icon: ~14px icon + 4px padding * 2 + 1px border * 2 + 8px marginLeft = ~32px
- * Group icon: same = ~32px
+ * Group icon: ~14px icon + 4px padding * 2 + 1px border * 2 + 8px marginLeft = ~32px
  */
 const getColumnWidthWithIcons = (col) => {
   const baseWidth = col.width || DEFAULT_COLUMN_WIDTH;
-  const sortIconWidth = col.sortable !== false ? 22 : 0;
-  const freezeIconWidth = 32;
-  const groupIconWidth = 32;
+  const sortIconWidth = col.sortable !== false ? 22 : 0; // Default sortable is true
+  const freezeIconWidth = 32; // Always show freeze icon
+  const groupIconWidth = 32; // Always show group icon
   const extraWidth = sortIconWidth + freezeIconWidth + groupIconWidth;
   return baseWidth + extraWidth;
 };
 
 /**
- * Build column config from current grid state for saving to layout.
- * Includes field ordering when columnOrder is provided.
+ * Build column config from current grid state for saving to layout
+ * Only saves which columns are frozen and which are hidden
  */
-const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, columnOrder = []) => {
-  const orderedFields =
-    columnOrder.length > 0 ? columnOrder : normalizedColumns.map((col) => col.field);
+ const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, columnOrder = []) => {
+  // If columnOrder is provided, use it for ordering; otherwise use normalizedColumns order
+  const orderedFields = columnOrder.length > 0
+    ? columnOrder
+    : normalizedColumns.map((col) => col.field);
 
   return normalizedColumns.map((col) => ({
     field: col.field,
@@ -245,20 +252,22 @@ const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, col
 };
 
 /**
- * Apply column config from layout to grid state.
- * Returns updated column visibility, frozen state, and column order.
+ * Apply column config from layout to grid state
+ * Returns updated column visibility and frozen state
  */
-const applyColumnConfig = (normalizedColumns, columnConfig) => {
+ const applyColumnConfig = (normalizedColumns, columnConfig) => {
   const columnVisibility = {};
   const frozenState = {};
   const columnConfigMap = {};
 
+  // Create a map of column config by field
   if (Array.isArray(columnConfig)) {
     columnConfig.forEach((config) => {
       columnConfigMap[config.field] = config;
     });
   }
 
+  // Apply config to each normalized column
   normalizedColumns.forEach((col) => {
     const config = columnConfigMap[col.field];
     if (config) {
@@ -278,6 +287,7 @@ const applyColumnConfig = (normalizedColumns, columnConfig) => {
       columnOrder = [...columnConfig]
         .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
         .map((c) => c.field);
+      // Add any columns not in config at the end
       normalizedColumns.forEach((col) => {
         if (!columnOrder.includes(col.field)) {
           columnOrder.push(col.field);
@@ -288,54 +298,57 @@ const applyColumnConfig = (normalizedColumns, columnConfig) => {
 
   return { columnVisibility, frozenState, columnOrder };
 };
-
 /**
- * Calculate totals for numeric columns across all rows.
+ * Calculate totals for numeric columns across all rows
  * @param {Array} rows - Array of row objects
  * @param {Array} columns - Array of column definitions
  * @returns {Object} - Object mapping field names to total values
  */
 const calculateTotals = (rows, columns) => {
   const totals = {};
-
+  
   if (!rows || rows.length === 0) {
     return totals;
   }
 
-  const excludedTypes = ["duration", "date", "datetime", "time", "boolean", "string", "html", "status"];
-
+  // Identify numeric columns (exclude duration, date, datetime, time, boolean, string types)
+  const excludedTypes = ['duration', 'date', 'datetime', 'time', 'boolean', 'string', 'html', 'status'];
   /** Seconds stored as numbers; sum in footer (e.g. detailed attendance vertical rows). */
   const isDurationSecondsTotalable = (col) =>
-    getColumnFormatType(col) === "duration" && col.field === "total_work_seconds";
+    getColumnFormatType(col) === 'duration' && col.field === 'total_work_seconds';
 
-  const numericColumns = columns.filter((col) => {
+  const numericColumns = columns.filter(col => {
     const formatType = getColumnFormatType(col);
+    // Skip excluded types except duration columns that hold numeric seconds
     if (formatType && excludedTypes.includes(formatType) && !isDurationSecondsTotalable(col)) {
       return false;
     }
-
-    const isNumericType = formatType === "number" || formatType === "numeric";
-
-    const isNumericField =
-      typeof col.field === "string" &&
-      (col.field.includes("amount") ||
-        col.field.includes("salary") ||
-        col.field.includes("total") ||
-        col.field.includes("value") ||
-        col.field.includes("price") ||
-        col.field.includes("cost") ||
-        col.field.includes("_sal") ||
-        col.field.includes("_amt") ||
-        col.field.startsWith("component_"));
-
+    
+    // Check if column type is number or numeric
+    const isNumericType = formatType === 'number' || formatType === 'numeric';
+    
+    // Also check common numeric field patterns
+    const isNumericField = typeof col.field === 'string' && (
+      col.field.includes('amount') ||
+      col.field.includes('salary') ||
+      col.field.includes('total') ||
+      col.field.includes('value') ||
+      col.field.includes('price') ||
+      col.field.includes('cost') ||
+      col.field.includes('_sal') ||
+      col.field.includes('_amt') ||
+      col.field.startsWith('component_')
+    );
+    
     return isNumericType || isNumericField;
   });
 
-  numericColumns.forEach((col) => {
+  // Calculate totals for each numeric column
+  numericColumns.forEach(col => {
     let total = 0;
     let count = 0;
 
-    rows.forEach((row) => {
+    rows.forEach(row => {
       let value;
       if (typeof col.valueGetter === "function") {
         value = col.valueGetter({ row, field: col.field });
@@ -343,8 +356,9 @@ const calculateTotals = (rows, columns) => {
         value = row?.[col.field];
       }
 
-      if (value != null && value !== "") {
-        const numValue = typeof value === "number" ? value : parseFloat(value);
+      // Convert to number if possible
+      if (value != null && value !== '') {
+        const numValue = typeof value === 'number' ? value : parseFloat(value);
         if (!isNaN(numValue)) {
           total += numValue;
           count++;
@@ -352,6 +366,7 @@ const calculateTotals = (rows, columns) => {
       }
     });
 
+    // Only set total if we found at least one valid value
     if (count > 0) {
       totals[col.field] = total;
     }
@@ -363,17 +378,17 @@ const calculateTotals = (rows, columns) => {
 export {
   getColumnFormatType,
   getColumnForFormatting,
-  formatCellValueForInsight,
   normalizeColumns,
   renderCellContent,
-  getKeyForRow,
-  indexRows,
-  sortRows,
-  calculateFrozenOffsets,
-  getColumnWidthWithIcons,
-  buildColumnConfig,
+  getKeyForRow, 
+  indexRows, 
+  sortRows, 
+  calculateFrozenOffsets, 
+  getColumnWidthWithIcons, 
+  buildColumnConfig, 
   applyColumnConfig,
   filterRows,
   calculateTotals,
+  formatCellValueForInsight,
   toValidNumber,
 };

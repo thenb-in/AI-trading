@@ -21,10 +21,7 @@ function ToolbarExportButtons({
         aria-label="Export to Excel"
       >
         {isExcelExporting ? (
-          <span
-            className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"
-            aria-hidden
-          />
+          <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" aria-hidden />
         ) : (
           <FileSpreadsheet size={14} className="text-emerald-600 shrink-0" strokeWidth={2} aria-hidden />
         )}

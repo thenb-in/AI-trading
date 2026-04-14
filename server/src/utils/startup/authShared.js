@@ -1,7 +1,7 @@
-const userService = require('@services/startup/userService');
 const logger = require('../../../logger');
 const env = require('../../config/env');
 const db = require('../../models');
+const userService = require('../../services/startup/userService');
 const { verifyToken, generateAccessToken, generateRefreshToken } = require('./authUtils');
 
 const setAuthCookies = (res, tokens, options) => {

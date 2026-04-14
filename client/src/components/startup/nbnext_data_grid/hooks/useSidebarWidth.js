@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
 
-// Detects the sidebar's rendered width in fullscreen mode so the grid can
-// offset itself correctly. Responds to sidebar collapse/expand via
-// MutationObserver and window resize.
 const useSidebarWidth = (fullScreen) => {
   const [sidebarWidth, setSidebarWidth] = useState(0);
 
@@ -27,6 +24,7 @@ const useSidebarWidth = (fullScreen) => {
     };
 
     detectSidebarWidth();
+
     window.addEventListener("resize", detectSidebarWidth);
 
     const observer = new MutationObserver(detectSidebarWidth);

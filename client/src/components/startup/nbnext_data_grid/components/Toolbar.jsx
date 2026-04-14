@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useCallback, useMemo } from "react";
 import { Maximize2, Minimize2, LayoutGrid, SlidersHorizontal, FilterX } from "lucide-react";
+import { toast } from "react-toastify";
 import { PaginationControls } from "./PaginationControls.jsx";
 import { ToolbarExportButtons } from "./ToolbarExportButtons.jsx";
 import {
@@ -47,7 +48,7 @@ function Toolbar({
 
   const handleLayoutMenuClick = useCallback(() => {
     if (!documentName) {
-      alert("Layout functionality requires a documentName prop to be passed to NbNextDataGrid");
+      toast.info("Layouts require a document name. Pass documentName to NbNextDataGrid.");
       return;
     }
     if (showColumnMenu) setShowColumnMenu(false);
@@ -153,11 +154,7 @@ function Toolbar({
               title={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
               aria-label={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
-              {fullScreen ? (
-                <Minimize2 size={14} strokeWidth={2} />
-              ) : (
-                <Maximize2 size={14} strokeWidth={2} />
-              )}
+              {fullScreen ? <Minimize2 size={14} strokeWidth={2} /> : <Maximize2 size={14} strokeWidth={2} />}
               <span>{fullScreen ? "Exit" : "Fullscreen"}</span>
             </button>
           </>

@@ -14,7 +14,6 @@ const useDefaultLayoutLoader = ({ documentName, columns, normalizedColumns, appl
 
   useEffect(() => {
     if (documentName) {
-      // Clear tracking for previous documentNames so switching grids starts fresh.
       Object.keys(defaultLayoutAppliedRef.current).forEach((key) => {
         if (key !== documentName) {
           delete defaultLayoutAppliedRef.current[key];
@@ -41,15 +40,16 @@ const useDefaultLayoutLoader = ({ documentName, columns, normalizedColumns, appl
           Array.isArray(defaultLayout.column_config)
         ) {
           defaultLayoutAppliedRef.current[documentName] = true;
-          // Small delay to ensure state setters are ready.
+
+          // Small delay to ensure state setters are ready
           await new Promise((resolve) => setTimeout(resolve, 50));
+
           applyLayoutRef.current(defaultLayout.column_config);
         } else {
-          // No default layout found — mark as checked to prevent retries.
           defaultLayoutAppliedRef.current[documentName] = true;
         }
       } catch (error) {
-        // Silently fail — default layout is optional.
+        // Silently fail - default layout is optional. Mark as checked to prevent retries.
         void error;
         defaultLayoutAppliedRef.current[documentName] = true;
       }

@@ -17,6 +17,7 @@ function LayoutMenu({
   normalizedColumns,
   columnVisibility,
   frozenState,
+  columnOrder = [],
   onLayoutLoad,
   onClose,
 }) {
@@ -80,7 +81,7 @@ function LayoutMenu({
       setSaving(true);
       setError(null);
 
-      const columnConfig = buildColumnConfig(normalizedColumns, columnVisibility, frozenState);
+      const columnConfig = buildColumnConfig(normalizedColumns, columnVisibility, frozenState, columnOrder);
       const layoutData = {
         document_name: documentName,
         layout_name: newLayoutName.trim(),
@@ -262,6 +263,7 @@ LayoutMenu.propTypes = {
   normalizedColumns: PropTypes.array.isRequired,
   columnVisibility: PropTypes.object.isRequired,
   frozenState: PropTypes.object.isRequired,
+  columnOrder: PropTypes.array,
   onLayoutLoad: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
 };
