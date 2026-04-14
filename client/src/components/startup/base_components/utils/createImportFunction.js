@@ -1,8 +1,6 @@
 // Generic import function for master components
 // Supports Excel (.xlsx, .xls) and CSV files
-import { formatDate } from '@utils/startup/dateTimeUtils';
-import Papa from 'papaparse';
-import ExcelJS from 'exceljs';
+import { formatDate, parseDateValue } from '@utils/startup/dateTimeUtils';
 
 const createImportFunction = ({ 
   columns = [], 
@@ -15,6 +13,7 @@ const createImportFunction = ({
   fieldTransform = null, // Optional function to transform field names
   dateFields = [], // Fields that should be treated as dates
   booleanFields = [], // Fields that should be treated as booleans
+  skipExisting = false, // If true: when a row matches an existing record, skip it (no update/create)
 }) => {
   return async (formData) => {
     try {
@@ -36,6 +35,7 @@ const createImportFunction = ({
 
       if (isExcel) {
         // Parse Excel file
+        const ExcelJS = (await import('exceljs')).default;
         const buffer = await file.arrayBuffer();
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buffer);
@@ -50,21 +50,19 @@ const createImportFunction = ({
         let dataStartRow = 6;
         let headerRow = sheet.getRow(headerRowIndex);
 
-        const buildHeaderMap = (row, map) => {
-          row.eachCell((cell, colNumber) => {
-            const headerText = String(cell.value || '').trim();
-            const colDef = columns.find(c =>
-              c.label === headerText ||
-              c.id === headerText ||
-              c.name === headerText ||
-              c.headerName === headerText
-            );
-            if (colDef) map[colNumber] = colDef.id;
-          });
-        };
-
         // Build mapping from column index -> field id using current columns state
-        buildHeaderMap(headerRow, headerToField);
+        headerRow.eachCell((cell, colNumber) => {
+          const headerText = String(cell.value || '').trim();
+          const colDef = columns.find(c => 
+            c.label === headerText || 
+            c.id === headerText || 
+            c.name === headerText ||
+            c.headerName === headerText
+          );
+          if (colDef) {
+            headerToField[colNumber] = colDef.id;
+          }
+        });
 
         // Validate required columns at row 5
         let presentFields = Object.values(headerToField);
@@ -76,7 +74,20 @@ const createImportFunction = ({
           dataStartRow = 2;
           headerToField = {};
           headerRow = sheet.getRow(headerRowIndex);
-          buildHeaderMap(headerRow, headerToField);
+
+          headerRow.eachCell((cell, colNumber) => {
+            const headerText = String(cell.value || '').trim();
+            const colDef = columns.find(c => 
+              c.label === headerText || 
+              c.id === headerText || 
+              c.name === headerText ||
+              c.headerName === headerText
+            );
+            if (colDef) {
+              headerToField[colNumber] = colDef.id;
+            }
+          });
+
           presentFields = Object.values(headerToField);
           missing = requiredFields.filter(f => !presentFields.includes(f));
         }
@@ -108,8 +119,8 @@ const createImportFunction = ({
                 value = formatDate(value);
               } else if (typeof value === 'string' && value.trim()) {
                 // Try to parse date string and format as YYYY-MM-DD using local time
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
+                const date = parseDateValue(value);
+                if (date && !isNaN(date.getTime())) {
                   value = formatDate(date);
                 }
               }
@@ -135,6 +146,7 @@ const createImportFunction = ({
         }
       } else if (isCSV) {
         // Parse CSV file
+        const Papa = (await import('papaparse')).default;
         
         const text = await file.text();
         const parseResult = Papa.parse(text, {
@@ -186,8 +198,8 @@ const createImportFunction = ({
             
             // Handle date fields
             if (dateFields.includes(field) && value) {
-              const date = new Date(value);
-              if (!isNaN(date.getTime())) {
+              const date = parseDateValue(value);
+              if (date && !isNaN(date.getTime())) {
                 // Format date as YYYY-MM-DD using local time
                 value = formatDate(date);
               }
@@ -227,8 +239,8 @@ const createImportFunction = ({
               if (value instanceof Date) {
                 return formatDate(value);
               } else if (typeof value === 'string') {
-                const date = new Date(value);
-                if (!isNaN(date.getTime())) {
+                const date = parseDateValue(value);
+                if (date && !isNaN(date.getTime())) {
                   return formatDate(date);
                 }
               }
@@ -312,6 +324,12 @@ const createImportFunction = ({
 
         try {
           const existing = existingByKey.get(key);
+
+          // Create-only mode: skip rows that already exist
+          if (skipExisting && existing?.id) {
+            skipped += 1;
+            continue;
+          }
           
           if (existing?.id && updateFunction && typeof updateFunction === 'function') {
             // Update existing record

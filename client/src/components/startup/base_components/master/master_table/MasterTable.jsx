@@ -1,15 +1,16 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Eye } from 'lucide-react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronUp, ChevronsUpDown, Eye } from 'lucide-react';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import PropTypes from 'prop-types';
+import { parseDateValue } from '@utils/startup/dateTimeUtils';
 
 // Utility function to format date for display
 const formatDateForDisplay = (dateValue) => {
   if (!dateValue) return '-';
 
   try {
-    const date = new Date(dateValue);
-    if (isNaN(date.getTime())) return dateValue; // Return original if invalid date
+    const date = parseDateValue(dateValue);
+    if (!date || isNaN(date.getTime())) return dateValue; // Return original if invalid date
 
     // Format as local date and time
     return date.toLocaleString('en-US', {
@@ -32,8 +33,8 @@ const formatDateOnlyForDisplay = (dateValue) => {
   if (!dateValue) return '-';
 
   try {
-    const date = new Date(dateValue);
-    if (isNaN(date.getTime())) return dateValue;
+    const date = parseDateValue(dateValue);
+    if (!date || isNaN(date.getTime())) return dateValue;
 
     // Format as local date only (YYYY-MM-DD)
     return date.toLocaleDateString('en-US', {
@@ -67,11 +68,80 @@ const MasterTable = ({
   infiniteScroll = false,
   hasMore,
   onLoadMore,
-  isLoadingMore = false
+  isLoadingMore = false,
+  enableSorting = true,
+  initialSortKey,
+  initialSortDirection = 'asc',
+  onSortChange,
+  getRowClassName
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
   const [selectedRows, setSelectedRows] = useState(new Set());
   const loadMoreRef = useRef(null);
+  const [sortState, setSortState] = useState(() => ({
+    key: initialSortKey || null,
+    direction: initialSortKey ? initialSortDirection : 'asc'
+  }));
+
+  const getColumnKey = useCallback((column) => column?.sortKey || column?.key || column?.id, []);
+
+  const displayData = useMemo(() => {
+    if (!enableSorting) return data;
+    if (!sortState.key) return data;
+
+    const directionFactor = sortState.direction === 'desc' ? -1 : 1;
+    const indexed = data.map((row, idx) => ({ row, idx }));
+
+    const compare = (a, b) => {
+      const av = a?.row?.[sortState.key];
+      const bv = b?.row?.[sortState.key];
+
+      if (av == null && bv == null) return a.idx - b.idx;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+
+      if (typeof av === 'number' && typeof bv === 'number') {
+        if (av === bv) return a.idx - b.idx;
+        return (av - bv) * directionFactor;
+      }
+
+      const as = String(av);
+      const bs = String(bv);
+      const cmp = as.localeCompare(bs, undefined, { numeric: true, sensitivity: 'base' });
+      if (cmp === 0) return a.idx - b.idx;
+      return cmp * directionFactor;
+    };
+
+    indexed.sort(compare);
+    return indexed.map((x) => x.row);
+  }, [data, enableSorting, sortState.direction, sortState.key]);
+
+  const handleHeaderSortClick = useCallback(
+    (column) => {
+      if (!enableSorting) return;
+      if (column?.sortable === false) return;
+      const key = getColumnKey(column);
+      if (!key) return;
+
+      setSortState((prev) => {
+        const isSame = prev.key === key;
+        let next;
+
+        // Cycle: default (no sort) -> asc -> desc -> default
+        if (!isSame) {
+          next = { key, direction: 'asc' };
+        } else if (prev.direction === 'asc') {
+          next = { key, direction: 'desc' };
+        } else {
+          next = { key: null, direction: 'asc' };
+        }
+
+        if (onSortChange) onSortChange(next);
+        return next;
+      });
+    },
+    [enableSorting, getColumnKey, onSortChange]
+  );
 
   // Handle close viewer
   const handleCloseViewer = useCallback(() => {
@@ -295,7 +365,29 @@ const MasterTable = ({
                 key={column.key || column.id || index}
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
               >
-                {column.label || column.display_name || column.key || column.id}
+                <button
+                  type="button"
+                  onClick={() => handleHeaderSortClick(column)}
+                  disabled={!enableSorting || column?.sortable === false || !getColumnKey(column)}
+                  className={`flex w-full items-center justify-between gap-2 ${
+                    enableSorting && column?.sortable !== false && getColumnKey(column)
+                      ? 'cursor-pointer select-none'
+                      : 'cursor-default'
+                  }`}
+                >
+                  <span className="min-w-0 truncate">
+                    {column.label || column.display_name || column.key || column.id}
+                  </span>
+                  {sortState.key === getColumnKey(column) ? (
+                    sortState.direction === 'asc' ? (
+                      <ChevronUp className="w-4 h-4 text-blue-600 shrink-0" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-blue-600 shrink-0" aria-hidden="true" />
+                    )
+                  ) : (
+                    <ChevronsUpDown className="w-4 h-4 text-gray-400 shrink-0" aria-hidden="true" />
+                  )}
+                </button>
               </th>
             ))}
             {(actions?.length > 0) && (
@@ -306,7 +398,7 @@ const MasterTable = ({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {data.map((item) => {
+          {displayData.map((item) => {
             const handleRowClick = () => {
               if (rowClickEnabled && onRowClick) {
                 onRowClick(item);
@@ -316,7 +408,15 @@ const MasterTable = ({
             const isRowSelected = selectedRows.has(item.id);
 
             return (
-              <tr key={item.id} className={`${rowClickEnabled ? "hover:bg-gray-50 cursor-pointer" : "hover:bg-gray-50"} ${isRowSelected ? "bg-blue-50" : ""}`} onClick={handleRowClick}>
+              <tr
+                key={item.id}
+                className={[
+                  getRowClassName ? getRowClassName(item) : (isRowSelected ? 'bg-blue-50' : ''),
+                  rowClickEnabled ? 'cursor-pointer' : '',
+                  !getRowClassName ? 'hover:bg-gray-50' : '',
+                ].filter(Boolean).join(' ')}
+                onClick={handleRowClick}
+              >
                 {selectRow && (
                   <td 
                     className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-200"
@@ -344,6 +444,10 @@ const MasterTable = ({
                   <div className="flex items-center space-x-2">
                     {/* Custom actions */}
                     {actions.map((action, actionIndex) => {
+                      if (typeof action.visible === 'function' && !action.visible(item)) {
+                        return null;
+                      }
+
                       const handleActionClick = (e) => {
                         e.stopPropagation();
                         action.onClick(item.id, item);
@@ -442,10 +546,12 @@ MasterTable.propTypes = {
   columns: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.string,
     id: PropTypes.string,
+    sortKey: PropTypes.string,
     label: PropTypes.string,
     display_name: PropTypes.string,
-    type: PropTypes.oneOf(['text', 'number', 'select', 'datetime', 'date', 'boolean', 'file']),
-    options: PropTypes.array
+    type: PropTypes.oneOf(['text', 'number', 'select', 'datetime', 'date', 'boolean', 'file','string']),
+    options: PropTypes.array,
+    sortable: PropTypes.bool
   })).isRequired,
   data: PropTypes.array.isRequired,
   loading: PropTypes.bool,
@@ -453,7 +559,8 @@ MasterTable.propTypes = {
     label: PropTypes.string.isRequired,
     icon: PropTypes.node,
     onClick: PropTypes.func.isRequired,
-    type: PropTypes.oneOf(['primary', 'danger', 'default'])
+    type: PropTypes.oneOf(['primary', 'danger', 'default']),
+    visible: PropTypes.func
   })),
   emptyMessage: PropTypes.string,
   loadingMessage: PropTypes.string,
@@ -470,7 +577,12 @@ MasterTable.propTypes = {
   infiniteScroll: PropTypes.bool,
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
-  isLoadingMore: PropTypes.bool
+  isLoadingMore: PropTypes.bool,
+  enableSorting: PropTypes.bool,
+  initialSortKey: PropTypes.string,
+  initialSortDirection: PropTypes.oneOf(['asc', 'desc']),
+  onSortChange: PropTypes.func,
+  getRowClassName: PropTypes.func
 };
 
 export { MasterTable };

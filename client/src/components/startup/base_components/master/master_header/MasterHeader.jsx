@@ -1,12 +1,12 @@
-import { ArrowLeft, Plus, RefreshCw, Download, Upload } from "lucide-react";
+import { ArrowLeft, Plus, RefreshCw, Download, Upload, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { hasPermission } from "@utils/startup/hasPermission";
 import { exportMaster, importMaster } from "@utils/masterExportimport.js";
 import { FileTypeField } from '@base_components/fields/FileTypeField';
 
-const MasterHeader = ({
+const MasterHeader = forwardRef(({
   title,
   description,
   onAdd,
@@ -28,11 +28,22 @@ const MasterHeader = ({
   onExport, // Custom export function
   onImport, // Custom import function
   exportButtonText = "Export",
-  importButtonText = "Import"
-}) => {
+  importButtonText = "Import",
+  onDownloadTemplate,
+  templateButtonText = "Template",
+  headerDisabled = false
+}, ref) => {
   const navigate = useNavigate();
   const importInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    clickImportInput: () => {
+      if (onImport) onImport();
+      else importInputRef.current?.click();
+    },
+    clickDownloadTemplate: () => onDownloadTemplate?.()
+  }), [onImport, onDownloadTemplate]);
   
   const onExportClick = () => {
     if (onExport) {
@@ -60,7 +71,7 @@ const MasterHeader = ({
   };
  
   return (
-    <div className="bg-white text-gray-800 p-6 mb-6 rounded-lg shadow-md flex flex-col md:flex-row items-start md:items-center justify-between border border-gray-100">
+    <div className="bg-white text-gray-800 p-4 sm:p-6 mb-4 sm:mb-6 rounded-lg shadow-md flex flex-col md:flex-row items-start md:items-center justify-between border border-gray-100">
       {/* Left: Back Button + Title */}
       <div className="flex items-center gap-4 mb-4 md:mb-0">
         {showBack && (
@@ -76,7 +87,7 @@ const MasterHeader = ({
           </>
         )}
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-gray-800">{title}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
           {description && (
             <p className="text-sm text-gray-600 font-medium mt-1">{description}</p>
           )}
@@ -88,7 +99,8 @@ const MasterHeader = ({
         {showRefresh && onRefresh && (
           <button
             onClick={onRefresh}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+            disabled={headerDisabled}
+            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             {refreshButtonText}
@@ -97,7 +109,8 @@ const MasterHeader = ({
         {showExport && (
           <button
             onClick={onExportClick}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+            disabled={headerDisabled}
+            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
           >
             <Download className="h-4 w-4 mr-2" />
             {exportButtonText}
@@ -137,11 +150,23 @@ const MasterHeader = ({
             </button>
           </>
         )}
-        
+        {onDownloadTemplate && (
+          <button
+            type="button"
+            onClick={onDownloadTemplate}
+            disabled={headerDisabled}
+            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+            title="Download Import Template"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            {templateButtonText}
+          </button>
+        )}
         {onAdd && (!permissionKey || hasPermission(userData, permissionKey)) && (
           <button
             onClick={onAdd}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            disabled={headerDisabled}
+            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
             {addButtonText}
@@ -150,7 +175,9 @@ const MasterHeader = ({
       </div>
     </div>
   );
-};
+});
+
+MasterHeader.displayName = 'MasterHeader';
 
 MasterHeader.propTypes = {
   title: PropTypes.string.isRequired,
@@ -173,7 +200,10 @@ MasterHeader.propTypes = {
   onExport: PropTypes.func,
   onImport: PropTypes.func,
   exportButtonText: PropTypes.string,
-  importButtonText: PropTypes.string
+  importButtonText: PropTypes.string,
+  onDownloadTemplate: PropTypes.func,
+  templateButtonText: PropTypes.string,
+  headerDisabled: PropTypes.bool
 };
 
 export { MasterHeader };
