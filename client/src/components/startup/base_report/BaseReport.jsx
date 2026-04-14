@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 
 import { fetchReportData, getFiltersFromSearchParams, handleFiltersApply, processApiData } from "./ReportUtils.js";
 import { LoadingBarReport } from "./LoadingBarReport.jsx";
-import { ReportFilter } from "./ReportFilters.jsx";
+import { ReportFilter } from "./ReportFilter.jsx";
 
 /**
  * Generic BaseReport component that can be used for any report type.

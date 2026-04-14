@@ -37,7 +37,7 @@
 export { BaseReport } from './BaseReport';
 export { ReportHeader } from './ReportHeader';
 export { ReportTitleSection } from './ReportTitleSection';
-export { ReportFilter } from './ReportFilters';
+export { ReportFilter } from './ReportFilter';
 export { LoadingBarReport } from './LoadingBarReport';
 export {
   fetchReportData,
@@ -48,4 +48,3 @@ export {
   convertCellToText,
   filterRelevantData,
 } from './ReportUtils';
-
