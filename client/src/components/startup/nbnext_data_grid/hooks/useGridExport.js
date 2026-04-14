@@ -10,7 +10,7 @@ import { detectConstantColumns } from "../utils/constantColumnsUtils.js";
 import {
   handleExport as handleExcelExportToFile,
   handleMultiSheetExport,
-} from "../report_export/index.js";
+} from "../../base_report/report_export/index.js";
 
 // Resolve a tab's effective (rows, columns, summary). Mirrors useTabsState's
 // resolver but as a pure helper so export can iterate every tab, not just the

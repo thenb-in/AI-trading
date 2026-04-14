@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { cellBaseStyle, getRowStyle, getCellBackgroundColor, totalRowStyle } from "../utils/styles.js";
 import { renderCellContent, getKeyForRow, getColumnWidthWithIcons, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
-import { convertCellToText } from "../../BaseReport/ReportUtils.js";
+import { convertCellToText } from "../../base_report/ReportUtils.js";
 
 function DataGridBody({
   firstRowRef,

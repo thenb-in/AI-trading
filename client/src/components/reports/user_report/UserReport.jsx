@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { BaseReport } from "../../startup/BaseReport/BaseReport";
+import { BaseReport } from "../../startup/base_report/BaseReport";
 import { ApiService } from "@services/startup/ApiService";
 
 /**

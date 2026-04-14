@@ -1,6 +1,6 @@
 import React from "react";
-import { convertCellToText } from "../../BaseReport/ReportUtils.js";
-import { sanitizeHTML } from "../../BaseReport/reportFormatter.js";
+import { convertCellToText } from "../../base_report/ReportUtils.js";
+import { sanitizeHTML } from "../../base_report/reportFormatter.js";
 import { toValidNumber } from "@utils/toValidNumber.js";
 import { DEFAULT_COLUMN_WIDTH } from "./constants.js";
 

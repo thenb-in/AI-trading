@@ -40,7 +40,7 @@ const noRelativeImports = {
         if (path.includes('/constants/startup/theme') || path.includes('\\constants\\startup\\theme')) {
           return '@theme';
         }
-        if (path.includes('/components/startup/BaseReport/') || path.includes('\\components\\startup\\BaseReport\\')) {
+        if (path.includes('/components/startup/base_report/') || path.includes('\\components\\startup\\base_report\\')) {
           return '@report';
         }
         if (path.includes('/data/') || path.includes('\\data\\')) {

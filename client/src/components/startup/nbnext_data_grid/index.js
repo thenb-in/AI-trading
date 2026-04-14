@@ -20,5 +20,5 @@ export * from "./utils/constants.js";
 export * from "./utils/helpers.js";
 
 // Re-export Excel export for reports
-export { handleExport } from "./report_export/index.js";
+export { handleExport } from "../base_report/report_export/index.js";
 
