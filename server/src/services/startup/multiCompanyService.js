@@ -120,17 +120,17 @@ async function getCompanyUsers(companyId) {
     order: [['createdAt', 'ASC']]
   });
 
-  // Get users through userService and filter for sadmin and active
+  // Get users through userService and filter for support user and active
   const users = [];
   for (const assignment of assignments) {
     try {
       const user = await userService.getUserById(assignment.userId);
-      if (user.isSadmin && user.isActive) {
+      if (user.isSupportUser && user.isActive) {
         users.push({
           id: user.id,
           name: user.name,
           username: user.username,
-          isSadmin: user.isSadmin,
+          isSupportUser: user.isSupportUser,
           isActive: user.isActive
         });
       }
@@ -145,11 +145,11 @@ async function getCompanyUsers(companyId) {
 
 const assignUserToCompanyFinal = async (userId, companyId) => {
   try {
-    // Validate user exists and is sadmin and active - use userService
+    // Validate user exists and is support user and active - use userService
     const user = await userService.getUserById(userId);
 
-    if (!user.isSadmin || !user.isActive) {
-      throw { status: 400, message: 'Only active super admin users can be assigned to companies' };
+    if (!user.isSupportUser || !user.isActive) {
+      throw { status: 400, message: 'Only active support users can be assigned to companies' };
     }
 
     // Validate company exists - use companyService

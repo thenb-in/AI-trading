@@ -9,8 +9,8 @@ const validateSubscriptionUpdate = async (subscription_id, status, userId) => {
   const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
 
   if (subscription.companyId === null) {
-    const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSadmin'] }, 'User');
-    if (!user.isSadmin) {
+    const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
+    if (!user.isSupportUser) {
       throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
     }
   }

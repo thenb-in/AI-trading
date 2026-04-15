@@ -7,7 +7,7 @@ function AppGuide() {
   const { userData } = useDataContext();
 
   const handleComplete = () => {
-    const redirectTo = userData?.isSadmin ? '/admin/multi-company-setup' : '/admin';
+    const redirectTo = userData?.isSupportUser ? '/admin/multi-company-setup' : '/admin';
     navigate(redirectTo, { replace: true });
   };
 

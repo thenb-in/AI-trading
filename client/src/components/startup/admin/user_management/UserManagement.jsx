@@ -278,7 +278,7 @@ function UserManagement() {
         dialog={confirmDialog}
         onConfirm={confirmAction}
         onCancel={handleCancelConfirmDialog}
-        isSadmin={userData?.isSadmin || false}
+        isSupportUser={userData?.isSupportUser || false}
         roles={roles}
       />
 

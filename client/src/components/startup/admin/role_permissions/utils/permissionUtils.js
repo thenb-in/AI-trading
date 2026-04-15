@@ -17,7 +17,7 @@ function toTitleCase(str) {
  * Also includes linked permissions (duplicates) in master section
  * @param {Array} permissions - Array of permissions to organize
  * @param {Array} companySubscriptions - Optional array of company subscriptions to filter hidden permissions
- * @param {Object} userData - Optional user data object with isSadmin flag
+ * @param {Object} userData - Optional user data object with isSupportUser flag
  */
 function organizePermissions(permissions, companySubscriptions = null, userData = null) {
   if (!Array.isArray(permissions)) {
@@ -475,7 +475,7 @@ function isPermissionFromGlobalSubscription(companySubscriptions, permissionId) 
  * Exception: If user is superadmin, show hidden permissions (hidden means subscribed but hidden)
  * @param {Array} permissions - Array of permissions
  * @param {Array} companySubscriptions - Array of subscriptions with permissions
- * @param {Object} userData - User data object with isSadmin flag
+ * @param {Object} userData - User data object with isSupportUser flag
  * @returns {Array} Filtered permissions array
  */
 function filterPermissionsBySubscription(permissions, companySubscriptions, userData = null) {
@@ -488,7 +488,7 @@ function filterPermissionsBySubscription(permissions, companySubscriptions, user
     return permissions;
   }
 
-  const isSuperAdmin = userData?.isSadmin === true;
+  const isSuperAdmin = userData?.isSupportUser === true;
 
   return permissions.filter(permission => {
     const status = getPermissionSubscriptionStatus(companySubscriptions, permission.id);

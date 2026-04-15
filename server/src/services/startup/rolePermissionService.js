@@ -146,7 +146,7 @@ const removePermissionFromRole = async (roleId, permissionId, userId) => {
     if (role.companyId === null) {
       // Only superadmins can modify default roles - use userService
       const user = await userService.getUserById(userId);
-      if (!user.isSadmin) {
+      if (!user.isSupportUser) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
@@ -179,7 +179,7 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
     if (role.companyId === null) {
       // Only superadmins can modify default roles - use userService
       const user = await userService.getUserById(userId);
-      if (!user.isSadmin) {
+      if (!user.isSupportUser) {
         throw { status: 403, message: 'Only superadmins can modify default system roles' };
       }
     }
@@ -225,8 +225,8 @@ const getSadminUsers = async () => {
 
     for (const company of companies) {
       const  users  = await userService.getAllUsers(company.id);
-      const sadminUsers = users.filter(user => user.isSadmin && user.isActive);
-      allUsers.push(...sadminUsers);
+      const supportUsers = users.filter(user => user.isSupportUser && user.isActive);
+      allUsers.push(...supportUsers);
     }
 
     // Sort by name

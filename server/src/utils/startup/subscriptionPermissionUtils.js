@@ -3,7 +3,7 @@ const companySubscriptionService = require('../../services/startup/companySubscr
 
 /**
  * Verify and filter user permissions based on subscription status
- * - If user is superadmin (isSadmin = true): includes both 'subscribed' and 'hidden' permissions
+ * - If user is superadmin (isSupportUser = true): includes both 'subscribed' and 'hidden' permissions
  * - If user is not superadmin: includes only 'subscribed' permissions
  */
 const verifyValidSubscribedPermission = async (user, activeCompanyId) => {
@@ -43,7 +43,7 @@ const verifyValidSubscribedPermission = async (user, activeCompanyId) => {
 
     // Filter user's role permissions based on subscription status
     if (user.role && user.role.permissions && Array.isArray(user.role.permissions)) {
-      const isSuperAdmin = user.isSadmin === true;
+      const isSuperAdmin = user.isSupportUser === true;
       const originalPermissionCount = user.role.permissions.length;
       const filteredPermissions = user.role.permissions.filter(permission => {
         // Handle both Sequelize instances and plain objects
@@ -74,7 +74,7 @@ const verifyValidSubscribedPermission = async (user, activeCompanyId) => {
         return perm;
       });
 
-      logger.info(`Filtered permissions for user ${user.id}: ${filteredPermissions.length} out of ${originalPermissionCount} permissions (isSadmin: ${isSuperAdmin})`);
+      logger.info(`Filtered permissions for user ${user.id}: ${filteredPermissions.length} out of ${originalPermissionCount} permissions (isSupportUser: ${isSuperAdmin})`);
       logger.info(`Permission status map size: ${permissionStatusMap.size}, User role permissions count: ${originalPermissionCount}`);
     }
 

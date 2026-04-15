@@ -56,8 +56,8 @@ function Login() {
       }
 
       // Navigate to originally requested route if available (preserve search)
-      // If isSadmin is true, default to multi-company-setup
-      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
+      // If isSupportUser is true, default to multi-company-setup
+      const redirectTo = location.state?.from || (user?.isSupportUser ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     } catch (err) {
       const errorData = err || {};
@@ -106,7 +106,7 @@ function Login() {
       }
 
       // Navigate to originally requested route
-      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
+      const redirectTo = location.state?.from || (user?.isSupportUser ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     }
   };
@@ -124,7 +124,7 @@ function Login() {
         return;
       }
 
-      const redirectTo = location.state?.from || (user?.isSadmin ? '/admin/multi-company-setup' : '/admin');
+      const redirectTo = location.state?.from || (user?.isSupportUser ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     }
     setLoginSuccessData(null);

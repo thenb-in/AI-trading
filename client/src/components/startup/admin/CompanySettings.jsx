@@ -199,7 +199,7 @@ function CompanySettings() {
           <label className="flex items-center text-gray-700 font-medium mb-2">
             <Building size={16} className="mr-2 text-gray-500" />
             Company Name
-            {!userData?.isSadmin && (
+            {!userData?.isSupportUser && (
               <span className="ml-2 text-xs text-gray-500">(Read-only)</span>
             )}
           </label>
@@ -208,11 +208,11 @@ function CompanySettings() {
             value={companySettings.name}
             onChange={handleNameChange}
             placeholder="Enter company name"
-            readOnly={!userData?.isSadmin}
+            readOnly={!userData?.isSupportUser}
             className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
-              !userData?.isSadmin ? 'bg-gray-100 cursor-not-allowed' : ''
+              !userData?.isSupportUser ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
-            whileFocus={userData?.isSadmin ? { scale: 1.01 } : {}}
+            whileFocus={userData?.isSupportUser ? { scale: 1.01 } : {}}
           />
         </div>
 

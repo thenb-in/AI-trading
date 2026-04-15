@@ -109,7 +109,7 @@ const getAppModuleDefinitions = () => [
     category: "Superadmin",
     tags: ["Multi-Company", "Setup"],
     keywords: "multi company setup superadmin module",
-    requireSadmin: true,
+    requireSupportUser: true,
     navigatePath: "/admin/multi-company-setup",
     icon: CopySlash,
     order: 12,
@@ -121,7 +121,7 @@ const getAppModuleDefinitions = () => [
     category: "Superadmin",
     tags: ["Subscription", "Billing"],
     keywords: "subscription billing plans superadmin module",
-    requireSadmin: true,
+    requireSupportUser: true,
     navigatePath: "/admin/subscription",
     icon: Crown,
     order: 13,
@@ -142,7 +142,7 @@ const getAppModuleDefinitions = () => [
 
 /**
  * @param {{ navigate: import('react-router-dom').NavigateFunction }} handlers
- * @param {{ hasPermissionFn: (name: string, ctx: unknown) => boolean; dataContext: unknown; userData: { isSadmin?: boolean } | undefined }} access
+ * @param {{ hasPermissionFn: (name: string, ctx: unknown) => boolean; dataContext: unknown; userData: { isSupportUser?: boolean } | undefined }} access
  */
 function getAppModuleSearchItems(handlers, access) {
   const { navigate } = handlers;
@@ -166,8 +166,8 @@ function getAppModuleSearchItems(handlers, access) {
 }
 
 function isAppModuleVisible(def, { hasPermissionFn, dataContext, userData }) {
-  if (def.requireSadmin) {
-    return Boolean(userData?.isSadmin);
+  if (def.requireSupportUser) {
+    return Boolean(userData?.isSupportUser);
   }
   if (def.skipPermissionCheck) {
     return true;

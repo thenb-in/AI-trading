@@ -19,7 +19,7 @@ function PermissionTable({
   companySubscriptions,
 }) {
   // Check if the role is read-only (default role and user is not superadmin)
-  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSadmin;
+  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSupportUser;
 
   const groupFunction = groupByOperation === 'master' 
     ? groupMasterPermissionsByOperation 
@@ -167,7 +167,7 @@ function PermissionTable({
                             const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
                             const isHidden = subscriptionStatus === 'hidden';
                             // Hidden means subscribed but hidden - enable for superadmins
-                            const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSadmin);
+                            const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSupportUser);
                             const isDisabled = updating || !selectedRole || isRoleReadOnly || !isSubscribed;
                             const displayName = permission.display_name 
                               ? permission.display_name 
@@ -178,7 +178,7 @@ function PermissionTable({
                             
                             if (!isSubscribed) {
                               tooltipText = `You don't have subscription to use this permission. Upgrade to use.`;
-                            } else if (isHidden && userData?.isSadmin) {
+                            } else if (isHidden && userData?.isSupportUser) {
                               tooltipText = `${tooltipText} (Hidden permission - visible to superadmins only)`;
                             } else if (isRoleReadOnly) {
                               tooltipText = `${tooltipText} (Read-only: Only superadmins can modify default roles)`;

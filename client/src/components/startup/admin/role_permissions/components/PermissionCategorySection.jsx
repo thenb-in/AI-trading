@@ -32,7 +32,7 @@ function PermissionCategorySection({
   companySubscriptions,
 }) {
   // Check if the role is read-only (default role and user is not superadmin)
-  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSadmin;
+  const isRoleReadOnly = selectedRole?.isGlobal && !userData?.isSupportUser;
 
   // Handler for individual permission toggle
   const handlePermissionToggle = useCallback((permission_id, isAssigned) => {
@@ -187,11 +187,11 @@ function PermissionCategorySection({
                 const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
                 const isHidden = subscriptionStatus === 'hidden';
                 // Hidden means subscribed but hidden - enable for superadmins
-                const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSadmin);
+                const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSupportUser);
                 const isDisabled = updating || !selectedRole || isRoleReadOnly || !isSubscribed;
                 const tooltipText = !isSubscribed 
                   ? `You don't have subscription to use this permission. Upgrade to use.`
-                  : isHidden && userData?.isSadmin
+                  : isHidden && userData?.isSupportUser
                     ? `${permission.display_name || permission.name} (Hidden permission - visible to superadmins only)`
                     : isRoleReadOnly 
                       ? `${permission.display_name || permission.name} (Read-only: Only superadmins can modify default roles)` 
@@ -294,11 +294,11 @@ function PermissionCategorySection({
           const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
           const isHidden = subscriptionStatus === 'hidden';
           // Hidden means subscribed but hidden - enable for superadmins
-          const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSadmin);
+          const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSupportUser);
           const isDisabled = updating || !selectedRole || isRoleReadOnly || !isSubscribed;
           const tooltipText = !isSubscribed 
             ? `You don't have subscription to use this permission. Upgrade to use.`
-            : isHidden && userData?.isSadmin
+            : isHidden && userData?.isSupportUser
               ? 'Hidden permission - visible to superadmins only'
               : isRoleReadOnly 
                 ? 'Read-only: Only superadmins can modify default roles' 

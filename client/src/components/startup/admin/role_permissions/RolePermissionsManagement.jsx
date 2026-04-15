@@ -86,7 +86,7 @@ function RolePermissionsManagement() {
                 <Globe className="w-3 h-3" />
                 Global Role
               </span>
-              {!userData?.isSadmin && (
+              {!userData?.isSupportUser && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-50 text-orange-700 rounded border border-orange-200">
                   <Shield className="w-3 h-3" />
                   Read-Only (Default Roles)

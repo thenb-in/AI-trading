@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { AlertTriangle } from 'lucide-react';
 import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
 
-const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSadmin = false, roles = [] }) => {
+const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, roles = [] }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
 
@@ -12,15 +12,15 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSadmin = false, rol
       setRequirePasswordReset(false);
       setSelectedRoleId(null);
     } else if (dialog.action === 'approve') {
-      // Set checkbox based on isSadmin flag: checked if isSadmin is true, unchecked otherwise
-      setRequirePasswordReset(isSadmin === true);
+      // Set checkbox based on isSupportUser flag: checked if isSupportUser is true, unchecked otherwise
+      setRequirePasswordReset(isSupportUser === true);
       // If user has no role, reset selectedRoleId to null so user can select
       // If user has a role, we don't need to set selectedRoleId (it will remain null)
       if (!dialog.userRole) {
         setSelectedRoleId(null);
       }
     }
-  }, [dialog.show, dialog.action, isSadmin, dialog.userRole]);
+  }, [dialog.show, dialog.action, isSupportUser, dialog.userRole]);
 
   if (!dialog.show) return null;
 
@@ -148,7 +148,7 @@ ConfirmationDialog.propTypes = {
   }).isRequired,
   onConfirm: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  isSadmin: PropTypes.bool,
+  isSupportUser: PropTypes.bool,
   roles: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number.isRequired,

@@ -182,7 +182,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
       isActive: userData.isActive,
       is_totp_enabled: userData.is_totp_enabled,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
-      isSadmin: userData.isSadmin,
+      isSupportUser: userData.isSupportUser,
       role: userData.role ? {
         id: userData.role.id,
         name: userData.role.name,
@@ -349,7 +349,7 @@ const getCurrentUser = async (userId) => {
       isActive: user.isActive,
       is_approved: user.is_approved,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
-      isSadmin: user.isSadmin,
+      isSupportUser: user.isSupportUser,
       role: user.role ? {
         id: user.role.id,
         name: user.role.name,

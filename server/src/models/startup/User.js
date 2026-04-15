@@ -70,7 +70,7 @@ module.exports = (sequelize, DataTypes) => {
     mobileWeb: {
       type: DataTypes.BOOLEAN
     },
-    isSadmin: {
+    isSupportUser: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false

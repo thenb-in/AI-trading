@@ -104,7 +104,7 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 | role_id | FK → Role | Assigned role |
 | isActive | BOOLEAN | Soft-delete flag |
 | is_approved | BOOLEAN | Admin approval status |
-| isSadmin | BOOLEAN | Super admin flag |
+| isSupportUser | BOOLEAN | Support user flag |
 | refresh_token | TEXT | Current refresh token (null = revoked) |
 | last_active | DATE | Null = first login pending |
 | is_totp_enabled | BOOLEAN | 2FA enabled flag |
@@ -305,7 +305,7 @@ Login → bcrypt verify → JWT Access Token (short-lived) + Refresh Token (long
 2. **Admin middleware** (`admin`): Checks for "Admin" permission
 3. **Permission middleware** (`requirePermission`): Checks for specific named permissions
 4. **Controller-level checks**: `allowedPermissions()` utility for fine-grained checks
-5. **Super admin flag**: `isSadmin` on User model for system-level operations
+5. **Support user flag**: `isSupportUser` on User model for system-level operations
 
 ### 4.4 Security Headers & Middleware
 

@@ -41,7 +41,7 @@ function resolveSubscriptionStatus(permissionId, companySubscriptions, userData)
     isHidden = subscriptionStatus === 'hidden';
 
     if (isHidden) {
-      if (!userData?.isSadmin) return null;
+      if (!userData?.isSupportUser) return null;
       isSubscribed = true;
     } else {
       isSubscribed = subscriptionStatus === 'subscribed';
@@ -211,8 +211,8 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
         }
 
         const permissionName = module.permissionName || `read_${module.id}`;
-        const hasPermissionAccess = module.requireSadmin
-          ? Boolean(userData?.isSadmin)
+        const hasPermissionAccess = module.requireSupportUser
+          ? Boolean(userData?.isSupportUser)
           : (module.skipPermissionCheck || hasPermission(permissionName, dataContext));
 
         const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
@@ -268,7 +268,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
           
           // Hidden means subscribed but hidden - only show to superadmins
           if (isHidden) {
-            if (!userData?.isSadmin) {
+            if (!userData?.isSupportUser) {
               return null; // Hide this report from non-superadmins
             }
             // For superadmins, hidden permissions are subscribed (enabled)
