@@ -3,10 +3,10 @@
  * Handles request parsing, validation, controller calls, and response building
  */
 const logger = require('../../../logger');
-const env = require('../../config/env');
 const { MASTER_PERMISSION_CONSTANTS } = require('../../constants/permissions');
 const authController = require('../../controllers/startup/authController');
 const allowedPermissions = require('../../utils/startup/allowedPermissions');
+const { setAuthCookies } = require('../../utils/startup/auth_shared_utils');
 
 /**
  * Sign up view
@@ -60,26 +60,7 @@ async function login(req, res) {
     const { user, accessToken, refreshToken, insufficientWallet, walletMessage, requiresOnboarding } = loginResult;
 
     // Set HTTP-only cookies
-    res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      secure: env.isProduction,
-      sameSite: 'strict',
-      maxAge: env.MAX_JWT_ACCESS_EXPIRATION_MS
-    });
-
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: env.isProduction,
-      sameSite: 'strict',
-      maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-    });
-
-    // Non-HTTP-only cookie for frontend state
-    res.cookie('isLoggedIn', 'true', {
-      secure: env.isProduction,
-      sameSite: 'strict',
-      maxAge: env.MAX_JWT_REFRESH_EXPIRATION_MS
-    });
+    setAuthCookies(res, { access: accessToken, refresh: refreshToken });
 
     // Build and send response
     const response = { user ,accessToken, refreshToken };

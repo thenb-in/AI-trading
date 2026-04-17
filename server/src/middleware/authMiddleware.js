@@ -1,84 +1,58 @@
 const logger = require('../../logger');
-const env = require('../config/env');
 const allowedPermissions = require('../utils/startup/allowedPermissions');
-const { setAuthCookies, performTokenRefresh, rotateTokens, authenticateRequest } = require('../utils/startup/authShared');
-const { verifyToken } = require('../utils/startup/authUtils');
+const { handleRefreshToken, validateAccessToken, checkUserActive, setAuthCookies ,extractTokens } = require('../utils/startup/auth_shared_utils');
 
-/** In-memory map to deduplicate concurrent refresh token rotations per user. */
-const refreshTokenLocks = new Map();
+// Mobile clients send tokens via headers (Authorization + X-Refresh-Token).
+// Web clients send via cookies.
 
-/**
- * Handles refresh token rotation with concurrency-safe deduplication.
- * Uses a deferred promise pattern: the first request performs the DB rotation within a
- * transaction (with row-level locking), and concurrent requests for the same token
- * reuse the same promise. A short grace window prevents the lock from being cleaned up
- * too early.
- * @param {string} refreshToken - Current refresh token from the client
- * @returns {Promise<{ user: Object, tokens: Object, options: Object }>} New tokens and cookie options
- * @throws {Error} If refresh token is invalid, user is inactive, or token was already rotated
- * @side_effects Rotates the stored refresh token in the database
- */
-const handleRefreshToken = async (refreshToken) => {
-  let decoded;
-  try {
-    decoded = verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
-  } catch (err) {
-    logger.warn(`Refresh token verification failed: ${err.message}`);
-    throw new Error(`Invalid refresh token received: ${err.message}`);
-  }
-
-  return performTokenRefresh({
-    refreshToken,
-    tokenKey: refreshToken,
-    locks: refreshTokenLocks,
-    decoded,
-    gracePeriodMs: 1500,
-    onRotate: async (user, decodedPayload, tx) => {
-      const result = await rotateTokens(user, decodedPayload, tx);
-      logger.debug(`Cid:${decodedPayload.company_id} - Refreshed tokens for user ${user.id}`);
-      return result;
-    }
-  });
-};
-
-/**
- * Authentication middleware. Validates the access token from cookies.
- * If the access token is expired, attempts to rotate the refresh token.
- * On success, sets req.user = { id, company_id } and calls next().
- */
 exports.protect = async (req, res, next) => {
   try {
-    const { accessToken, refreshToken } = req.cookies || {};
 
-    const authResult = await authenticateRequest({ accessToken, refreshToken, handleRefreshToken });
-    if (authResult.error) {
-      return res.status(authResult.error.status).json({
-        message: authResult.error.message,
-        requiresLogin: authResult.error.requiresLogin
-      });
+    const {accessToken , refreshToken } = extractTokens(req);
+
+    if (!accessToken && !refreshToken) {
+      return res.status(401).json({ message: 'No token found', requiresLogin: true });
     }
-    req.user = authResult.user;
-
-    if (authResult.refreshResult) {
-      setAuthCookies(res, authResult.refreshResult.tokens, authResult.refreshResult.options);
-      logger.info(`Tokens refreshed for user ${authResult.user.id}`);
+    const decoded = validateAccessToken(accessToken);
+    if (decoded) {
+      const isApproved = await checkUserActive(decoded.id);
+      if (!isApproved) {
+        return res.status(401)
+          .json({ message: 'Your account is currently inactive. Please reach out to your administrator for assistance.', requiresLogin: true });
+      }
+      req.user = { id: decoded.id, company_id: decoded.company_id };
+      return next();
     }
 
-    return next();
-  } catch (err) {
-    if (err.message?.includes('refresh token') || err.message?.includes('Invalid')) {
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Your session has expired due to inactivity. Please sign in again to continue.', requiresLogin: true });
+    }
+
+    try {
+      const result = await handleRefreshToken(refreshToken);
+      const isApproved = await checkUserActive(result.user.id);
+      if (!isApproved) {
+        return res.status(401).json({ message: 'Your account is currently inactive. Please reach out to your administrator for assistance.' , requiresLogin: true });
+      }
+      req.user = result.user;
+      req.cookies.accessToken = result.tokens.access;
+      if (result.isRefresher) {
+        setAuthCookies(res, result.tokens);
+        res.set('x-new-access-token', result.tokens.access);
+        res.set('x-new-refresh-token', result.tokens.refresh);
+        logger.info(`Tokens refreshed for user ${result.user.id}`);
+      }
+      return next();
+    } catch (err) {
       logger.error('Refresh token failed', err);
-      return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: true });
+      return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: false });
     }
-    logger.error('Auth middleware error', err);
-    res.status(500).json({ message: `Internal server error ${err.message}` });
+  } catch (error) {
+    logger.error('Auth middleware error', error);
+    res.status(500).json({ message: `Internal server error ${error.message}` });
   }
 };
 
-/**
- * Admin authorization middleware. Checks that the authenticated user has the "Admin" permission.
- * Must be used after the protect middleware.
- */
 exports.admin = async (req, res, next) => {
   const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
   if (!hasPermission) {

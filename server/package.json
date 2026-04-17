@@ -1,6 +1,6 @@
 {
   "name": "NB Next backend",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
