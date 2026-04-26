@@ -4,18 +4,9 @@
   "version": "1.0.5",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build_prod": "(rm -rf dist || echo 'Failed to remove dist') && npm run build",
-    "deploy": "rm /app/app_name/ -r && mv dist/ /app/app_name/",
-    "setup-env": "node scripts/setup-env.js setup",
-    "setup-env:check": "node scripts/setup-env.js check",
-    "setup-env:validate": "node scripts/setup-env.js validate",
-    "validate-env": "node scripts/setup-env.js validate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "lint:errors": "eslint . --quiet",
-    "preview": "vite preview"
+    "lint:errors": "eslint . --quiet"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

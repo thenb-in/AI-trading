@@ -47,8 +47,14 @@ export default ({ mode }) => {
       alias: {
         '@startup': STARTUP_CLIENT_SRC,
         '@app': APP_CLIENT_SRC,
+        '@services': resolve(STARTUP_CLIENT_SRC, 'services'),
+        '@context': resolve(STARTUP_CLIENT_SRC, 'context'),
+        '@utils': resolve(STARTUP_CLIENT_SRC, 'utils'),
+        '@data': resolve(STARTUP_CLIENT_SRC, 'data'),
+        '@': STARTUP_CLIENT_SRC
       },
-      preserveSymlinks: false,
+      dedupe: ['react', 'react-dom', '@mui/material', '@emotion/react', '@emotion/styled'],
+      preserveSymlinks: false
     },
     publicDir: STARTUP_CLIENT_PUBLIC,
     server: {

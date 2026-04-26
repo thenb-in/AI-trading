@@ -6,5 +6,5 @@
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["vite.config.js", "eslint.config.js"]
+  "include": ["eslint.config.js"]
 }

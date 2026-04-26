@@ -7,7 +7,8 @@ on:
       - master
       - test-ci
     paths:
-      - 'startup/server/**'  # Only trigger if files in the server directory change
+      - 'startup/server/**'
+      - 'app/server/**'
 
   pull_request:
     branches:
@@ -63,19 +64,20 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
 
-      - name: Verify .env file was created
+      - name: Set up app/server .env
         run: |
-          cd startup/server
+          cd app/server
+          cp .env.example .env
           if [ ! -f .env ]; then
-            echo "❌ Error: .env file was not created by setup script"
+            echo "❌ Error: app/server/.env was not created"
             exit 1
           else
-            echo "✅ .env file created successfully"
+            echo "✅ app/server/.env created"
           fi
 
-      - name: Run server in dev mode
+      - name: Run app server in dev mode
         run: |
-          cd startup/server
+          cd app/server
           npm run dev &
           DEV_PID=$!
           sleep 15
@@ -92,7 +94,7 @@ jobs:
 
       - name: Create new company
         run: |
-          cd startup/server
+          cd app/server
           echo "this command needs to be setup: \`npm run create-new-company\`"
         env:
           CI: true

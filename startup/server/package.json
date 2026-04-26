@@ -1,19 +1,11 @@
 {
   "name": "NB Next backend",
   "version": "1.0.17",
-  "main": "index.js",
+  "main": "buildApp.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js",
-    "kill": "kill -9 $(lsof -t -i:3000)",
     "lint": "npx eslint .",
     "lint:errors": "npx eslint . --quiet",
-    "lint:fix": "npx eslint . --fix",
-    "create-new-company": "node create_company_with_role_and_perms.js",
-    "setup-env": "node scripts/setup-env/index.js setup",
-    "check-env": "node scripts/setup-env/index.js check",
-    "validate-env": "node scripts/setup-env/index.js validate",
-    "generate-secrets": "node scripts/setup-env/index.js generate-secrets"
+    "lint:fix": "npx eslint . --fix"
   },
   "keywords": [],
   "author": "",
