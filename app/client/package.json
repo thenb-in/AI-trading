@@ -1,0 +1,13 @@
+{
+  "name": "@app/client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build_prod": "(rm -rf dist || echo 'Failed to remove dist') && npm run build",
+    "preview": "vite preview"
+  },
+  "description": "App-side client. Imports framework UI from @startup/* and adds app-specific pages/components."
+}

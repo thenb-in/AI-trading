@@ -1,0 +1,13 @@
+{
+  "name": "@app/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "node index.js",
+    "kill": "kill -9 $(lsof -t -i:3000)"
+  },
+  "description": "App-side server boot. Imports buildApp() from startup/server and registers app-specific routes."
+}
