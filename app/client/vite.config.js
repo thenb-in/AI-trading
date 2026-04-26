@@ -9,7 +9,6 @@ import { resolve } from 'path';
 
 const STARTUP_CLIENT_SRC = resolve(__dirname, '../../startup/client/src');
 const APP_CLIENT_SRC = resolve(__dirname, './src');
-const STARTUP_CLIENT_PUBLIC = resolve(__dirname, '../../startup/client');
 
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
@@ -56,7 +55,6 @@ export default ({ mode }) => {
       dedupe: ['react', 'react-dom', '@mui/material', '@emotion/react', '@emotion/styled'],
       preserveSymlinks: false
     },
-    publicDir: STARTUP_CLIENT_PUBLIC,
     server: {
       proxy: {
         '/api': {
