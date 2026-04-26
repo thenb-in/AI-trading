@@ -37,16 +37,16 @@ jobs:
 
       - name: Set environment variables
         run: |
-          cp client/.env.example client/.env
+          cp startup/client/.env.example startup/client/.env
 
       - name: Install dependencies
         run: |
-          cd client
+          cd startup/client
           npm install
 
       - name: Run build
         run: |
-          cd client
+          cd startup/client
           npm run build
 
       - name: Remove old artifacts
@@ -59,4 +59,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact
-          path: client/dist/
+          path: startup/client/dist/

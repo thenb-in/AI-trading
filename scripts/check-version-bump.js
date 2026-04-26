@@ -182,7 +182,7 @@ function checkSingleVersion(packageJsonPath, packageName) {
   } else if (comparison === 0) {
     log(`❌ ${packageName}: Version has not been changed!`, 'red');
     log(`💡 Please bump the version in ${packageJsonPath} before pushing.`, 'yellow');
-    log('   Example: cd client && npm version patch|minor|major', 'yellow');
+    log('   Example: cd startup/client && npm version patch|minor|major', 'yellow');
     logDebugInfo(packageJsonPath, currentVersion, remoteVersion, remoteBranch);
     return false;
   } else {
@@ -220,11 +220,11 @@ function checkVersionBump() {
     let serverOk = true;
     let clientChecked = false;
     let serverChecked = false;
-    
+
     // Check if client folder has changes
-    const clientHasChanges = hasFolderChanges('client', remoteBranch);
+    const clientHasChanges = hasFolderChanges('startup/client', remoteBranch);
     if (clientHasChanges) {
-      const clientPath = 'client/package.json';
+      const clientPath = 'startup/client/package.json';
       log('📱 Checking Client Version (folder has changes):', 'blue');
       clientOk = checkSingleVersion(clientPath, 'Client');
       clientChecked = true;
@@ -233,11 +233,11 @@ function checkVersionBump() {
       log('📱 Client: No changes detected, skipping version check', 'blue');
       log('', 'reset');
     }
-    
+
     // Check if server folder has changes
-    const serverHasChanges = hasFolderChanges('server', remoteBranch);
+    const serverHasChanges = hasFolderChanges('startup/server', remoteBranch);
     if (serverHasChanges) {
-      const serverPath = 'server/package.json';
+      const serverPath = 'startup/server/package.json';
       log('🖥️  Checking Server Version (folder has changes):', 'blue');
       serverOk = checkSingleVersion(serverPath, 'Server');
       serverChecked = true;

@@ -7,7 +7,7 @@ on:
       - master
       - test-ci
     paths:
-      - 'server/**'  # Only trigger if files in the server directory change
+      - 'startup/server/**'  # Only trigger if files in the server directory change
 
   pull_request:
     branches:
@@ -65,7 +65,7 @@ jobs:
 
       - name: Verify .env file was created
         run: |
-          cd server
+          cd startup/server
           if [ ! -f .env ]; then
             echo "❌ Error: .env file was not created by setup script"
             exit 1
@@ -75,7 +75,7 @@ jobs:
 
       - name: Run server in dev mode
         run: |
-          cd server
+          cd startup/server
           npm run dev &
           DEV_PID=$!
           sleep 15
@@ -92,7 +92,7 @@ jobs:
 
       - name: Create new company
         run: |
-          cd server
+          cd startup/server
           echo "this command needs to be setup: \`npm run create-new-company\`"
         env:
           CI: true

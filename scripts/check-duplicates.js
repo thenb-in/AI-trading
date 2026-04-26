@@ -453,11 +453,11 @@ function main() {
     process.exit(0);
   }
 
-  const clientDir = path.join(REPO_ROOT, 'client');
-  const serverDir = path.join(REPO_ROOT, 'server');
+  const clientDir = path.join(REPO_ROOT, 'startup', 'client');
+  const serverDir = path.join(REPO_ROOT, 'startup', 'server');
 
   if (!fs.existsSync(clientDir) || !fs.existsSync(serverDir)) {
-    console.error('Expected client/ and server/ directories at repository root.');
+    console.error('Expected startup/client/ and startup/server/ directories at repository root.');
     process.exit(1);
   }
 

@@ -10,13 +10,13 @@ const { askNamingChoice, sanitizeAppNameForPath } = require('./ask-app-name');
  */
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const CLIENT_PACKAGE_PATH = path.join(ROOT_DIR, 'client', 'package.json');
-const SERVER_PACKAGE_PATH = path.join(ROOT_DIR, 'server', 'package.json');
-const CLIENT_ENV_EXAMPLE = path.join(ROOT_DIR, 'client', '.env.example');
-const SERVER_ENV_EXAMPLE = path.join(ROOT_DIR, 'server', '.env.example');
-const CLIENT_ENV = path.join(ROOT_DIR, 'client', '.env');
-const SERVER_ENV = path.join(ROOT_DIR, 'server', '.env');
-const CLIENT_VITE_CONFIG = path.join(ROOT_DIR, 'client', 'vite.config.js');
+const CLIENT_PACKAGE_PATH = path.join(ROOT_DIR, 'startup', 'client', 'package.json');
+const SERVER_PACKAGE_PATH = path.join(ROOT_DIR, 'startup', 'server', 'package.json');
+const CLIENT_ENV_EXAMPLE = path.join(ROOT_DIR, 'startup', 'client', '.env.example');
+const SERVER_ENV_EXAMPLE = path.join(ROOT_DIR, 'startup', 'server', '.env.example');
+const CLIENT_ENV = path.join(ROOT_DIR, 'startup', 'client', '.env');
+const SERVER_ENV = path.join(ROOT_DIR, 'startup', 'server', '.env');
+const CLIENT_VITE_CONFIG = path.join(ROOT_DIR, 'startup', 'client', 'vite.config.js');
 const DEPLOY_BASE_CONF = path.join(ROOT_DIR, 'deploy', 'base.conf');
 
 const PORT_MIN = 4000;
@@ -152,10 +152,10 @@ async function createApp() {
     console.log('🎉 New app configuration completed successfully!');
     console.log('');
     console.log('📋 Files updated:');
-    console.log('  - client/package.json (name, version 1.0.0)');
-    console.log('  - server/package.json (name, version 1.0.0, kill script port)');
-    console.log('  - server/.env.example (PORT, SERVER_URL)');
-    console.log('  - client/vite.config.js (proxy target port)');
+    console.log('  - startup/client/package.json (name, version 1.0.0)');
+    console.log('  - startup/server/package.json (name, version 1.0.0, kill script port)');
+    console.log('  - startup/server/.env.example (PORT, SERVER_URL)');
+    console.log('  - startup/client/vite.config.js (proxy target port)');
     console.log('  - deploy/base.conf (nginx upstream port)');
     console.log('');
     console.log('💡 Next steps:');

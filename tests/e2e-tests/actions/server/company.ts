@@ -13,8 +13,8 @@ import { stripAnsiCodes } from "../../helpers/terminalHelper";
  */
 export async function createCompanyWithAdmin(logger: TestLogger): Promise<User> {
     return new Promise((resolve, reject) => {
-        // company.ts lives at e2e-tests/actions/server/, so going up 3 levels lands at repo root.
-        const serverDir = path.resolve(__dirname, '../../../server');
+        // company.ts lives at tests/e2e-tests/actions/server/; up 4 levels lands at repo root.
+        const serverDir = path.resolve(__dirname, '../../../../startup/server');
         const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
         if (!fs.existsSync(serverDir)) {

@@ -83,8 +83,8 @@ function cleanNodeModules() {
   const rootDir = path.join(__dirname, '..');
   const dirs = [
     path.join(rootDir, 'node_modules'),
-    path.join(rootDir, 'client', 'node_modules'),
-    path.join(rootDir, 'server', 'node_modules')
+    path.join(rootDir, 'startup', 'client', 'node_modules'),
+    path.join(rootDir, 'startup', 'server', 'node_modules')
   ];
 
   dirs.forEach(dir => {
@@ -101,8 +101,8 @@ function cleanBuild() {
   console.log('Cleaning build artifacts...');
   const rootDir = path.join(__dirname, '..');
   const dirs = [
-    path.join(rootDir, 'client', 'dist'),
-    path.join(rootDir, 'server', 'dist')
+    path.join(rootDir, 'startup', 'client', 'dist'),
+    path.join(rootDir, 'startup', 'server', 'dist')
   ];
 
   dirs.forEach(dir => {
@@ -118,7 +118,7 @@ function cleanBuild() {
 function cleanLogs() {
   console.log('Cleaning log files...');
   const rootDir = path.join(__dirname, '..');
-  const logsDir = path.join(rootDir, 'server', 'logs');
+  const logsDir = path.join(rootDir, 'startup', 'server', 'logs');
 
   if (removeFilesByPattern(logsDir, '*.log')) {
     console.log(`✓ Removed log files from ${path.relative(rootDir, logsDir)}`);

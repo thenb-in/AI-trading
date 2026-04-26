@@ -6,7 +6,7 @@ const path = require('path');
 
 try {
   // Change to client directory
-  process.chdir(path.join(__dirname, '..', 'client'));
+  process.chdir(path.join(__dirname, '..', 'startup', 'client'));
   
   // Run npm run lint
   execSync('npm run lint', { stdio: 'inherit' });

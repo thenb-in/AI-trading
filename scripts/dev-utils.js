@@ -120,8 +120,8 @@ function checkEnvironmentFiles() {
   
   const envFiles = [
     { path: '.env.example', required: true },
-    { path: 'client/.env.example', required: true },
-    { path: 'server/.env.example', required: true }
+    { path: 'startup/client/.env.example', required: true },
+    { path: 'startup/server/.env.example', required: true }
   ];
   
   let allEnvFilesExist = true;
@@ -144,8 +144,8 @@ function checkLintConfiguration() {
   
   const configFiles = [
     { path: 'commitlint.config.js', required: true },
-    { path: 'client/eslint.config.js', required: true },
-    { path: 'server/.eslintrc.js', required: false }
+    { path: 'startup/client/eslint.config.js', required: true },
+    { path: 'startup/server/.eslintrc.js', required: false }
   ];
   
   let allConfigsExist = true;
@@ -167,16 +167,16 @@ function runLintChecks() {
   logSection('Running Lint Checks');
   
   logInfo('Running server lint checks...');
-  const serverLint = runCommand('npm run lint', { cwd: path.join(process.cwd(), 'server') });
-  
+  const serverLint = runCommand('npm run lint', { cwd: path.join(process.cwd(), 'startup', 'server') });
+
   if (serverLint.success) {
     logSuccess('Server lint checks passed');
   } else {
     logError('Server lint checks failed');
   }
-  
+
   logInfo('Running client lint checks...');
-  const clientLint = runCommand('npm run lint', { cwd: path.join(process.cwd(), 'client') });
+  const clientLint = runCommand('npm run lint', { cwd: path.join(process.cwd(), 'startup', 'client') });
   
   if (clientLint.success) {
     logSuccess('Client lint checks passed');
@@ -191,16 +191,16 @@ function runTests() {
   logSection('Running Tests');
   
   logInfo('Running server tests...');
-  const serverTests = runCommand('npm run test', { cwd: path.join(process.cwd(), 'server') });
-  
+  const serverTests = runCommand('npm run test', { cwd: path.join(process.cwd(), 'startup', 'server') });
+
   if (serverTests.success) {
     logSuccess('Server tests passed');
   } else {
     logError('Server tests failed');
   }
-  
+
   logInfo('Running client tests...');
-  const clientTests = runCommand('npm run test', { cwd: path.join(process.cwd(), 'client') });
+  const clientTests = runCommand('npm run test', { cwd: path.join(process.cwd(), 'startup', 'client') });
   
   if (clientTests.success) {
     logSuccess('Client tests passed');
@@ -215,7 +215,7 @@ function checkBuildProcess() {
   logSection('Checking Build Process');
   
   logInfo('Building client...');
-  const clientBuild = runCommand('npm run build', { cwd: path.join(process.cwd(), 'client') });
+  const clientBuild = runCommand('npm run build', { cwd: path.join(process.cwd(), 'startup', 'client') });
   
   if (clientBuild.success) {
     logSuccess('Client build successful');

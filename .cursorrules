@@ -5,19 +5,19 @@ use sequelize
 
 ### Model-View-Controller (MVC) Enforcement
 - **Backend**: Strictly follow MVC pattern
-  - Models: Database schemas and business logic in `/server/models/`
-  - Views: API responses and data formatting in `/server/controllers/`
-  - Controllers: Request handling and business logic in `/server/controllers/`
-  - Services: Model to request data into business logic layer in `/server/services/`
+  - Models: Database schemas and business logic in `/startup/server/models/`
+  - Views: API responses and data formatting in `/startup/server/controllers/`
+  - Controllers: Request handling and business logic in `/startup/server/controllers/`
+  - Services: Model to request data into business logic layer in `/startup/server/services/`
     - **One Model Per Service**: Each service can only import ONE model (one-to-one mapping)
     - Models can only be imported in services, not in controllers, routes, or anywhere else
-  - Routes: API endpoints in `/server/routes/`
+  - Routes: API endpoints in `/startup/server/routes/`
 
 - **Frontend**: Component-based architecture
-  - Components: Reusable UI components in `/client/src/components/`
-  - Pages: Route-level components in `/client/src/pages/`
-  - Context: State management in `/client/src/context/`
-  - Services: API calls in `/client/src/services/`
+  - Components: Reusable UI components in `/startup/client/src/components/`
+  - Pages: Route-level components in `/startup/client/src/pages/`
+  - Context: State management in `/startup/client/src/context/`
+  - Services: API calls in `/startup/client/src/services/`
 
 
 - UUID is only for auth-related or secure models. For regular models, prefer integer based primary key.
@@ -30,7 +30,7 @@ use sequelize
 Startup folders are only for generic parts, which can be used irrespetive of context of the application. Anything which is not generic and is specific to this app use-case goes outside startup folder.
 
 
-server/
+startup/server/
 ├── models/          # Database models and schemas
 ├── controllers/     # Request handlers (MVC Controllers)
 ├── services/        # Business logic layer
@@ -40,7 +40,7 @@ server/
 ├── constants/       # Centralized constants (except logger)
 └── utils/           # Utility functions
 
-client/
+startup/client/
 ├── src/
 │   ├── components/  # Reusable UI components
 │   ├── pages/       # Route-level components
@@ -191,10 +191,10 @@ npm run validate-env      # Validate environment variables
 npm run i
 
 # Backend development
-cd server && npm run dev
+cd startup/server && npm run dev
 
 # Frontend development
-cd client && npm run dev
+cd startup/client && npm run dev
 
 # Run all tests
 npm run test
