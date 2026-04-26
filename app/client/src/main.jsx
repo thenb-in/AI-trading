@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { DataProvider } from '@startup/context/startup/AuthContext';
+import { DataProvider } from '@startup/context/AuthContext';
 import { App } from './App';
 import '@startup/index.css';
 

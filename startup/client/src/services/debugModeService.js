@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '../constants/startup/index';
+import { STORAGE_KEYS } from '../constants/index';
 
 /**
  * Centralized debug mode service

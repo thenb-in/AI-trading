@@ -3,7 +3,7 @@
  * Handles loading files from various sources (URLs, API endpoints, etc.)
  */
 
-import { ApiService } from '../../services/startup/ApiService';
+import { ApiService } from '../../services/ApiService';
 
 /**
  * Determines if a URL is a full URL (http/https)

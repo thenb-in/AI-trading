@@ -9,7 +9,7 @@ import {
   CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "../context/startup/useDataContext";
+import { useDataContext, hasPermission } from "../context/useDataContext";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getMasterCategoriesForUser } from "../data/getMasterModules";
 import { getAppModuleDefinitions, isAppModuleVisible } from "../data/getAppModules";

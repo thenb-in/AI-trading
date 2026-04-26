@@ -24,7 +24,7 @@ import {
   CircularProgress,
   Divider,
 } from '@mui/material';
-import { spacing } from '@theme';
+import { spacing } from '@startup/constants/theme';
 import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
@@ -34,8 +34,8 @@ import {
   Schedule as TempIcon,
 } from '@mui/icons-material';
 import { getTypeIcon, getTypeColor } from './layoutTypeUtils';
-import { ApiService } from '@services/startup/ApiService';
-import { CheckboxTypeField } from '@base_components/fields/CheckboxTypeField';
+import { ApiService } from '@services/ApiService';
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 
 const LayoutManager = ({
   open,

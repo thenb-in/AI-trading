@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
-import { MasterModal } from '@base_components/master/master_modal/MasterModal';
+import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
 import { CameraCaptureContent } from './components/CameraCaptureContent';
 
 /**

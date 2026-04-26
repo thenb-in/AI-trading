@@ -1,1 +1,1 @@
-export { getColorClasses } from '@theme';
+export { getColorClasses } from '@startup/constants/theme';

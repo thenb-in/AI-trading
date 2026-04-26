@@ -3,16 +3,16 @@ import { ToastContainer } from 'react-toastify';
 import { useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
-import { Home } from './pages/startup/Home';
-import { AdminDashboard } from './pages/startup/AdminDashboard';
-import { SignupPage } from './pages/startup/SignupPage';
-import { ForgotPasswordPage } from './pages/startup/ForgotPasswordPage';
-import { OnboardingPage } from './pages/startup/OnboardingPage';
-import { AppGuide } from './pages/startup/AppGuide';
+import { Home } from './pages/Home';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { SignupPage } from './pages/SignupPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { OnboardingPage } from './pages/OnboardingPage';
+import { AppGuide } from './pages/AppGuide';
 import PropTypes from 'prop-types';
-import { ProtectedRoute } from './components/startup/ProtectedRoute';
-import { GlobalSearchPalette } from './components/startup/global_search_palette/GlobalSearchPalette';
-import { consoleLogBufferService } from './utils/startup/consoleLogBufferService';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
+import { consoleLogBufferService } from './utils/consoleLogBufferService';
 
 /**
  * Root application component. Defines all top-level routes, initializes the console log

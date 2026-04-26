@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { openHelpSupportNav } from '../utils/startup/openHelpSupportNav';
+import { openHelpSupportNav } from '../utils/openHelpSupportNav';
 
 function useHelpSupportShortcut() {
   const navigate = useNavigate();

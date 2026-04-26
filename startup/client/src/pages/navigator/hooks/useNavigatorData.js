@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { getAppModuleDefinitions } from "@data/getAppModules";
 import { reports as reportModules, categories as reportCategories } from "@data/getReportModules";
-import { useDataContext, hasPermission } from "@context/startup/useDataContext";
-import { ApiService } from "@services/startup/ApiService";
-import { getPermissionSubscriptionStatus } from "@startup/admin/role_permissions/utils/permissionUtils";
+import { useDataContext, hasPermission } from "@context/useDataContext";
+import { ApiService } from "@services/ApiService";
+import { getPermissionSubscriptionStatus } from "@startup/components/admin/role_permissions/utils/permissionUtils";
 
 const getAppModuleColorByNature = (module) => {
   const category = (module?.category || "").toLowerCase();

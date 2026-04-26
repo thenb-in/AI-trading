@@ -14,7 +14,7 @@ const noRelativeImports = {
       fixable: null,
       schema: [],
       messages: {
-        relativeImport: 'Relative import with 3+ levels detected: "{{path}}". Use path aliases instead (@, @utils, @startup, @theme, @report, @data). Example: Use "@utils/filename" instead of "../../../../utils/filename"'
+        relativeImport: 'Relative import with 3+ levels detected: "{{path}}". Use path aliases instead (@, @utils, @startup, @data). Example: Use "@utils/filename" instead of "../../../../utils/filename"'
       }
     },
     create(context) {
@@ -34,23 +34,11 @@ const noRelativeImports = {
         if (path.includes('/utils/') || path.includes('\\utils\\')) {
           return '@utils';
         }
-        if (path.includes('/components/startup/') || path.includes('\\components\\startup\\')) {
-          return '@startup';
-        }
-        if (path.includes('/constants/startup/theme') || path.includes('\\constants\\startup\\theme')) {
-          return '@theme';
-        }
-        if (path.includes('/components/startup/base_report/') || path.includes('\\components\\startup\\base_report\\')) {
-          return '@report';
-        }
         if (path.includes('/data/') || path.includes('\\data\\')) {
           return '@data';
         }
-        // Default to @ for src root
-        if (path.includes('/src/') || path.includes('\\src\\')) {
-          return '@';
-        }
-        return '@';
+        // Default to @startup for framework code
+        return '@startup';
       }
 
       return {
