@@ -6,6 +6,7 @@ const cors = require('cors');
 const express = require('express');
 const logger = require('./logger');
 const env = require('./src/config/env');
+const { API_PREFIX } = require('./src/constants/startup/standard_constants');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 const httpLogger = require('./src/middleware/httpLogger');
 const db = require('./src/models');
@@ -17,8 +18,6 @@ const helpSupportRoutes = require('./src/routes/startup/helpSupport.route');
 const layoutRoutes = require('./src/routes/startup/layoutRoutes');
 const nbnextDriveRoutes = require('./src/routes/startup/nbnextDriveRoutes');
 const userRoutes = require('./src/routes/startup/userRoutes');
-
-const API_PREFIX = '/api/v1';
 
 function mountFrameworkMiddleware(app) {
   app.use(httpLogger);
@@ -122,7 +121,7 @@ function buildApp(options = {}) {
     });
   };
 
-  return { app, server, startServer, API_PREFIX };
+  return { app, server, startServer };
 }
 
-module.exports = { buildApp, API_PREFIX };
+module.exports = { buildApp };

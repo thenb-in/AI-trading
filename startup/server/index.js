@@ -12,9 +12,9 @@ const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
  */
 const { startServer } = buildApp({
   extraRoutes: [
-    { prefix: '/api/v1/company-profile', router: companyProfileRoutes },
+    { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
   ],
-  mountAppRoutes: appRoutes,
+  mountAppRoutes: appRoutes
 });
 
 startServer();

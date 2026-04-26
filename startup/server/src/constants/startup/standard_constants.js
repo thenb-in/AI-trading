@@ -9,6 +9,8 @@ const PRODUCTION_ENV = 'production';
 
 const INPUT_SKIP_KEY = 'Enter';
 
+const API_PREFIX = '/api/v1';
+
 
 module.exports = {
   YES,
@@ -16,5 +18,6 @@ module.exports = {
   PARSE_INT_RADIX,
   PRODUCTION_ENV,
   INPUT_SKIP_KEY,
-  EMPTY_STRING
+  EMPTY_STRING,
+  API_PREFIX
 };

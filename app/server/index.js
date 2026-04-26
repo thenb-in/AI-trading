@@ -9,12 +9,12 @@ const { buildApp } = require('../../startup/server/buildApp');
 const { startServer } = buildApp({
   extraRoutes: [
     // Example:
-    // { prefix: '/api/v1/payroll', router: require('./src/routes/payrollRoutes') },
+    // { prefix: '/api/v1/payroll', router: require('./src/routes/payrollRoutes') }
   ],
   mountAppRoutes: (_app, _prefix) => {
     // Register app-only routes here, e.g.
     // _app.get(`${_prefix}/ping`, (req, res) => res.send('pong'));
-  },
+  }
 });
 
 startServer();
