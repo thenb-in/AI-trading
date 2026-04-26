@@ -26,7 +26,10 @@ export default [
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: './tsconfig.json'
+          project: [
+            'startup/client/tsconfig.json',
+            'app/client/jsconfig.json'
+          ]
         }
       }
     },
@@ -73,7 +76,7 @@ export default [
 
   // Node scripts config and Vite config files
   {
-    files: ['scripts/**/*.js', 'vite.config.js', 'vite.config.ts', 'eslint.config.js'], // Adjust path to match your Node scripts
+    files: ['**/scripts/**/*.js', '**/vite.config.js', '**/vite.config.ts', '**/eslint.config.js'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node, // Node globals like process, __dirname

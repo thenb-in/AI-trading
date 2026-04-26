@@ -55,3 +55,6 @@ pre-commit hook: to not be in pre-push hook
 
 - Do not allow use of enum in model. use sequelize constraints instead.
 - Allow access to company only after that company access has been approved. Currently user just enters company id on frontend, and becomes a part of that company.
+
+
+- we have recently broken to use hook based structure. now i am thinking company wise overrides over existing components. like Filters can mean startup/filters and if mentioned in app, we will import startup/filters itself. but can we have hooks so that company level filters can be coded? this will allow every company to have its own customization in it's own folders outside app, say customization folder? then they can be separately managed using submodules or something

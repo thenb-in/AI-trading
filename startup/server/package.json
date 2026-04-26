@@ -2,11 +2,7 @@
   "name": "NB Next backend",
   "version": "1.0.17",
   "main": "buildApp.js",
-  "scripts": {
-    "lint": "npx eslint .",
-    "lint:errors": "npx eslint . --quiet",
-    "lint:fix": "npx eslint . --fix"
-  },
+  "scripts": {},
   "keywords": [],
   "author": "",
   "license": "ISC",

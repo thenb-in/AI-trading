@@ -1,0 +1,27 @@
+{
+  "name": "@nbnext/lints",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ESLint configs and custom rules shared across startup/* (framework) and app/* (runnable). Run from the repo root via `npm run lint`.",
+  "scripts": {
+    "lint": "npm run lint:server && npm run lint:client",
+    "lint:fix": "npm run lint:server:fix && npm run lint:client:fix",
+    "lint:errors": "npm run lint:server:errors && npm run lint:client:errors",
+    "lint:server": "cd .. && eslint --config lints/server/eslint.config.js startup/server app/server",
+    "lint:server:fix": "cd .. && eslint --config lints/server/eslint.config.js --fix startup/server app/server",
+    "lint:server:errors": "cd .. && eslint --config lints/server/eslint.config.js --quiet startup/server app/server",
+    "lint:client": "cd .. && eslint --config lints/client/eslint.config.mjs startup/client app/client",
+    "lint:client:fix": "cd .. && eslint --config lints/client/eslint.config.mjs --fix startup/client app/client",
+    "lint:client:errors": "cd .. && eslint --config lints/client/eslint.config.mjs --quiet startup/client app/client"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "eslint": "^9.34.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^16.3.0"
+  }
+}

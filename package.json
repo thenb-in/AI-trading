@@ -4,7 +4,7 @@
   "description": "NB Next application with client and server made with Startup App Template",
   "main": "index.js",
   "scripts": {
-    "i": "npm install && cd startup/client && npm install && cd ../server && npm install && cd ../../app && npm install && cd client && npm install && cd ../server && npm install && cd ../.. && npm run setup",
+    "i": "npm install && cd lints && npm install && cd ../app && npm run i && cd ../tests && npm run i && cd .. && npm run setup",
     "setup": "husky && npm run setup-hooks && npm run setup-env",
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "node scripts/setup-env.js",
@@ -12,25 +12,16 @@
     "update-starter-app": "node scripts/update-starter-app.js",
     "migrate": "node scripts/migrate.js",
     "prepare": "husky",
-    "lint": "npm run eslint && npm run check-duplicates",
-    "lint:fix": "npm run lint:server:fix && npm run lint:client:fix",
-    "lint:errors": "npm run lint:server:errors && npm run lint:client:errors",
-    "lint:server": "cd startup/server && npm run lint",
-    "lint:server:fix": "cd startup/server && npm run lint:fix",
-    "lint:client": "cd startup/client && npm run lint",
-    "lint:server:errors": "cd startup/server && npm run lint:errors",
-    "lint:client:errors": "cd startup/client && npm run lint:errors",
-    "lint:client:fix": "cd startup/client && npm run lint:fix",
-    "eslint": "npm run lint:server && npm run lint:client",
-    "client": "cd app/client && npm run dev",
-    "server": "cd app/server && npm run dev",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "lint": "cd lints && npm run lint && cd .. && npm run check-duplicates",
+    "lint:fix": "cd lints && npm run lint:fix",
+    "lint:errors": "cd lints && npm run lint:errors",
+    "dev": "cd app && npm run dev",
+    "client": "cd app && npm run client",
+    "server": "cd app && npm run server",
+    "build": "cd app && npm run build",
+    "start": "cd app && npm run start",
+    "test": "cd tests && npm run test",
     "commit": "git-cz",
-    "build": "cd app/client && npm run build",
-    "test": "npm run test:server && npm run test:client",
-    "test:server": "cd startup/server && npm run test",
-    "test:client": "cd startup/client && npm run test",
-    "test:watch": "concurrently \"npm run test:server -- --watch\" \"npm run test:client -- --watch\"",
     "clean": "node scripts/clean.js all",
     "clean:node_modules": "node scripts/clean.js node_modules",
     "clean:build": "node scripts/clean.js build",
@@ -63,8 +54,11 @@
     "rimraf": "^6.0.1"
   },
   "lint-staged": {
-    "startup/client/src/**/*.{js,jsx}": [
-      "node scripts/lint-client.js"
+    "{startup,app}/client/**/*.{js,jsx}": [
+      "eslint --config lints/client/eslint.config.mjs --fix"
+    ],
+    "{startup,app}/server/**/*.js": [
+      "eslint --config lints/server/eslint.config.js --fix"
     ]
   },
   "commitlint": {

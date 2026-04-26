@@ -1,0 +1,16 @@
+{
+  "name": "@nbnext/tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test runners across integration-tests/ + e2e-tests/. Run from the repo root via `npm run test`.",
+  "scripts": {
+    "i": "cd integration-tests && npm install && cd ../e2e-tests && npm install",
+    "test": "npm run test:integration && npm run test:e2e",
+    "test:integration": "cd integration-tests && npm run test",
+    "test:integration:coverage": "cd integration-tests && npm run test:coverage",
+    "test:integration:dev": "cd integration-tests && npm run test:dev",
+    "test:e2e": "cd e2e-tests && npm run test",
+    "test:e2e:ci": "cd e2e-tests && npm run test:ci",
+    "test:e2e:report": "cd e2e-tests && npm run test:report"
+  }
+}

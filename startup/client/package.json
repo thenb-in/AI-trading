@@ -3,11 +3,7 @@
   "private": true,
   "version": "1.0.5",
   "type": "module",
-  "scripts": {
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "lint:errors": "eslint . --quiet"
-  },
+  "scripts": {},
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",

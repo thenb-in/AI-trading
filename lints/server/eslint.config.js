@@ -24,7 +24,7 @@ const NODE_GLOBALS = {
 };
 
 module.exports = [
-  { ignores: ['node_modules', 'logs', 'migrations', 'eslint.config.js', 'scripts'] },
+  { ignores: ['**/node_modules/**', '**/logs/**', '**/migrations/**', '**/eslint.config.js', '**/scripts/**'] },
 
   // Node.js server config
   {
@@ -143,7 +143,7 @@ module.exports = [
 
   // Scripts config (more relaxed for utility scripts)
   {
-    files: ['scripts/**/*.js'],
+    files: ['**/scripts/**/*.js'],
     languageOptions: {
       ecmaVersion: 2020,
       globals: NODE_GLOBALS,

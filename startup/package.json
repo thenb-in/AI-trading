@@ -2,9 +2,5 @@
   "name": "@nbnext/startup",
   "version": "1.0.0",
   "private": true,
-  "description": "Framework code (non-runnable). Apps import from startup/client and startup/server via aliases (@startup/*) or relative paths from app/.",
-  "scripts": {
-    "lint": "cd server && npm run lint && cd ../client && npm run lint",
-    "lint:fix": "cd server && npm run lint:fix && cd ../client && npm run lint:fix"
-  }
+  "description": "Framework code (non-runnable). Apps import from startup/client and startup/server via aliases (@startup/*) or relative paths from app/. Lint is centralized at the repo root via lints/ — there are no scripts here."
 }
