@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const env = require('../config/env');
-const { HTTP_STATUS_BAD_REQUEST } = require('../constants/startup/http');
-const { sendError } = require('../utils/startup/response');
+const { HTTP_STATUS_BAD_REQUEST } = require('../constants/http');
+const { sendError } = require('../utils/response');
 
 
 const MAX_RECOGNITION_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB

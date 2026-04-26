@@ -7,7 +7,7 @@
 // Usage (app-specific jobs register themselves, then call startAllJobs from
 // server/index.js after models are ready):
 //
-//   const { registerJob, startAllJobs } = require('../../scheduler/lib/jobRegistry');
+//   const { registerJob, startAllJobs } = require('./jobRegistry');
 //
 //   registerJob({
 //     name: 'daily-cleanup',

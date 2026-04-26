@@ -4,7 +4,7 @@ const {
   ACTIVITY_TYPE_TO_ACTION,
   ACTION_TO_ACTIVITY_TYPE,
   ACTION_TO_MESSAGE_LABEL
-} = require('../constants/startup/activity');
+} = require('../constants/activity');
 
 /**
  * Compare two objects and return only changed fields with before/after values.

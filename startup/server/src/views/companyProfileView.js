@@ -5,8 +5,8 @@
 const logger = require('../../logger');
 const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const companyProfileController = require('../controllers/companyProfileController');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
-const companyProfileValidator = require('../validators/startup/companyProfileValidator');
+const allowedPermissions = require('../utils/allowedPermissions');
+const companyProfileValidator = require('../validators/companyProfileValidator');
 
 /**
  * Get company profile view

@@ -1,7 +1,7 @@
 const logger = require('../../logger');
-const { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_INTERNAL_ERROR } = require('../constants/startup/http');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
-const { sendError } = require('../utils/startup/response');
+const { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_INTERNAL_ERROR } = require('../constants/http');
+const allowedPermissions = require('../utils/allowedPermissions');
+const { sendError } = require('../utils/response');
 
 
 /**

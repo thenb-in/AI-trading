@@ -1,5 +1,5 @@
 const logger = require('../../logger');
-const activityService = require('../services/startup/activityService');
+const activityService = require('../services/activityService');
 const {
   normalizeRecord,
   getActivityType,

@@ -1,6 +1,6 @@
 const logger = require('../../logger');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
-const { handleRefreshToken, validateAccessToken, checkUserActive, setAuthCookies ,extractTokens } = require('../utils/startup/auth_shared_utils');
+const allowedPermissions = require('../utils/allowedPermissions');
+const { handleRefreshToken, validateAccessToken, checkUserActive, setAuthCookies ,extractTokens } = require('../utils/auth_shared_utils');
 
 // Mobile clients send tokens via headers (Authorization + X-Refresh-Token).
 // Web clients send via cookies.

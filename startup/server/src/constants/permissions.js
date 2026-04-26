@@ -1,5 +1,5 @@
-const basePermissions = require('./startup/base_permissions');
-const baseRoles = require('./startup/base_roles');
+const basePermissions = require('./base_permissions');
+const baseRoles = require('./base_roles');
 
 
 

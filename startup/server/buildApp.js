@@ -6,18 +6,18 @@ const cors = require('cors');
 const express = require('express');
 const logger = require('./logger');
 const env = require('./src/config/env');
-const { API_PREFIX } = require('./src/constants/startup/standard_constants');
+const { API_PREFIX } = require('./src/constants/standard_constants');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 const httpLogger = require('./src/middleware/httpLogger');
 const db = require('./src/models');
-const activityRoutes = require('./src/routes/startup/activityRoutes');
-const adminRoutes = require('./src/routes/startup/admin.route');
-const authRoutes = require('./src/routes/startup/authRoutes');
-const companyRoutes = require('./src/routes/startup/companyRoutes');
-const helpSupportRoutes = require('./src/routes/startup/helpSupport.route');
-const layoutRoutes = require('./src/routes/startup/layoutRoutes');
-const nbnextDriveRoutes = require('./src/routes/startup/nbnextDriveRoutes');
-const userRoutes = require('./src/routes/startup/userRoutes');
+const activityRoutes = require('./src/routes/activityRoutes');
+const adminRoutes = require('./src/routes/admin.route');
+const authRoutes = require('./src/routes/authRoutes');
+const companyRoutes = require('./src/routes/companyRoutes');
+const helpSupportRoutes = require('./src/routes/helpSupport.route');
+const layoutRoutes = require('./src/routes/layoutRoutes');
+const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 function mountFrameworkMiddleware(app) {
   app.use(httpLogger);

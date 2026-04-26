@@ -2,9 +2,9 @@ const userService = require('@services/startup/userService');
 const jwt = require('jsonwebtoken');
 const logger = require('../../logger');
 const env = require('../config/env');
-const allowedPermissions = require('../utils/startup/allowedPermissions');
-const { setAuthCookies, performTokenRefresh, rotateTokens, authenticateRequest } = require('../utils/startup/authShared');
-const { verifyToken } = require('../utils/startup/authUtils');
+const allowedPermissions = require('../utils/allowedPermissions');
+const { setAuthCookies, performTokenRefresh, rotateTokens, authenticateRequest } = require('../utils/authShared');
+const { verifyToken } = require('../utils/authUtils');
 
 const refreshTokenLocks = new Map();
 

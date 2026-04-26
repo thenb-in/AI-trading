@@ -5,9 +5,9 @@ const { createStartingAppData } = require('./scripts/default_data/app');
 const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
 const env = require('./src/config/env');
 const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
-const { YES, INPUT_SKIP_KEY } = require('./src/constants/startup/standard_constants');
+const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
-const { signup, approveUser } = require('./src/services/startup/authService');
+const { signup, approveUser } = require('./src/services/authService');
 
 
 

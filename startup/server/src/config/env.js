@@ -2,8 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const logger = require('../../logger');
-const { PARSE_INT_RADIX } = require('../constants/startup/standard_constants');
-const { PRODUCTION_ENV } = require('../constants/startup/standard_constants');
+const { PARSE_INT_RADIX } = require('../constants/standard_constants');
+const { PRODUCTION_ENV } = require('../constants/standard_constants');
 
 
 // This file sets up dotenv-safe once and exports the configuration

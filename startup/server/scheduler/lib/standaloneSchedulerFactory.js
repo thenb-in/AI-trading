@@ -10,7 +10,7 @@
 //
 // Usage: create a runner_*.js file for each standalone scheduler:
 //
-//   const { createStandaloneScheduler } = require('../../scheduler/lib/standaloneSchedulerFactory');
+//   const { createStandaloneScheduler } = require('./standaloneSchedulerFactory');
 //   const { syncOnce } = require('./mySync');
 //
 //   createStandaloneScheduler({
