@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "../context/useDataContext";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getMasterCategoriesForUser } from "../data/getMasterModules";
 import { getAppModuleDefinitions, isAppModuleVisible } from "../data/getAppModules";
 
@@ -21,7 +21,10 @@ function useAppMenuItems() {
   const dataContext = useDataContext();
   const { userData } = dataContext;
 
-  const categories = getMasterCategoriesForUser(hasPermission, dataContext);
+  const categories = useMemo(
+    () => getMasterCategoriesForUser(hasPermission, dataContext),
+    [dataContext]
+  );
 
   const [showMasterFlyout, setShowMasterFlyout] = useState(false);
   const [showMasterSubmenu, setShowMasterSubmenu] = useState(false);

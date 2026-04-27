@@ -97,31 +97,19 @@ const Filter = ({
 
   useEffect(() => {
     const currentSearchParams = searchParams.toString();
-    console.log("Current search params:", currentSearchParams);
-    console.log("Previous search params:", previousSearchParams);
 
     if (currentSearchParams !== previousSearchParams) {
-      console.log("Search params changed. Resetting filters...");
-
       const initialFilters = getInitialFilters();
-      console.log("Initial filters:", initialFilters);
 
       setFilters(initialFilters);
       setPreviousSearchParams(currentSearchParams);
 
       setTimeout(() => {
-        console.log("Setting Choices values...");
-
         const roleConfig = allFilters.find(
           (config) => config.name === "role"
         );
-        console.log("Role config:", roleConfig);
 
         if (roleConfig && initialFilters.role) {
-          console.log(
-            "Setting role value in Choices:",
-            initialFilters.role
-          );
           choicesUtil.current.setValue(
             "role",
             initialFilters.role,
@@ -130,14 +118,9 @@ const Filter = ({
         }
 
         if (initialFilters.user) {
-          console.log("Setting user value in Choices:", initialFilters.user);
           choicesUtil.current.setValue("user", initialFilters.user);
         }
-
-        console.log("Choices values set.");
       }, 0);
-    } else {
-      console.log("Search params did not change. No action taken.");
     }
   }, [searchParams, previousSearchParams, getInitialFilters, allFilters]);
 
@@ -218,42 +201,27 @@ const Filter = ({
 
 
   useEffect(() => {
-    console.log("🔹 User and Role data changed:", usersAndRoles);
-
     if (!usersAndRoles || Object.keys(usersAndRoles).length === 0) {
-      console.log("No user/role data yet. Exiting useEffect.");
       return;
     }
 
     const initialFilters = getInitialFilters();
-    console.log("Initial filters from URL or defaults:", initialFilters);
 
     if (roleSelectRef.current) {
       const roleConfig = allFilters.find((config) => config.name === "role");
-      console.log(
-        "Setting role in Choices:",
-        initialFilters.role || "all"
-      );
       choicesUtil.current.setValue(
         "role",
         initialFilters.role || "all",
         roleConfig?.multiselect || false
       );
-    } else {
-      console.log("Role select ref not initialized yet.");
     }
 
     if (userSelectRef.current) {
-      console.log("Setting user in Choices:", initialFilters.user || "all");
       choicesUtil.current.setValue(
         "user",
         initialFilters.user || "all"
       );
-    } else {
-      console.log("User select ref not initialized yet.");
     }
-
-    console.log("✅ Choices values set for all filters.");
   }, [usersAndRoles, getInitialFilters, allFilters]);
 
   const handleSelectChange = useCallback((e, name, isMultiSelect = false) => {
@@ -286,7 +254,6 @@ const Filter = ({
       }
     }
 
-    console.log(`🔄 Filter change - ${name}:`, newValue, 'Event:', e, 'Choices instance:', !!choicesInstance);
     setFilters((prev) => ({ ...prev, [name]: newValue }));
   }, [isDisabled]);
 
@@ -406,7 +373,6 @@ const Filter = ({
   };
   const applyFilters = async () => {
     if (isDisabled) {
-      console.log("Filtering is disabled, exiting early");
       return;
     }
     setIsApplyingFilters(true);

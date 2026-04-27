@@ -13,7 +13,7 @@ import { DebugModeIndicator } from "../DebugModeIndicator";
 import { isDebugMode, subscribeToDebugMode } from "@services/debugModeService";
 import PropTypes from "prop-types";
 import { STORAGE_KEYS } from "@/constants/index";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function AdminSidebar({
   collapsed,
@@ -31,11 +31,15 @@ function AdminSidebar({
     return unsubscribe;
   }, []);
 
-  const sortedMenuItems = [...menuItems].sort((a, b) => {
-    const orderA = typeof a.order === "number" ? a.order : 0;
-    const orderB = typeof b.order === "number" ? b.order : 0;
-    return orderA - orderB;
-  });
+  const sortedMenuItems = useMemo(
+    () =>
+      [...menuItems].sort((a, b) => {
+        const orderA = typeof a.order === "number" ? a.order : 0;
+        const orderB = typeof b.order === "number" ? b.order : 0;
+        return orderA - orderB;
+      }),
+    [menuItems]
+  );
 
   const handleNavigation = (item) => {
     if (item.onClick) {

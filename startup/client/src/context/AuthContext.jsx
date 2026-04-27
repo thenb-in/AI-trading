@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiService } from "../services/ApiService";
 import { isAllowedDevice } from "../utils/deviceUtils";
@@ -105,28 +105,29 @@ const DataProvider = ({ children }) => {
       fetchUser();
     }
   }, [location, navigate]);
-  const value = {
-    userData,
-    setUserData,
-    loading,
-    error,
-    hamburgerMenu,
-    setHamburgerMenu,
-    logout: async () => {
-      try {
+  const logout = useCallback(async () => {
+    try {
+      await ApiService.logout();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setUserData(null);
+      navigate("/");
+    }
+  }, [navigate]);
 
-        
-        // Call the logout API
-        await ApiService.logout();
-      } catch (err) {
-        console.error("Logout error:", err);
-      } finally {
-        // Clear user data and redirect
-        setUserData(null);
-        navigate("/");
-      }
-    },
-  };
+  const value = useMemo(
+    () => ({
+      userData,
+      setUserData,
+      loading,
+      error,
+      hamburgerMenu,
+      setHamburgerMenu,
+      logout,
+    }),
+    [userData, loading, error, hamburgerMenu, logout]
+  );
 
   // Show loading state while checking authentication
   if (!authChecked) {
