@@ -30,12 +30,13 @@ jobs:
         with:
           path: |
             node_modules
+            lints/node_modules
             app/node_modules
             app/client/node_modules
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: quality-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: quality-deps-${{ hashFiles('package-lock.json', 'lints/package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
 
       - name: Install dependencies
         if: steps.cache-deps.outputs.cache-hit != 'true'
@@ -62,12 +63,13 @@ jobs:
         with:
           path: |
             node_modules
+            lints/node_modules
             app/node_modules
             app/client/node_modules
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: quality-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: quality-deps-${{ hashFiles('package-lock.json', 'lints/package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
 
       - name: Run lint
         run: npm run lint
@@ -92,12 +94,13 @@ jobs:
         with:
           path: |
             node_modules
+            lints/node_modules
             app/node_modules
             app/client/node_modules
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: quality-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: quality-deps-${{ hashFiles('package-lock.json', 'lints/package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
 
       - name: Check code duplication (jscpd)
         run: npm run check-duplicates

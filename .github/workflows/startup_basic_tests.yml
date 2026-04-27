@@ -88,9 +88,15 @@ jobs:
           kill $DEV_PID
         env:
           CI: true
+          # dotenv-safe does not override process.env, so this DATABASE_URL
+          # wins over the placeholder one in app/server/.env (created from
+          # .env.example by `npm run i`) and points the server at the
+          # postgres service defined above.
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
 
       - name: Create new company
         run: |
           npm run create-new-company
         env:
           CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
