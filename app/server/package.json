@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "node index.js",
     "start": "node index.js",
-    "kill": "kill -9 $(lsof -t -i:3000)"
+    "create-new-company": "node ../../startup/server/create_company_with_role_and_perms.js",
+    "kill": "kill -9 $(lsof -t -i:3000) 2>/dev/null || true"
   },
   "description": "App-side server boot. Imports buildApp() from startup/server and registers app-specific routes."
 }

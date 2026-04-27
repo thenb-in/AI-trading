@@ -1,6 +1,6 @@
 {
   "name": "nbnext-startup-app",
-  "version": "1.0.36",
+  "version": "2.0.0",
   "description": "NB Next application with client and server made with Startup App Template",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,7 @@
     "server": "cd app && npm run server",
     "build": "cd app && npm run build",
     "start": "cd app && npm run start",
+    "kill": "cd app && npm run kill",
     "test": "cd tests && npm run test",
     "commit": "git-cz",
     "clean": "node scripts/clean.js all",
@@ -34,7 +35,8 @@
     "dev-utils:test": "node scripts/dev-utils.js test",
     "dev-utils:build": "node scripts/dev-utils.js build",
     "dev-utils:help": "node scripts/dev-utils.js help",
-    "check-duplicates": "node scripts/check-duplicates.js"
+    "check-duplicates": "node scripts/check-duplicates.js",
+    "create-new-company": "cd startup/server && npm run create-new-company"
   },
   "keywords": [],
   "author": "",
