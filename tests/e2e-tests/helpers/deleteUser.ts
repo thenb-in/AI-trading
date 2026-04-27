@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { SignupTestLogger } from './logger';
+import { loginWithCredentials } from '../actions/auth/user';
 
 /**
  * Helper function to find a user row and click the delete button
@@ -347,51 +348,10 @@ export async function deleteUser(
   usernameToDelete: string = 'automated-mahaveer'
 ): Promise<void> {
   // ========== STEP 1: Login as admin ==========
-  try {
-    // Check current URL - if already logged in as admin, skip login
-    const currentUrl = page.url();
-    if (currentUrl.includes('/admin')) {
-      logger.logStep('Login as admin (for user deletion)', 'completed', 'Already logged in as admin');
-    } else {
-      // Check if we're already on login page (after logout)
-      const isOnLoginPage = currentUrl === `${process.env.FRONTEND_URL}/` || 
-                            currentUrl.includes('/login') || 
-                            !currentUrl.includes('/admin');
-      
-      if (!isOnLoginPage) {
-        // Navigate to login page - use commit for faster navigation
-        await page.goto('/', {
-          waitUntil: 'commit',
-          timeout: 10000,
-        });
-      }
-      
-      // Wait for login form to be visible (with shorter timeout)
-      await page.waitForSelector('input[name="username"], input[id="username"], input[type="text"]', {
-        state: 'visible',
-        timeout: 5000,
-      });
-      
-      // Clear any existing values and fill credentials
-      await page.fill('input[name="username"], input[id="username"]', adminUsername);
-      await page.fill('input[name="password"], input[id="password"]', adminPassword);
-      
-      // Click submit immediately - no need to wait
-      await page.click('button[type="submit"]');
-      
-      // Wait for navigation to admin page - use URL wait (more efficient than timeout)
-      await page.waitForURL('**/admin**', { timeout: 10000 });
-      
-      // Wait for page to be ready (minimal wait)
-      await page.waitForLoadState('domcontentloaded', { timeout: 5000 });
-      
-      logger.logStep('Login as admin (for user deletion)', 'completed');
-    }
-  } catch (error: any) {
-    const errorDetails = `Error: ${error.message}`;
-    logger.logStep('Login as admin (for user deletion)', 'error', errorDetails);
-    throw error;
-  }
+  // Delegate to the loginWithCredentials action — it handles fresh contexts
+  // (about:blank), already-logged-in short-circuit, the TOTP setup dialog,
+  // and the forced-password-reset redirect uniformly.
+  await loginWithCredentials(page, logger, adminUsername, adminPassword);
   
   // ========== STEP 2: Navigate to admin/users page ==========
   try {

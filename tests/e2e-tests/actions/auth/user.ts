@@ -78,7 +78,19 @@ export async function loginWithCredentials(page: Page, logger: TestLogger, usern
         logger.logStep('Login redirected to password reset', 'completed');
         return { needsPasswordReset: true, username, password } as LoginResult;
     } else {
-        const errorDetails = `Login failed - still on ${loginUrl}`;
+        // Capture any visible error toast/message on the login page so the failure
+        // mode is obvious instead of just "still on /".
+        const visibleError = await page
+            .locator('[role="alert"], .Toastify__toast, [class*="error" i], [class*="toast" i]')
+            .first()
+            .textContent({ timeout: 1000 })
+            .catch(() => null);
+
+        const isSadmin = username === process.env.TEST_SADMIN_USERNAME;
+        const hint = isSadmin
+            ? ` Verify TEST_SADMIN_USERNAME/TEST_SADMIN_PASSWORD in .env match the credentials in the database — a previous test run may have rotated the sadmin password.`
+            : '';
+        const errorDetails = `Login failed for "${username}" (still on ${loginUrl}).${visibleError ? ` UI error: ${visibleError.trim()}.` : ''}${hint}`;
         logger.logStep('Login failed', 'error', errorDetails);
         throw new Error(errorDetails);
     }

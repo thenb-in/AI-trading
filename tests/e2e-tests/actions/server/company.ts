@@ -139,6 +139,21 @@ export async function createCompanyWithAdmin(logger: TestLogger): Promise<User> 
             fs.appendFileSync(logger.getLogFilePath(), `\n--- Process Completed ---\n`);
             fs.appendFileSync(logger.getLogFilePath(), `Exit Code: ${code}\n`);
 
+            // The CLI script logs errors to stdout but exits 0, so a "success"
+            // exit can hide a failed user creation. Reject loudly instead of
+            // letting subsequent login tests fail with a confusing "wrong
+            // password" cascade.
+            const userExistsError = stdout.match(/UserName already exists\s+(\S+?)\.?\s*$/im);
+            if (code === 0 && userExistsError) {
+                const username = userExistsError[1];
+                fs.appendFileSync(logger.getLogFilePath(), `\n--- User Creation Skipped ---\n`);
+                fs.appendFileSync(logger.getLogFilePath(), `User "${username}" already exists; admin password in DB is whatever was set previously and may not match TEST_SADMIN_PASSWORD.\n`);
+                const errorDetails = `Admin user "${username}" already exists in the DB. The CLI did not update the password, so subsequent logins may fail if TEST_SADMIN_PASSWORD in .env doesn't match the DB. Either reset the DB or align the env password with the existing user.`;
+                logger.logStep('Create company with admin user', 'error', errorDetails);
+                reject(new Error(errorDetails));
+                return;
+            }
+
             if (code === 0) {
                 // Try to extract company ID from output
                 const companyIdMatch = stdout.match(/Company created with ID: ([a-f0-9-]+)/i) ||
