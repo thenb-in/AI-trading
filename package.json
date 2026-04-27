@@ -36,7 +36,7 @@
     "dev-utils:build": "node scripts/dev-utils.js build",
     "dev-utils:help": "node scripts/dev-utils.js help",
     "check-duplicates": "node scripts/check-duplicates.js",
-    "create-new-company": "cd startup/server && npm run create-new-company"
+    "create-new-company": "cd app/server && npm run create-new-company"
   },
   "keywords": [],
   "author": "",
