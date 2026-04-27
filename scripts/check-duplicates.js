@@ -52,6 +52,9 @@ const MAX_DUPLICATE_LINES_UTILS = 3;
 /** Σ(span on file A + span on file B) for listed clones in the pair / (linesA+linesB) ≥ this ⇒ "Duplicates found". */
 const FILE_PAIR_DUPLICATION_LINE_RATIO = 0.8;
 
+/** jscpd reports clones grouped by format (javascript, jsx, json, markdown, ...). These formats are ignored: shared content here is metadata or prose, not code worth deduplicating. */
+const IGNORED_FORMATS = new Set(['json', 'markdown', 'markup', 'css']);
+
 function parseGitignorePatterns(gitignorePath) {
   if (!fs.existsSync(gitignorePath)) {
     return [];
@@ -371,6 +374,9 @@ function thresholdForClone(dup) {
 }
 
 function cloneMeetsLineThreshold(dup) {
+  if (IGNORED_FORMATS.has(dup.format)) {
+    return false;
+  }
   return cloneFragmentLineSpan(dup) >= thresholdForClone(dup);
 }
 

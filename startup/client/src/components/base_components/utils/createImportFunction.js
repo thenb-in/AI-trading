@@ -15,6 +15,26 @@ const createImportFunction = ({
   booleanFields = [], // Fields that should be treated as booleans
   skipExisting = false, // If true: when a row matches an existing record, skip it (no update/create)
 }) => {
+  // Match a header label to its column definition by id / label / name / headerName.
+  const findColumnByHeader = (headerText) => columns.find(c =>
+    c.label === headerText ||
+    c.id === headerText ||
+    c.name === headerText ||
+    c.headerName === headerText
+  );
+
+  // Build an ExcelJS column-index → field-id map from a header row.
+  const buildExcelHeaderMap = (headerRow) => {
+    const map = {};
+    headerRow.eachCell((cell, colNumber) => {
+      const colDef = findColumnByHeader(String(cell.value || '').trim());
+      if (colDef) {
+        map[colNumber] = colDef.id;
+      }
+    });
+    return map;
+  };
+
   return async (formData) => {
     try {
       const file = formData instanceof FormData ? formData.get('file') : formData;
@@ -40,7 +60,7 @@ const createImportFunction = ({
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(buffer);
         const sheet = workbook.worksheets[0];
-        
+
         if (!sheet) {
           return { status: 400, data: { error: 'No worksheet found' } };
         }
@@ -48,21 +68,7 @@ const createImportFunction = ({
         // Try to find headers - first at row 5 (exported format), then at row 1 (simple format)
         let headerRowIndex = 5;
         let dataStartRow = 6;
-        let headerRow = sheet.getRow(headerRowIndex);
-
-        // Build mapping from column index -> field id using current columns state
-        headerRow.eachCell((cell, colNumber) => {
-          const headerText = String(cell.value || '').trim();
-          const colDef = columns.find(c => 
-            c.label === headerText || 
-            c.id === headerText || 
-            c.name === headerText ||
-            c.headerName === headerText
-          );
-          if (colDef) {
-            headerToField[colNumber] = colDef.id;
-          }
-        });
+        headerToField = buildExcelHeaderMap(sheet.getRow(headerRowIndex));
 
         // Validate required columns at row 5
         let presentFields = Object.values(headerToField);
@@ -72,21 +78,7 @@ const createImportFunction = ({
         if (missing.length > 0 && requiredFields.length > 0) {
           headerRowIndex = 1;
           dataStartRow = 2;
-          headerToField = {};
-          headerRow = sheet.getRow(headerRowIndex);
-
-          headerRow.eachCell((cell, colNumber) => {
-            const headerText = String(cell.value || '').trim();
-            const colDef = columns.find(c => 
-              c.label === headerText || 
-              c.id === headerText || 
-              c.name === headerText ||
-              c.headerName === headerText
-            );
-            if (colDef) {
-              headerToField[colNumber] = colDef.id;
-            }
-          });
+          headerToField = buildExcelHeaderMap(sheet.getRow(headerRowIndex));
 
           presentFields = Object.values(headerToField);
           missing = requiredFields.filter(f => !presentFields.includes(f));
@@ -165,12 +157,7 @@ const createImportFunction = ({
         // Build header to field mapping
         const csvHeaders = Object.keys(parseResult.data[0] || {});
         csvHeaders.forEach(header => {
-          const colDef = columns.find(c => 
-            c.label === header || 
-            c.id === header || 
-            c.name === header ||
-            c.headerName === header
-          );
+          const colDef = findColumnByHeader(header);
           if (colDef) {
             headerToField[header] = colDef.id;
           }

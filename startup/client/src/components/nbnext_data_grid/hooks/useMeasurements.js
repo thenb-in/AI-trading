@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TOOLBAR_HEIGHT, MIN_BODY_HEIGHT, DENSITY_CONFIG } from "../utils/constants.js";
 
 const useMeasurements = (headerRef, firstRowRef, pagedRows, visibleColumns, density, autoHeight, height, fullScreen = false) => {
@@ -7,49 +7,28 @@ const useMeasurements = (headerRef, firstRowRef, pagedRows, visibleColumns, dens
   const [measuredHeaderHeight, setMeasuredHeaderHeight] = useState(null);
   const [measuredRowHeight, setMeasuredRowHeight] = useState(null);
 
-  useEffect(() => {
-    let raf = null;
-    const measure = () => {
-      if (headerRef.current) {
-        const rect = headerRef.current.getBoundingClientRect();
-        if (rect && rect.height) {
-          const newHeight = Math.ceil(rect.height);
-          setMeasuredHeaderHeight(newHeight);
-        }
-      }
-      
-      if (firstRowRef.current) {
-        const rect = firstRowRef.current.getBoundingClientRect();
-        if (rect && rect.height) {
-          const newHeight = Math.ceil(rect.height);
-          setMeasuredRowHeight(newHeight);
-        }
+  // Read the rendered header / first-row heights and push them into state.
+  // Stable (useCallback) so both the rAF and ResizeObserver effects can list it as a dependency without re-subscribing on every render.
+  const measureElements = useCallback(() => {
+    const apply = (ref, setter) => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      if (rect && rect.height) {
+        setter(Math.ceil(rect.height));
       }
     };
-    raf = window.requestAnimationFrame(measure);
+    apply(headerRef, setMeasuredHeaderHeight);
+    apply(firstRowRef, setMeasuredRowHeight);
+  }, [headerRef, firstRowRef]);
+
+  useEffect(() => {
+    const raf = window.requestAnimationFrame(measureElements);
     return () => {
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [pagedRows, visibleColumns, density, headerRef, firstRowRef]);
+  }, [pagedRows, visibleColumns, density, measureElements]);
 
   useEffect(() => {
-    const measureElements = () => {
-      if (headerRef.current) {
-        const rect = headerRef.current.getBoundingClientRect();
-        if (rect && rect.height) {
-          const newHeight = Math.ceil(rect.height);
-          setMeasuredHeaderHeight(newHeight);
-        }
-      }
-      if (firstRowRef.current) {
-        const rect = firstRowRef.current.getBoundingClientRect();
-        if (rect && rect.height) {
-          const newHeight = Math.ceil(rect.height);
-          setMeasuredRowHeight(newHeight);
-        }
-      }
-    };
-
     // Use ResizeObserver to detect when elements actually change size
     const resizeObserver = new ResizeObserver((entries) => {
       void entries;
@@ -83,7 +62,7 @@ const useMeasurements = (headerRef, firstRowRef, pagedRows, visibleColumns, dens
       resizeObserver.disconnect();
       window.removeEventListener("resize", measureElements);
     };
-  }, [headerRef, firstRowRef]);
+  }, [headerRef, firstRowRef, measureElements]);
 
   const effHeaderHeight = measuredHeaderHeight || headerHeight;
   // Use measured row height when available, otherwise fall back to config

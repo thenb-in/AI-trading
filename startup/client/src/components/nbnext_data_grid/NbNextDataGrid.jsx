@@ -296,34 +296,9 @@ const NbNextDataGrid = forwardRef(({
     sidebarWidth
   );
 
-  // Empty state
-  if (!rowsToUse || rowsToUse.length === 0 || visibleColumns.length === 0) {
-    return (
-      <div ref={containerRef} style={gridContainerStyle}>
-        <GridTabs
-          tabs={hasTabs ? tabs : null}
-          activeTabId={activeTabId}
-          onTabChange={setActiveTabId}
-          insightsAvailable={insightsAvailable}
-          insightsCollapsed={insightsCollapsed}
-          onToggleInsights={toggleInsights}
-        />
-        {!insightsCollapsed && (
-          <InsightsPanel
-            summary={summary}
-            columns={columns}
-            constantColumns={constantColumns}
-            showCommonValues={shouldHideConstantColumns}
-          />
-        )}
-        <EmptyState />
-      </div>
-    );
-  }
-
-  // Main render
-  return (
-    <div ref={containerRef} style={gridContainerStyle}>
+  // Header chrome shared by the empty and populated states.
+  const tabsAndInsights = (
+    <>
       <GridTabs
         tabs={hasTabs ? tabs : null}
         activeTabId={activeTabId}
@@ -340,6 +315,23 @@ const NbNextDataGrid = forwardRef(({
           showCommonValues={shouldHideConstantColumns}
         />
       )}
+    </>
+  );
+
+  // Empty state
+  if (!rowsToUse || rowsToUse.length === 0 || visibleColumns.length === 0) {
+    return (
+      <div ref={containerRef} style={gridContainerStyle}>
+        {tabsAndInsights}
+        <EmptyState />
+      </div>
+    );
+  }
+
+  // Main render
+  return (
+    <div ref={containerRef} style={gridContainerStyle}>
+      {tabsAndInsights}
       <Toolbar
         totalRows={groupedRows.length}
         visibleColumnsCount={visibleColumns.length}
