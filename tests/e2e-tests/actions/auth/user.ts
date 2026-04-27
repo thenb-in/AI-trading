@@ -47,6 +47,19 @@ export async function loginWithCredentials(page: Page, logger: TestLogger, usern
     await page.fill('input[name="password"], input[id="password"]', password);
     await page.click('button[type="submit"]');
 
+    // First-login users are intercepted by a "Setup Google Authenticator" dialog
+    // before navigation. Login.jsx#handleTotpPopupClose still navigates to /admin
+    // when the dialog is closed, so dismissing it is enough for tests.
+    const totpDialog = page.getByRole('dialog', { name: 'Setup Google Authenticator' });
+    try {
+      await totpDialog.waitFor({ state: 'visible', timeout: 5000 });
+      logger.logStep('TOTP setup dialog detected, dismissing', 'completed');
+      await totpDialog.locator('button').first().click();
+      await totpDialog.waitFor({ state: 'hidden', timeout: 5000 });
+    } catch {
+      // Dialog never appeared (TOTP already enabled, or login redirected straight to forgot-password)
+    }
+
     // Wait for navigation
     await page.waitForTimeout(3000);
     const loginUrl = page.url();

@@ -9,6 +9,12 @@ export async function getSignupLink(
     page: Page,
     logger: TestLogger
 ): Promise<string> {
+    // The clipboard handler runs at click time, so the page must hold the
+    // permission BEFORE the user clicks "Copy Sign-up Link" — otherwise
+    // navigator.clipboard.writeText() silently fails and there's nothing for
+    // the test to read back.
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+
     // ========== STEP 1: Ensure we're on user management page ==========
     try {
         // Check if we're already on the user management page

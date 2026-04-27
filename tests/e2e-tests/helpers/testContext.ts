@@ -66,14 +66,14 @@ export function initializeTestContext(): TestContext {
   const runId = `test-run-${Date.now()}`;
   const startTime = new Date().toISOString();
   
-  // Get admin credentials from env (sadmin user)
-  const adminUsername = process.env.TEST_ADMIN_USERNAME;
-  const adminPassword = process.env.TEST_ADMIN_PASSWORD;
-  
+  // Get sadmin (super-admin) credentials from env
+  const adminUsername = process.env.TEST_SADMIN_USERNAME;
+  const adminPassword = process.env.TEST_SADMIN_PASSWORD;
+
   if (!adminUsername || !adminPassword) {
     throw new Error(
-      'Admin credentials not found in environment variables. ' +
-      'Please set TEST_ADMIN_USERNAME and TEST_ADMIN_PASSWORD or E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD'
+      'Sadmin credentials not found in environment variables. ' +
+      'Please set TEST_SADMIN_USERNAME and TEST_SADMIN_PASSWORD'
     );
   }
   

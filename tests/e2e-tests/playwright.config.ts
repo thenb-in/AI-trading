@@ -84,7 +84,7 @@ export default defineConfig({
     {
       name: 'Frontend',
       command: frontendCommand,
-      cwd: path.resolve(__dirname, '../client'),
+      cwd: path.resolve(__dirname, '../../app/client'),
       url: process.env.FRONTEND_URL,
       reuseExistingServer: !isCI,        // reuse locally; start clean in CI
       timeout: 180_000,
@@ -95,7 +95,7 @@ export default defineConfig({
     {
       name: 'Backend',
       command: backendCommand,
-      cwd: path.resolve(__dirname, '../server'),
+      cwd: path.resolve(__dirname, '../../app/server'),
       url: `${process.env.BACKEND_URL}/healthz`, // must return 200
       reuseExistingServer: !isCI,
       timeout: 180_000,

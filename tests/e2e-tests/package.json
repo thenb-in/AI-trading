@@ -8,10 +8,11 @@
   "license": "ISC",
   "type": "commonjs",
   "scripts": {
-    "test": "playwright test --headed",
-    "test:ci": "playwright test",
+    "test": "node scripts/run-tests-from-manifest.js --headed",
+    "test:ci": "node scripts/run-tests-from-manifest.js",
     "test:report": "playwright show-report",
-    "test:single": "playwright test signup/01-copy-signup-link.spec.ts --headed"
+    "test:single": "playwright test signup/01-copy-signup-link.spec.ts --headed",
+    "test:list": "node scripts/list-tests.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1",

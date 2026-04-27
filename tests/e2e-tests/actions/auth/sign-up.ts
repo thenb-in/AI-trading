@@ -14,7 +14,7 @@ export async function performSignup(
     testUser: User,
 ): Promise<void> {
     // ========== STEP 1: Navigate to signup page ==========
-    navigateTo(page, logger, signupUrl);
+    await navigateTo(page, logger, signupUrl);
 
     await page.waitForSelector('input[type="text"], input[name*="name"], input[placeholder*="name" i], input[id*="name" i]', { state: 'visible' });
     logger.logStep('Wait for signup form to be visible', 'completed');

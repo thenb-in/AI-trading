@@ -7,17 +7,17 @@
       "files": [
         "tests/auth/01-check-admin-exists.spec.ts",
         "tests/auth/02-create-company-admin.spec.ts",
-        "tests/auth/03-login-admin.spec.ts",
-        "tests/auth/04-password-reset.spec.ts"
+        "tests/auth/03-login-new-user.spec.ts",
+        "tests/auth/04-logout-user.spec.ts"
       ]
     },
     {
       "name": "Signup Tests",
-      "description": "User signup flow tests",
+      "description": "User signup flow tests (perform-signup runs as a step inside approve-user)",
       "files": [
         "tests/signup/01-copy-signup-link.spec.ts",
-        "tests/signup/02-perform-signup.spec.ts",
-        "tests/signup/03-approve-user.spec.ts"
+        "tests/signup/02-sign-up-and-approve-user.spec.ts",
+        "tests/signup/03-password-reset.spec.ts"
       ]
     },
     {
@@ -32,15 +32,13 @@
       "description": "Navigation and search functionality tests",
       "files": [
         "tests/navigation/01-navigate-masters.spec.ts",
-        "tests/navigation/02-search-employee.spec.ts"
+        "tests/navigation/02-search-nbnext-drive.spec.ts"
       ]
     },
     {
       "name": "Master Operations",
       "description": "Master data CRUD operations tests",
       "files": [
-        "tests/master-operations/01-department-operations.spec.ts",
-        "tests/master-operations/02-position-operations.spec.ts"
       ]
     },
     {

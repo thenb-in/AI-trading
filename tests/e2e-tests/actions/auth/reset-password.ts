@@ -17,9 +17,9 @@ export async function resetPassword(
     logger: TestLogger,
     newPassword: string = '123123'
 ): Promise<void> {
-    const username = process.env.TEST_ADMIN_USERNAME || process.env.E2E_ADMIN_USERNAME;
+    const username = process.env.TEST_SADMIN_USERNAME;
     if (!username) {
-        throw new Error('Missing env username: set TEST_ADMIN_USERNAME (or E2E_ADMIN_USERNAME)');
+        throw new Error('Missing env username: set TEST_SADMIN_USERNAME');
     }
 
     // Navigate to a protected page to force redirect to login when not authenticated.
