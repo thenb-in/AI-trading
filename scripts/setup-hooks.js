@@ -25,6 +25,15 @@ function ensureDirectoryExists(dirPath) {
   }
 }
 
+function writeHookIfMissing(hookPath, defaultContent, label) {
+  if (fs.existsSync(hookPath)) {
+    log(`↩️  Preserved existing ${label} hook`, 'cyan');
+    return;
+  }
+  fs.writeFileSync(hookPath, defaultContent);
+  log(`✅ Created default ${label} hook`, 'green');
+}
+
 function setupHuskyHooks() {
   try {
     log('🔧 Setting up Husky hooks...', 'blue');
@@ -37,36 +46,39 @@ function setupHuskyHooks() {
     const huskyDir = path.join(process.cwd(), '.husky');
     ensureDirectoryExists(huskyDir);
     
-    // Create pre-commit hook content
-    const preCommitContent = 'node scripts/check-lowercase-dirs.js\nnpx lint-staged\n';
+    // Hooks are version-controlled — seed defaults only when missing, never overwrite.
     const preCommitPath = path.join(huskyDir, 'pre-commit');
-    
-    // Write pre-commit hook file
-    fs.writeFileSync(preCommitPath, preCommitContent);
-    
-    // Create commit-msg hook content using commitlint
-    const commitMsgContent = 'npx --no -- commitlint --edit "$1"\n';
-    const commitMsgPath = path.join(huskyDir, 'commit-msg');
-    
-    // Write commit-msg hook file
-    fs.writeFileSync(commitMsgPath, commitMsgContent);
-    
-    // Create pre-push hook for additional validation and version check
-    const prePushContent = 'node scripts/check-version-bump.js\n';
-    const prePushPath = path.join(huskyDir, 'pre-push');
-    
-    // Write pre-push hook file
-    fs.writeFileSync(prePushPath, prePushContent);
-    
-    // Create prepare-commit-msg hook for interactive commit messages
-    const prepareCommitMsgContent = 'exec < /dev/tty && npx --no -- commitizen prompt || true\n';
-    const prepareCommitMsgPath = path.join(huskyDir, 'prepare-commit-msg');
-    
-    // Write prepare-commit-msg hook file
-    fs.writeFileSync(prepareCommitMsgPath, prepareCommitMsgContent);
+    writeHookIfMissing(
+      preCommitPath,
+      'node scripts/check-lowercase-dirs.js\nnpx lint-staged\n',
+      'pre-commit'
+    );
 
-    // Post-merge: fix local filename case vs Git after merges (macOS/Windows)
-    const postMergeContent = `#!/usr/bin/env sh
+    const commitMsgPath = path.join(huskyDir, 'commit-msg');
+    writeHookIfMissing(
+      commitMsgPath,
+      'npx --no -- commitlint --edit "$1"\n',
+      'commit-msg'
+    );
+
+    const prePushPath = path.join(huskyDir, 'pre-push');
+    writeHookIfMissing(
+      prePushPath,
+      'node scripts/check-version-bump.js\n',
+      'pre-push'
+    );
+
+    const prepareCommitMsgPath = path.join(huskyDir, 'prepare-commit-msg');
+    writeHookIfMissing(
+      prepareCommitMsgPath,
+      'exec < /dev/tty && npx --no -- commitizen prompt || true\n',
+      'prepare-commit-msg'
+    );
+
+    const postMergePath = path.join(huskyDir, 'post-merge');
+    writeHookIfMissing(
+      postMergePath,
+      `#!/usr/bin/env sh
 set -e
 
 # ORIG_HEAD points to where HEAD was before the merge
@@ -74,9 +86,9 @@ git rev-parse --verify ORIG_HEAD >/dev/null 2>&1 || exit 0
 
 # Only check files that changed in the merge (fast even in large repos)
 ./node_modules/.bin/git-detect-case-change --fix-local --since ORIG_HEAD
-`;
-    const postMergePath = path.join(huskyDir, 'post-merge');
-    fs.writeFileSync(postMergePath, postMergeContent);
+`,
+      'post-merge'
+    );
     
     // Make the files executable (Unix-like systems only)
     if (process.platform !== 'win32') {
