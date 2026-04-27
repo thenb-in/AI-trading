@@ -2,7 +2,9 @@
   "name": "NB Next backend",
   "version": "1.0.17",
   "main": "buildApp.js",
-  "scripts": {},
+  "scripts": {
+    "build": "node scripts/build-bytecode.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "bytenode": "^1.5.7",
     "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^15.0.0"

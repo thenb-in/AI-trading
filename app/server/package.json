@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node index.js",
     "start": "node index.js",
+    "build": "node ../../startup/server/scripts/build-bytecode.js --src . --out-dir ./dist",
     "create-new-company": "node ../../startup/server/create_company_with_role_and_perms.js",
     "kill": "kill -9 $(lsof -t -i:3000) 2>/dev/null || true"
   },
