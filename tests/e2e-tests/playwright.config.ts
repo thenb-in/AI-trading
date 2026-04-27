@@ -106,6 +106,6 @@ export default defineConfig({
   ],
 
   // ---------- Optional: glue code ----------
-  globalSetup: require.resolve('./globalSetup'),
-  globalTeardown: require.resolve('./cleanup/globalTeardown'),
+  globalSetup: require.resolve('./lifecycle/globalSetup'),
+  globalTeardown: require.resolve('./lifecycle/globalTeardown'),
 });

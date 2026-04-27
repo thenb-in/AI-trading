@@ -4,8 +4,8 @@ import { getAdminCredentials } from '../../helpers/testContext';
 import { loginWithCredentials } from '../../actions/auth/user';
 
 
-test.describe('Auth - Login Admin User', () => {
-  test('login as admin user', async ({ page }) => {
+test.describe('Auth - Login SAdmin', () => {
+  test('login as sadmin (super-admin)', async ({ page }) => {
 
     // Setup test infrastructure (logger, message capture, error handling)
     const { logger, runTest } = setupTest(page, {
@@ -15,9 +15,9 @@ test.describe('Auth - Login Admin User', () => {
     });
 
     await runTest(async () => {
-      const { username: adminUsername, password: adminPassword } = getAdminCredentials();
-      await loginWithCredentials(page, logger, adminUsername, adminPassword);
-      logger.logStep('Login as admin user', 'completed');
+      const { username: sadminUsername, password: sadminPassword } = getAdminCredentials();
+      await loginWithCredentials(page, logger, sadminUsername, sadminPassword);
+      logger.logStep('Login as sadmin', 'completed');
     });
   });
 });

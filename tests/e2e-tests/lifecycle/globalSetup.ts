@@ -1,5 +1,5 @@
 import { FullConfig } from '@playwright/test';
-import { initializeTestContext } from './helpers/testContext';
+import { initializeTestContext } from '../helpers/testContext';
 
 /**
  * Global setup runs once before all tests
