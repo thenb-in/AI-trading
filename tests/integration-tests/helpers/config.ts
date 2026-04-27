@@ -31,7 +31,7 @@ function loadEnv(): void {
  * Validate required environment variables
  */
 function validateEnv(): void {
-  const requiredVars = ['TEST_USERNAME', 'TEST_PASSWORD', 'API_BASE_URL'];
+  const requiredVars = ['TEST_ADMIN_USERNAME', 'TEST_ADMIN_PASSWORD', 'API_BASE_URL'];
   const missing: string[] = [];
 
   for (const varName of requiredVars) {
@@ -67,18 +67,18 @@ export const config = {
     return process.env.API_BASE_URL || 'http://localhost:3000';
   },
 
-  get testUsername(): string {
-    const username = process.env.TEST_USERNAME;
+  get adminUsername(): string {
+    const username = process.env.TEST_ADMIN_USERNAME;
     if (!username) {
-      throw new Error('TEST_USERNAME is required in .env file');
+      throw new Error('TEST_ADMIN_USERNAME is required in .env file');
     }
     return username;
   },
 
-  get testPassword(): string {
-    const password = process.env.TEST_PASSWORD;
+  get adminPassword(): string {
+    const password = process.env.TEST_ADMIN_PASSWORD;
     if (!password) {
-      throw new Error('TEST_PASSWORD is required in .env file');
+      throw new Error('TEST_ADMIN_PASSWORD is required in .env file');
     }
     return password;
   },

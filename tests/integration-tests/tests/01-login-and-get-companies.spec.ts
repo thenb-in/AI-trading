@@ -13,8 +13,8 @@ describe('Authentication and Company Access', () => {
     const { logger, apiClient } = setupTest({ testName: 'should login and retrieve allowed companies' });
 
     // Login
-    const username = config.testUsername;
-    const password = config.testPassword;
+    const username = config.adminUsername;
+    const password = config.adminPassword;
     const loginResult = await login(apiClient, logger, { username, password });
     
     expect(loginResult.user).toBeDefined();
