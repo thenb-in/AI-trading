@@ -50,6 +50,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.34.0",
     "eslint-plugin-react": "^7.37.5",
+    "git-detect-case-change": "^1.2.1",
     "globals": "^16.3.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",

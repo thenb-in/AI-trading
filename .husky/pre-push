@@ -1,1 +1,2 @@
+./node_modules/.bin/git-detect-case-change --fix-local --since ORIG_HEAD
 node scripts/check-version-bump.js
