@@ -37,6 +37,8 @@ function mountFrameworkMiddleware(app) {
     }));
   }
 
+  app.set('trust proxy', ['loopback', '172.31.0.0/16']);  // trust first proxy (nginx) for correct client IP logging and secure cookies
+
   app.use(express.json());
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use('/static', express.static(path.join(__dirname, 'static')));
@@ -93,12 +95,14 @@ function buildApp(options = {}) {
   mountStaticAndErrorHandlers(app);
 
   /**
-   * Synchronizes models in non-production, then starts listening on env.PORT.
+   * Synchronizes models when SYNC_DB is enabled (dev + first-time installs),
+   * then starts listening on env.PORT. Production should keep SYNC_DB off and
+   * use explicit migrations instead.
    * @returns {Promise<void>}
    */
   const startServer = async () => {
     const sequelize = db.sequelize;
-    if (!env.isProduction) {
+    if (env.SYNC_DB) {
       await sequelize
         .sync({ alter: false, logging: (msg) => logger.silly(`[Sync SQL] ${msg}`) })
         .then(() => {

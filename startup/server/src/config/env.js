@@ -69,6 +69,8 @@ module.exports = {
   FRONTEND_URL: process.env.FRONTEND_URL,
   SERVER_URL: process.env.SERVER_URL,
   APP_NAME: appName,
+  SYNC_DB: process.env.SYNC_DB === 'true',
+  SECURE_COOKIE: process.env.SECURE_COOKIE === 'true',
 
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,

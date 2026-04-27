@@ -8,7 +8,11 @@ const logger = require('../../logger');
 const config = require('../config/config');
 const env = require('../config/env');
 
-const basename = path.basename(__filename);
+// Normalize __filename so the self-exclusion filter below works in both source
+// mode (__filename = "index.js") and bytenode-compiled mode (__filename =
+// "index.jsc"). Without this, the bundled server re-requires its own stub and
+// ends up calling `{}` as a factory.
+const basename = path.basename(__filename, path.extname(__filename)) + '.js';
 const nodeEnv = env.NODE_ENV;
 const dbConfig = config[nodeEnv];
 
