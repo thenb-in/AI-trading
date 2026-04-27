@@ -2,6 +2,24 @@
 
 const path = require('path');
 const readline = require('readline');
+const { execSync } = require('child_process');
+
+/**
+ * Look up the git remote URL for the repo at cwd. Returns '' on any failure
+ * (git missing, not a repo, no remote configured) — callers should treat '' as
+ * "no git context" and fall through to folder-name / user-typed resolution.
+ */
+function resolveGitRemoteUrl(cwd) {
+  try {
+    return execSync('git config --get remote.origin.url', {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch (error) {
+    return '';
+  }
+}
 
 function parseGitHubName(url) {
   try {
@@ -13,7 +31,7 @@ function parseGitHubName(url) {
     }
     const withoutGit = (pathname || '').replace(/\.git$/i, '');
     const base = withoutGit.split('/').filter(Boolean).pop() || '';
-    return base.replace(/[_-]/g, ' ').trim();
+    return base.trim();
   } catch (error) {
     return '';
   }
@@ -22,7 +40,7 @@ function parseGitHubName(url) {
 function getFolderName(rootDir) {
   try {
     const folder = path.basename(rootDir);
-    return folder.replace(/[_-]/g, ' ').trim();
+    return folder.trim();
   } catch (error) {
     return '';
   }
@@ -56,8 +74,9 @@ async function askNamingChoice(
 
   const githubName = parseGitHubName(newAppUrl);
   const folderName = getFolderName(rootDir);
+  const hasGithub = Boolean(githubName);
   const namesMatch =
-    Boolean(githubName) &&
+    hasGithub &&
     Boolean(folderName) &&
     githubName.toLowerCase() === folderName.toLowerCase();
   const rl = readline.createInterface({ input: process.stdin, output: uiStream });
@@ -66,14 +85,19 @@ async function askNamingChoice(
   log('App name options:');
   if (namesMatch) {
     log(`  1. Folder & GitHub name: ${githubName}`);
+  } else if (hasGithub) {
+    log(`  1. Folder name: ${folderName || '(could not parse)'}`);
+    log(`  2. GitHub name (from URL): ${githubName}`);
   } else {
     log(`  1. Folder name: ${folderName || '(could not parse)'}`);
-    log(`  2. GitHub name (from URL): ${githubName || '(could not parse)'}`);
   }
   log('  Or type your app name directly');
   log('');
 
-  const choicePrompt = namesMatch ? 'Choose (1) or type app name' : 'Choose (1/2) or type app name';
+  const choicePrompt =
+    !namesMatch && hasGithub
+      ? 'Choose (1/2) or type app name'
+      : 'Choose (1) or type app name';
   const choice = await askQuestion(rl, choicePrompt, folderName || '');
   const c = choice.toLowerCase().trim();
 
@@ -88,16 +112,8 @@ async function askNamingChoice(
         appName = await askQuestion(rl, 'App name', githubName || folderName);
       }
     }
-  } else if (c === '2') {
-    if (namesMatch) {
-      appName = githubName;
-    } else {
-      appName = githubName;
-      if (!appName) {
-        log('Could not parse GitHub name; please type app name.');
-        appName = await askQuestion(rl, 'App name', folderName || githubName);
-      }
-    }
+  } else if (c === '2' && hasGithub) {
+    appName = githubName;
   } else if (c === '') {
     appName = folderName || (await askQuestion(rl, 'App name', githubName));
   } else {
@@ -108,8 +124,28 @@ async function askNamingChoice(
   return appName.trim();
 }
 
-function sanitizeAppNameForPath(name) {
-  return name.trim().replace(/\s+/g, '_');
+function sanitizeAppNameForPath(name, separator) {
+  if (typeof separator !== 'string' || !separator) {
+    throw new Error('sanitizeAppNameForPath: separator is required');
+  }
+  return name.trim().replace(/\s+/g, separator);
+}
+
+/**
+ * Pick a separator consistent with any folder already present at the destination.
+ * Lets new configs match existing naming conventions ("etime-payroll" stays dashed,
+ * "etime_payroll" stays underscored) instead of being overridden by the caller's default.
+ * Falls back to defaultSeparator only when the hint has no detectable separator.
+ */
+function resolveSeparator(folderHint, defaultSeparator) {
+  if (typeof defaultSeparator !== 'string' || !defaultSeparator) {
+    throw new Error('resolveSeparator: defaultSeparator is required');
+  }
+  if (folderHint) {
+    if (folderHint.includes('-')) return '-';
+    if (folderHint.includes('_')) return '_';
+  }
+  return defaultSeparator;
 }
 
 module.exports = {
@@ -118,23 +154,32 @@ module.exports = {
   askQuestion,
   askNamingChoice,
   sanitizeAppNameForPath,
+  resolveSeparator,
 };
 
 async function main() {
-  const gitRef = process.argv[2];
-  if (!gitRef) {
-    console.error('Usage: node scripts/ask-app-name.js <git-url-or-github-path>');
+  const defaultSeparator = process.argv[2];
+  let gitRef = process.argv[3];
+  if (!defaultSeparator) {
+    console.error('Usage: node scripts/ask-app-name.js <default-separator> [git-url-or-github-path]');
+    console.error('  <default-separator> is used only if the destination folder has no "-" or "_" to match.');
+    console.error('  [git-url] is optional; if omitted, the git remote is looked up from the current repo.');
     console.error('Prints sanitized deploy folder name to stdout (prompts on stderr / tty).');
     process.exit(1);
   }
   try {
     const rootDir = path.resolve(__dirname, '..');
+    if (!gitRef) {
+      gitRef = resolveGitRemoteUrl(rootDir);
+    }
+    const folderName = getFolderName(rootDir);
     const appName = await askNamingChoice(gitRef, rootDir, { uiStream: process.stderr });
     if (!appName) {
       console.error('App name cannot be empty');
       process.exit(1);
     }
-    process.stdout.write(`${sanitizeAppNameForPath(appName)}\n`);
+    const separator = resolveSeparator(folderName, defaultSeparator);
+    process.stdout.write(`${sanitizeAppNameForPath(appName, separator)}\n`);
   } catch (error) {
     console.error(error.message || String(error));
     process.exit(1);

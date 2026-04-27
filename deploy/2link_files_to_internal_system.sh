@@ -62,28 +62,22 @@ command_exists() {
 log_info "Starting file linking process..."
 
 # Check required commands
-if ! command_exists git; then
-    error_exit "git is not installed or not in PATH"
-fi
-
 if ! command_exists npm; then
     error_exit "npm is not installed or not in PATH"
 fi
 
-# Get the GitHub remote URL (assumes "origin" remote)
-log_info "Getting Git remote URL..."
-REMOTE_URL=$(git config --get remote.origin.url) || error_exit "Failed to get Git remote URL. Make sure you're in a Git repository with an 'origin' remote."
-
-if [ -z "$REMOTE_URL" ]; then
-    error_exit "No Git remote URL found. Make sure you're in a Git repository with an 'origin' remote."
+# Resolve app name: prefer APP_NAME env (bundled installs without scripts/ dir);
+# otherwise delegate to the shared resolve_app_name helper (handles git lookup internally).
+if [ -n "${APP_NAME:-}" ]; then
+    app_name="$APP_NAME"
+    log_info "Using APP_NAME from environment: $app_name"
+else
+    repo_root=$(dirname "$(dirname "$(realpath "$0")")")
+    # shellcheck disable=SC1091
+    source "$repo_root/scripts/download-artifact.sh"
+    resolve_app_name
+    app_name="$DEPLOY_APP_NAME"
 fi
-
-# Replace nbnext_app_name with the name of the app
-# app name is the github repository name
-app_name=$(basename -s .git "$REMOTE_URL")
-log_info "App name: $app_name"
-
-
 
 
 

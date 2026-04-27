@@ -2,7 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { askNamingChoice, sanitizeAppNameForPath } = require('./ask-app-name');
+const {
+  askNamingChoice,
+  sanitizeAppNameForPath,
+  resolveSeparator,
+  getFolderName,
+} = require('./ask-app-name');
 
 /**
  * Script to create a new app from this starter template
@@ -73,7 +78,8 @@ function updateDeployBaseConfWithPort(port) {
 }
 
 function updatePackageJsonFiles(appName, port) {
-  const sanitized = sanitizeAppNameForPath(appName);
+  const separator = resolveSeparator(getFolderName(ROOT_DIR), '-');
+  const sanitized = sanitizeAppNameForPath(appName, separator);
   if (!sanitized) {
     throw new Error('App name cannot be empty or whitespace-only');
   }

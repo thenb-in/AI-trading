@@ -59,43 +59,42 @@ command_exists() {
 log_info "Starting deployment file generation..."
 
 # Check required commands
-if ! command_exists git; then
-    error_exit "git is not installed or not in PATH"
-fi
-
 if ! command_exists npm; then
     error_exit "npm is not installed or not in PATH"
 fi
 
-# Get the GitHub remote URL (assumes "origin" remote)
-log_info "Getting Git remote URL..."
-REMOTE_URL=$(git config --get remote.origin.url) || error_exit "Failed to get Git remote URL. Make sure you're in a Git repository with an 'origin' remote."
-
-if [ -z "$REMOTE_URL" ]; then
-    error_exit "No Git remote URL found. Make sure you're in a Git repository with an 'origin' remote."
+# Resolve app name: prefer APP_NAME env (bundled installs without scripts/ dir);
+# otherwise delegate to the shared resolve_app_name helper (handles git lookup internally).
+if [ -n "${APP_NAME:-}" ]; then
+    app_name="$APP_NAME"
+    log_info "Using APP_NAME from environment: $app_name"
+else
+    repo_root=$(dirname "$(dirname "$(realpath "$0")")")
+    # shellcheck disable=SC1091
+    source "$repo_root/scripts/download-artifact.sh"
+    resolve_app_name
+    app_name="$DEPLOY_APP_NAME"
 fi
+log_info "App name: $app_name"
 
-# Replace nbnext_app_name with the name of the app
-# app name is the github repository name
-app_name=$(basename -s .git "$REMOTE_URL")
-# For nginx (and other configs): identifiers must be alphanumeric + underscore only
-app_name_safe="${app_name//[^a-zA-Z0-9]/_}"
-log_info "App name: $app_name (config-safe: $app_name_safe)"
-
-# Replace 3.110.76.178 with the IP address of the server
-# ask as input from user
-read -p "Enter the domain name(s) or IP address(es) of the server: " ip_address
-
-if [ -z "$ip_address" ]; then
-    error_exit "IP address cannot be empty"
+# Resolve IP/domain: prefer IP_ADDRESS env (non-interactive); fall back to prompt.
+if [ -n "${IP_ADDRESS:-}" ]; then
+    ip_address="$IP_ADDRESS"
+    log_info "Using IP_ADDRESS from environment: $ip_address"
+else
+    read -p "Enter the domain name(s) or IP address(es) of the server: " ip_address
 fi
+[ -n "$ip_address" ] || error_exit "IP address cannot be empty"
 
-# Replace /app/nbnext_app_name with the path of the app on the server (use safe name for nginx compatibility)
-app_path="/app/$app_name_safe"
+# Replace /app/nbnext_app_name with the path of the app on the server
+app_path="/app/$app_name"
 
-# Replace /home/ubuntu/$app_name_safe/server with the path of the app on the server
+# Replace /home/ubuntu/$app_name/server with the path of the app on the server
 # server path is .. of directory of this script
 server_path=$(dirname $(dirname $(realpath $0)))
+
+# System user for the systemd service — env override, else current user.
+system_user="${SYSTEM_USER:-$(whoami)}"
 
 # Replace /home/ubuntu/.nvm/versions/node/v22.19.0/bin/npm start with the path of the app on the server
 # nvm path to be found by which npm is installed
@@ -107,7 +106,7 @@ npm_path="$nvm_path/bin/npm"
 
 # console log the values
 log_info "Configuration:"
-log "  app_name: $app_name (safe for nginx: $app_name_safe)"
+log "  app_name: $app_name"
 log "  ip_address: $ip_address"
 log "  app_path: $app_path"
 log "  server_path: $server_path"
@@ -126,42 +125,42 @@ files_to_replace=(
 # copy the files to app_name instead of base
 for file in ${files_to_replace[@]}; do
     source_file="$script_dir/$file"
-    
+
     # Check if source file exists
     if [ ! -f "$source_file" ]; then
         error_exit "Source file not found: $source_file"
     fi
-    
+
     # Remove 'base.' prefix and replace with app_name
     target_filename="${file#base.}"
     target_file="$script_dir/$app_name.$target_filename"
-    
+
     log_info "Processing $file -> $target_filename"
-    
+
     # Read the file content and perform replacements in memory (no temp files)
     log "  Reading $source_file and replacing placeholders"
-    
+
     # Read source file and perform all replacements using bash string substitution
     content=$(cat "$source_file")
-    
-    # Perform all replacements using bash parameter expansion (use app_name_safe so nginx variables/upstream names are valid)
-    replace_in_var "content" "nbnext_app_name" "$app_name_safe"
+
+    # Perform all replacements using bash parameter expansion
+    replace_in_var "content" "nbnext_app_name" "$app_name"
     replace_in_var "content" "public_ip_address" "$ip_address"
     replace_in_var "content" "nbnext_app_name_path" "$app_path"
     replace_in_var "content" "server_path" "$server_path"
     replace_in_var "content" "nvm_path" "$nvm_path"
     replace_in_var "content" "npm_path" "$npm_path"
-    
+
     # Additional replacements for service file
     if [[ "$file" == "base.service" ]]; then
         log "  Applying service-specific replacements"
         replace_in_var "content" "system_user" "$system_user"
     fi
-    
+
     # Write the modified content directly to the target file
     log "  Writing $target_file"
     printf '%s' "$content" > "$target_file" || error_exit "Failed to write $target_file"
-    
+
     log_success "Successfully created $target_file"
 done
 
