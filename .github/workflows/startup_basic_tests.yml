@@ -17,16 +17,15 @@ on:
 
   release:
     types: [published]
-  
 
 jobs:
   server_dev_run:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: write
       actions: write
-    
+
     services:
       postgres:
         image: postgres:15
@@ -47,10 +46,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: 22
 
       - name: Install dependencies and setup environment
         run: npm run i
@@ -64,18 +62,17 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
 
-      - name: Set up app/server .env
+      - name: Verify .env file was created
         run: |
           cd app/server
-          cp .env.example .env
           if [ ! -f .env ]; then
-            echo "❌ Error: app/server/.env was not created"
+            echo "Error: .env file was not created by setup script"
             exit 1
           else
-            echo "✅ app/server/.env created"
+            echo ".env file created successfully"
           fi
 
-      - name: Run app server in dev mode
+      - name: Run server in dev mode
         run: |
           cd app/server
           npm run dev &
@@ -83,18 +80,17 @@ jobs:
           sleep 15
 
           if ! kill -0 $DEV_PID 2>/dev/null; then
-            echo "❌ Server failed to start."
+            echo "Server failed to start."
             exit 1
           fi
 
-          echo "✅ Server started successfully, no startup errors."
+          echo "Server started successfully, no startup errors."
           kill $DEV_PID
         env:
           CI: true
 
       - name: Create new company
         run: |
-          cd app/server
-          echo "this command needs to be setup: \`npm run create-new-company\`"
+          npm run create-new-company
         env:
           CI: true

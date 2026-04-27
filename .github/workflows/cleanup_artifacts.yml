@@ -1,0 +1,30 @@
+name: Cleanup Old Artifacts
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - test-ci
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+  release:
+    types: [published]
+
+jobs:
+  cleanup_artifacts:
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+
+    steps:
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@v1
+        with:
+          age: '2 days'
+          skip-recent: 2
