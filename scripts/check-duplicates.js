@@ -71,6 +71,31 @@ function parseGitignorePatterns(gitignorePath) {
     });
 }
 
+/**
+ * Convert each project dir's .gitignore into jscpd `-i` globs scoped to that dir.
+ * Gitignore "dist" (no slash) matches at any depth; "foo/bar" is anchored to the gitignore root.
+ * For each match we emit both `<scope>/<pat>` and `<scope>/<pat>/**` so directory entries
+ * exclude their contents too.
+ */
+function scopedIgnoreGlobs(projectDirs) {
+  const out = new Set();
+  for (const dir of projectDirs) {
+    const relDir = path.relative(REPO_ROOT, dir).split(path.sep).join('/');
+    const patterns = parseGitignorePatterns(path.join(dir, '.gitignore'));
+    for (const raw of patterns) {
+      const trimmed = raw.replace(/^\/+/, '').replace(/\/+$/, '');
+      if (!trimmed) {
+        continue;
+      }
+      const anchored = raw.startsWith('/') || trimmed.includes('/');
+      const base = anchored ? `${relDir}/${trimmed}` : `${relDir}/**/${trimmed}`;
+      out.add(base);
+      out.add(`${base}/**`);
+    }
+  }
+  return Array.from(out);
+}
+
 function cloneDuplicatedTokenIncrement(dup) {
   const a = dup.firstFile;
   if (a.endLoc.position == null || a.startLoc.position == null) {
@@ -350,11 +375,11 @@ function cloneMeetsLineThreshold(dup) {
 }
 
 /**
+ * @param {string[]} projectDirs - Absolute paths to scan together in one jscpd pass.
  * @returns {{ ok: boolean, exitCode: number, rulePass?: boolean }}
  */
-function runJscpd(projectDir) {
-  const gitignorePath = path.join(projectDir, '.gitignore');
-  const patterns = parseGitignorePatterns(gitignorePath);
+function runJscpd(projectDirs) {
+  const patterns = scopedIgnoreGlobs(projectDirs);
   const jscpdBin = path.join(REPO_ROOT, 'node_modules', 'jscpd', 'bin', 'jscpd');
 
   if (!fs.existsSync(jscpdBin)) {
@@ -365,9 +390,10 @@ function runJscpd(projectDir) {
   const reportDir = fs.mkdtempSync(path.join(os.tmpdir(), 'jscpd-dup-'));
   const reportPath = path.join(reportDir, 'jscpd-report.json');
 
+  const relPaths = projectDirs.map((dir) => path.relative(REPO_ROOT, dir));
   const args = [
     jscpdBin,
-    '.',
+    ...relPaths,
     '-r',
     'json',
     '-o',
@@ -381,7 +407,7 @@ function runJscpd(projectDir) {
 
   const t0 = performance.now();
   const result = spawnSync(process.execPath, args, {
-    cwd: projectDir,
+    cwd: REPO_ROOT,
     stdio: ['ignore', 'ignore', 'pipe'],
     env: process.env,
   });
@@ -453,15 +479,24 @@ function main() {
     process.exit(0);
   }
 
-  const clientDir = path.join(REPO_ROOT, 'startup', 'client');
-  const serverDir = path.join(REPO_ROOT, 'startup', 'server');
+  const clientDirs = [
+    path.join(REPO_ROOT, 'startup', 'client'),
+    path.join(REPO_ROOT, 'app', 'client'),
+  ];
+  const serverDirs = [
+    path.join(REPO_ROOT, 'startup', 'server'),
+    path.join(REPO_ROOT, 'app', 'server'),
+  ];
 
-  if (!fs.existsSync(clientDir) || !fs.existsSync(serverDir)) {
-    console.error('Expected startup/client/ and startup/server/ directories at repository root.');
+  const missing = [...clientDirs, ...serverDirs].filter((dir) => !fs.existsSync(dir));
+  if (missing.length > 0) {
+    console.error(
+      `Expected directories not found: ${missing.map((d) => path.relative(REPO_ROOT, d)).join(', ')}`,
+    );
     process.exit(1);
   }
 
-  const clientResult = runJscpd(clientDir);
+  const clientResult = runJscpd(clientDirs);
   if (!clientResult.ok) {
     process.exit(clientResult.exitCode ?? 1);
   }
@@ -469,7 +504,7 @@ function main() {
     process.exit(1);
   }
 
-  const serverResult = runJscpd(serverDir);
+  const serverResult = runJscpd(serverDirs);
   if (!serverResult.ok) {
     process.exit(serverResult.exitCode ?? 1);
   }
