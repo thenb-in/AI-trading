@@ -1,0 +1,229 @@
+name: Build and Upload Artifacts
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - test-ci
+
+  pull_request:
+    branches:
+      - main
+      - master
+
+  release:
+    types: [published]
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
+
+  client_build:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+
+      - name: Set environment variables
+        run: cp app/client/.env.example app/client/.env
+
+      - name: Run build
+        run: cd app/client && npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-build-artifact
+          path: app/client/dist/
+          include-hidden-files: true
+
+  server_build:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+
+      - name: Build framework bytecode (startup/server)
+        run: cd startup/server && npm run build
+
+      - name: Build app/server boot wrapper bytecode
+        run: cd app/server && npm run build
+
+      - name: Stage server artifact (mirrors install layout)
+        # Lay out the artifact so download-artifact in site_bundle can drop it
+        # straight into _bundle/ with no further reshaping.
+        run: |
+          mkdir -p _server_artifact/startup/server _server_artifact/app/server
+          cp -a startup/server/dist/. _server_artifact/startup/server/
+          cp -a app/server/dist/.    _server_artifact/app/server/
+
+      - name: Upload server build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-build-artifact
+          path: _server_artifact/
+          # Preserve dotfiles (notably .env.example) — upload-artifact@v4 drops
+          # hidden files by default, which breaks `npm run setup-env` on install.
+          include-hidden-files: true
+
+  site_bundle:
+    needs: [client_build, server_build]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve version + bundle name
+        id: meta
+        run: |
+          VERSION=$(jq -r .version startup/server/package.json)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          FULL_SHA=$(git rev-parse HEAD)
+          APP_NAME=$(basename "$GITHUB_REPOSITORY")
+          BUNDLE_NAME="${APP_NAME}-site-v${VERSION}-${SHORT_SHA}"
+          {
+            echo "version=$VERSION"
+            echo "short_sha=$SHORT_SHA"
+            echo "full_sha=$FULL_SHA"
+            echo "app_name=$APP_NAME"
+            echo "bundle_name=$BUNDLE_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download client build
+        uses: actions/download-artifact@v4
+        with:
+          name: client-build-artifact
+          path: _bundle/app/client
+
+      - name: Download server build (framework + app boot wrapper, both compiled)
+        # The artifact was staged with internal layout app/server/ + startup/server/,
+        # so it drops directly into _bundle/ with no reshaping.
+        uses: actions/download-artifact@v4
+        with:
+          name: server-build-artifact
+          path: _bundle/
+
+      - name: Stage deploy files + entry scripts
+        run: |
+          mkdir -p _bundle/deploy _bundle/scripts
+          cp deploy/base.conf deploy/base.service _bundle/deploy/
+          cp deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
+          cp deploy/update.sh _bundle/
+          # deploy/*.sh source scripts/download-artifact.sh, which in turn calls scripts/ask-app-name.js.
+          cp scripts/download-artifact.sh scripts/ask-app-name.js _bundle/scripts/
+          # Ship every tracked .gitignore. update.sh turns the bundle into a
+          # one-commit git repo and resets the install dir to it; git's
+          # `add -A` honors these gitignores so local-state files in the
+          # install (.env, secret/credentials.json, node_modules/, generated
+          # *.conf/*.service, etc.) stay untracked and are preserved across
+          # the reset. Discovered dynamically — adding a new .gitignore in
+          # any subdirectory tomorrow Just Works, no edits here.
+          git ls-files -z -- '.gitignore' '**/.gitignore' | while IFS= read -r -d '' gi; do
+            mkdir -p "_bundle/$(dirname "$gi")"
+            cp "$gi" "_bundle/$gi"
+          done
+          chmod +x _bundle/update.sh _bundle/deploy/*.sh _bundle/scripts/download-artifact.sh
+
+      - name: Write VERSION metadata
+        run: |
+          cat > _bundle/VERSION <<EOF
+          version=${{ steps.meta.outputs.version }}
+          commit=${{ steps.meta.outputs.full_sha }}
+          short_sha=${{ steps.meta.outputs.short_sha }}
+          app_name=${{ steps.meta.outputs.app_name }}
+          built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          node_version=22
+          EOF
+
+      - name: Upload site deployment artifact
+        # Upload _bundle/ contents directly (no pre-zip). GitHub wraps the
+        # upload into a single zip named `<artifact-name>.zip` at download
+        # time, so setting `name` to the versioned bundle name gives you
+        # `<repo>-site-vX.Y.Z-sha.zip` straight from the download — no outer
+        # `site-deployment-artifact.zip` wrapper to unzip first.
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.bundle_name }}
+          path: _bundle/
+          include-hidden-files: true
