@@ -7,7 +7,7 @@ import importPlugin from 'eslint-plugin-import'
 import customPlugin from './eslint-rules/index.js'
 
 export default [
-  { ignores: ['dist', '.vite/**', 'node_modules/**'] },
+  { ignores: ['**/dist/**', '**/.vite/**', '**/node_modules/**'] },
 
   // React/browser config
   {
