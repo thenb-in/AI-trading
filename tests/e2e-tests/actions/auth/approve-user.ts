@@ -441,18 +441,23 @@ async function handleApprovalModal(
       throw new Error('Could not find "User must reset password on next login" checkbox');
     }
     
-    // Check if it's checked and uncheck if needed
+    // Ensure "User must reset password on next login" stays CHECKED so the
+    // first-login forced-reset flow is exercised by signup/03-password-reset.
+    // If we uncheck it, the user's last_active is set on approval, the
+    // forced-reset redirect never fires, and a subsequent "Forgot Password?"
+    // reset (no isFirstLogin, no OTP) un-approves the user — see
+    // authService.js:resetPassword.
     const isChecked = await checkbox.isChecked();
-    if (isChecked) {
-      await checkbox.uncheck();
+    if (!isChecked) {
+      await checkbox.check();
       await page.waitForTimeout(300);
     }
-    
+
     await page.waitForTimeout(500);
-    logger.logStep('Uncheck "User must reset password on next login" checkbox', 'completed');
+    logger.logStep('Ensure "User must reset password on next login" stays checked', 'completed');
   } catch (error: any) {
     const errorDetails = `Error: ${error.message}`;
-    logger.logStep('Uncheck "User must reset password on next login" checkbox', 'error', errorDetails);
+    logger.logStep('Ensure "User must reset password on next login" stays checked', 'error', errorDetails);
     throw error;
   }
   

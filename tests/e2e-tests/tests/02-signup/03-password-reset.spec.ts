@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { saveState } from '../../helpers/sharedState';
+import { loadState, saveState } from '../../helpers/sharedState';
 import { setupTest } from '../../helpers/setup';
 import { resetPassword } from '../../actions/auth/reset-password';
 
@@ -7,7 +7,7 @@ import { resetPassword } from '../../actions/auth/reset-password';
 const NEW_USER_PASSWORD = '123123';
 
 test.describe('Auth - Password Reset', () => {
-  test('handle password reset if required', async ({ page }) => {
+  test('reset the new user password via first-login flow', async ({ page }) => {
     const { logger, runTest } = setupTest(page, {
       timeout: 60000,
       captureApiResponses: true,
@@ -15,13 +15,17 @@ test.describe('Auth - Password Reset', () => {
     });
 
     await runTest(async () => {
-      await resetPassword(page, logger, NEW_USER_PASSWORD);
-      // Save the new password as the final password
+      const state = loadState();
+      if (!state.newUserUsername || !state.newUserPassword) {
+        throw new Error('newUserUsername / newUserPassword not found in shared state. Run signup tests first.');
+      }
+
+      await resetPassword(page, logger, state.newUserUsername, state.newUserPassword, NEW_USER_PASSWORD);
+
       saveState({
-        adminPassword: NEW_USER_PASSWORD,
+        newUserPassword: NEW_USER_PASSWORD,
         needsPasswordReset: false,
       });
     });
   });
 });
-

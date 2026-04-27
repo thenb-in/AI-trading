@@ -1,98 +1,57 @@
 import { Page } from '@playwright/test';
 import { TestLogger } from '../../helpers/logger';
-import { navigateTo } from '../../helpers/navigator';
+import { isPageAccessible } from '../../helpers/navigator';
+import { logoutUser } from './logout-user';
+import { loginWithCredentials } from './user';
 
 /**
- * Password reset flow via "Forgot Password?" link from the login page.
+ * First-login forced password reset flow.
  *
- * Steps:
- * - Try to go to /admin/users (will redirect to / if not logged in)
- * - Click "Forgot Password?" on the login page
- * - Fill username from env
- * - Set new password (default: 123123)
- * - Submit and assert API response is successful (test passes/fails on this)
+ * Why this shape: the server's POST /auth/reset-password endpoint un-approves
+ * the user (`is_approved = false`) when called without `isFirstLogin: true` or
+ * a valid OTP — see startup/server/src/services/authService.js:resetPassword.
+ * The frontend only sends `isFirstLogin: true` when ForgotPassword.jsx is
+ * reached via React Router state from Login.jsx's first-login redirect, NOT
+ * when the user clicks the public "Forgot Password?" link.
+ *
+ * So we drive the natural flow: log in with the old password, let the server
+ * detect last_active=null and redirect to /forgot-password with the
+ * isFirstLogin state set, then fill the new password. The user stays approved.
+ *
+ * Prerequisite: the user must have been approved with "User must reset
+ * password on next login" CHECKED — see actions/auth/approve-user.ts.
  */
 export async function resetPassword(
     page: Page,
     logger: TestLogger,
+    username: string,
+    oldPassword: string,
     newPassword: string = '123123'
 ): Promise<void> {
-    const username = process.env.TEST_SADMIN_USERNAME;
     if (!username) {
-        throw new Error('Missing env username: set TEST_SADMIN_USERNAME');
+        throw new Error('resetPassword requires a username');
+    }
+    if (!oldPassword) {
+        throw new Error('resetPassword requires the old password to drive the first-login redirect');
     }
 
-    // Navigate to a protected page to force redirect to login when not authenticated.
-    await navigateTo(page, logger, '/admin/users', false);
-
-    // If we ended up on /admin already, we're logged in; logout flow is handled elsewhere.
-    // For password reset we want the login page so the "Forgot Password?" entry point exists.
-    if (!page.url().includes('/forgot-password') && !page.url().includes('/admin')) {
-        // Best-effort: we should be on login page now.
+    // Any active session would short-circuit loginWithCredentials, so tear it down.
+    if (await isPageAccessible(page, logger, '/admin/users')) {
+        await logoutUser(page, logger);
     }
 
-    // Click "Forgot Password?" on the login page.
-    try {
-        const forgotSelectors = [
-            'text=/^Forgot Password\\??$/i',
-            'a:has-text("Forgot Password")',
-            'button:has-text("Forgot Password")',
-            '[role="link"]:has-text("Forgot Password")',
-            '[role="button"]:has-text("Forgot Password")',
-        ];
-
-        let clicked = false;
-        for (const selector of forgotSelectors) {
-            try {
-                const el = page.locator(selector).first();
-                if (await el.isVisible({ timeout: 1500 }).catch(() => false)) {
-                    await el.click();
-                    clicked = true;
-                    break;
-                }
-            } catch {
-                continue;
-            }
-        }
-
-        if (!clicked) {
-            // Fallback: navigate directly (in case UI text differs).
-            await navigateTo(page, logger, '/forgot-password', false);
-        }
-
-        await page.waitForURL('**/forgot-password**', { timeout: 10000 }).catch(() => {});
-        await page.waitForLoadState('domcontentloaded');
-        await page.waitForTimeout(1000);
-        logger.logStep('Navigate to forgot password page', 'completed');
-    } catch (error: any) {
-        logger.logStep('Navigate to forgot password page', 'error', `Error: ${error.message}`);
-        throw error;
+    // Login should redirect to /forgot-password with state.isFirstLogin=true.
+    const result = await loginWithCredentials(page, logger, username, oldPassword);
+    if (!result.needsPasswordReset) {
+        throw new Error(
+            `Expected first-login redirect to /forgot-password for "${username}", ` +
+            `but login completed without it. Did approveUser leave "User must reset ` +
+            `password on next login" checked?`
+        );
     }
 
-    // Fill username (existing user details from env).
-    try {
-        const usernameSelectors = [
-            'input[name="username"]',
-            'input[id="username"]',
-            'input[placeholder*="user" i]',
-        ];
-        let usernameFilled = false;
-        for (const selector of usernameSelectors) {
-            const input = page.locator(selector).first();
-            if (await input.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await input.fill(username);
-                usernameFilled = true;
-                break;
-            }
-        }
-        if (!usernameFilled) throw new Error('Could not find username field on forgot password page');
-        logger.logStep('Fill forgot password username', 'completed');
-    } catch (error: any) {
-        logger.logStep('Fill forgot password username', 'error', `Error: ${error.message}`);
-        throw error;
-    }
-
-    // Fill new password and confirm password
+    // Fill the new password (the form prefills username from router state and
+    // disables editing, so we don't refill it here).
     try {
         await page.waitForSelector('input[name="newPassword"], input[id="newPassword"]', {
             timeout: 10000,
@@ -101,12 +60,12 @@ export async function resetPassword(
         await page.fill('input[name="confirmPassword"], input[id="confirmPassword"]', newPassword);
         logger.logStep('Fill new password and confirm password', 'completed');
     } catch (error: any) {
-        const errorDetails = `Error: ${error.message}`;
-        logger.logStep('Fill new password and confirm password', 'error', errorDetails);
+        logger.logStep('Fill new password and confirm password', 'error', `Error: ${error.message}`);
         throw error;
     }
 
-    // Submit password reset and assert API response success
+    // Submit and assert the API response — this is what proves the reset
+    // actually landed (and with isFirstLogin=true, that the user is still approved).
     try {
         const submit = page.locator('button[type="submit"], button:has-text("Reset"), button:has-text("Submit")').first();
         const response = await Promise.all([
@@ -124,14 +83,13 @@ export async function resetPassword(
             throw new Error(`Reset password API failed: ${details}`);
         }
 
-        logger.logStep('Reset password API success', 'completed', responseBody?.message || 'Password reset successful');
+        logger.logStep('First-login password reset API success', 'completed', responseBody?.message || 'Password reset successful');
 
-        // UI usually navigates back to login; don't hard-fail if it doesn't.
+        // UI navigates back to login.
         await page.waitForURL('**/', { timeout: 10000 }).catch(() => {});
         await page.waitForTimeout(2000);
     } catch (error: any) {
-        const errorDetails = `Error: ${error.message}`;
-        logger.logStep('Reset password API success', 'error', errorDetails);
+        logger.logStep('First-login password reset API success', 'error', `Error: ${error.message}`);
         throw error;
     }
 }
