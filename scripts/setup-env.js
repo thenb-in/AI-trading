@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Initializes app/client/.env and app/server/.env from their .env.example
-// counterparts. Idempotent: if a .env already exists, it is left untouched.
+// Initializes .env files from their .env.example counterparts for the app
+// and the test suites. Idempotent: if a .env already exists, it is left
+// untouched.
 
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +10,9 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 
 const TARGETS = [
   { dir: 'app/client', label: 'app/client' },
-  { dir: 'app/server', label: 'app/server' }
+  { dir: 'app/server', label: 'app/server' },
+  { dir: 'tests/integration-tests', label: 'tests/integration-tests' },
+  { dir: 'tests/e2e-tests', label: 'tests/e2e-tests' }
 ];
 
 let any = false;

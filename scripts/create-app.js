@@ -10,13 +10,17 @@ const { askNamingChoice, sanitizeAppNameForPath } = require('./ask-app-name');
  */
 
 const ROOT_DIR = path.resolve(__dirname, '..');
-const CLIENT_PACKAGE_PATH = path.join(ROOT_DIR, 'startup', 'client', 'package.json');
-const SERVER_PACKAGE_PATH = path.join(ROOT_DIR, 'startup', 'server', 'package.json');
-const CLIENT_ENV_EXAMPLE = path.join(ROOT_DIR, 'startup', 'client', '.env.example');
-const SERVER_ENV_EXAMPLE = path.join(ROOT_DIR, 'startup', 'server', '.env.example');
-const CLIENT_ENV = path.join(ROOT_DIR, 'startup', 'client', '.env');
-const SERVER_ENV = path.join(ROOT_DIR, 'startup', 'server', '.env');
-const CLIENT_VITE_CONFIG = path.join(ROOT_DIR, 'startup', 'client', 'vite.config.js');
+const CLIENT_PACKAGE_PATH = path.join(ROOT_DIR, 'app', 'client', 'package.json');
+const SERVER_PACKAGE_PATH = path.join(ROOT_DIR, 'app', 'server', 'package.json');
+const CLIENT_ENV_EXAMPLE = path.join(ROOT_DIR, 'app', 'client', '.env.example');
+const SERVER_ENV_EXAMPLE = path.join(ROOT_DIR, 'app', 'server', '.env.example');
+const CLIENT_ENV = path.join(ROOT_DIR, 'app', 'client', '.env');
+const SERVER_ENV = path.join(ROOT_DIR, 'app', 'server', '.env');
+const CLIENT_VITE_CONFIG = path.join(ROOT_DIR, 'app', 'client', 'vite.config.js');
+const INTEGRATION_TEST_ENV_EXAMPLE = path.join(ROOT_DIR, 'tests', 'integration-tests', '.env.example');
+const INTEGRATION_TEST_ENV = path.join(ROOT_DIR, 'tests', 'integration-tests', '.env');
+const E2E_TEST_ENV_EXAMPLE = path.join(ROOT_DIR, 'tests', 'e2e-tests', '.env.example');
+const E2E_TEST_ENV = path.join(ROOT_DIR, 'tests', 'e2e-tests', '.env');
 const DEPLOY_BASE_CONF = path.join(ROOT_DIR, 'deploy', 'base.conf');
 
 const PORT_MIN = 4000;
@@ -37,6 +41,19 @@ function updateEnvFileWithPort(filePath, port, kind) {
         `SERVER_URL=http://localhost:${port}\n`
       );
     }
+    fs.writeFileSync(filePath, content, 'utf8');
+  } catch (error) {
+    console.error(`❌ Failed to update ${filePath}: ${error.message}`);
+    throw error;
+  }
+}
+
+function updateTestEnvFileWithPort(filePath, port, varName) {
+  if (!fs.existsSync(filePath)) return;
+  try {
+    let content = fs.readFileSync(filePath, 'utf8');
+    const re = new RegExp(`^(${varName}=)(['"]?)http://localhost:\\d+\\2`, 'm');
+    content = content.replace(re, `$1$2http://localhost:${port}$2`);
     fs.writeFileSync(filePath, content, 'utf8');
   } catch (error) {
     console.error(`❌ Failed to update ${filePath}: ${error.message}`);
@@ -110,6 +127,10 @@ function updatePortInConfigs(port) {
     updateEnvFileWithPort(SERVER_ENV, port, 'server');
   }
   updateViteConfigWithPort(CLIENT_VITE_CONFIG, port);
+  updateTestEnvFileWithPort(INTEGRATION_TEST_ENV_EXAMPLE, port, 'API_BASE_URL');
+  updateTestEnvFileWithPort(INTEGRATION_TEST_ENV, port, 'API_BASE_URL');
+  updateTestEnvFileWithPort(E2E_TEST_ENV_EXAMPLE, port, 'BACKEND_URL');
+  updateTestEnvFileWithPort(E2E_TEST_ENV, port, 'BACKEND_URL');
   updateDeployBaseConfWithPort(port);
 }
 
@@ -141,7 +162,7 @@ async function createApp() {
     // Update port in env files, deploy config, and server kill script
     console.log('📝 Updating server port in configs...');
     updatePortInConfigs(serverPort);
-    console.log('✅ Port updated in server .env, client vite.config.js, deploy/base.conf');
+    console.log('✅ Port updated in server .env, client vite.config.js, test envs, deploy/base.conf');
 
     // Update client and server package.json (name, version 1.0.0, deploy script, kill script)
     console.log('📝 Updating package.json (client & server)...');
@@ -152,10 +173,12 @@ async function createApp() {
     console.log('🎉 New app configuration completed successfully!');
     console.log('');
     console.log('📋 Files updated:');
-    console.log('  - startup/client/package.json (name, version 1.0.0)');
-    console.log('  - startup/server/package.json (name, version 1.0.0, kill script port)');
-    console.log('  - startup/server/.env.example (PORT, SERVER_URL)');
-    console.log('  - startup/client/vite.config.js (proxy target port)');
+    console.log('  - app/client/package.json (name, version 1.0.0)');
+    console.log('  - app/server/package.json (name, version 1.0.0, kill script port)');
+    console.log('  - app/server/.env.example (PORT, SERVER_URL)');
+    console.log('  - app/client/vite.config.js (proxy target port)');
+    console.log('  - tests/integration-tests/.env.example (API_BASE_URL)');
+    console.log('  - tests/e2e-tests/.env.example (BACKEND_URL)');
     console.log('  - deploy/base.conf (nginx upstream port)');
     console.log('');
     console.log('💡 Next steps:');
