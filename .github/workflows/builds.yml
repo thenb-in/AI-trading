@@ -28,7 +28,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Cache dependencies
+      - name: Cache dependencies (github-hosted only)
+        # Cache via GitHub backend is worth it on ephemeral cloud runners;
+        # on self-hosted persistent runners the local ~/.npm + node_modules
+        # already persist between runs, so we skip the network round-trip.
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
         id: cache-deps
         with:
@@ -39,9 +43,11 @@ jobs:
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: build-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
 
       - name: Install dependencies
+        # Self-hosted: cache step skipped → cache-hit output is '' → install runs.
+        # github-hosted cache hit: install skipped. github-hosted cache miss: install runs.
         if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm run i
         env:
@@ -65,8 +71,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Restore dependencies
+      - name: Restore dependencies (github-hosted only)
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
+        id: cache-deps
         with:
           path: |
             node_modules
@@ -75,7 +83,14 @@ jobs:
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: build-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
 
       - name: Set environment variables
         run: cp app/client/.env.example app/client/.env
@@ -111,8 +126,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Restore dependencies
+      - name: Restore dependencies (github-hosted only)
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@v4
+        id: cache-deps
         with:
           path: |
             node_modules
@@ -121,7 +138,16 @@ jobs:
             app/server/node_modules
             startup/client/node_modules
             startup/server/node_modules
-          key: build-deps-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+          key: build-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
+
+      - name: Install dependencies
+        # Self-hosted: always installs (relies on persistent ~/.npm).
+        # github-hosted: installs on cache miss.
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
 
       - name: Build framework bytecode (startup/server)
         run: cd startup/server && npm run build
