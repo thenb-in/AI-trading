@@ -696,7 +696,11 @@ jobs:
           systemctl start "${APP_NAME}.service"
 
           nginx -t
-          systemctl reload nginx
+          # reload-or-restart: nginx isn't auto-started by apt-get install
+          # inside the systemd-enabled deploy container (policy-rc.d blocks
+          # it), so a plain `reload` fails with "service is not active".
+          # reload-or-restart starts it if down, reloads it if up.
+          systemctl reload-or-restart nginx
 
           # 7. Verify the service stayed up.
           for i in $(seq 1 15); do
