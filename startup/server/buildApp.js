@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const express = require('express');
 const logger = require('./logger');
+const { startAllSchedulers, stopAllSchedulers } = require('./scheduler');
 const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
@@ -74,9 +75,14 @@ function mountStaticAndErrorHandlers(app) {
  *   Routers mounted under the given prefix BEFORE the legacy app_routes hook.
  * @param {(app: import('express').Express, prefix: string) => void} [options.mountAppRoutes]
  *   Optional callback to register routes in the legacy `(app, prefix)` style.
+ * @param {() => void} [options.registerSchedulerJobs]
+ *   Optional callback that calls `registerJob(...)` for each in-process
+ *   scheduled job the app wants. Invoked by startServer() once the HTTP
+ *   server is listening; the framework owns the surrounding lifecycle
+ *   (start/stop on SIGTERM/SIGINT) so apps don't have to.
  */
 function buildApp(options = {}) {
-  const { extraRoutes = [], mountAppRoutes } = options;
+  const { extraRoutes = [], mountAppRoutes, registerSchedulerJobs } = options;
 
   const app = express();
   const server = http.createServer(app);
@@ -116,9 +122,24 @@ function buildApp(options = {}) {
         });
     }
 
+    // Graceful shutdown: stop scheduled ticks before exit so no new job
+    // fires mid-teardown. Installed before listen so a fast SIGTERM during
+    // boot still cleans up.
+    for (const sig of ['SIGTERM', 'SIGINT']) {
+      process.on(sig, () => {
+        try {
+          stopAllSchedulers();
+        } catch { /* exit anyway */ }
+        process.exit(0);  // eslint-disable-line no-process-exit
+      });
+    }
+
     db.sequelize.authenticate().then(() => {
       server.listen(env.PORT, () => {
         logger.info(`Server running on port ${env.PORT}`);
+        // Start in-process schedulers once the HTTP server is up. No-op
+        // when the app didn't pass registerSchedulerJobs.
+        startAllSchedulers(registerSchedulerJobs);
       });
     }).catch(err => {
       logger.error('Database sync failed', err);

@@ -5,6 +5,7 @@
 // admin, layouts, etc.) is composed by buildApp() under /api/v1/*.
 
 const { buildApp } = require('../../startup/server/buildApp');
+const { registerAllJobs } = require('./scheduler');
 
 const { startServer } = buildApp({
   extraRoutes: [
@@ -14,7 +15,9 @@ const { startServer } = buildApp({
   mountAppRoutes: (_app, _prefix) => {
     // Register app-only routes here, e.g.
     // _app.get(`${_prefix}/ping`, (req, res) => res.send('pong'));
-  }
+  },
+  // Framework starts/stops the registry around server.listen + SIGTERM.
+  registerSchedulerJobs: registerAllJobs
 });
 
 startServer();
