@@ -138,6 +138,14 @@ if [ "$NGINX_LAYOUT" = "deb" ]; then
     if [ ! -d "$sites_available_dir" ] || [ ! -d "$sites_enabled_dir" ]; then
         error_exit "Expected nginx directories missing: $sites_available_dir and/or $sites_enabled_dir"
     fi
+    # The Ubuntu/Debian nginx package ships sites-enabled/default with its own
+    # `listen 80 default_server;`. Our config also claims default_server, so
+    # leaving the stock site enabled produces a duplicate-default-server
+    # error at `nginx -t` time.
+    if sudo test -L "$sites_enabled_dir/default" || sudo test -e "$sites_enabled_dir/default"; then
+        log_info "Removing stock nginx default site to avoid duplicate default_server"
+        sudo rm -f "$sites_enabled_dir/default"
+    fi
     symlink_or_skip "$nginx_config_file" "$sites_available_dir/$app_name.conf"
     symlink_or_skip "$sites_available_dir/$app_name.conf" "$sites_enabled_dir/$app_name.conf"
 elif [ "$NGINX_LAYOUT" = "rpm" ]; then

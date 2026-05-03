@@ -142,8 +142,14 @@ jobs:
         run: node scripts/setup-env.js
 
       - name: Pre-flight cleanup (remove any stale containers/networks)
+        # tests_source and tests_built share $TEST_NETWORK, so a leftover
+        # $DEPLOY_CONTAINER from a previous tests_built run will block this
+        # job's `network rm` even though tests_source itself never starts one.
+        # Nuke both, then force-disconnect any remaining endpoints (including
+        # the runner container if a prior run failed before its disconnect
+        # step) before removing the network.
         run: |
-          for c in "$PG_CONTAINER"; do
+          for c in "$DEPLOY_CONTAINER" "$PG_CONTAINER"; do
             if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
               echo "[pre-flight] container '$c' already present — removing for a clean run"
               docker rm -f "$c"
@@ -152,7 +158,11 @@ jobs:
             fi
           done
           if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
-            echo "[pre-flight] network '$TEST_NETWORK' already present — removing"
+            echo "[pre-flight] network '$TEST_NETWORK' already present — disconnecting endpoints and removing"
+            for ep in $(docker network inspect "$TEST_NETWORK" --format '{{range $k,$v := .Containers}}{{println $k}}{{end}}'); do
+              echo "[pre-flight]   force-disconnecting endpoint '$ep'"
+              docker network disconnect -f "$TEST_NETWORK" "$ep" 2>/dev/null || true
+            done
             docker network rm "$TEST_NETWORK"
           else
             echo "[pre-flight] network '$TEST_NETWORK' not present"
@@ -477,6 +487,10 @@ jobs:
           path: _install/
 
       - name: Pre-flight cleanup (remove any stale containers/networks)
+        # Force-disconnect any leftover endpoints (including the runner
+        # container itself if a prior run failed before its disconnect step)
+        # before removing the network — `network rm` errors out if anything
+        # is still attached.
         run: |
           for c in "$DEPLOY_CONTAINER" "$PG_CONTAINER"; do
             if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
@@ -487,7 +501,11 @@ jobs:
             fi
           done
           if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
-            echo "[pre-flight] network '$TEST_NETWORK' already present — removing"
+            echo "[pre-flight] network '$TEST_NETWORK' already present — disconnecting endpoints and removing"
+            for ep in $(docker network inspect "$TEST_NETWORK" --format '{{range $k,$v := .Containers}}{{println $k}}{{end}}'); do
+              echo "[pre-flight]   force-disconnecting endpoint '$ep'"
+              docker network disconnect -f "$TEST_NETWORK" "$ep" 2>/dev/null || true
+            done
             docker network rm "$TEST_NETWORK"
           else
             echo "[pre-flight] network '$TEST_NETWORK' not present"
