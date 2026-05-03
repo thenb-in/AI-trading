@@ -143,7 +143,16 @@ async function main() {
       }
     }
     rl.close();
+    // Re-throw so the script exits non-zero. Without this the catch
+    // swallows the failure, npm sees exit 0, and the CI step plows on
+    // with a half-set-up database.
+    throw err;
   }
 }
 
-main();
+main().catch((err) => {
+  // main() already logs inside its own catch; log once more for top-level
+  // visibility and exit non-zero so callers (npm, CI) see the failure.
+  logger.error('Setup failed', err);
+  process.exit(1);  // eslint-disable-line no-process-exit
+});
