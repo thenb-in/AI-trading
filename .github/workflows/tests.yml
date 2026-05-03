@@ -212,13 +212,10 @@ jobs:
           docker logs "$PG_CONTAINER"
           exit 1
 
-      - name: Seed default company + admin user
-        run: npm run create-new-company
-        env:
-          CI: true
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
-
       - name: Start backend (persists across all test phases)
+        # Backend FIRST so its startup runs `sequelize.sync()` (because
+        # SYNC_DB=true in .env.example) and creates the schema. The seed
+        # step below depends on those tables existing.
         run: |
           mkdir -p "$RUNNER_TEMP/source"
           cd app/server
@@ -236,7 +233,17 @@ jobs:
         env:
           CI: true
           NODE_ENV: production
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
+
+      - name: Seed default company + admin user
+        # Runs after the backend has come up — by which point sync has
+        # created the schema. The seed script now exits non-zero on any
+        # error (see startup/server/create_company_with_role_and_perms.js)
+        # so a failure here fails the whole job.
+        run: npm run create-new-company
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       - name: Start frontend (vite dev — persists)
         run: |
@@ -260,12 +267,12 @@ jobs:
       - name: Integration tests
         id: integration
         continue-on-error: true
-        run: npm run test:integration:coverage
+        run: npm run test:integration
         working-directory: tests
         env:
           CI: true
           API_BASE_URL: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       - name: E2E tests
         id: e2e
@@ -279,7 +286,7 @@ jobs:
           PW_EXTERNAL_SERVERS: '1'
           FRONTEND_URL: http://localhost:5173
           BACKEND_URL: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       # ─── Teardown (always) ──────────────────────────────────────────────
       - name: Stop backend + frontend
@@ -291,6 +298,20 @@ jobs:
           # the parent kill (vite forks from npx; nodemon would do the same).
           pkill -f 'vite' 2>/dev/null || true
           pkill -f 'app/server/index.js' 2>/dev/null || true
+
+      - name: Drop test database
+        # Explicit DROP before container removal — defense in depth.
+        # `if: always()` ensures it runs even when tests failed; each shell
+        # error is suppressed (|| true) so a missing container or already-
+        # dropped DB doesn't leave the network/container behind.
+        if: always() && env.DB_NAME != ''
+        run: |
+          if docker ps --format '{{.Names}}' | grep -qx "$PG_CONTAINER"; then
+            echo "[cleanup] dropping database '$DB_NAME'"
+            docker exec "$PG_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
+          else
+            echo "[cleanup] postgres container gone — DB '$DB_NAME' already destroyed with it"
+          fi
 
       - name: Stop Postgres + remove network
         if: always()
@@ -456,16 +477,17 @@ jobs:
             echo "[pre-flight] network '$TEST_NETWORK' not present"
           fi
 
-      - name: Create test network and resolve runner-reachable hosts
-        # See the same step in tests_source for the full reasoning. Same
-        # mechanic: if the runner is itself in a docker container (DooD),
-        # `localhost` won't reach the host-published ports — join the test
-        # network and address sibling containers by name.
+      - name: Resolve unique DB name + runner-reachable hosts
+        # DB name carries a UTC timestamp + the run id so two runs never
+        # collide on leftover state. Cleanup DROPs the DB explicitly before
+        # tearing the container down — belts and braces.
         #
-        # Sets two env vars:
-        #   DB_HOST  → runner reaches postgres at $DB_HOST:5432
-        #   APP_URL  → runner reaches the deployed app (nginx) at $APP_URL
+        # DB_HOST + APP_URL: see the same step in tests_source for the full
+        # reasoning. DooD-aware runner→sibling-container addressing.
         run: |
+          DB_NAME="test_db_$(date -u +%Y%m%d_%H%M%S)_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT:-1}"
+          echo "DB_NAME=$DB_NAME" >> "$GITHUB_ENV"
+          echo "[db] using unique DB name: $DB_NAME"
           docker network create "$TEST_NETWORK"
           if [ -f /.dockerenv ]; then
             RUNNER_CID=$(hostname)
@@ -492,7 +514,7 @@ jobs:
             -p 5432:5432 \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD=postgres \
-            -e POSTGRES_DB=test_db \
+            -e POSTGRES_DB="$DB_NAME" \
             postgres:15
           for i in $(seq 1 30); do
             if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
@@ -593,7 +615,7 @@ jobs:
           {
             echo ""
             echo "# CI overrides"
-            echo "DATABASE_URL=postgresql://postgres:postgres@${PG_HOST}:5432/test_db"
+            echo "DATABASE_URL=postgresql://postgres:postgres@${PG_HOST}:5432/${DB_NAME}"
           } >> app/server/.env
 
           # 6. Reload systemd, start the app, reload nginx.
@@ -632,7 +654,7 @@ jobs:
         run: npm run create-new-company
         env:
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       # ─── Test phases (against the deployed system at $APP_URL) ──────────
       - name: Smoke — /healthz
@@ -641,12 +663,12 @@ jobs:
       - name: Integration tests
         id: integration
         continue-on-error: true
-        run: npm run test:integration:coverage
+        run: npm run test:integration
         working-directory: tests
         env:
           CI: true
           API_BASE_URL: ${{ env.APP_URL }}
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       - name: E2E tests
         id: e2e
@@ -658,7 +680,7 @@ jobs:
           PW_EXTERNAL_SERVERS: '1'
           FRONTEND_URL: ${{ env.APP_URL }}
           BACKEND_URL: ${{ env.APP_URL }}
-          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       # ─── Capture container logs before tearing down ─────────────────────
       - name: Collect container logs
@@ -672,6 +694,17 @@ jobs:
           docker logs "$PG_CONTAINER" > "$RUNNER_TEMP/built/postgres.log" 2>&1 || true
 
       # ─── Teardown (always) ──────────────────────────────────────────────
+      - name: Drop test database
+        # Explicit DROP before container removal — defense in depth.
+        if: always() && env.DB_NAME != ''
+        run: |
+          if docker ps --format '{{.Names}}' | grep -qx "$PG_CONTAINER"; then
+            echo "[cleanup] dropping database '$DB_NAME'"
+            docker exec "$PG_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
+          else
+            echo "[cleanup] postgres container gone — DB '$DB_NAME' already destroyed with it"
+          fi
+
       - name: Stop containers + remove network
         if: always()
         run: |
