@@ -107,6 +107,25 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
     onSwitch(companyId);
   }, [onSwitch]);
 
+  const handleSearchKeyDown = useCallback((e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const query = (searchText || '').trim().toLowerCase();
+    if (!query) return;
+    const exactMatch = (companies || []).find(
+      (c) => (c.name || '').toLowerCase() === query
+    );
+    if (!exactMatch) {
+      toast.warning('No company found with that name');
+      return;
+    }
+    const isActive =
+      (activeCompanyId && exactMatch.id === activeCompanyId) ||
+      (activeCompanyName && exactMatch.name === activeCompanyName);
+    if (isActive) return;
+    handleSwitchClick(exactMatch.id);
+  }, [companies, searchText, activeCompanyId, activeCompanyName, handleSwitchClick]);
+
   const handleAssignClick = (company) => {
     setSelectedCompany(company);
     setAssignmentModalOpen(true);
@@ -154,6 +173,7 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
       type="text"
       value={searchText}
       onChange={(e) => setSearchText(e.target.value)}
+      onKeyDown={handleSearchKeyDown}
       placeholder={debug ? 'Search company name...' : 'Type full company name to show'}
       className="w-full max-w-md mx-auto block px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
       aria-label="Filter companies by name"
