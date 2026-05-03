@@ -17,9 +17,7 @@ on:
 
 jobs:
   cleanup_artifacts:
-    runs-on:
-      group: Default
-      labels: [self-hosted, Windows, X64, beast]
+    runs-on: self-hosted
 
     permissions:
       actions: write

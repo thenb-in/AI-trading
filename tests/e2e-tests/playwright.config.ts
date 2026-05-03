@@ -6,6 +6,9 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const isCI = !!process.env.CI;
+// When set, Playwright skips its webServer block entirely — the runner has
+// already started the frontend + backend (see tests.yml `tests_built` job).
+const externalServers = !!process.env.PW_EXTERNAL_SERVERS;
 
 // ---- Reporters ----
 const reporters: any[] = [
@@ -80,7 +83,9 @@ export default defineConfig({
 
   // ---------- Web servers ----------
   // NOTE: Playwright waits for a 2xx/3xx from each "url" before starting tests.
-  webServer: [
+  // Skipped entirely when PW_EXTERNAL_SERVERS=1 — the runner brings up the
+  // frontend + backend itself (e.g. via the deploy scripts in built-mode CI).
+  webServer: externalServers ? undefined : [
     {
       name: 'Frontend',
       command: frontendCommand,

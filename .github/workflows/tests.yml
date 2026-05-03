@@ -1,0 +1,582 @@
+name: Tests
+
+# Triggered after the build workflow finishes — tests download whatever
+# artifacts that run uploaded (no rebuilding here, ever).
+on:
+  workflow_run:
+    workflows: ['Build and Upload Artifacts']
+    types: [completed]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # The deploy/2link script and the systemd unit name use $APP_NAME.
+  # Fixed (not run-id'd) so it's easy to clean up between runs and matches
+  # what the deploy scripts expect — they use bash-safe identifiers.
+  TEST_APP_NAME: nbnext-ci
+  PG_CONTAINER: test-pg
+  DEPLOY_CONTAINER: test-deploy
+  TEST_NETWORK: test-net
+  # Host-mapped port for nginx in built-mode (avoids conflicting with anything
+  # on :80 on the runner).
+  BUILT_HOST_PORT: '8080'
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────
+  # Skip everything if the build failed.
+  # ────────────────────────────────────────────────────────────────────
+  setup:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, Linux, X64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache node dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+            tests/node_modules
+            tests/integration-tests/node_modules
+            tests/e2e-tests/node_modules
+          key: test-deps-linux-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json', 'tests/package-lock.json', 'tests/integration-tests/package-lock.json', 'tests/e2e-tests/package-lock.json') }}
+
+      - name: Install node dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
+
+  # ────────────────────────────────────────────────────────────────────
+  # SOURCE-MODE TESTS
+  # Runs all three test phases (smoke → integration → e2e) against the
+  # checked-out source — `node app/server/index.js` + `npm run dev` for the
+  # client. Backend stays running across phases (single startup cost).
+  # ────────────────────────────────────────────────────────────────────
+  tests_source:
+    needs: setup
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, Linux, X64]
+
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore node dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+            tests/node_modules
+            tests/integration-tests/node_modules
+            tests/e2e-tests/node_modules
+          key: test-deps-linux-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json', 'tests/package-lock.json', 'tests/integration-tests/package-lock.json', 'tests/e2e-tests/package-lock.json') }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: cache-pw
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-linux-${{ hashFiles('tests/e2e-tests/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-pw.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: tests/e2e-tests
+
+      - name: Materialize .env files
+        run: node scripts/setup-env.js
+
+      - name: Pre-flight cleanup (remove any stale containers from a prior run)
+        run: |
+          docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+
+      - name: Start Postgres
+        run: |
+          docker run -d \
+            --name "$PG_CONTAINER" \
+            -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=test_db \
+            postgres:15
+          for i in $(seq 1 30); do
+            if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Postgres ready"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres failed to come up"; docker logs "$PG_CONTAINER"; exit 1
+
+      - name: Seed default company + admin user
+        run: npm run create-new-company
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: Start backend (persists across all test phases)
+        run: |
+          mkdir -p "$RUNNER_TEMP/source"
+          cd app/server
+          node index.js > "$RUNNER_TEMP/source/backend.log" 2>&1 &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/healthz > /dev/null; then
+              echo "Backend up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start. Last 50 lines:"
+          tail -n 50 "$RUNNER_TEMP/source/backend.log" || true
+          exit 1
+        env:
+          CI: true
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: Start frontend (vite dev — persists)
+        run: |
+          cd app/client
+          npx vite --host 127.0.0.1 --port 5173 > "$RUNNER_TEMP/source/frontend.log" 2>&1 &
+          echo "FRONTEND_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173 > /dev/null; then
+              echo "Frontend up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start. Last 50 lines:"
+          tail -n 50 "$RUNNER_TEMP/source/frontend.log" || true
+          exit 1
+
+      # ─── Test phases (run sequentially against the persistent backend) ───
+      - name: Smoke — /healthz
+        run: curl -fsS http://localhost:3000/healthz
+
+      - name: Integration tests
+        id: integration
+        continue-on-error: true
+        run: npm run test:integration:coverage
+        working-directory: tests
+        env:
+          CI: true
+          API_BASE_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: E2E tests
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e:ci
+        working-directory: tests
+        env:
+          CI: true
+          # Tells playwright.config.ts to skip its webServer block — the
+          # runner has the frontend + backend already running.
+          PW_EXTERNAL_SERVERS: '1'
+          FRONTEND_URL: http://localhost:5173
+          BACKEND_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      # ─── Teardown (always) ──────────────────────────────────────────────
+      - name: Stop backend + frontend
+        if: always()
+        run: |
+          [ -n "${BACKEND_PID:-}" ] && kill "$BACKEND_PID" 2>/dev/null || true
+          [ -n "${FRONTEND_PID:-}" ] && kill "$FRONTEND_PID" 2>/dev/null || true
+          # Belt-and-braces for any orphaned vite/node children that survived
+          # the parent kill (vite forks from npx; nodemon would do the same).
+          pkill -f 'vite' 2>/dev/null || true
+          pkill -f 'app/server/index.js' 2>/dev/null || true
+
+      - name: Stop Postgres
+        if: always()
+        run: docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+
+      # ─── Artifacts (always — most useful on failure) ────────────────────
+      - name: Upload smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-smoke-logs
+          path: |
+            ${{ runner.temp }}/source/backend.log
+            ${{ runner.temp }}/source/frontend.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload integration test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-integration-results
+          path: |
+            tests/integration-tests/test-results/
+            tests/integration-tests/coverage/
+            tests/integration-tests/logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
+
+      - name: Upload e2e test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-e2e-results
+          path: |
+            tests/e2e-tests/playwright-report/
+            tests/e2e-tests/test-results/
+            tests/e2e-tests/reports/
+            tests/e2e-tests/logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
+
+      - name: Surface phase failures
+        # `continue-on-error` lets each phase keep going so we collect all
+        # artifacts; this step fails the job if any phase failed.
+        if: steps.integration.outcome == 'failure' || steps.e2e.outcome == 'failure'
+        run: |
+          echo "integration: ${{ steps.integration.outcome }}"
+          echo "e2e:         ${{ steps.e2e.outcome }}"
+          exit 1
+
+  # ────────────────────────────────────────────────────────────────────
+  # BUILT-MODE TESTS
+  # Downloads the bundle artifact from the build run, deploys it inside a
+  # privileged systemd-enabled container (running the actual deploy scripts),
+  # then runs the same three test phases against the deployed system over
+  # nginx + the bytecoded backend.
+  # ────────────────────────────────────────────────────────────────────
+  tests_built:
+    needs: setup
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, Linux, X64]
+
+    permissions:
+      contents: read
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        # Tests run from the source workspace (we need tests/, package.json,
+        # node_modules cache). The deployed system being tested lives inside
+        # the deploy container.
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Restore node dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+            tests/node_modules
+            tests/integration-tests/node_modules
+            tests/e2e-tests/node_modules
+          key: test-deps-linux-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json', 'tests/package-lock.json', 'tests/integration-tests/package-lock.json', 'tests/e2e-tests/package-lock.json') }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: cache-pw
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-linux-${{ hashFiles('tests/e2e-tests/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.cache-pw.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: tests/e2e-tests
+
+      - name: Materialize .env files
+        run: node scripts/setup-env.js
+
+      - name: Resolve bundle artifact name
+        # Mirrors the BUNDLE_NAME logic in builds.yml's site_bundle "meta" step.
+        # If that formula changes, change this with it.
+        run: |
+          VERSION=$(jq -r .version startup/server/package.json)
+          SHORT_SHA=$(echo "${{ github.event.workflow_run.head_sha }}" | head -c 7)
+          APP_NAME=$(basename "$GITHUB_REPOSITORY")
+          BUNDLE_NAME="${APP_NAME}-site-v${VERSION}-${SHORT_SHA}"
+          echo "BUNDLE_NAME=$BUNDLE_NAME" >> "$GITHUB_ENV"
+          echo "Looking for artifact: $BUNDLE_NAME"
+
+      - name: Download deployment bundle from build run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.BUNDLE_NAME }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: _install/
+
+      - name: Pre-flight cleanup (remove any stale containers/networks)
+        run: |
+          docker rm -f "$DEPLOY_CONTAINER" "$PG_CONTAINER" 2>/dev/null || true
+          docker network rm "$TEST_NETWORK" 2>/dev/null || true
+
+      - name: Create test docker network
+        run: docker network create "$TEST_NETWORK"
+
+      - name: Start Postgres in test network
+        # Both in the test network (so the deploy container can reach it by
+        # name) AND mapped to the host (so the seed step + integration tests
+        # running on the host can hit it).
+        run: |
+          docker run -d \
+            --name "$PG_CONTAINER" \
+            --network "$TEST_NETWORK" \
+            -p 5432:5432 \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=test_db \
+            postgres:15
+          for i in $(seq 1 30); do
+            if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Postgres ready"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres failed to come up"; docker logs "$PG_CONTAINER"; exit 1
+
+      - name: Start systemd-enabled deploy container
+        # Privileged + cgroup mounts let systemd run as PID 1 inside.
+        # The bundle is mounted at /install — exactly what the operator
+        # runbook copies onto a new server.
+        run: |
+          docker run -d --privileged \
+            --name "$DEPLOY_CONTAINER" \
+            --network "$TEST_NETWORK" \
+            --cgroupns=host \
+            --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
+            -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+            -v "$PWD/_install:/install" \
+            -p ${BUILT_HOST_PORT}:80 \
+            jrei/systemd-ubuntu:22.04
+          # Wait until systemd is up enough to accept systemctl calls.
+          for i in $(seq 1 30); do
+            if docker exec "$DEPLOY_CONTAINER" systemctl is-system-running --wait 2>/dev/null | grep -qE 'running|degraded'; then
+              echo "systemd ready"; exit 0
+            fi
+            sleep 1
+          done
+          echo "systemd never became ready inside container"
+          docker exec "$DEPLOY_CONTAINER" systemctl --no-pager || true
+          exit 1
+
+      - name: Run deploy scripts inside container
+        # This is what the human-runbook does on a fresh prod server. If any
+        # of the deploy scripts is broken, this step fails — built-mode tests
+        # double as the deploy-script regression check.
+        run: |
+          docker exec -i \
+            -e APP_NAME="$TEST_APP_NAME" \
+            -e IP_ADDRESS=127.0.0.1 \
+            -e SYSTEM_USER=root \
+            -e PG_HOST="$PG_CONTAINER" \
+            "$DEPLOY_CONTAINER" bash <<'INNER_EOF'
+          set -euo pipefail
+
+          # Runtime deps: nginx + node 22 + curl/jq/git/sudo/unzip.
+          # NodeSource for node 22 — the apt nodejs is older.
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -qq
+          apt-get install -y -qq curl ca-certificates gnupg unzip git sudo nginx
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null
+          apt-get install -y -qq nodejs
+
+          cd /install
+
+          # 1. Generate templated nginx + systemd unit files.
+          bash deploy/1build_deploy_files.sh
+
+          # 2. Symlink to /etc/nginx/conf.d + /etc/systemd/system + create /app/<app>.
+          bash deploy/2link_files_to_internal_system.sh
+
+          # 3. Stage the static client where nginx serves it from.
+          cp -a app/client/. "/app/${APP_NAME}/"
+
+          # 4. Install runtime deps for the bytecoded server.
+          (cd startup/server && npm install --omit=dev 2>&1 | tail -5)
+          (cd app/server     && npm install --omit=dev 2>&1 | tail -5)
+
+          # 5. .env for the systemd-managed service. DATABASE_URL points at
+          # the postgres sibling container by network alias (test-pg:5432).
+          cp app/server/.env.example app/server/.env
+          {
+            echo ""
+            echo "# CI overrides"
+            echo "DATABASE_URL=postgresql://postgres:postgres@${PG_HOST}:5432/test_db"
+          } >> app/server/.env
+
+          # 6. Reload systemd, start the app, reload nginx.
+          systemctl daemon-reload
+          systemctl enable "${APP_NAME}.service"
+          systemctl start "${APP_NAME}.service"
+
+          nginx -t
+          systemctl reload nginx
+
+          # 7. Verify the service stayed up.
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost/healthz > /dev/null; then
+              echo "Deployed system healthy"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Service failed to come up after deploy. Recent journal:"
+          journalctl -u "${APP_NAME}.service" -n 50 --no-pager || true
+          exit 1
+          INNER_EOF
+
+      - name: Wait for deployed system to be reachable from host
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "http://localhost:${BUILT_HOST_PORT}/healthz" > /dev/null; then
+              echo "Reachable on host"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Deployed system not reachable on host:${BUILT_HOST_PORT}"; exit 1
+
+      - name: Seed default company + admin user
+        # Runs the source-side seed against the same postgres the deployed
+        # backend is using.
+        run: npm run create-new-company
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      # ─── Test phases (against the deployed system on $BUILT_HOST_PORT) ───
+      - name: Smoke — /healthz
+        run: curl -fsS "http://localhost:${BUILT_HOST_PORT}/healthz"
+
+      - name: Integration tests
+        id: integration
+        continue-on-error: true
+        run: npm run test:integration:coverage
+        working-directory: tests
+        env:
+          CI: true
+          API_BASE_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      - name: E2E tests
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e:ci
+        working-directory: tests
+        env:
+          CI: true
+          PW_EXTERNAL_SERVERS: '1'
+          FRONTEND_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
+          BACKEND_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+      # ─── Capture container logs before tearing down ─────────────────────
+      - name: Collect container logs
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/built"
+          docker logs "$DEPLOY_CONTAINER" > "$RUNNER_TEMP/built/deploy-container.log" 2>&1 || true
+          docker exec "$DEPLOY_CONTAINER" journalctl -u "${TEST_APP_NAME}.service" -n 500 --no-pager > "$RUNNER_TEMP/built/app-service.log" 2>&1 || true
+          docker exec "$DEPLOY_CONTAINER" cat /var/log/nginx/error.log > "$RUNNER_TEMP/built/nginx-error.log" 2>&1 || true
+          docker exec "$DEPLOY_CONTAINER" cat /var/log/nginx/access.log > "$RUNNER_TEMP/built/nginx-access.log" 2>&1 || true
+          docker logs "$PG_CONTAINER" > "$RUNNER_TEMP/built/postgres.log" 2>&1 || true
+
+      # ─── Teardown (always) ──────────────────────────────────────────────
+      - name: Stop containers + remove network
+        if: always()
+        run: |
+          docker rm -f "$DEPLOY_CONTAINER" "$PG_CONTAINER" 2>/dev/null || true
+          docker network rm "$TEST_NETWORK" 2>/dev/null || true
+
+      # ─── Artifacts ──────────────────────────────────────────────────────
+      - name: Upload smoke + deploy logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-deploy-logs
+          path: |
+            ${{ runner.temp }}/built/
+            _install/deploy/${{ env.TEST_APP_NAME }}.conf
+            _install/deploy/${{ env.TEST_APP_NAME }}.service
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload integration test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-integration-results
+          path: |
+            tests/integration-tests/test-results/
+            tests/integration-tests/coverage/
+            tests/integration-tests/logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
+
+      - name: Upload e2e test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-e2e-results
+          path: |
+            tests/e2e-tests/playwright-report/
+            tests/e2e-tests/test-results/
+            tests/e2e-tests/reports/
+            tests/e2e-tests/logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 14
+
+      - name: Surface phase failures
+        if: steps.integration.outcome == 'failure' || steps.e2e.outcome == 'failure'
+        run: |
+          echo "integration: ${{ steps.integration.outcome }}"
+          echo "e2e:         ${{ steps.e2e.outcome }}"
+          exit 1

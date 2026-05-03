@@ -92,9 +92,7 @@ jobs:
 
   server_build:
     needs: setup
-    runs-on:
-      group: Default
-      labels: [self-hosted, Windows, X64, beast]
+    runs-on: [self-hosted, Linux, X64]
 
     defaults:
       run:
@@ -150,9 +148,7 @@ jobs:
 
   site_bundle:
     needs: [client_build, server_build]
-    runs-on:
-      group: Default
-      labels: [self-hosted, Windows, X64, beast]
+    runs-on: self-hosted
 
     defaults:
       run:
