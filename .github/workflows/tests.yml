@@ -292,6 +292,10 @@ jobs:
 
       - name: Integration tests
         id: integration
+        # Skip cleanly when no specs exist yet — the integration suite ships
+        # helpers/actions but is gradually getting its first specs. hashFiles
+        # returns '' when nothing matches.
+        if: hashFiles('tests/integration-tests/tests/**/*.spec.ts', 'tests/integration-tests/tests/**/*.test.ts') != ''
         continue-on-error: true
         run: npm run test:integration
         working-directory: tests
@@ -746,6 +750,8 @@ jobs:
 
       - name: Integration tests
         id: integration
+        # Skip cleanly when no specs exist yet (see tests_source for context).
+        if: hashFiles('tests/integration-tests/tests/**/*.spec.ts', 'tests/integration-tests/tests/**/*.test.ts') != ''
         continue-on-error: true
         run: npm run test:integration
         working-directory: tests
