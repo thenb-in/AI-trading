@@ -28,17 +28,37 @@ export default defineConfig({
       html: './test-results/index.html',
     },
     
-    // Coverage configuration
+    // Coverage configuration.
+    //
+    // NOTE: integration tests in this repo run against an *external* server
+    // (Supertest agent against API_BASE_URL). Vitest's in-process v8 collector
+    // therefore cannot observe the server's runtime — real server coverage is
+    // produced by NODE_V8_COVERAGE set on the spawned server (see
+    // ../scripts/coverage.mjs). The include paths below are kept correct so
+    // that if/when tests boot the app in-process, this config Just Works.
     coverage: {
       provider: 'v8',
       reporter: ['text', 'text-summary', 'html', 'json', 'lcov'],
       reportsDirectory: './coverage',
-      include: ['actions/**/*.ts', 'helpers/**/*.ts'],
-      exclude: ['**/*.d.ts', '**/node_modules/**', '**/dist/**', '**/logs/**'],
+      include: [
+        '../../startup/server/src/**/*.js',
+        '../../app/server/**/*.js',
+      ],
+      exclude: [
+        '**/*.d.ts',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/logs/**',
+        '**/migrations/**',
+        '**/seeders/**',
+        '**/scheduler/**',
+        '**/scripts/**',
+      ],
+      all: true,
     },
     
     // Verbose output
-    verbose: true,
+    // verbose: true,
   },
   resolve: {
     alias: {

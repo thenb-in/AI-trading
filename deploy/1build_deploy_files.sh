@@ -143,10 +143,15 @@ for file in ${files_to_replace[@]}; do
     # Read source file and perform all replacements using bash string substitution
     content=$(cat "$source_file")
 
-    # Perform all replacements using bash parameter expansion
+    # Perform all replacements using bash parameter expansion.
+    # NOTE: do NOT substitute `nbnext_app_path` here. base.conf uses it as
+    # an nginx variable (`set $nbnext_app_path …; root $nbnext_app_path/;`)
+    # and the path literal in `set …` is already produced by the
+    # `nbnext_app_name -> $app_name` replacement above. Substituting it
+    # would clobber the nginx variable name into garbage like
+    # `$/app/<app>` and break `nginx -t`.
     replace_in_var "content" "nbnext_app_name" "$app_name"
     replace_in_var "content" "public_ip_address" "$ip_address"
-    replace_in_var "content" "nbnext_app_path" "$app_path"
     replace_in_var "content" "server_path" "$server_path"
     replace_in_var "content" "nvm_path" "$nvm_path"
     replace_in_var "content" "npm_path" "$npm_path"

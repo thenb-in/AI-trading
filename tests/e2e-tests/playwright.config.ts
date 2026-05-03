@@ -7,7 +7,9 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const isCI = !!process.env.CI;
 // When set, Playwright skips its webServer block entirely — the runner has
-// already started the frontend + backend (see tests.yml `tests_built` job).
+// already started the frontend + backend (see tests.yml `tests_built` job,
+// and tests/scripts/coverage.mjs which wraps the backend with
+// NODE_V8_COVERAGE for total coverage reporting).
 const externalServers = !!process.env.PW_EXTERNAL_SERVERS;
 
 // ---- Reporters ----
@@ -84,7 +86,8 @@ export default defineConfig({
   // ---------- Web servers ----------
   // NOTE: Playwright waits for a 2xx/3xx from each "url" before starting tests.
   // Skipped entirely when PW_EXTERNAL_SERVERS=1 — the runner brings up the
-  // frontend + backend itself (e.g. via the deploy scripts in built-mode CI).
+  // frontend + backend itself (e.g. via the deploy scripts in built-mode CI,
+  // or tests/scripts/coverage.mjs which wraps the backend with NODE_V8_COVERAGE).
   webServer: externalServers ? undefined : [
     {
       name: 'Frontend',
