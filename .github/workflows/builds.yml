@@ -21,10 +21,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -33,7 +33,7 @@ jobs:
         # on self-hosted persistent runners the local ~/.npm + node_modules
         # already persist between runs, so we skip the network round-trip.
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -64,16 +64,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Restore dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -99,7 +99,7 @@ jobs:
         run: cd app/client && npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: client-build-artifact
           path: app/client/dist/
@@ -119,16 +119,16 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Restore dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -164,7 +164,7 @@ jobs:
           cp -a app/server/dist/.    _server_artifact/app/server/
 
       - name: Upload server build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: server-build-artifact
           path: _server_artifact/
@@ -186,7 +186,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Resolve version + bundle name
         id: meta
@@ -205,7 +205,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Download client build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: client-build-artifact
           path: _bundle/app/client
@@ -213,7 +213,7 @@ jobs:
       - name: Download server build (framework + app boot wrapper, both compiled)
         # The artifact was staged with internal layout app/server/ + startup/server/,
         # so it drops directly into _bundle/ with no reshaping.
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: server-build-artifact
           path: _bundle/
@@ -256,7 +256,7 @@ jobs:
         # time, so setting `name` to the versioned bundle name gives you
         # `<repo>-site-vX.Y.Z-sha.zip` straight from the download — no outer
         # `site-deployment-artifact.zip` wrapper to unzip first.
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.meta.outputs.bundle_name }}
           path: _bundle/

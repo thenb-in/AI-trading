@@ -33,12 +33,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
@@ -48,7 +48,7 @@ jobs:
         # persist between runs, so we skip the network round-trip and let
         # `npm run i` reuse the local cache directly.
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -89,18 +89,18 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Restore node dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -126,7 +126,7 @@ jobs:
       - name: Cache Playwright browsers (github-hosted only)
         # On self-hosted ~/.cache/ms-playwright persists between runs.
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-pw
         with:
           path: ~/.cache/ms-playwright
@@ -356,7 +356,7 @@ jobs:
       # ─── Artifacts (always — most useful on failure) ────────────────────
       - name: Upload smoke logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: source-smoke-logs
           path: |
@@ -367,7 +367,7 @@ jobs:
 
       - name: Upload integration test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: source-integration-results
           path: |
@@ -380,7 +380,7 @@ jobs:
 
       - name: Upload e2e test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: source-e2e-results
           path: |
@@ -426,18 +426,18 @@ jobs:
         # Tests run from the source workspace (we need tests/, package.json,
         # node_modules cache). The deployed system being tested lives inside
         # the deploy container.
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Restore node dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-deps
         with:
           path: |
@@ -461,7 +461,7 @@ jobs:
 
       - name: Cache Playwright browsers (github-hosted only)
         if: runner.environment == 'github-hosted'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: cache-pw
         with:
           path: ~/.cache/ms-playwright
@@ -487,7 +487,7 @@ jobs:
           echo "Looking for artifact: $BUNDLE_NAME"
 
       - name: Download deployment bundle from build run
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.BUNDLE_NAME }}
           run-id: ${{ github.event.workflow_run.id }}
@@ -812,7 +812,7 @@ jobs:
       # ─── Artifacts ──────────────────────────────────────────────────────
       - name: Upload smoke + deploy logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: built-deploy-logs
           path: |
@@ -824,7 +824,7 @@ jobs:
 
       - name: Upload integration test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: built-integration-results
           path: |
@@ -837,7 +837,7 @@ jobs:
 
       - name: Upload e2e test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: built-e2e-results
           path: |
