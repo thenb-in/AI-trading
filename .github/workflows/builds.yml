@@ -92,7 +92,13 @@ jobs:
 
   server_build:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Default
+      labels: [self-hosted, Windows, X64, beast]
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       contents: write
@@ -144,7 +150,13 @@ jobs:
 
   site_bundle:
     needs: [client_build, server_build]
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Default
+      labels: [self-hosted, Windows, X64, beast]
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       contents: read

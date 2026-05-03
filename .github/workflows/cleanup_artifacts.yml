@@ -17,7 +17,9 @@ on:
 
 jobs:
   cleanup_artifacts:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Default
+      labels: [self-hosted, Windows, X64, beast]
 
     permissions:
       actions: write
