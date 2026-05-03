@@ -678,8 +678,13 @@ jobs:
           cp -a app/client/. "/app/${APP_NAME}/"
 
           # 4. Install runtime deps for the bytecoded server.
-          (cd startup/server && npm install --omit=dev 2>&1 | tail -5)
-          (cd app/server     && npm install --omit=dev 2>&1 | tail -5)
+          # bytenode stays in devDependencies (it's a build tool) but the
+          # bytecode loader stubs `require('bytenode')` at runtime, so we
+          # install it ad-hoc with --no-save in both server trees. Module
+          # resolution from startup/server/*.js stubs and app/server/*.js
+          # stubs walks up from each, so each needs its own copy.
+          (cd startup/server && npm install --omit=dev 2>&1 | tail -5 && npm install --no-save bytenode 2>&1 | tail -3)
+          (cd app/server     && npm install --omit=dev 2>&1 | tail -5 && npm install --no-save bytenode 2>&1 | tail -3)
 
           # 5. .env for the systemd-managed service. DATABASE_URL points at
           # the postgres sibling container by network alias (test-pg:5432).
