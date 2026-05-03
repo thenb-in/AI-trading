@@ -121,32 +121,80 @@ jobs:
       - name: Materialize .env files
         run: node scripts/setup-env.js
 
-      - name: Pre-flight cleanup (remove any stale containers from a prior run)
+      - name: Pre-flight cleanup (remove any stale containers/networks)
         run: |
-          docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+          for c in "$PG_CONTAINER"; do
+            if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
+              echo "[pre-flight] container '$c' already present — removing for a clean run"
+              docker rm -f "$c"
+            else
+              echo "[pre-flight] container '$c' not present"
+            fi
+          done
+          if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
+            echo "[pre-flight] network '$TEST_NETWORK' already present — removing"
+            docker network rm "$TEST_NETWORK"
+          else
+            echo "[pre-flight] network '$TEST_NETWORK' not present"
+          fi
+
+      - name: Create test network and resolve DB host for the runner
+        # Self-hosted runners often run inside a container themselves
+        # (DooD — docker-out-of-docker, sharing the host's /var/run/docker.sock).
+        # When that's the case, postgres started with -p 5432:5432 publishes
+        # on the HOST's :5432, not the runner container's. The runner can't
+        # reach postgres via 127.0.0.1.
+        #
+        # Fix: put both runner and postgres on a shared docker network and
+        # reach postgres by its container name. On a bare-metal runner the
+        # network connect is a no-op and we fall back to localhost (the -p
+        # publish is reachable directly).
+        run: |
+          docker network create "$TEST_NETWORK"
+          if [ -f /.dockerenv ]; then
+            RUNNER_CID=$(hostname)
+            echo "[network] runner is in container '$RUNNER_CID'; joining $TEST_NETWORK"
+            docker network connect "$TEST_NETWORK" "$RUNNER_CID"
+            echo "DB_HOST=$PG_CONTAINER" >> "$GITHUB_ENV"
+          else
+            echo "[network] runner on host; reaching postgres via localhost (-p mapping)"
+            echo "DB_HOST=localhost" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Postgres
         run: |
           docker run -d \
             --name "$PG_CONTAINER" \
+            --network "$TEST_NETWORK" \
             -p 5432:5432 \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD=postgres \
             -e POSTGRES_DB=test_db \
             postgres:15
+          # Inside-container readiness (postgres is accepting connections).
           for i in $(seq 1 30); do
             if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
-              echo "Postgres ready"; exit 0
+              echo "Postgres ready inside container"
+              break
             fi
             sleep 1
           done
-          echo "Postgres failed to come up"; docker logs "$PG_CONTAINER"; exit 1
+          # Outside check — the actual concern: can the runner reach it?
+          for i in $(seq 1 15); do
+            if (echo > /dev/tcp/$DB_HOST/5432) 2>/dev/null; then
+              echo "Postgres reachable from runner at $DB_HOST:5432"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres NOT reachable from runner at $DB_HOST:5432"
+          docker logs "$PG_CONTAINER"
+          exit 1
 
       - name: Seed default company + admin user
         run: npm run create-new-company
         env:
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       - name: Start backend (persists across all test phases)
         run: |
@@ -166,7 +214,7 @@ jobs:
         env:
           CI: true
           NODE_ENV: production
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       - name: Start frontend (vite dev — persists)
         run: |
@@ -195,7 +243,7 @@ jobs:
         env:
           CI: true
           API_BASE_URL: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       - name: E2E tests
         id: e2e
@@ -209,7 +257,7 @@ jobs:
           PW_EXTERNAL_SERVERS: '1'
           FRONTEND_URL: http://localhost:5173
           BACKEND_URL: http://localhost:3000
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       # ─── Teardown (always) ──────────────────────────────────────────────
       - name: Stop backend + frontend
@@ -222,9 +270,15 @@ jobs:
           pkill -f 'vite' 2>/dev/null || true
           pkill -f 'app/server/index.js' 2>/dev/null || true
 
-      - name: Stop Postgres
+      - name: Stop Postgres + remove network
         if: always()
-        run: docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+        run: |
+          docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+          # Disconnect runner from network first if we joined it.
+          if [ -f /.dockerenv ]; then
+            docker network disconnect "$TEST_NETWORK" "$(hostname)" 2>/dev/null || true
+          fi
+          docker network rm "$TEST_NETWORK" 2>/dev/null || true
 
       # ─── Artifacts (always — most useful on failure) ────────────────────
       - name: Upload smoke logs
@@ -355,16 +409,50 @@ jobs:
 
       - name: Pre-flight cleanup (remove any stale containers/networks)
         run: |
-          docker rm -f "$DEPLOY_CONTAINER" "$PG_CONTAINER" 2>/dev/null || true
-          docker network rm "$TEST_NETWORK" 2>/dev/null || true
+          for c in "$DEPLOY_CONTAINER" "$PG_CONTAINER"; do
+            if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
+              echo "[pre-flight] container '$c' already present — removing for a clean run"
+              docker rm -f "$c"
+            else
+              echo "[pre-flight] container '$c' not present"
+            fi
+          done
+          if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
+            echo "[pre-flight] network '$TEST_NETWORK' already present — removing"
+            docker network rm "$TEST_NETWORK"
+          else
+            echo "[pre-flight] network '$TEST_NETWORK' not present"
+          fi
 
-      - name: Create test docker network
-        run: docker network create "$TEST_NETWORK"
+      - name: Create test network and resolve runner-reachable hosts
+        # See the same step in tests_source for the full reasoning. Same
+        # mechanic: if the runner is itself in a docker container (DooD),
+        # `localhost` won't reach the host-published ports — join the test
+        # network and address sibling containers by name.
+        #
+        # Sets two env vars:
+        #   DB_HOST  → runner reaches postgres at $DB_HOST:5432
+        #   APP_URL  → runner reaches the deployed app (nginx) at $APP_URL
+        run: |
+          docker network create "$TEST_NETWORK"
+          if [ -f /.dockerenv ]; then
+            RUNNER_CID=$(hostname)
+            echo "[network] runner is in container '$RUNNER_CID'; joining $TEST_NETWORK"
+            docker network connect "$TEST_NETWORK" "$RUNNER_CID"
+            echo "DB_HOST=$PG_CONTAINER" >> "$GITHUB_ENV"
+            # Inside the network, nginx is on the deploy container's :80
+            # (the host -p mapping is irrelevant from this side).
+            echo "APP_URL=http://$DEPLOY_CONTAINER" >> "$GITHUB_ENV"
+          else
+            echo "[network] runner on host; reaching siblings via localhost (-p mappings)"
+            echo "DB_HOST=localhost" >> "$GITHUB_ENV"
+            echo "APP_URL=http://localhost:$BUILT_HOST_PORT" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Postgres in test network
-        # Both in the test network (so the deploy container can reach it by
-        # name) AND mapped to the host (so the seed step + integration tests
-        # running on the host can hit it).
+        # Both on the test network (so the deploy container reaches it by
+        # name as test-pg:5432) AND -p published (so the runner reaches it
+        # via $DB_HOST).
         run: |
           docker run -d \
             --name "$PG_CONTAINER" \
@@ -376,16 +464,30 @@ jobs:
             postgres:15
           for i in $(seq 1 30); do
             if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
-              echo "Postgres ready"; exit 0
+              echo "Postgres ready inside container"
+              break
             fi
             sleep 1
           done
-          echo "Postgres failed to come up"; docker logs "$PG_CONTAINER"; exit 1
+          # Verify the runner can actually reach it.
+          for i in $(seq 1 15); do
+            if (echo > /dev/tcp/$DB_HOST/5432) 2>/dev/null; then
+              echo "Postgres reachable from runner at $DB_HOST:5432"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Postgres NOT reachable from runner at $DB_HOST:5432"
+          docker logs "$PG_CONTAINER"
+          exit 1
 
       - name: Start systemd-enabled deploy container
         # Privileged + cgroup mounts let systemd run as PID 1 inside.
-        # The bundle is mounted at /install — exactly what the operator
-        # runbook copies onto a new server.
+        # We do NOT bind-mount _install/ here. Reason: when the runner is
+        # itself a container (DooD), bind paths are resolved by the HOST
+        # docker daemon, which can't see the runner's filesystem. The bundle
+        # is copied in via `docker cp` in the next step instead — that goes
+        # through the runner's view of files, so it works in both DooD and
+        # bare-metal runner setups.
         run: |
           docker run -d --privileged \
             --name "$DEPLOY_CONTAINER" \
@@ -393,7 +495,6 @@ jobs:
             --cgroupns=host \
             --tmpfs /tmp --tmpfs /run --tmpfs /run/lock \
             -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            -v "$PWD/_install:/install" \
             -p ${BUILT_HOST_PORT}:80 \
             jrei/systemd-ubuntu:22.04
           # Wait until systemd is up enough to accept systemctl calls.
@@ -406,6 +507,17 @@ jobs:
           echo "systemd never became ready inside container"
           docker exec "$DEPLOY_CONTAINER" systemctl --no-pager || true
           exit 1
+
+      - name: Copy bundle into the deploy container
+        # docker cp reads from the runner's filesystem (which the runner
+        # can see) and writes into the container. Avoids the DooD bind-mount
+        # trap where -v <runner_path> resolves on the HOST docker daemon to
+        # an empty path it doesn't recognize.
+        run: |
+          docker exec "$DEPLOY_CONTAINER" mkdir -p /install
+          docker cp _install/. "$DEPLOY_CONTAINER:/install/"
+          # Sanity check — verify the deploy scripts landed where expected.
+          docker exec "$DEPLOY_CONTAINER" ls /install/deploy/1build_deploy_files.sh
 
       - name: Run deploy scripts inside container
         # This is what the human-runbook does on a fresh prod server. If any
@@ -472,15 +584,15 @@ jobs:
           exit 1
           INNER_EOF
 
-      - name: Wait for deployed system to be reachable from host
+      - name: Wait for deployed system to be reachable from runner
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS "http://localhost:${BUILT_HOST_PORT}/healthz" > /dev/null; then
-              echo "Reachable on host"; exit 0
+            if curl -fsS "${APP_URL}/healthz" > /dev/null; then
+              echo "Reachable from runner at $APP_URL"; exit 0
             fi
             sleep 2
           done
-          echo "Deployed system not reachable on host:${BUILT_HOST_PORT}"; exit 1
+          echo "Deployed system not reachable from runner at $APP_URL"; exit 1
 
       - name: Seed default company + admin user
         # Runs the source-side seed against the same postgres the deployed
@@ -488,11 +600,11 @@ jobs:
         run: npm run create-new-company
         env:
           CI: true
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
-      # ─── Test phases (against the deployed system on $BUILT_HOST_PORT) ───
+      # ─── Test phases (against the deployed system at $APP_URL) ──────────
       - name: Smoke — /healthz
-        run: curl -fsS "http://localhost:${BUILT_HOST_PORT}/healthz"
+        run: curl -fsS "${APP_URL}/healthz"
 
       - name: Integration tests
         id: integration
@@ -501,8 +613,8 @@ jobs:
         working-directory: tests
         env:
           CI: true
-          API_BASE_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          API_BASE_URL: ${{ env.APP_URL }}
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       - name: E2E tests
         id: e2e
@@ -512,9 +624,9 @@ jobs:
         env:
           CI: true
           PW_EXTERNAL_SERVERS: '1'
-          FRONTEND_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
-          BACKEND_URL: http://localhost:${{ env.BUILT_HOST_PORT }}
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          FRONTEND_URL: ${{ env.APP_URL }}
+          BACKEND_URL: ${{ env.APP_URL }}
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/test_db
 
       # ─── Capture container logs before tearing down ─────────────────────
       - name: Collect container logs
@@ -532,6 +644,10 @@ jobs:
         if: always()
         run: |
           docker rm -f "$DEPLOY_CONTAINER" "$PG_CONTAINER" 2>/dev/null || true
+          # Disconnect runner from the network first if we joined it.
+          if [ -f /.dockerenv ]; then
+            docker network disconnect "$TEST_NETWORK" "$(hostname)" 2>/dev/null || true
+          fi
           docker network rm "$TEST_NETWORK" 2>/dev/null || true
 
       # ─── Artifacts ──────────────────────────────────────────────────────
