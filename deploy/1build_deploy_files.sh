@@ -146,7 +146,7 @@ for file in ${files_to_replace[@]}; do
     # Perform all replacements using bash parameter expansion
     replace_in_var "content" "nbnext_app_name" "$app_name"
     replace_in_var "content" "public_ip_address" "$ip_address"
-    replace_in_var "content" "nbnext_app_name_path" "$app_path"
+    replace_in_var "content" "nbnext_app_path" "$app_path"
     replace_in_var "content" "server_path" "$server_path"
     replace_in_var "content" "nvm_path" "$nvm_path"
     replace_in_var "content" "npm_path" "$npm_path"

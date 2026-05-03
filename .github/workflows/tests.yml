@@ -405,7 +405,11 @@ jobs:
   # nginx + the bytecoded backend.
   # ────────────────────────────────────────────────────────────────────
   tests_built:
-    needs: setup
+    # Sequential after tests_source — both jobs share fixed docker resource
+    # names ($PG_CONTAINER, $TEST_NETWORK, $DEPLOY_CONTAINER) and the host's
+    # :5432 port. Running in parallel had each job's pre-flight tearing down
+    # the other's running containers mid-test.
+    needs: tests_source
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, Linux, X64]
 
