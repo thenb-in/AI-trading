@@ -240,7 +240,23 @@ jobs:
         # created the schema. The seed script now exits non-zero on any
         # error (see startup/server/create_company_with_role_and_perms.js)
         # so a failure here fails the whole job.
-        run: npm run create-new-company
+        run: |
+          # Pull sadmin credentials from tests/e2e-tests/.env so the seed
+          # creates the same user the e2e suite later logs in as. The .env
+          # is materialized earlier by `node scripts/setup-env.js` from
+          # tests/e2e-tests/.env.example — single source of truth, no
+          # second copy of the values to drift.
+          ENV_FILE=tests/e2e-tests/.env
+          TEST_SADMIN_USERNAME=$(grep -E '^TEST_SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
+          TEST_SADMIN_PASSWORD=$(grep -E '^TEST_SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
+          if [ -z "$TEST_SADMIN_USERNAME" ] || [ -z "$TEST_SADMIN_PASSWORD" ]; then
+            echo "[seed] missing TEST_SADMIN_USERNAME or TEST_SADMIN_PASSWORD in $ENV_FILE"; exit 1
+          fi
+          export TEST_SADMIN_USERNAME TEST_SADMIN_PASSWORD
+          echo "[seed] credentials sourced from $ENV_FILE:"
+          echo "[seed]   TEST_SADMIN_USERNAME=$TEST_SADMIN_USERNAME"
+          echo "[seed]   TEST_SADMIN_PASSWORD=$TEST_SADMIN_PASSWORD"
+          npm run create-new-company
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
@@ -503,6 +519,19 @@ jobs:
             echo "APP_URL=http://localhost:$BUILT_HOST_PORT" >> "$GITHUB_ENV"
           fi
 
+      - name: Pre-pull postgres image (self-hosted only)
+        # Same rationale as the deploy-image pre-pull: on self-hosted the
+        # daemon persists, so making the pull explicit turns it into a
+        # one-time cost and the log line tells us whether it was cached.
+        if: runner.environment != 'github-hosted'
+        run: |
+          if docker image inspect postgres:15 >/dev/null 2>&1; then
+            echo "[pre-pull] postgres:15 already cached locally — skipping pull"
+          else
+            echo "[pre-pull] postgres:15 not cached — pulling now"
+            docker pull postgres:15
+          fi
+
       - name: Start Postgres in test network
         # Both on the test network (so the deploy container reaches it by
         # name as test-pg:5432) AND -p published (so the runner reaches it
@@ -533,6 +562,22 @@ jobs:
           echo "Postgres NOT reachable from runner at $DB_HOST:5432"
           docker logs "$PG_CONTAINER"
           exit 1
+
+      - name: Pre-pull deploy image (self-hosted only)
+        # On self-hosted runners the docker daemon persists across jobs, so
+        # making the pull explicit here turns it into a one-time cost: first
+        # job pulls, every subsequent job sees the image cached and skips it.
+        # On github-hosted runners the daemon is fresh per job — the pull
+        # would happen regardless, so there's nothing to gain from doing it
+        # in a separate step.
+        if: runner.environment != 'github-hosted'
+        run: |
+          if docker image inspect jrei/systemd-ubuntu:22.04 >/dev/null 2>&1; then
+            echo "[pre-pull] jrei/systemd-ubuntu:22.04 already cached locally — skipping pull"
+          else
+            echo "[pre-pull] jrei/systemd-ubuntu:22.04 not cached — pulling now"
+            docker pull jrei/systemd-ubuntu:22.04
+          fi
 
       - name: Start systemd-enabled deploy container
         # Privileged + cgroup mounts let systemd run as PID 1 inside.
@@ -583,6 +628,7 @@ jobs:
             -e IP_ADDRESS=127.0.0.1 \
             -e SYSTEM_USER=root \
             -e PG_HOST="$PG_CONTAINER" \
+            -e DB_NAME="$DB_NAME" \
             "$DEPLOY_CONTAINER" bash <<'INNER_EOF'
           set -euo pipefail
 
@@ -651,7 +697,23 @@ jobs:
       - name: Seed default company + admin user
         # Runs the source-side seed against the same postgres the deployed
         # backend is using.
-        run: npm run create-new-company
+        run: |
+          # Pull sadmin credentials from tests/e2e-tests/.env so the seed
+          # creates the same user the e2e suite later logs in as. The .env
+          # is materialized earlier by `node scripts/setup-env.js` from
+          # tests/e2e-tests/.env.example — single source of truth, no
+          # second copy of the values to drift.
+          ENV_FILE=tests/e2e-tests/.env
+          TEST_SADMIN_USERNAME=$(grep -E '^TEST_SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
+          TEST_SADMIN_PASSWORD=$(grep -E '^TEST_SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
+          if [ -z "$TEST_SADMIN_USERNAME" ] || [ -z "$TEST_SADMIN_PASSWORD" ]; then
+            echo "[seed] missing TEST_SADMIN_USERNAME or TEST_SADMIN_PASSWORD in $ENV_FILE"; exit 1
+          fi
+          export TEST_SADMIN_USERNAME TEST_SADMIN_PASSWORD
+          echo "[seed] credentials sourced from $ENV_FILE:"
+          echo "[seed]   TEST_SADMIN_USERNAME=$TEST_SADMIN_USERNAME"
+          echo "[seed]   TEST_SADMIN_PASSWORD=$TEST_SADMIN_PASSWORD"
+          npm run create-new-company
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}

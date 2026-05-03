@@ -11,13 +11,18 @@ const { signup, approveUser } = require('./src/services/authService');
 
 
 
-// Utility to get user input from terminal
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
+// Non-TTY (CI, piped stdin): readline would hit EOF immediately and close,
+// making the first rl.question() throw ERR_USE_AFTER_CLOSE. Detect that up
+// front and switch to env-var-backed defaults instead — see createCompany /
+// createUser below for which env vars feed which prompt.
+const isInteractive = Boolean(process.stdin.isTTY);
+const rl = isInteractive
+  ? readline.createInterface({ input: process.stdin, output: process.stdout })
+  : null;
 const askQuestion = (query) =>
-  new Promise((resolve) => rl.question(query, resolve));
+  isInteractive
+    ? new Promise((resolve) => rl.question(query, resolve))
+    : Promise.resolve('');
 
 /**
  * Create a company
@@ -57,17 +62,37 @@ async function createCompany(transaction, userRole) {
  * Create a user and assign to company
  */
 async function createUser(company, transaction) {
-  const createUserAnswer = await askQuestion(
-    'Do you want to create a user? (yes/no): '
-  );
-  if (createUserAnswer.toLowerCase() !== YES) {
-    return null;
-  }
+  let username;
+  let password;
+  let phone;
+  let name;
 
-  const username = await askQuestion('Enter username: ');
-  const password = await askQuestion('Enter password: ');
-  const phone = await askQuestion(`Enter phone number (optional, press ${INPUT_SKIP_KEY} to skip): `) || null;
-  const name = await askQuestion(`Enter user name (optional, press ${INPUT_SKIP_KEY} to use username): `) || username;
+  if (!isInteractive) {
+    // CI / scripted runs: pull credentials from env. If they're missing,
+    // skip user creation rather than guess — downstream tests will fail
+    // loudly on missing login, which is the right signal.
+    username = process.env.TEST_SADMIN_USERNAME;
+    password = process.env.TEST_SADMIN_PASSWORD;
+    if (!username || !password) {
+      logger.info(`Non-interactive run: TEST_SADMIN_USERNAME ${username}/TEST_SADMIN_PASSWORD ${password} not set — skipping user creation`);
+      return null;
+    }
+    phone = null;
+    name = username;
+    logger.info(`Non-interactive run: creating sadmin user "${username}"`);
+  } else {
+    const createUserAnswer = await askQuestion(
+      'Do you want to create a user? (yes/no): '
+    );
+    if (createUserAnswer.toLowerCase() !== YES) {
+      return null;
+    }
+
+    username = await askQuestion('Enter username: ');
+    password = await askQuestion('Enter password: ');
+    phone = await askQuestion(`Enter phone number (optional, press ${INPUT_SKIP_KEY} to skip): `) || null;
+    name = await askQuestion(`Enter user name (optional, press ${INPUT_SKIP_KEY} to use username): `) || username;
+  }
 
   // get role with name super admin
   const superAdminRole = await db.Role.findOne({ where: { name: SYSTEM_ROLE_CONSTANTS.SUPER_ADMIN.name } });
@@ -132,7 +157,7 @@ async function main() {
     // This will skip any data that already exists and only create new data
     await createStartingAppData(company);
     logger.info(`Setup completed successfully for ${company.name}!`);
-    rl.close();
+    rl?.close();
   } catch (err) {
     logger.error('Error occurred during setup', err);
     if (!transactionCommitted) {
@@ -142,7 +167,7 @@ async function main() {
         logger.error('Error rolling back transaction', rollbackErr);
       }
     }
-    rl.close();
+    rl?.close();
     // Re-throw so the script exits non-zero. Without this the catch
     // swallows the failure, npm sees exit 0, and the CI step plows on
     // with a half-set-up database.
