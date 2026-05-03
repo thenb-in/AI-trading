@@ -232,7 +232,7 @@ jobs:
           node index.js > "$RUNNER_TEMP/source/backend.log" 2>&1 &
           echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:3000/healthz > /dev/null; then
+            if curl -sf http://localhost:3000/api/healthz > /dev/null; then
               echo "Backend up"; exit 0
             fi
             sleep 2
@@ -287,8 +287,8 @@ jobs:
           exit 1
 
       # ─── Test phases (run sequentially against the persistent backend) ───
-      - name: Smoke — /healthz
-        run: curl -fsS http://localhost:3000/healthz
+      - name: Smoke — /api/healthz
+        run: curl -fsS http://localhost:3000/api/healthz
 
       - name: Integration tests
         id: integration
@@ -709,7 +709,7 @@ jobs:
 
           # 7. Verify the service stayed up.
           for i in $(seq 1 15); do
-            if curl -fsS http://localhost/healthz > /dev/null; then
+            if curl -fsS http://localhost/api/healthz > /dev/null; then
               echo "Deployed system healthy"; exit 0
             fi
             sleep 2
@@ -722,7 +722,7 @@ jobs:
       - name: Wait for deployed system to be reachable from runner
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS "${APP_URL}/healthz" > /dev/null; then
+            if curl -fsS "${APP_URL}/api/healthz" > /dev/null; then
               echo "Reachable from runner at $APP_URL"; exit 0
             fi
             sleep 2
@@ -754,8 +754,8 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
       # ─── Test phases (against the deployed system at $APP_URL) ──────────
-      - name: Smoke — /healthz
-        run: curl -fsS "${APP_URL}/healthz"
+      - name: Smoke — /api/healthz
+        run: curl -fsS "${APP_URL}/api/healthz"
 
       - name: Integration tests
         id: integration

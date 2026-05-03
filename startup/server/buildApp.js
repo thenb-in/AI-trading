@@ -60,7 +60,7 @@ function mountFrameworkRoutes(app) {
 function mountStaticAndErrorHandlers(app) {
   app.use('/uploads', express.static(env.UPLOADS_DIR));
   app.use(errorMiddleware);
-  app.get('/healthz', (req, res) => {
+  app.get('/api/healthz', (req, res) => {
     res.status(200).send('ok');
   });
 }
