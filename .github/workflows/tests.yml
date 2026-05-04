@@ -362,8 +362,9 @@ jobs:
           path: |
             ${{ runner.temp }}/source/backend.log
             ${{ runner.temp }}/source/frontend.log
+            app/server/logs/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 2
 
       - name: Upload integration test artifacts
         if: always()
@@ -376,7 +377,7 @@ jobs:
             tests/integration-tests/logs/
           if-no-files-found: ignore
           include-hidden-files: true
-          retention-days: 14
+          retention-days: 2
 
       - name: Upload e2e test artifacts
         if: always()
@@ -390,7 +391,7 @@ jobs:
             tests/e2e-tests/logs/
           if-no-files-found: ignore
           include-hidden-files: true
-          retention-days: 14
+          retention-days: 2
 
       - name: Surface phase failures
         # `continue-on-error` lets each phase keep going so we collect all
@@ -791,6 +792,14 @@ jobs:
           docker exec "$DEPLOY_CONTAINER" cat /var/log/nginx/error.log > "$RUNNER_TEMP/built/nginx-error.log" 2>&1 || true
           docker exec "$DEPLOY_CONTAINER" cat /var/log/nginx/access.log > "$RUNNER_TEMP/built/nginx-access.log" 2>&1 || true
           docker logs "$PG_CONTAINER" > "$RUNNER_TEMP/built/postgres.log" 2>&1 || true
+          # Pull the winston file logs out of the deploy container. In
+          # production NODE_ENV the backend's only log sink is these files
+          # (see startup/server/logger.js — Console transport is gated on
+          # NODE_ENV !== 'production'), so journalctl above shows only the
+          # npm wrapper. Winston uses a relative filename, so logs land in
+          # process.cwd()/logs — and the systemd unit's WorkingDirectory is
+          # /install/app/server, so that's the only directory that gets logs.
+          docker cp "$DEPLOY_CONTAINER:/install/app/server/logs/." "$RUNNER_TEMP/built/winston/" 2>/dev/null || true
 
       # ─── Teardown (always) ──────────────────────────────────────────────
       - name: Drop test database
@@ -825,7 +834,7 @@ jobs:
             _install/deploy/${{ env.TEST_APP_NAME }}.conf
             _install/deploy/${{ env.TEST_APP_NAME }}.service
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 2
 
       - name: Upload integration test artifacts
         if: always()
@@ -838,7 +847,7 @@ jobs:
             tests/integration-tests/logs/
           if-no-files-found: ignore
           include-hidden-files: true
-          retention-days: 14
+          retention-days: 2
 
       - name: Upload e2e test artifacts
         if: always()
@@ -852,7 +861,7 @@ jobs:
             tests/e2e-tests/logs/
           if-no-files-found: ignore
           include-hidden-files: true
-          retention-days: 14
+          retention-days: 2
 
       - name: Surface phase failures
         if: steps.integration.outcome == 'failure' || steps.e2e.outcome == 'failure'
