@@ -1,5 +1,5 @@
 {
-  "name": "Prescription_Management",
+  "name": "@app/server",
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
@@ -9,7 +9,7 @@
     "start": "node index.js",
     "build": "node ../../startup/server/scripts/build-bytecode.js --src . --out-dir ./dist",
     "create-new-company": "node ../../startup/server/create_company_with_role_and_perms.js",
-    "kill": "kill -9 $(lsof -t -i:6384) 2>/dev/null || true"
+    "kill": "kill -9 $(lsof -t -i:3000) 2>/dev/null || true"
   },
   "description": "App-side server boot. Imports buildApp() from startup/server and registers app-specific routes."
 }

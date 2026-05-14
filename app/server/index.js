@@ -9,8 +9,8 @@ const { registerAllJobs } = require('./scheduler');
 
 const { startServer } = buildApp({
   extraRoutes: [
-    { prefix: '/api/v1/doctor', router: require('./src/route/doctorRoute') },
-    { prefix: '/api/v1/prescription', router: require('./src/route/prescriptionRoute') }
+    // Example:
+    // { prefix: '/api/v1/payroll', router: require('./src/routes/payrollRoutes') }
   ],
   mountAppRoutes: (_app, _prefix) => {
     // Register app-only routes here, e.g.

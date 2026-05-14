@@ -31,7 +31,7 @@ export default ({ mode }) => {
   const serverVersion = serverPackageJson.version || '0.0.0';
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
-  const localServerUrl = 'http://localhost:6384';
+  const localServerUrl = 'http://localhost:3000';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
