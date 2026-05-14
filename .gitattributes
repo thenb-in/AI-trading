@@ -1,0 +1,21 @@
+# Force LF line endings for shell scripts and other Linux-targeted text
+# files, regardless of the developer's local git config (Windows machines
+# default to core.autocrlf=true and otherwise commit CRLF, which breaks
+# bash on Linux deploy hosts with errors like
+#   `$'\r': command not found` / `syntax error near unexpected token`).
+# CI self-hosted runners have been observed checking out CRLF too,
+# producing intermittent deploy/1build_deploy_files.sh failures — pinning
+# the eol attribute removes the flake.
+*.sh        text eol=lf
+*.bash      text eol=lf
+
+# Service / config files consumed by Linux daemons. Same reasoning.
+*.service   text eol=lf
+*.conf      text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Keep .env templates LF too — dotenv handles either, but it keeps diffs
+# clean across mixed-OS developers.
+*.env        text eol=lf
+*.env.example text eol=lf

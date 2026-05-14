@@ -1,0 +1,19 @@
+{
+  "name": "report-scheduler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "daily_report": "node dailyReportCron.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "playwright": "^1.56.1",
+    "xlsx": "^0.18.5"
+  }
+}

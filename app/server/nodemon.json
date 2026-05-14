@@ -1,0 +1,5 @@
+{
+  "watch": ["index.js", "src", "scheduler", "scripts", "interfaces", "../../startup/server"],
+  "ext": "js,json",
+  "ignore": ["logs/*", "node_modules/*", "dist/*", "../../startup/server/node_modules/*"]
+}
