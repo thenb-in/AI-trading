@@ -6,10 +6,10 @@ const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_INTERNAL_ERROR } = requ
 async function getAllDoctorsView(req, res) {
   try {
     const { companyId } = req.user;
-    const doctors = await doctorController.getAllDoctors(companyId);
+    const { doctors, columns } = await doctorController.getAllDoctors(companyId);
     return sendSuccess(res, {
       statusCode: HTTP_STATUS_OK,
-      data: doctors,
+      data: { doctors, columns },
       message: `Doctors retrieved successfully. Records: ${doctors.length}.`
     });
   } catch (error) {

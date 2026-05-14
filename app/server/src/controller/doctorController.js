@@ -2,9 +2,11 @@ const { listDoctors, getDoctorById } = require('../service/doctorService/listDoc
 const { createDoctor } = require('../service/doctorService/createDoctor');
 const { updateDoctor } = require('../service/doctorService/updateDoctor');
 const { deleteDoctor, deleteDoctorTimings } = require('../service/doctorService/deleteDoctor');
+const { DOCTOR_COLUMNS, DOCTOR_TIMINGS_COLUMNS } = require('../column/doctor');
 
 const getAllDoctors = async (companyId) => {
-  return await listDoctors(companyId);
+  const doctors = await listDoctors(companyId);
+  return { doctors, columns: DOCTOR_COLUMNS };
 };
 
 const getDoctorByIdController = async (doctorId, companyId) => {
