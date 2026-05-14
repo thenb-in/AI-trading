@@ -22,7 +22,7 @@ const {
   deleteDoctorTimingView
 } = require('../view/doctorView');
 
-const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('@startup/server/src/constants/permissions');
 const { DOCTOR } = MASTER_PERMISSION_CONSTANTS;
 
 /**

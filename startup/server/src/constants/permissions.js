@@ -34,7 +34,9 @@ const MASTER_PERMISSION_CONSTANTS = {
       display_name: 'Download NBnext Drive',
       description: 'Permission to download files from NBnext Drive'
     }
-  }
+  },
+  DOCTOR: basePermissions.create_master_permission('doctor'),
+  PRESCRIPTION: basePermissions.create_master_permission('prescription')
 };
 
 const create_module_permission = (module, displayName) => {

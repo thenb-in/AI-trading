@@ -20,7 +20,7 @@ const {
   deletePrescriptionView
 } = require('../view/prescriptionView');
 
-const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('@startup/server/src/constants/permissions');
 const { PRESCRIPTION } = MASTER_PERMISSION_CONSTANTS;
 
 /**
