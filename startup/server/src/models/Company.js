@@ -26,6 +26,28 @@ module.exports = (sequelize, DataTypes) => {
     role_id: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    job_offer_header_image: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Base64 encoded header image for job offer letter PDF'
+    },
+    job_offer_footer_image: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Base64 encoded footer image for job offer letter PDF'
+    },
+    job_offer_header_height_cm: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 3.0,
+      comment: 'Height of header image in centimeters for PDF generation'
+    },
+    job_offer_footer_height_cm: {
+      type: DataTypes.DECIMAL(5, 2),
+      allowNull: true,
+      defaultValue: 3.0,
+      comment: 'Height of footer image in centimeters for PDF generation'
     }
   }, {
     tableName: 'nbnext_company',
@@ -36,6 +58,12 @@ module.exports = (sequelize, DataTypes) => {
     Company.hasMany(models.User, { foreignKey: 'company_id', as: 'users' });
     Company.belongsTo(models.Role, { foreignKey: 'role_id', as: 'role' });
     Company.hasOne(models.CompanyProfile, { foreignKey: 'company_id', as: 'companyProfile' });
+    Company.belongsToMany(models.Subscription, {
+      through: models.CompanySubscription,
+      foreignKey: 'company_id',
+      otherKey: 'subscription_id',
+      as: 'subscriptions'
+    });
   };
 
   return Company;

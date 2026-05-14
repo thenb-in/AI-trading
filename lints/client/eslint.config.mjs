@@ -3,7 +3,7 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import importPlugin from 'eslint-plugin-import'
+// import importPlugin from 'eslint-plugin-import'
 import customPlugin from './eslint-rules/index.js'
 
 export default [
@@ -37,7 +37,7 @@ export default [
       react,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
-      import: importPlugin,
+      // import: importPlugin,
       custom: customPlugin,
     },
     rules: {
@@ -58,19 +58,16 @@ export default [
       'custom/theme-values-only': 'error',
       'custom/no-direct-fetch': 'error',
       'custom/no-inline-arrow-functions': 'error',
-      'custom/no-relative-imports': 'error',
-      'custom/named-exports-only': ['error', {
-        excludePatterns: ['eslint-rules', 'scripts']
+      'custom/named-exports-only': ['error', { 
+        excludePatterns: ['eslint_rules', 'scripts']
       }],
-      'custom/no-default-imports': 'error',
       'custom/bottom-exports-only': ['error', {
-        excludePatterns: ['eslint-rules', 'scripts']
+        excludePatterns: ['eslint_rules', 'scripts']
       }],
-      // Import/export rules
-      'import/no-unresolved': 'error',
-      'import/named': 'error',
-      'import/default': 'error',
-      'import/namespace': 'error',
+      // Centralized date handling — API expects ISO via dateTimeUtils; avoids timezone bugs
+      'custom/no-direct-to-iso-string': 'error',
+      'custom/no-unsafe-new-date': 'error',
+      'custom/no-manual-iso-string-concat': 'error',
     },
   },
 

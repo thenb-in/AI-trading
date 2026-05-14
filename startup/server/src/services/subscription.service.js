@@ -3,37 +3,6 @@ const logger = require('../../logger');
 const { Subscription, Permission, User,SubscriptionPermission } = require('../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../utils/modelHelpers');
 
-const VALID_STATUSES = ['subscribed', 'not_subscribed', 'hidden'];
-
-const validateSubscriptionUpdate = async (subscription_id, status, userId) => {
-  const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
-
-  if (subscription.companyId === null) {
-    const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
-    if (!user.isSupportUser) {
-      throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
-    }
-  }
-
-  if (!VALID_STATUSES.includes(status)) {
-    throw { status: 400, message: 'Invalid status. Must be one of: subscribed, not_subscribed, hidden' };
-  }
-
-  return subscription;
-};
-
-const upsertSubscriptionPermission = async (subscription_id, permission_id, status) => {
-  const [subscriptionPermission, created] = await SubscriptionPermission.findOrCreate({
-    where: { subscription_id, permission_id },
-    defaults: { subscription_id, permission_id, status }
-  });
-
-  if (!created) {
-    subscriptionPermission.status = status;
-    await subscriptionPermission.save();
-  }
-};
-
 const checkSubscriptionExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
   if (companyId) {
@@ -127,15 +96,42 @@ const getAllPermissions = async () => {
   }
 };
 
+/**
+ * Validates that the caller may write the given subscription's permissions and that `status` is
+ * one of the accepted values. Throws the same `{ status, message }` shape used by the rest of
+ * this service so the wrapping `try/catch` rethrows produce the right HTTP response.
+ */
+async function assertCanWriteSubscriptionStatus(subscription_id, status, userId) {
+  const subscription = await findModelByIdOrThrow(Subscription, subscription_id, {}, 'Subscription');
+  if (subscription.companyId === null) {
+    const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
+    if (!user.isSupportUser) {
+      throw { status: 403, message: 'Only superadmins can modify default system subscriptions' };
+    }
+  }
+  if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
+    throw { status: 400, message: 'Invalid status. Must be one of: subscribed, not_subscribed, hidden' };
+  }
+}
+
+/** Insert-or-update a single (subscription, permission) SubscriptionPermission row to the given status. */
+async function upsertSubscriptionPermission(subscription_id, permission_id, status) {
+  const [subscriptionPermission, created] = await SubscriptionPermission.findOrCreate({
+    where: { subscription_id, permission_id },
+    defaults: { subscription_id, permission_id, status }
+  });
+  if (!created) {
+    subscriptionPermission.status = status;
+    await subscriptionPermission.save();
+  }
+}
+
 const updateSubscriptionPermissionStatus = async (subscription_id, permission_id, status, userId) => {
   try {
-    await validateSubscriptionUpdate(subscription_id, status, userId);
+    await assertCanWriteSubscriptionStatus(subscription_id, status, userId);
     await findModelByIdOrThrow(Permission, permission_id, {}, 'Permission');
     await upsertSubscriptionPermission(subscription_id, permission_id, status);
-
-    return {
-      message: `Permission status updated to ${status} successfully`
-    };
+    return { message: `Permission status updated to ${status} successfully` };
   } catch (error) {
     throw { status: error.status || 500, message: error.message };
   }
@@ -143,23 +139,21 @@ const updateSubscriptionPermissionStatus = async (subscription_id, permission_id
 
 const updateMultipleSubscriptionPermissionStatuses = async (subscription_id, permission_ids, status, userId) => {
   try {
-    await validateSubscriptionUpdate(subscription_id, status, userId);
+    await assertCanWriteSubscriptionStatus(subscription_id, status, userId);
 
     const permission_idArray = Array.isArray(permission_ids) ? permission_ids : [permission_ids];
-
-    const permissions = await Permission.findAll({
-      where: { id: permission_idArray }
-    });
-
+    const permissions = await Permission.findAll({ where: { id: permission_idArray } });
     if (permissions.length !== permission_idArray.length) {
       const foundIds = permissions.map(p => p.id);
       const missingIds = permission_idArray.filter(id => !foundIds.includes(id));
       throw { status: 404, message: `Permissions with ids ${missingIds.join(', ')} not found` };
     }
 
-    await Promise.all(
-      permission_idArray.map((permission_id) => upsertSubscriptionPermission(subscription_id, permission_id, status))
+    const promises = permission_idArray.map((permission_id) =>
+      upsertSubscriptionPermission(subscription_id, permission_id, status)
     );
+
+    await Promise.all(promises);
 
     return {
       message: `Successfully updated ${permission_idArray.length} permission(s) status to ${status}`

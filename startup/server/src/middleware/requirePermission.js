@@ -3,21 +3,15 @@ const { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_INTERNAL_ERROR } = require('../consta
 const allowedPermissions = require('../utils/allowedPermissions');
 const { sendError } = require('../utils/response');
 
-
-/**
- * Factory function that creates Express middleware to check if the authenticated user
- * has a specific named permission. Must be used after the auth protect middleware.
- * @param {string} permissionName - Required permission name (e.g., "User.delete")
- * @returns {Function} Express middleware that sends 403 if permission is missing
- */
 function requirePermission(permissionName) {
+  const permissionList = Array.isArray(permissionName) ? permissionName : [permissionName];
   return async function requirePermissionMiddleware(req, res, next) {
     try {
-      const hasPermission = await allowedPermissions(req.user.id, [permissionName]);
+      const hasPermission = await allowedPermissions(req.user.id, permissionList);
       if (!hasPermission) {
         return sendError(res, {
           statusCode: HTTP_STATUS_FORBIDDEN,
-          message: `You are not authorized. Missing permission: ${permissionName}`
+          message: `You are not authorized. Missing permission: ${permissionList.join(' or ')}`
         });
       }
       return next();

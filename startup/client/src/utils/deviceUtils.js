@@ -1,26 +1,11 @@
-/**
- * Returns the browser's user agent string, or empty string in non-browser environments.
- * @returns {string} User agent string
- */
 const getUserAgent = () =>
   typeof navigator !== "undefined" && navigator.userAgent
     ? navigator.userAgent
     : "";
 
-/**
- * Detects if the current device is a mobile device based on user agent.
- * @param {string} ua - User agent string (defaults to current browser UA)
- * @returns {boolean} True if the device is mobile
- */
 const isMobileDevice = (ua = getUserAgent()) =>
   /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
 
-/**
- * Detects if the app is running inside a native WebView (iOS, Android, or React Native).
- * Checks for iOS WKWebView, Android WebView markers, and React Native bridge objects.
- * @param {string} ua - User agent string (defaults to current browser UA)
- * @returns {boolean} True if running in a WebView
- */
 const isInWebView = (ua = getUserAgent()) => {
   if (typeof window === "undefined" || !ua) return false;
 

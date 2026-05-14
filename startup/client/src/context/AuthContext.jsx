@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ApiService } from "../services/ApiService";
+import { ApiService } from "@services/ApiService";
 import { isAllowedDevice } from "../utils/deviceUtils";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
 
-/**
- * Root authentication and data provider. Manages user session state, device access
- * authorization, and auth-checked loading states. On mount, fetches the current user
- * from /users/me and handles session expiration, device restriction, and routing.
- * Provides userData, logout, loading, and hamburgerMenu state via DataContext.
- * @param {{ children: React.ReactNode }} props
- */
 const DataProvider = ({ children }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,28 +55,13 @@ const DataProvider = ({ children }) => {
           navigate(redirectTo, { replace: true });
         }
       } catch (err) {
-        // Check if this is a session expiration error
-        const isSessionExpired = err?.requiresLogin === true || err?.status === 400;
+        console.error("Error fetching user:", err);
+        setUserData(null);
+        setError(err);
         
-        if (isSessionExpired) {
-          // Session expired - silently handle, don't log as error
-          setUserData(null);
-          setError(null); // Clear error for session expiration
-          
-          // Only redirect to login if not on a public path and not already on the login page
-          if (!isPublicPath && !isLoginPage) {
-            navigate("/", { state: { from: location }, replace: true });
-          }
-        } else {
-          // Other errors - log them
-          console.error("Error fetching user:", err);
-          setUserData(null);
-          setError(err);
-          
-          // Only redirect to login if not on a public path and not already on the login page
-          if (!isPublicPath && !isLoginPage) {
-            navigate("/", { state: { from: location }, replace: true });
-          }
+        // Only redirect to login if not on a public path and not already on the login page
+        if (!isPublicPath && !isLoginPage) {
+          navigate("/", { state: { from: location }, replace: true });
         }
       } finally {
         setLoading(false);

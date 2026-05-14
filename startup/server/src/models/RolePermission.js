@@ -2,21 +2,21 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const RolePermission = sequelize.define('RolePermission', {
-    roleId: {
+    role_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Role',
+        model: 'nbnext_roles',
         key: 'id'
       },
       onUpdate: 'CASCADE',
       onDelete: 'CASCADE'
     },
-    permissionId: {  // todo: check why permission id is created capital when roleId is small
+    permission_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'Permission',
+        model: 'nbnext_permissions',
         key: 'id'
       },
       onUpdate: 'CASCADE',

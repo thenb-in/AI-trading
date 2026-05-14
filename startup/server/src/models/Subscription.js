@@ -1,7 +1,7 @@
-const { companyOwnedEntityFields } = require('../utils/modelFieldDefinitions');
+const { namedCompanyScopedEntityFields } = require('./mixins/namedCompanyScopedEntity');
 
-module.exports = (sequelize) => {
-  const Subscription = sequelize.define('Subscription', companyOwnedEntityFields, {
+module.exports = (sequelize, DataTypes) => {
+  const Subscription = sequelize.define('Subscription', namedCompanyScopedEntityFields(DataTypes), {
     tableName: 'nbnext_subscriptions',
     underscored: true,
     timestamps: true,

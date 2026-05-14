@@ -3,10 +3,11 @@
  * Handles request parsing, validation, controller calls, and response building
  */
 const logger = require('../../logger');
-const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('../constants/base_permissions');
 const authController = require('../controllers/authController');
 const allowedPermissions = require('../utils/allowedPermissions');
 const { setAuthCookies } = require('../utils/auth_shared_utils');
+const { sequelizeErrors } = require('../constants/errors');
 
 /**
  * Sign up view
@@ -15,28 +16,36 @@ const { setAuthCookies } = require('../utils/auth_shared_utils');
  */
 async function signup(req, res) {
   try {
-    // Extract data from request (company_id optional, e.g. from /signup?company_id=uuid)
-    const { phone, username, password, name, role, company_id, companyId } = req.body;
-    const companyIdResolved = company_id ?? companyId ?? null;
+    // Extract data from request
+    const { phone, username, password, name, company_id, role } = req.body;
 
     // Call controller
-    const user = await authController.signup(username, password, companyIdResolved, { phone, name, role });
+    const user = await authController.signup(username, password, company_id, { phone, name, role });
 
     // Build and send response
     res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
   } catch (error) {
-    // Handle specific errors with proper status codes
+    // Sequelize unique/validation errors default to message = "Validation error";
+    // unwrap .errors[] so the caller sees what actually failed (e.g.
+    // "username must be unique") instead of the generic string.
+    if (error.name === sequelizeErrors.SEQUELIZE_UNIQUE_CONSTRAINT_ERROR || error.name === sequelizeErrors.SEQUELIZE_VALIDATION_ERROR) {
+      const detail = error.errors?.[0]?.message || error.message;
+      logger.error('Signup error (sequelize)', error);
+      const status = error.name === sequelizeErrors.SEQUELIZE_UNIQUE_CONSTRAINT_ERROR ? 409 : 400;
+      return res.status(status).json({ error: detail });
+    }
+
     // eslint-disable-next-line custom/no-hardcoded-strings
     const errorMessage = error.message || 'An error occurred during signup';
 
-    if (errorMessage.includes('Invalid role')) {
-      return res.status(400).json({ error: errorMessage });
-    }
     if (errorMessage.includes('Company not found')) {
       return res.status(404).json({ error: errorMessage });
     }
+    if (errorMessage.includes('Invalid role')) {
+      return res.status(400).json({ error: errorMessage });
+    }
     // eslint-disable-next-line custom/no-hardcoded-strings
-    if (errorMessage.includes('Phone number already exists') || errorMessage.includes('username')) {
+    if (errorMessage.includes('Phone number already exists') || errorMessage.includes('username') || errorMessage.includes('Username')) {
       return res.status(409).json({ error: errorMessage });
     }
 
@@ -56,24 +65,15 @@ async function signup(req, res) {
 async function login(req, res) {
   try {
     // Call controller
-    const loginResult = await authController.loginUser(req.body);
-    const { user, accessToken, refreshToken, insufficientWallet, walletMessage, requiresOnboarding } = loginResult;
+    const { user, accessToken, refreshToken } = await authController.loginUser(req.body);
 
     // Set HTTP-only cookies
     setAuthCookies(res, { access: accessToken, refresh: refreshToken });
 
     // Build and send response
-    const response = { user ,accessToken, refreshToken };
-    if (insufficientWallet !== undefined) {
-      response.insufficientWallet = insufficientWallet;
-    }
-    if (walletMessage) {
-      response.walletMessage = walletMessage;
-    }
-    if (requiresOnboarding !== undefined) {
-      response.requiresOnboarding = requiresOnboarding;
-    }
-    res.json(response);
+    // accessToken + refreshToken are also returned in body for mobile clients
+    // (React Native cannot read httpOnly Set-Cookie headers)
+    res.json({ user, accessToken, refreshToken });
   } catch (error) {
     // Handle specific errors
     if (error.message === 'User not found' || error.message === 'Invalid credentials') {
@@ -91,9 +91,6 @@ async function login(req, res) {
     if (error.requiresPasswordChange) {
       return res.status(403).json({ error: error.message, requiresPasswordChange: true });
     }
-    if (error.requiresTotpSetup) {
-      return res.status(403).json({ error: error.message, requiresTotpSetup: true });
-    }
     logger.error('Login error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
@@ -107,13 +104,13 @@ async function login(req, res) {
 async function resetPassword(req, res) {
   try {
     // Extract data from request
-    const { username, password, isFirstLogin, otp } = req.body;
+    const { username, password, isFirstLogin } = req.body;
 
     // Call controller
-    await authController.resetPassword({ username, password, isFirstLogin, otp });
+    await authController.resetPassword({ username, password, isFirstLogin });
 
     // Build and send response
-    res.status(200).json({ message: `Password reset successfully,for ${username}` });
+    res.status(200).json({ message: `Password reset successfully, account deactivated, pending admin approval ${username}` });
   } catch (error) {
     if (error.message === 'User not found') {
       return res.status(404).json({ error: error.message });
@@ -132,7 +129,7 @@ async function approveUser(req, res) {
   try {
     // Extract data from request
     const userId = req.params.userId;
-    const { requirePasswordReset = false, roleId = null } = req.body;
+    const { requirePasswordReset = false, role_id = null } = req.body;
     const currentUserId = req.user.id;
 
     // Permission check
@@ -143,7 +140,7 @@ async function approveUser(req, res) {
     }
 
     // Call controller
-    await authController.approveUser(userId, requirePasswordReset, roleId);
+    await authController.approveUser(userId, requirePasswordReset, role_id);
 
     // Build and send response
     res.status(200).json({ message: `User approved successfully ${userId}` });
@@ -214,59 +211,9 @@ async function logout(req, res) {
     res.clearCookie('isLoggedIn');
 
     // Build and send response
-    res.status(200).json({ message: `User with id:${userId} logged out successfully` });
+    res.status(200).json({ message: `User logged out successfully ${userId}` });
   } catch (error) {
     logger.error('Logout error', error);
-    res.status(500).json({ error: `Internal server error: ${error.message}` });
-  }
-}
-
-/**
- * Generate TOTP secret view
- * @param {object} req - Express request object
- * @param {object} res - Express response object
- */
-async function generateTotpSecret(req, res) {
-  try {
-    // Extract data from request
-    const { username } = req.body;
-
-    // Call controller
-    const totpData = await authController.generateTotpSecret(username);
-
-    // Build and send response
-    res.status(200).json(totpData);
-  } catch (error) {
-    if (error.message.includes('User not found')) {
-      return res.status(404).json({ error: error.message });
-    }
-    logger.error('Generate TOTP secret error', error);
-    res.status(500).json({ error: `Internal server error: ${error.message}` });
-  }
-}
-
-/**
- * Verify and enable TOTP view
- * @param {object} req - Express request object
- * @param {object} res - Express response object
- */
-async function verifyAndEnableTotp(req, res) {
-  // Extract data from request
-  const { username, totpCode } = req.body;
-  try {
-    // Call controller
-    const result = await authController.verifyAndEnableTotp(username, totpCode);
-
-    // Build and send response
-    res.status(200).json(result);
-  } catch (error) {
-    if (error.message === 'User not found') {
-      return res.status(404).json({ error: error.message });
-    }
-    if (error.message === `Invalid TOTP code:${totpCode}` || error.message === `TOTP is already enabled for this user:${username}`) {
-      return res.status(400).json({ error: error.message });
-    }
-    logger.error('Verify and enable TOTP error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }
@@ -278,7 +225,5 @@ module.exports = {
   approveUser,
   getAllUsers,
   getAllRoles,
-  logout,
-  generateTotpSecret,
-  verifyAndEnableTotp
+  logout
 };

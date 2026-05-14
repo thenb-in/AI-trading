@@ -28,9 +28,19 @@ const NBnextDriveAttachment = ({
   uploadOnSubmitOnly = false,
   pendingFiles = [],
   onPendingFilesChange,
-  title = 'Attachments'
+  title = 'Attachments',
+  startDate,
+  endDate,
+  attachmentsState
 }) => {
-  const { existingFiles, loadingFiles, refetch } = useExistingAttachments(objectName, objectId);
+  const internal = useExistingAttachments(
+    objectName,
+    objectId,
+    startDate,
+    endDate,
+    !attachmentsState
+  );
+  const { existingFiles, loadingFiles, refetch } = attachmentsState ?? internal;
   const [uploading, setUploading] = useState(false);
   const [localFiles, setLocalFiles] = useState([]);
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '', isBlob: false });
@@ -51,7 +61,7 @@ const NBnextDriveAttachment = ({
         (async () => {
           try {
             for (const file of next) {
-              await nbnextDriveService.uploadFile(file, objectName, String(objectId));
+              await nbnextDriveService.uploadFile(file, objectName, String(objectId), endDate || null);
             }
             toast.success(next.length === 1 ? 'File uploaded.' : `${next.length} files uploaded.`);
             refetch();
@@ -67,7 +77,7 @@ const NBnextDriveAttachment = ({
         setLocalFiles([]);
       }
     },
-    [uploadOnSubmitOnly, hasObjectId, objectName, objectId, onPendingFilesChange, refetch]
+    [uploadOnSubmitOnly, hasObjectId, objectName, objectId, endDate, onPendingFilesChange, refetch]
   );
 
   const handleViewerLoadError = useCallback((msg) => {
@@ -206,7 +216,14 @@ NBnextDriveAttachment.propTypes = {
   uploadOnSubmitOnly: PropTypes.bool,
   pendingFiles: PropTypes.arrayOf(PropTypes.instanceOf(File)),
   onPendingFilesChange: PropTypes.func,
-  title: PropTypes.string
+  title: PropTypes.node,
+  startDate: PropTypes.string,
+  endDate: PropTypes.string,
+  attachmentsState: PropTypes.shape({
+    existingFiles: PropTypes.array.isRequired,
+    loadingFiles: PropTypes.bool.isRequired,
+    refetch: PropTypes.func.isRequired
+  })
 };
 
 export { NBnextDriveAttachment };

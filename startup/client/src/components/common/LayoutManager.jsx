@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
   Dialog,
@@ -23,19 +23,17 @@ import {
   Alert,
   CircularProgress,
   Divider,
+  Checkbox,
 } from '@mui/material';
+import { parseDateValue } from '@utils/dateTimeUtils';
 import { spacing } from '@startup/constants/theme';
 import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
   Delete as DeleteIcon,
-  Lock as PrivateIcon,
-  Public as PublicIcon,
-  Schedule as TempIcon,
 } from '@mui/icons-material';
-import { getTypeIcon, getTypeColor } from './layoutTypeUtils';
-import { ApiService } from '@services/ApiService';
-import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { layoutApi } from '@app/services/api';
+import { getLayoutTypeIcon, getLayoutTypeColor } from './layoutTypeHelpers';
 
 const LayoutManager = ({
   open,
@@ -56,11 +54,18 @@ const LayoutManager = ({
   const [newLayoutName, setNewLayoutName] = useState('');
   const [newLayoutType, setNewLayoutType] = useState('private');
 
-  const loadLayouts = useCallback(async () => {
+  // Load layouts when dialog opens
+  useEffect(() => {
+    if (open && documentName) {
+      loadLayouts();
+    }
+  }, [open, documentName]);
+
+  const loadLayouts = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await ApiService.getLayoutsByDocument(documentName);
+      const response = await layoutApi.getLayoutsByDocument(documentName);
       setLayouts(response.data.data);
     } catch (err) {
       console.error('LayoutManager: Error loading layouts', {
@@ -73,14 +78,7 @@ const LayoutManager = ({
     } finally {
       setLoading(false);
     }
-  }, [documentName]);
-
-  // Load layouts when dialog opens
-  useEffect(() => {
-    if (open && documentName) {
-      loadLayouts();
-    }
-  }, [open, documentName, loadLayouts]);
+  };
 
   const handleSaveLayout = async () => {
     if (!newLayoutName.trim()) {
@@ -175,7 +173,7 @@ const LayoutManager = ({
 
     try {
       setError(null);
-      await ApiService.deleteLayout(layoutId);
+      await layoutApi.deleteLayout(layoutId);
       
       // Refresh layouts
       await loadLayouts();
@@ -226,12 +224,12 @@ const LayoutManager = ({
           {layoutList.map((layout) => (
             <ListItem key={layout.id} sx={{ px: 0 }}>
               <ListItemIcon>
-                <CheckboxTypeField
-                  mode="bare"
+                <Checkbox
+                  edge="start"
                   checked={layout.is_default || false}
                   onChange={(e) => handleSetDefault(layout, e.target.checked)}
                   tabIndex={-1}
-                  className="w-4 h-4"
+                  disableRipple
                 />
               </ListItemIcon>
               <ListItemText
@@ -246,14 +244,14 @@ const LayoutManager = ({
                 secondary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm, mt: spacing.xs }}>
                     <Chip
-                      icon={getTypeIcon(layout.type)}
+                      icon={getLayoutTypeIcon(layout.type)}
                       label={layout.type}
                       size="small"
-                      color={getTypeColor(layout.type)}
+                      color={getLayoutTypeColor(layout.type)}
                       variant="outlined"
                     />
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(layout.created_at).toLocaleDateString()}
+                      {parseDateValue(layout.created_at)?.toLocaleDateString() ?? ''}
                     </Typography>
                   </Box>
                 }
@@ -346,19 +344,19 @@ const LayoutManager = ({
               >
                 <MenuItem value="private">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    <PrivateIcon fontSize="small" />
+                    {getLayoutTypeIcon('private')}
                     Private (Only you can see)
                   </Box>
                 </MenuItem>
                 <MenuItem value="public">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    <PublicIcon fontSize="small" />
+                    {getLayoutTypeIcon('public')}
                     Public (Everyone can see)
                   </Box>
                 </MenuItem>
                 <MenuItem value="temp">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    <TempIcon fontSize="small" />
+                    {getLayoutTypeIcon('temp')}
                     Temporary (Auto-deleted after 7 days)
                   </Box>
                 </MenuItem>

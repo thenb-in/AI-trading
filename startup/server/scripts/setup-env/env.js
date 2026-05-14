@@ -9,24 +9,24 @@ async function checkEnvFile() {
   const envExamplePath = path.join(process.cwd(), '.env.example');
 
   if (!fs.existsSync(envExamplePath)) {
-    logger.error('❌ .env.example file not found!');
-    logger.warn('Please create a .env.example file with all required environment variables.');
+    logger.error(`❌ .env.example file not found!`);
+    logger.warn(`Please create a .env.example file with all required environment variables.`);
     return false;
   }
 
   if (!fs.existsSync(envPath)) {
-    logger.warn('⚠️  .env file not found!');
-    logger.info('Creating .env file with interactive configuration...');
+    logger.warn(`⚠️  .env file not found!`);
+    logger.info(`Creating .env file with interactive configuration...`);
 
     try {
       // Get database configuration from user
       const dbConfig = await configureDatabase();
       if (!dbConfig) {
-        logger.error('❌ Database configuration failed, using .env.example as fallback');
+        logger.error(`❌ Database configuration failed, using .env.example as fallback`);
         const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
         fs.writeFileSync(envPath, envExampleContent);
-        logger.info('✅ .env file created from .env.example (fallback)');
-        logger.warn('⚠️  Please update the .env file with your actual values!');
+        logger.info(`✅ .env file created from .env.example (fallback)`);
+        logger.warn(`⚠️  Please update the .env file with your actual values!`);
         return true;
       }
 
@@ -49,14 +49,13 @@ async function checkEnvFile() {
       // Write the configured .env file
       fs.writeFileSync(envPath, envContent);
 
-      logger.info('✅ .env file created with your configuration!');
-      logger.info('🔐 JWT secrets have been generated and added');
-      logger.info('💡 You can modify these values later if needed');
+      logger.info(`✅ .env file created with your configuration!`);
+      logger.info(`🔐 JWT secrets have been generated and added`);
+      logger.info(`💡 You can modify these values later if needed`);
 
       return true;
     } catch (error) {
-      logger.error('❌ Failed to create .env file:');
-      logger.error(error.message);
+      logger.error(`❌ Failed to create .env file: ${error.message}`, error);
       return false;
     }
   }
@@ -66,16 +65,15 @@ async function checkEnvFile() {
 
 function validateEnvFile() {
   try {
-    logger.info('🔍 Validating environment variables...');
+    logger.info(`🔍 Validating environment variables...`);
 
     // This will throw an error if required variables are missing
     require('../../src/config/env');
 
-    logger.info('✅ All required environment variables are present!');
+    logger.info(`✅ All required environment variables are present!`);
     return true;
   } catch (error) {
-    logger.error('❌ Environment validation failed:');
-    logger.error(error.message);
+    logger.error(`❌ Environment validation failed: ${error.message}`, error);
     return false;
   }
 }

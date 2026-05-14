@@ -1,10 +1,10 @@
 import { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Download } from 'lucide-react';
+import { Copy, Download } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 
-const QRCodeDisplay = ({ content, heading, message, onDownload }) => {
+const QRCodeDisplay = ({ content, heading, message, onDownload, showCopyableValue = false, valueLabel }) => {
   const qrRef = useRef(null);
 
   const handleDownload = async () => {
@@ -99,6 +99,15 @@ const QRCodeDisplay = ({ content, heading, message, onDownload }) => {
     }
   };
 
+  const handleCopyContent = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success('Copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy. Please try again.');
+    }
+  };
+
   return (
     <div className="flex flex-col items-center p-6 bg-white rounded-lg border border-gray-200 shadow-sm">
       {heading && (
@@ -119,6 +128,22 @@ const QRCodeDisplay = ({ content, heading, message, onDownload }) => {
           {message}
         </p>
       )}
+      {showCopyableValue && content && (
+        <div className="mt-4 w-full max-w-xs">
+          {valueLabel && (
+            <p className="text-xs text-gray-500 mb-1 text-center">{valueLabel}</p>
+          )}
+          <button
+            type="button"
+            onClick={handleCopyContent}
+            title="Click to copy"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors text-xs font-mono text-gray-700"
+          >
+            <span className="truncate">{content}</span>
+            <Copy size={14} className="flex-shrink-0 text-gray-500" />
+          </button>
+        </div>
+      )}
       <button
         onClick={handleDownload}
         className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -135,6 +160,8 @@ QRCodeDisplay.propTypes = {
   heading: PropTypes.string,
   message: PropTypes.string,
   onDownload: PropTypes.func,
+  showCopyableValue: PropTypes.bool,
+  valueLabel: PropTypes.string,
 };
 
 export { QRCodeDisplay };

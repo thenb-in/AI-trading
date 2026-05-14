@@ -1,7 +1,7 @@
 // const logger = require('../../logger');
 // const db = require('../../src/models');
 
-async function createStartingAppData(company) {
+async function createStartingAppData(_company) {
 
 }
 

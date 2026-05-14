@@ -1,53 +1,45 @@
 const fs = require('fs');
 const path = require('path');
+const { Op } = require('sequelize');
 const logger = require('../../logger');
 const env = require('../config/env');
 const { NBNEXT_DRIVE_FILE_NOT_FOUND, NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK } = require('../constants/errors');
-const { createdByUserInclude } = require('../constants/query_includes');
 const { NBnextDrive, User } = require('../models');
+const { getDayRange } = require('../utils/dateUtils');
 
-const FILE_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
-const FILE_INCLUDE = [createdByUserInclude(User)];
+const NBNEXT_DRIVE_SUMMARY_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
 
-/**
- * Finds a file by ID within a company scope. Restricts to user's own files unless showAll is true.
- * @param {number} id - File record ID
- * @param {string} companyId - Company scope
- * @param {string|number} userId - Requesting user's ID
- * @param {boolean} showAll - If true, skip user ownership filter (admin mode)
- * @returns {Promise<{ file: Object, where: Object }>} File instance and the where clause used
- * @throws {Error} If file not found
- */
-async function findFileOrThrow(id, companyId, userId, showAll) {
+const NBNEXT_DRIVE_INCLUDE_CREATED_BY = {
+  model: User,
+  as: 'createdByUser',
+  required: false,
+  attributes: ['id', 'name']
+};
+
+// Builds the `where` clause for a single-file lookup that respects the
+// "show only my files vs. show everyone in the company" toggle.
+function ownedDriveFileWhere(id, companyId, userId, showAll) {
   const where = { id, companyId };
   if (!showAll) {
     where.createdBy = userId;
   }
-  const file = await NBnextDrive.findOne({ where });
-  if (!file) {
-    throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
-  }
-  return { file, where };
+  return where;
 }
 
 const nbnextDriveService = {
   async getAllFiles(companyId, userId, showAll = false) {
     try {
-      const where = {
-        companyId
-      };
-
+      const where = { companyId };
       if (!showAll) {
         where.createdBy = userId;
       }
 
-      const files = await NBnextDrive.findAll({
+      return await NBnextDrive.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes: FILE_ATTRIBUTES,
-        include: FILE_INCLUDE
+        attributes: NBNEXT_DRIVE_SUMMARY_ATTRIBUTES,
+        include: [NBNEXT_DRIVE_INCLUDE_CREATED_BY]
       });
-      return files;
     } catch (error) {
       logger.error('Error fetching all files', error);
       throw new Error(`Failed to fetch files: ${error.message}`);
@@ -56,19 +48,10 @@ const nbnextDriveService = {
 
   async getFileById(id, companyId, userId, showAll = false) {
     try {
-      const where = {
-        id,
-        companyId
-      };
-
-      if (!showAll) {
-        where.createdBy = userId;
-      }
-
       const file = await NBnextDrive.findOne({
-        where,
-        attributes: FILE_ATTRIBUTES,
-        include: FILE_INCLUDE
+        where: ownedDriveFileWhere(id, companyId, userId, showAll),
+        attributes: NBNEXT_DRIVE_SUMMARY_ATTRIBUTES,
+        include: [NBNEXT_DRIVE_INCLUDE_CREATED_BY]
       });
 
       if (!file) {
@@ -84,7 +67,7 @@ const nbnextDriveService = {
 
   async createFile(fileData, createdBy, companyId) {
     try {
-      const file = await NBnextDrive.create({
+      const payload = {
         fileName: fileData.fileName,
         filePath: fileData.filePath,
         fileSize: fileData.fileSize,
@@ -93,7 +76,15 @@ const nbnextDriveService = {
         objectId: fileData.objectId || null,
         createdBy,
         companyId
-      });
+      };
+      // When the upload is scoped to a report period, stamp createdAt to the
+      // period's end date so the existing date-range filter on getFilesByObject
+      // returns the file for that period instead of only "today".
+      if (fileData.endDate) {
+        const { end_date } = getDayRange(fileData.endDate, fileData.endDate);
+        payload.createdAt = end_date;
+      }
+      const file = await NBnextDrive.create(payload);
       return file;
     } catch (error) {
       logger.error('Error creating file', error);
@@ -103,7 +94,12 @@ const nbnextDriveService = {
 
   async deleteFile(id, companyId, userId, showAll = false) {
     try {
-      const { file, where } = await findFileOrThrow(id, companyId, userId, showAll);
+      const where = ownedDriveFileWhere(id, companyId, userId, showAll);
+      const file = await NBnextDrive.findOne({ where });
+
+      if (!file) {
+        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+      }
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
 
@@ -121,19 +117,30 @@ const nbnextDriveService = {
     }
   },
 
-  async getFilesByObject(companyId, objectName, objectId) {
+  async getFilesByObject(companyId, objectName, objectId, startDate, endDate) {
     try {
       const where = {
         companyId,
         objectName: objectName || null,
-        objectId: objectId !== null ? String(objectId) : null
+        objectId: objectId ? String(objectId) : null
       };
+
+      if (startDate && endDate) {
+        const { start_date, end_date } = getDayRange(startDate, endDate);
+        where.createdAt = { [Op.between]: [start_date, end_date] };
+      } else if (startDate) {
+        const { start_date } = getDayRange(startDate, startDate);
+        where.createdAt = { [Op.gte]: start_date };
+      } else if (endDate) {
+        const { end_date } = getDayRange(endDate, endDate);
+        where.createdAt = { [Op.lte]: end_date };
+      }
 
       const files = await NBnextDrive.findAll({
         where,
         order: [['createdAt', 'DESC']],
-        attributes: FILE_ATTRIBUTES,
-        include: FILE_INCLUDE
+        attributes: NBNEXT_DRIVE_SUMMARY_ATTRIBUTES,
+        include: [NBNEXT_DRIVE_INCLUDE_CREATED_BY]
       });
       return files;
     } catch (error) {
@@ -144,7 +151,13 @@ const nbnextDriveService = {
 
   async getFileStream(id, companyId, userId, showAll = false) {
     try {
-      const { file } = await findFileOrThrow(id, companyId, userId, showAll);
+      const file = await NBnextDrive.findOne({
+        where: ownedDriveFileWhere(id, companyId, userId, showAll)
+      });
+
+      if (!file) {
+        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+      }
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
 

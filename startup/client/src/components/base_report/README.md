@@ -13,11 +13,10 @@ BaseReport/
 ├── ReportUtils.js          # Utility functions for data processing
 ├── LoadingBarReport.jsx    # Loading overlay component
 ├── reportFormatter.js      # Data formatting utilities
-├── reportExport/           # Excel export functionality
-│   ├── index.js
-│   ├── excelRenderer.js
-│   └── formattingUtils.js
 └── index.js                # Main exports
+```
+
+Excel export is provided by `nbnext_data_grid/reportExport`; use `onExcelExport` with NbNextDataGrid and `handleExport` from that module.
 ```
 
 ## Usage
@@ -25,7 +24,7 @@ BaseReport/
 ### Basic Usage
 
 ```jsx
-import { BaseReport } from '@components/startup/BaseReport';
+import { BaseReport } from '@/components/startup/base_report';
 import { ApiService } from '@services/startup/ApiService';
 
 const MyReport = ({ report, locationState }) => {

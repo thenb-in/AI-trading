@@ -1,8 +1,9 @@
 // In-process cron job registry.
 //
 // Wraps node-cron with a consistent overlap guard, timing log, and error
-// isolation so every in-process scheduler can be registered the same way
-// without each of them reinventing the wheel.
+// isolation so every in-process scheduler (wage, callLog, address, archive
+// tracking, lock attendance, etc.) can be registered the same way without
+// each of them reinventing the wheel.
 //
 // Usage (app-specific jobs register themselves, then call startAllJobs from
 // server/index.js after models are ready):
@@ -10,15 +11,14 @@
 //   const { registerJob, startAllJobs } = require('./jobRegistry');
 //
 //   registerJob({
-//     name: 'daily-cleanup',
+//     name: 'wage',
 //     cronTime: '0 0 * * *',
-//     run: () => cleanupOldRecords(),
+//     run: () => calculateWages(),
 //     enabled: true
 //   });
 //
-//   // In server/index.js after DB is ready:
-//   startAllJobs();
-//   // On graceful shutdown:
+//   startAllJobs();  // from server/index.js after models are ready
+//   // …later, on shutdown:
 //   stopAllJobs();
 
 const cron = require('node-cron');
@@ -80,7 +80,9 @@ function startAllJobs() {
       continue;
     }
 
-    const task = cron.schedule(job.cronTime, () => tick(job), { scheduled: true });
+    const task = cron.schedule(job.cronTime, () => tick(job), {
+      scheduled: true
+    });
     jobState.set(job.name, { task, running: false, lastRunAt: null });
     logger.info(`scheduler: [${job.name}] started (${job.cronTime})`);
   }
@@ -131,6 +133,10 @@ async function tick(job) {
   }
 }
 
+/**
+ * Stringify a job-run return value defensively so a badly-shaped result
+ * doesn't crash the log line itself.
+ */
 function safeStringify(value) {
   try {
     if (value === null || typeof value !== 'object') {
@@ -143,10 +149,17 @@ function safeStringify(value) {
   }
 }
 
-/** Test hook: clear the registry. Not used in prod. */
+/**
+ * Test hook: clear the registry. Not used in prod.
+ */
 function _resetForTests() {
   stopAllJobs();
   jobs.clear();
 }
 
-module.exports = { registerJob, startAllJobs, stopAllJobs, _resetForTests };
+module.exports = {
+  registerJob,
+  startAllJobs,
+  stopAllJobs,
+  _resetForTests
+};

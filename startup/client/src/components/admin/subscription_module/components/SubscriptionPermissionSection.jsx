@@ -1,21 +1,8 @@
 import { useCallback, useMemo } from 'react';
-import { Layers, FileText, Database, AlertTriangle } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { getSubscriptionPermissionStatus } from '../utils/permissionUtils';
-
-const categoryIcons = {
-  module: Layers,
-  report: FileText,
-  master: Database,
-  other: AlertTriangle,
-};
-
-const categoryColors = {
-  module: 'bg-blue-50 border-blue-200',
-  report: 'bg-purple-50 border-purple-200',
-  master: 'bg-green-50 border-green-200',
-  other: 'bg-yellow-50 border-yellow-200',
-};
+import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS } from '../../permissionCategoryStyles';
 
 function getEntityKeyFromPermissionName(permissionName) {
   if (!permissionName) return 'Other';
@@ -89,8 +76,8 @@ function SubscriptionPermissionSection({
     hasPermissions = permissions && Array.isArray(permissions) && permissions.length > 0;
   }
 
-  const Icon = categoryIcons[category] || Layers;
-  const colorClass = categoryColors[category] || 'bg-gray-50 border-gray-200';
+  const Icon = PERMISSION_CATEGORY_ICONS[category] || Layers;
+  const colorClass = PERMISSION_CATEGORY_COLORS[category] || 'bg-gray-50 border-gray-200';
 
   const groupedRows = useMemo(() => {
     if (category === 'master' || category === 'report') {

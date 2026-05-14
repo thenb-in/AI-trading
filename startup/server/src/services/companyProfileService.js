@@ -1,5 +1,5 @@
-const logger = require('../../logger');
 const { CompanyProfile, Company } = require('../models');
+const logger = require('../../logger');
 
 const companyProfileService = {
   async getCompanyProfile(companyId) {
@@ -9,8 +9,8 @@ const companyProfileService = {
         include: [
           {
             model: Company,
-            as: 'company',
-            attributes: ['id', 'name']
+            as: 'company'
+            // attributes: ['id', 'name']
           }
         ]
       });
@@ -57,14 +57,6 @@ const companyProfileService = {
       logger.error('Failed to update company profile', error);
       throw new Error(`Failed to update company profile: ${error.message}`);
     }
-  },
-
-  async createCompanyProfile(companyId, data = {}, transaction = null) {
-    const options = transaction ? { transaction } : {};
-    return await CompanyProfile.create({
-      companyId,
-      ...data
-    }, options);
   }
 };
 

@@ -1,47 +1,47 @@
-// Factory for standalone scheduler processes (run as separate Node.js processes,
-// e.g. via systemd or pm2).
+// Factory for standalone scheduler processes (systemd services).
 //
-// Provides a reusable lifecycle pattern:
-//   - authenticates the database
-//   - runs one sync cycle immediately on startup
-//   - schedules subsequent ticks via cron
-//   - handles overlap guard (no double-run)
-//   - handles SIGINT/SIGTERM for graceful shutdown
+// Both sync_transaction and sync_terminal_commands used to ship their own
+// ~200-line runner file that: authenticated the DB, ran the first sync
+// immediately, scheduled a cron via `cron.CronJob`, guarded against overlap,
+// handled SIGINT/SIGTERM, and closed the DB on shutdown. All of that was
+// near-identical modulo log prefixes and env vars.
 //
-// Usage: create a runner_*.js file for each standalone scheduler:
+// This factory keeps a single implementation of that lifecycle and lets each
+// scheduler opt in by providing just a name and a `syncOnce` function.
 //
 //   const { createStandaloneScheduler } = require('./standaloneSchedulerFactory');
 //   const { syncOnce } = require('./mySync');
 //
-//   createStandaloneScheduler({
-//     name: 'my-sync',
-//     cronTime: '*/5 * * * *',
-//     syncOnce,
-//   });
+//   createStandaloneScheduler({ name, cronTime, syncOnce, batchSize }) — used by
+//     runner_sync_scheduler.js; schedules `syncOnce` on cron with overlap guard.
 //
-// App-specific runner files should live OUTSIDE the startup/ folder,
-// e.g. server/scheduler/myFeature/runner.js.
+//   runOnceStandalone({ name, syncOnce }) — used by runner_sync_once.js when
+//     executed directly (`node runner_sync_once.js` or the `*-sync` npm script)
+//     to run a single sync cycle and exit.
 
-const cron = require('node-cron');
+const { CronJob } = require('cron');
 const logger = require('../../logger');
 const db = require('../../src/models');
 
 /**
- * Create and start a standalone cron scheduler as its own process.
+ * Create and start a standalone cron scheduler as its own process. Intended
+ * to be called at the bottom of a `runner_sync_scheduler.js` file; that file
+ * is then launched via `node scheduler/<name>/runner_sync_scheduler.js`.
  *
  * @param {Object}   opts
- * @param {string}   opts.name      Used as log prefix
+ * @param {string}   opts.name      Used as log prefix (e.g. 'sync_transaction')
  * @param {string}   opts.cronTime  Standard cron expression
- * @param {Function} opts.syncOnce  async (batchSize?) => any
+ * @param {Function} opts.syncOnce  async (batchSize?) => number|any
+ *                                  The one-cycle sync function.
  * @param {number}   [opts.batchSize]  Passed through to syncOnce on each tick.
  */
 function createStandaloneScheduler({ name, cronTime, syncOnce, batchSize }) {
   if (!name || !cronTime || typeof syncOnce !== 'function') {
-    throw new Error(`standaloneSchedulerFactory: name, cronTime, syncOnce are required (name=${name})`);
+    throw new Error(`standaloneSchedulerFactory: name, cronTime, syncOnce are required (name=${name}, cronTime=${cronTime})`);
   }
 
   let running = false;
-  let cronTask = null;
+  let cronJob = null;
 
   const runTick = async (tag) => {
     if (running) {
@@ -67,27 +67,25 @@ function createStandaloneScheduler({ name, cronTime, syncOnce, batchSize }) {
     logger.info(`${name}: [START] scheduler starting (cronTime=${cronTime}, batchSize=${batchSize ?? 'default'})`);
 
     // Run the first tick immediately so startup is productive without waiting
-    // for the first cron boundary.
+    // for the next cron boundary.
     await runTick('INITIAL');
 
-    cronTask = cron.schedule(cronTime, () => {
-      runTick('CRON').catch((err) =>
-        logger.error(`${name}: [CRON] tick crashed: ${err.message}`, err)
-      );
-    }, { scheduled: true });
-
+    cronJob = new CronJob(cronTime, () => {
+      runTick('CRON').catch((err) => logger.error(`${name}: [CRON] tick crashed: ${err.message}`, err));
+    });
+    cronJob.start();
     logger.info(`${name}: [START] scheduled`);
   };
 
   const stop = async () => {
     logger.info(`${name}: [STOP] stopping scheduler`);
-    if (cronTask) {
+    if (cronJob) {
       try {
-        cronTask.stop();
+        cronJob.stop();
       } catch (error) {
-        logger.error(`${name}: [STOP] error stopping cron task: ${error.message}`, error);
+        logger.error(`${name}: [STOP] error stopping cron job: ${error.message}`, error);
       }
-      cronTask = null;
+      cronJob = null;
     }
   };
 
@@ -122,7 +120,8 @@ function createStandaloneScheduler({ name, cronTime, syncOnce, batchSize }) {
 }
 
 /**
- * Run a single sync cycle and exit. Used by run-once scripts.
+ * Run a single sync cycle and exit. Used by the `*-sync` npm scripts and by
+ * `runner_sync_once.js` files executed directly via `node`.
  *
  * @param {Object}   opts
  * @param {string}   opts.name
@@ -150,10 +149,13 @@ async function runOnceStandalone({ name, syncOnce, batchSize }) {
     try {
       await db.sequelize.close();
     } catch (closeErr) {
-      logger.error(`${name}: [STANDALONE] error closing db: ${closeErr.message}`, closeErr);
+      logger.error(`${name}: [STANDALONE] error closing db during failure handling: ${closeErr.message}`, closeErr);
     }
     process.exit(1); // eslint-disable-line no-process-exit
   }
 }
 
-module.exports = { createStandaloneScheduler, runOnceStandalone };
+module.exports = {
+  createStandaloneScheduler,
+  runOnceStandalone
+};

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { detectConstantColumns } from '../utils/constantColumnsUtils.js';
+import { detectConstantColumns } from '../utils/constantColumnsUtils';
 
 /**
  * Hook to detect columns where all rows have the same value

@@ -1,5 +1,5 @@
-import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, useMediaQuery, useTheme } from '@mui/material';
-import { X } from 'lucide-react';
+import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
+import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
@@ -18,6 +18,8 @@ const MasterModal = ({
   auditObjectId,
   showAudit = true,
   auditPageSize = 25,
+  disableContentScroll = false,
+  PaperProps: paperPropsFromCaller,
   ...props
 }) => {
   const theme = useTheme();
@@ -33,6 +35,18 @@ const MasterModal = ({
     if (!isOpen) setIsAuditOpen(false);
   }, [isOpen]);
 
+  const ownsScroll = disableContentScroll || fullScreen;
+  const mergedPaperProps = disableContentScroll
+    ? {
+        ...paperPropsFromCaller,
+        sx: {
+          height: '90vh',
+          maxHeight: '90vh',
+          ...(paperPropsFromCaller?.sx || {}),
+        },
+      }
+    : paperPropsFromCaller;
+
   return (
     <>
       <Dialog
@@ -42,6 +56,7 @@ const MasterModal = ({
         fullWidth
         fullScreen={fullScreen}
         sx={getDialogSidebarSx(fullScreen)}
+        {...(mergedPaperProps ? { PaperProps: mergedPaperProps } : {})}
         {...props}
       >
         {hasTitle && (
@@ -59,14 +74,26 @@ const MasterModal = ({
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
               {shouldShowAudit && (
-                <Button
-                  size="small"
-                 variant="outlined" 
-                 color="error"
-                  onClick={() => setIsAuditOpen(true)}
-                >
-                  Show Audit History
-                </Button>
+                fullScreen ? (
+                  <Tooltip title="Show Audit History">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => setIsAuditOpen(true)}
+                    >
+                      <History size={20} />
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setIsAuditOpen(true)}
+                  >
+                    Show Audit History
+                  </Button>
+                )
               )}
               {showCloseButton && (
                 <IconButton
@@ -86,13 +113,13 @@ const MasterModal = ({
             pt: hasTitle ? 0 : 2,
             overflowX: 'hidden',
             maxWidth: '100%',
-            ...(fullScreen && {
+            ...(ownsScroll && {
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
               overflow: 'hidden',
-              padding: 2,
+              padding: fullScreen ? 2 : 0,
             }),
           }}
         >
@@ -143,6 +170,8 @@ MasterModal.propTypes = {
   auditObjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   showAudit: PropTypes.bool,
   auditPageSize: PropTypes.number,
+  disableContentScroll: PropTypes.bool,
+  PaperProps: PropTypes.object,
 };
 
 export { MasterModal };

@@ -1,35 +1,60 @@
-import PropTypes from "prop-types";
-import { useSearchParams } from "react-router-dom";
-import { ReportHeader } from "./ReportHeader.jsx";
-import { ReportTitleSection } from "./ReportTitleSection.jsx";
-import { NbNextDataGrid } from "../nbnext_data_grid/NbNextDataGrid.jsx";
-import { useState, useEffect } from "react";
+import PropTypes from 'prop-types';
+import { useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
-import { fetchReportData, getFiltersFromSearchParams, handleFiltersApply, processApiData } from "./ReportUtils.js";
-import { LoadingBarReport } from "./LoadingBarReport.jsx";
-import { ReportFilter } from "./ReportFilter.jsx";
+import {
+  fetchReportData,
+  handleFiltersApply,
+  processApiData,
+  applyDefaultFiltersToSearchParams,
+} from '@startup/components/base_report/ReportUtils';
+import { NbNextDataGrid } from '@startup/components/nbnext_data_grid/NbNextDataGrid';
+import { getInitialSortModel } from '@utils/getInitialSortModel';
+import { BaseReportContext } from '@startup/context/BaseReportContext';
+import { BaseReportLayout } from './BaseReportLayout';
 
 /**
- * Generic BaseReport component that can be used for any report type.
- * Provides standard report functionality: filtering, data display, loading states, and export.
- * 
- * @param {Object} props
- * @param {Object} props.report - Report configuration object with title, desc, color, slug, etc.
- * @param {Object} props.locationState - Optional state passed from navigation (reportData, columns, filters, etc.)
- * @param {Array} props.additionalFilters - Optional additional filters specific to this report
- * @param {Function} props.onReportDataChange - Optional callback when report data changes
- * @param {Function} props.customTitleSection - Optional custom title section component
- * @param {Function} props.customHeader - Optional custom header component
- * @param {Object} props.reportApi - Optional report API service with getReportData(slug, filters) method
+ * Generic report shell — chrome + filters + state + grid.
+ *
+ * Two modes:
+ *
+ *  1. **Default grid** — no children. BaseReport renders a standard
+ *     `<NbNextDataGrid>` using the loaded rows/columns and the grid-related
+ *     props on this component (`documentName`, `frozenColumns`,
+ *     `initialSortFallbackColumns`, `showTotalRow`).
+ *
+ *  2. **Custom child** — pass a child component (typically a small wrapper).
+ *     The child reads state via `useBaseReportState()` and renders whatever
+ *     grid / layout / sibling overlays it needs. Use this for reports with
+ *     interactive cells, tabs, sibling modals, etc.
+ *
+ *     ```jsx
+ *     <BaseReport report={...} filtersConfig={...}>
+ *       <MyCustomGridWrapper />
+ *     </BaseReport>
+ *
+ *     // inside MyCustomGridWrapper:
+ *     const { rows, columns, setRows, dataGridRef } = useBaseReportState();
+ *     ```
+ *
+ * Caller-supplied contracts (no domain coupling here):
+ *  - `filtersConfig` / `isFilterLoading` — caller decides which filter set + dynamic-options source.
+ *  - `applyDefaultFilters` — seed search params from `report.defaultFilters` on mount.
+ *
+ * Default-grid only props (ignored when `children` is provided):
+ *  - `documentName`, `frozenColumns`, `initialSortFallbackColumns`, `showTotalRow`.
  */
-const BaseReport = ({ 
-  report, 
+const BaseReport = ({
+  report,
   locationState,
-  additionalFilters = [],
-  onReportDataChange,
-  customTitleSection,
-  customHeader,
-  reportApi
+  documentName,
+  filtersConfig,
+  isFilterLoading = false,
+  applyDefaultFilters = false,
+  frozenColumns = [],
+  initialSortFallbackColumns,
+  showTotalRow = false,
+  children,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
@@ -37,9 +62,17 @@ const BaseReport = ({
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
-  const [filters, setFilters] = useState(getFiltersFromSearchParams(searchParams));
+  const dataGridRef = useRef(null);
 
-  // Fetch initial report data
+  const isEditable = false;
+
+  const defaultReportFilters = useMemo(() => ({ ...(report?.defaultFilters || {}) }), [report]);
+
+  useEffect(() => {
+    if (!applyDefaultFilters) return;
+    applyDefaultFiltersToSearchParams(defaultReportFilters, searchParams, setSearchParams);
+  }, [applyDefaultFilters, defaultReportFilters, searchParams, setSearchParams]);
+
   useEffect(() => {
     fetchReportData(
       report,
@@ -48,95 +81,100 @@ const BaseReport = ({
       setColumns,
       setLoading,
       setInitialLoad,
-      () => {}, // setStatusDefinitions - not used by default
+      () => {},
       setSearchParams,
-      false // hasStatusDefinitions
+      isEditable,
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [report.title, locationState]);
 
-  // Handle filter application
-  const onFiltersApply = (newFilters) => {
-    setFilters(newFilters);
+  const onFiltersApply = (filters) => {
     handleFiltersApply(
-      newFilters,
+      filters,
       report,
       setRows,
       setColumns,
       setLoading,
       setIsFiltering,
       setSearchParams,
-      () => {}, // setStatusDefinitions - not used by default
-      false, // hasStatusDefinitions
-      reportApi // Pass the report API service
+      () => {},
+      isEditable,
     );
   };
 
-  // Process location state data if provided
   useEffect(() => {
     if (locationState?.reportData && locationState?.columns) {
-      const { gridColumns, gridRows } = processApiData(
+      const processed = processApiData(
         {
           columns: locationState.columns,
           data: locationState.reportData,
           status_definitions: locationState.statusDefinitions || {},
         },
-        () => {}, // setStatusDefinitions - not used by default
-        false // hasStatusDefinitions
+        () => {},
+        false,
       );
-      setColumns(gridColumns);
-      setRows(gridRows);
+      setColumns(processed.gridColumns);
+      setRows(processed.gridRows);
+      setLoading(false);
+      setInitialLoad(false);
     }
   }, [locationState]);
 
-  // Notify parent component of data changes if callback provided
-  useEffect(() => {
-    if (onReportDataChange && rows.length > 0) {
-      onReportDataChange({ rows, columns, filters });
-    }
-  }, [rows, columns, filters, onReportDataChange]);
-
   const isLoadingData = loading || initialLoad;
+  const initialSortModel = getInitialSortModel(columns, initialSortFallbackColumns);
 
-  // Use custom components if provided, otherwise use defaults
-  const TitleSection = customTitleSection || ReportTitleSection;
-  const Header = customHeader || ReportHeader;
+  const contextValue = useMemo(
+    () => ({
+      rows,
+      columns,
+      setRows,
+      setColumns,
+      isFiltering,
+      isLoadingData,
+      dataGridRef,
+    }),
+    [rows, columns, isFiltering, isLoadingData],
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header isFiltering={isFiltering} />
-
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <TitleSection report={report} rows={rows} columns={columns} />
-          <ReportFilter
-            onFiltersApply={onFiltersApply}
-            initialFilters={filters}
-            additionalFilters={additionalFilters}
-            disabled={isFiltering || isLoadingData}
-          />
-        </div>
-
-        <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-full w-full">
-          <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
+    <BaseReportLayout
+      report={report}
+      isFiltering={isFiltering}
+      isLoadingData={isLoadingData}
+      filtersConfig={filtersConfig}
+      isFilterLoading={isFilterLoading}
+      onFiltersApply={onFiltersApply}
+    >
+      <BaseReportContext.Provider value={contextValue}>
+        {children ?? (
           <NbNextDataGrid
+            ref={dataGridRef}
             rows={rows}
             columns={columns}
+            initialSortModel={initialSortModel}
+            documentName={documentName}
+            showTotalRow={showTotalRow}
+            frozenColumns={frozenColumns}
+            showExcelExport
+            exportReport={{ title: report?.title, slug: report?.slug }}
           />
-        </div>
-      </div>
-    </div>
+        )}
+      </BaseReportContext.Provider>
+    </BaseReportLayout>
   );
 };
 
 BaseReport.propTypes = {
   report: PropTypes.object.isRequired,
   locationState: PropTypes.object,
-  additionalFilters: PropTypes.array,
-  onReportDataChange: PropTypes.func,
-  customTitleSection: PropTypes.elementType,
-  customHeader: PropTypes.elementType,
-  reportApi: PropTypes.object,
+  documentName: PropTypes.string,
+  filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
+  applyDefaultFilters: PropTypes.bool,
+  frozenColumns: PropTypes.arrayOf(PropTypes.string),
+  initialSortFallbackColumns: PropTypes.arrayOf(PropTypes.string),
+  showTotalRow: PropTypes.bool,
+  children: PropTypes.node,
 };
 
 export { BaseReport };
-

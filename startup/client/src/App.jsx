@@ -7,19 +7,12 @@ import { Home } from './pages/Home';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { SignupPage } from './pages/SignupPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { OnboardingPage } from './pages/OnboardingPage';
-import { AppGuide } from './pages/AppGuide';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/consoleLogBufferService';
 
-/**
- * Root application component. Defines all top-level routes, initializes the console log
- * buffer service, and renders the global search palette and toast notification container.
- * Protected routes are wrapped with ProtectedRoute for auth enforcement.
- * @returns {JSX.Element} The complete application route tree
- */
+
 export function App() {
   useEffect(() => {
     consoleLogBufferService.start();
@@ -32,22 +25,6 @@ export function App() {
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute>
-              <OnboardingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/app-guide"
-          element={
-            <ProtectedRoute>
-              <AppGuide />
-            </ProtectedRoute>
-          }
-        />
         <Route 
           path="/user-routes"
           element={

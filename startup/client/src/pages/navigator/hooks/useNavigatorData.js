@@ -28,33 +28,23 @@ const isSuperadminCategory = (module) =>
   (module?.category || "").toLowerCase() === "superadmin";
 
 /**
- * Resolves subscription status for a permission.
- * Returns null if the module should be hidden from the current user.
+ * Returns `{ subscriptionStatus, isSubscribed, isHidden }` for a module with permission `permissionId`,
+ * or `null` to signal "hide this module from the current user" (when a hidden permission is encountered
+ * by a non-superadmin user).
+ *
+ * Hidden permissions are subscribed but only visible to support users; everyone else gets them filtered out.
  */
 function resolveSubscriptionStatus(permissionId, companySubscriptions, userData) {
-  let subscriptionStatus = null;
-  let isSubscribed = true;
-  let isHidden = false;
-
-  if (permissionId && companySubscriptions.length > 0) {
-    subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
-    isHidden = subscriptionStatus === 'hidden';
-
-    if (isHidden) {
-      if (!userData?.isSupportUser) return null;
-      isSubscribed = true;
-    } else {
-      isSubscribed = subscriptionStatus === 'subscribed';
-    }
+  if (!permissionId || companySubscriptions.length === 0) {
+    return { subscriptionStatus: null, isSubscribed: true, isHidden: false };
   }
-
-  return { subscriptionStatus, isSubscribed, isHidden };
-}
-
-function buildTextBucket(module) {
-  return [module.title, module.description, module.keywords, ...(module.tags || [])]
-    .filter(Boolean)
-    .join(' ');
+  const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
+  const isHidden = subscriptionStatus === 'hidden';
+  if (isHidden) {
+    if (!userData?.isSupportUser) return null;
+    return { subscriptionStatus, isSubscribed: true, isHidden };
+  }
+  return { subscriptionStatus, isSubscribed: subscriptionStatus === 'subscribed', isHidden };
 }
 
 const useNavigatorData = (searchTerm, categoryFilter) => {
@@ -165,14 +155,22 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
         }
 
         const hasPermissionAccess = module.skipPermissionCheck || hasPermission(permission, dataContext);
-        
-        // Check subscription status
-        const permissionId = permissionNameToIdMap[permission.toLowerCase()];
-        const subStatus = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
-        if (!subStatus) return null;
-        const { subscriptionStatus, isSubscribed, isHidden } = subStatus;
 
-        if (!matchesSearch(buildTextBucket(module))) return null;
+        const permissionId = permissionNameToIdMap[permission.toLowerCase()];
+        const result = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
+        if (result === null) return null;
+        const { subscriptionStatus, isSubscribed, isHidden } = result;
+
+        const textBucket = [
+          module.title,
+          module.description,
+          module.keywords,
+          ...(module.tags || []),
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        if (!matchesSearch(textBucket)) return null;
 
         // hasAccess = has permission AND is subscribed (for enabling/disabling)
         // hasPermissionAccess = whether they have the role permission (for showing correct message)
@@ -216,11 +214,20 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
           : (module.skipPermissionCheck || hasPermission(permissionName, dataContext));
 
         const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
-        const subStatus = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
-        if (!subStatus) return null;
-        const { subscriptionStatus, isSubscribed, isHidden } = subStatus;
+        const appModuleSub = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
+        if (appModuleSub === null) return null;
+        const { subscriptionStatus, isSubscribed, isHidden } = appModuleSub;
 
-        if (!matchesSearch(buildTextBucket(module))) return null;
+        const textBucket = [
+          module.title,
+          module.description,
+          module.keywords,
+          ...(module.tags || []),
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        if (!matchesSearch(textBucket)) return null;
 
         const enrichedModule = {
           ...module,
@@ -255,28 +262,11 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
       .map((report) => {
         const permissionName = report.permissionName || `read_${report.id}`;
         const hasPermissionAccess = hasPermission(permissionName, dataContext);
-        
-        // Check subscription status
+
         const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
-        let subscriptionStatus = null;
-        let isSubscribed = true;
-        let isHidden = false;
-        
-        if (permissionId && companySubscriptions.length > 0) {
-          subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
-          isHidden = subscriptionStatus === 'hidden';
-          
-          // Hidden means subscribed but hidden - only show to superadmins
-          if (isHidden) {
-            if (!userData?.isSupportUser) {
-              return null; // Hide this report from non-superadmins
-            }
-            // For superadmins, hidden permissions are subscribed (enabled)
-            isSubscribed = true;
-          } else {
-            isSubscribed = subscriptionStatus === 'subscribed';
-          }
-        }
+        const result = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
+        if (result === null) return null;
+        const { subscriptionStatus, isSubscribed, isHidden } = result;
 
         const textBucket = [report.title, report.desc].filter(Boolean).join(" ");
         if (!matchesSearch(textBucket)) return null;

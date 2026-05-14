@@ -1,7 +1,7 @@
 // No direct fetch rule
 // Disallows direct fetch calls in components - must use ApiService wrapper
 
-const noDirectFetch = {
+export default {
   'no-direct-fetch': {
     meta: {
       type: 'problem',
@@ -58,4 +58,3 @@ const noDirectFetch = {
   }
 };
 
-export { noDirectFetch };

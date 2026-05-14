@@ -7,18 +7,18 @@
 export { NbNextDataGrid } from "./NbNextDataGrid.jsx";
 
 // Re-export hooks if needed externally
-export { useSorting } from "./hooks/useSorting.js";
-export { useColumnVisibility } from "./hooks/useColumnVisibility.js";
-export { useFrozenColumns } from "./hooks/useFrozenColumns.js";
-export { usePagination } from "./hooks/usePagination.js";
-export { useRowSelection } from "./hooks/useRowSelection.js";
-export { useMeasurements } from "./hooks/useMeasurements.js";
-export { useNbNextDataGridToolbarExtras } from "./hooks/useNbNextDataGridToolbarExtras.jsx";
+export { useSorting } from "./hooks/useSorting";
+export { useColumnVisibility } from "./hooks/useColumnVisibility";
+export { useFrozenColumns } from "./hooks/useFrozenColumns";
+export { usePagination } from "./hooks/usePagination";
+export { useRowSelection } from "./hooks/useRowSelection";
+export { useMeasurements } from "./hooks/useMeasurements";
+export { useNbNextDataGridToolbarExtras } from "./hooks/useNbNextDataGridToolbarExtras";
 
 // Re-export utilities if needed externally
-export * from "./utils/constants.js";
-export * from "./utils/helpers.js";
+export * from "./utils/constants";
+export * from "./utils/helpers";
 
 // Re-export Excel export for reports
-export { handleExport } from "../base_report/report_export/index.js";
+export { handleExport } from "../base_report/report_export";
 

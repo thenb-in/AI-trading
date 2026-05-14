@@ -74,7 +74,7 @@ const verifyValidSubscribedPermission = async (user, activeCompanyId) => {
         return perm;
       });
 
-      logger.info(`Filtered permissions for user ${user.id}: ${filteredPermissions.length} out of ${originalPermissionCount} permissions (isSupportUser: ${isSuperAdmin})`);
+      logger.debug(`Filtered permissions for user ${user.id}: ${filteredPermissions.length} out of ${originalPermissionCount} permissions (isSupportUser: ${isSuperAdmin})`);
       logger.info(`Permission status map size: ${permissionStatusMap.size}, User role permissions count: ${originalPermissionCount}`);
     }
 

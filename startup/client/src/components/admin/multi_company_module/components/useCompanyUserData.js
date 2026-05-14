@@ -23,14 +23,14 @@ const useCompanyUserData = (isOpen, initialCompany) => {
 
     try {
       const [usersRes, companiesRes, companyUsersRes] = await Promise.all([
-        ApiService.getSadminUsers(),
-        ApiService.getAllCompanies(),
+        ApiService.getSupportUsers(),
+        ApiService.getUserCompanies(),
         initialCompany?.id ? ApiService.getCompanyUsers(initialCompany.id) : Promise.resolve({ data: [] })
       ]);
 
       setData({
         users: normalizeResponse(usersRes.data),
-        companies: normalizeResponse(companiesRes.data),
+        companies: companiesRes?.data?.companies || [],
         companyUsers: normalizeResponse(companyUsersRes.data),
         loading: false
       });

@@ -1,17 +1,18 @@
 module.exports = (sequelize, DataTypes) => {
   const UserProfile = sequelize.define('UserProfile', {
     id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true
     },
     userId: {
       type: DataTypes.UUID,  // type UUID because foreign key is a UUID
-      allowNull: false
+      allowNull: false,
+      references: { model: 'nbnext_users', key: 'id' }
     },
     currentCompany: {
       type: DataTypes.UUID,  // type UUID because foreign key is a UUID
-      allowNull: true
+      allowNull: false
     }
   }, {
     tableName: 'nbnext_user_profiles',

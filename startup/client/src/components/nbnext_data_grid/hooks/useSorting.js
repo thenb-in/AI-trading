@@ -1,46 +1,47 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { SORT_DIRECTIONS } from "../utils/constants.js";
+import { SORT_DIRECTIONS } from "../utils/constants";
+
+// Defensive copy + drop entries missing `field` or `sort`. Input must already
+// be the canonical array shape `[{ field, sort }, ...]`.
+const normalizeIncomingSortModel = (model) => {
+  if (!Array.isArray(model)) return [];
+  return model
+    .filter((s) => s && s.field && s.sort)
+    .map((s) => ({ field: s.field, sort: s.sort }));
+};
+
+const sortModelKey = (arr) => arr.map((s) => `${s.field}:${s.sort}`).join("|");
 
 const useSorting = (initialSortModel, onSortModelChange) => {
-  const [sortModel, setSortModel] = useState(() => {
-    if (initialSortModel && initialSortModel.field && initialSortModel.sort) {
-      return { field: initialSortModel.field, sort: initialSortModel.sort };
-    }
-    return { field: SORT_DIRECTIONS.NONE, sort: SORT_DIRECTIONS.NONE };
-  });
+  const [sortModel, setSortModel] = useState(() =>
+    normalizeIncomingSortModel(initialSortModel)
+  );
 
   // Track if sort has been manually changed by user
   const hasManualSortRef = useRef(false);
-  const prevInitialSortModelRef = useRef(initialSortModel);
+  const prevInitialKeyRef = useRef(
+    sortModelKey(normalizeIncomingSortModel(initialSortModel))
+  );
   const sortModelRef = useRef(sortModel);
 
-  // Keep ref in sync with sortModel state
   useEffect(() => {
     sortModelRef.current = sortModel;
   }, [sortModel]);
 
-  // Apply initial sort model when it changes (e.g., when columns/data load)
-  // Only apply if user hasn't manually changed the sort yet
+  // Apply initial sort model when it changes (e.g., when columns/data load).
+  // Only apply if the user hasn't manually changed the sort yet.
   useEffect(() => {
-    const prevInitial = prevInitialSortModelRef.current;
-    const hasChanged = 
-      prevInitial?.field !== initialSortModel?.field || 
-      prevInitial?.sort !== initialSortModel?.sort;
+    const next = normalizeIncomingSortModel(initialSortModel);
+    const nextKey = sortModelKey(next);
+    if (nextKey === prevInitialKeyRef.current) return;
+    prevInitialKeyRef.current = nextKey;
 
-    if (hasChanged) {
-      prevInitialSortModelRef.current = initialSortModel;
-      
-      // Only apply if user hasn't manually changed sort and initialSortModel is valid
-      if (!hasManualSortRef.current && initialSortModel && initialSortModel.field && initialSortModel.sort) {
-        // Check if current sort is in default state (no sort) - if so, always apply initial sort
-        const currentSort = sortModelRef.current;
-        const isDefaultSort = !currentSort.field || currentSort.field === SORT_DIRECTIONS.NONE || 
-                             !currentSort.sort || currentSort.sort === SORT_DIRECTIONS.NONE;
-        
-        if (isDefaultSort || (currentSort.field !== initialSortModel.field || currentSort.sort !== initialSortModel.sort)) {
-          setSortModel({ field: initialSortModel.field, sort: initialSortModel.sort });
-        }
-      }
+    if (hasManualSortRef.current) return;
+    if (next.length === 0) return;
+
+    const currentKey = sortModelKey(sortModelRef.current);
+    if (currentKey === "" || currentKey !== nextKey) {
+      setSortModel(next);
     }
   }, [initialSortModel]);
 
@@ -50,35 +51,48 @@ const useSorting = (initialSortModel, onSortModelChange) => {
     }
   }, [sortModel, onSortModelChange]);
 
+  // Click cycle for multi-level sort:
+  //   not present → append as next priority level (asc)
+  //   present asc → flip to desc, keep priority
+  //   present desc → remove (other entries shift up to fill the gap)
   const handleHeaderClick = useCallback((col) => {
     if (!col.sortable) return;
-    hasManualSortRef.current = true; // Mark that user has manually changed sort
+    hasManualSortRef.current = true;
     setSortModel((prev) => {
-      if (prev.field !== col.field) {
-        return { field: col.field, sort: SORT_DIRECTIONS.ASC };
+      const idx = prev.findIndex((s) => s.field === col.field);
+      if (idx === -1) {
+        return [...prev, { field: col.field, sort: SORT_DIRECTIONS.ASC }];
       }
-      if (prev.sort === SORT_DIRECTIONS.ASC) {
-        return { field: col.field, sort: SORT_DIRECTIONS.DESC };
+      const current = prev[idx];
+      if (current.sort === SORT_DIRECTIONS.ASC) {
+        const copy = [...prev];
+        copy[idx] = { field: col.field, sort: SORT_DIRECTIONS.DESC };
+        return copy;
       }
-      if (prev.sort === SORT_DIRECTIONS.DESC) {
-        return { field: SORT_DIRECTIONS.NONE, sort: SORT_DIRECTIONS.NONE };
-      }
-      return { field: col.field, sort: SORT_DIRECTIONS.ASC };
+      return prev.filter((_, i) => i !== idx);
     });
   }, []);
 
-  // Programmatic sort setter (does not mark as "manual" sort)
-  const setSortModelProgrammatic = useCallback((nextSortModel) => {
-    if (!nextSortModel || !nextSortModel.field || !nextSortModel.sort) return;
-    setSortModel({ field: nextSortModel.field, sort: nextSortModel.sort });
+  // Move `field` to position 0 of the sort stack so it becomes the primary
+  // key. If already present, preserves its existing direction; otherwise it's
+  // inserted as ascending. Other entries keep their relative order. Used by
+  // grouping, which only needs the grouped column to be primary — secondary
+  // keys still apply within each group.
+  const promoteToPrimarySort = useCallback((field) => {
+    if (!field) return;
+    setSortModel((prev) => {
+      if (prev[0]?.field === field) return prev;
+      const existing = prev.find((s) => s.field === field);
+      const promoted = existing || { field, sort: SORT_DIRECTIONS.ASC };
+      return [promoted, ...prev.filter((s) => s.field !== field)];
+    });
   }, []);
 
   return {
     sortModel,
     handleHeaderClick,
-    setSortModelProgrammatic,
+    promoteToPrimarySort,
   };
 };
 
 export { useSorting };
-

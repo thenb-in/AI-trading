@@ -1,36 +1,4 @@
-import {
-  Settings as SettingsIcon,
-  CloudUpload as CloudUploadIcon,
-} from "@mui/icons-material";
-
-const getMasterModules = (handleOpenMaster) => [
-{
-  id: "activity",
-  title: "Audit Logs",
-  description: "Track and review all user actions and CRUD operations across every system module and model.",
-  icon: SettingsIcon,
-  color: "success",
-  onClick: () => handleOpenMaster("activity"),
-  buttonText: "View Audit Logs",
-  tags: ["Audit","Activity","Logs","CRUD","Tracking","System"],
-  keywords: "audit logs activity tracking crud operations user actions system history change log",
-  category: "System Logs",
-  permissionName: "read_activity",
-},
-{
-  id: "nbnext-drive",
-  title: "NBnext Drive",
-  description: "Upload, view, download, and manage files. Store files with optional object references for future API integration.",
-  icon: CloudUploadIcon,
-  color: "secondary",
-  onClick: () => handleOpenMaster("nbnext-drive"),
-  buttonText: "Open Drive",
-  tags: ["Files","Storage","Upload","Download","Drive","Documents"],
-  keywords: "file storage upload download drive documents files management",
-  category: "File Management",
-  permissionName: "read_personal_nbnext_drive",
-}
-];
+import { getMasterModules, masterCategoryOrder } from '@app/data/getMasterModules';
 
 /**
  * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
@@ -44,29 +12,22 @@ const getOnboardingMasters = (handleOpenMaster) => {
     .sort((a, b) => a.onboarding - b.onboarding);
 };
 
-const getMasterCategories = () => {
+const buildCategoryList = (predicate = () => true) => {
   const categoryCounts = {};
-  const masterModules = getMasterModules(() => { });
 
-  masterModules.forEach((module) => {
+  getMasterModules(() => { }).forEach((module) => {
+    if (!predicate(module)) return;
     const category = module.category || "Uncategorized";
     categoryCounts[category] = (categoryCounts[category] || 0) + 1;
   });
 
-  const categoryOrder = ["Common Masters", "Management", "Raw Data"];
-
-  const orderedCategories = categoryOrder
-    .filter((category) => categoryCounts[category])
-    .map((name) => ({ name, count: categoryCounts[name] }));
-
-  const remainingCategories = Object.entries(categoryCounts)
-    .filter(([name]) => !categoryOrder.includes(name))
-    .map(([name, count]) => ({ name, count }));
-
-  // order remaining categories by name
-  const orderedRemainingCategories = remainingCategories.sort((a, b) => a.name.localeCompare(b.name));
-  return [...orderedCategories, ...orderedRemainingCategories];
+  return [...masterCategoryOrder]
+    .sort((a, b) => a.order - b.order)
+    .filter(({ name }) => categoryCounts[name])
+    .map(({ name }) => ({ name, count: categoryCounts[name] }));
 };
+
+const getMasterCategories = () => buildCategoryList();
 
 /**
  * Returns only categories where the user has permission to at least one master,
@@ -77,29 +38,17 @@ const getMasterCategories = () => {
  */
 const getMasterCategoriesForUser = (hasPermissionFn, dataContext) => {
   if (!hasPermissionFn || !dataContext) return [];
-  const masterModules = getMasterModules(() => { });
-  const categoryCounts = {};
-
-  masterModules.forEach((module) => {
+  return buildCategoryList((module) => {
+    if (module.skipPermissionCheck) return true;
     const permission = module.permissionName
       || (module.id ? `read_${module.id}` : `read_${module.title.toLowerCase().replace(/ /g, "_")}`);
-    const allowed = module.skipPermissionCheck || hasPermissionFn(permission, dataContext);
-    if (allowed) {
-      const cat = module.category || "Uncategorized";
-      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-    }
+    return hasPermissionFn(permission, dataContext);
   });
-
-  const categoryOrder = ["Common Masters", "Management", "Raw Data"];
-  const ordered = categoryOrder
-    .filter((name) => categoryCounts[name])
-    .map((name) => ({ name, count: categoryCounts[name] }));
-  const remaining = Object.entries(categoryCounts)
-    .filter(([name]) => !categoryOrder.includes(name))
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([name, count]) => ({ name, count }));
-
-  return [...ordered, ...remaining];
 };
 
-export { getMasterModules, getMasterCategories, getMasterCategoriesForUser, getOnboardingMasters };
+export {
+  getMasterModules,
+  getMasterCategories,
+  getMasterCategoriesForUser,
+  getOnboardingMasters,
+};

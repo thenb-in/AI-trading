@@ -3,7 +3,7 @@
  * Handles loading files from various sources (URLs, API endpoints, etc.)
  */
 
-import { ApiService } from '../../services/ApiService';
+import { ApiService } from '@services/ApiService';
 
 /**
  * Determines if a URL is a full URL (http/https)
@@ -72,9 +72,10 @@ const loadFile = async (fileUrl, mimeType = '') => {
       const sameOrigin = isSameOrigin(fileUrl);
       
       if (sameOrigin) {
-        // Same origin - use pathname with ApiService
-        const urlObj = new URL(fileUrl);
-        response = await ApiService.request('GET', urlObj.pathname, null, {
+        // Pass the absolute URL so axios skips its baseURL (e.g. `/api/v1`).
+        // Static `/uploads/...` files are mounted outside the API namespace,
+        // so prepending the API prefix would 404.
+        response = await ApiService.request('GET', fileUrl, null, {
           responseType: 'blob',
           headers: {},
         });

@@ -19,112 +19,13 @@ function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
-function ensureDirectoryExists(dirPath) {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
-
-function writeHookIfMissing(hookPath, defaultContent, label) {
-  if (fs.existsSync(hookPath)) {
-    log(`↩️  Preserved existing ${label} hook`, 'cyan');
-    return;
-  }
-  fs.writeFileSync(hookPath, defaultContent);
-  log(`✅ Created default ${label} hook`, 'green');
-}
-
 function setupHuskyHooks() {
-  try {
-    log('🔧 Setting up Husky hooks...', 'blue');
-    
-    // Initialize Husky
-    log('📦 Initializing Husky...', 'blue');
-    execSync('npx husky init', { stdio: 'inherit' });
-    
-    // Ensure .husky directory exists
-    const huskyDir = path.join(process.cwd(), '.husky');
-    ensureDirectoryExists(huskyDir);
-    
-    // Hooks are version-controlled — seed defaults only when missing, never overwrite.
-    const preCommitPath = path.join(huskyDir, 'pre-commit');
-    writeHookIfMissing(
-      preCommitPath,
-      'node scripts/check-lowercase-dirs.js\nnpx lint-staged\n',
-      'pre-commit'
-    );
-
-    const commitMsgPath = path.join(huskyDir, 'commit-msg');
-    writeHookIfMissing(
-      commitMsgPath,
-      'npx --no -- commitlint --edit "$1"\n',
-      'commit-msg'
-    );
-
-    const prePushPath = path.join(huskyDir, 'pre-push');
-    writeHookIfMissing(
-      prePushPath,
-      'node scripts/check-version-bump.js\n',
-      'pre-push'
-    );
-
-    const prepareCommitMsgPath = path.join(huskyDir, 'prepare-commit-msg');
-    writeHookIfMissing(
-      prepareCommitMsgPath,
-      'exec < /dev/tty && npx --no -- commitizen prompt || true\n',
-      'prepare-commit-msg'
-    );
-
-    const postMergePath = path.join(huskyDir, 'post-merge');
-    writeHookIfMissing(
-      postMergePath,
-      `#!/usr/bin/env sh
-set -e
-
-# ORIG_HEAD points to where HEAD was before the merge
-git rev-parse --verify ORIG_HEAD >/dev/null 2>&1 || exit 0
-
-# Only check files that changed in the merge (fast even in large repos)
-./node_modules/.bin/git-detect-case-change --fix-local --since ORIG_HEAD
-`,
-      'post-merge'
-    );
-    
-    // Make the files executable (Unix-like systems only)
-    if (process.platform !== 'win32') {
-      try {
-        fs.chmodSync(preCommitPath, '755');
-        log('✅ Made pre-commit hook executable', 'green');
-        
-        fs.chmodSync(commitMsgPath, '755');
-        log('✅ Made commit-msg hook executable', 'green');
-        
-        fs.chmodSync(prePushPath, '755');
-        log('✅ Made pre-push hook executable', 'green');
-        
-        fs.chmodSync(prepareCommitMsgPath, '755');
-        log('✅ Made prepare-commit-msg hook executable', 'green');
-
-        fs.chmodSync(postMergePath, '755');
-        log('✅ Made post-merge hook executable', 'green');
-      } catch (error) {
-        log('⚠️  Could not make hooks executable (this is normal on Windows)', 'yellow');
-      }
-    }
-    
-    log('✅ Husky hooks setup completed!', 'green');
-    log('📝 Pre-commit hook created at: .husky/pre-commit', 'blue');
-    log('📝 Commit-msg hook created at: .husky/commit-msg', 'blue');
-    log('📝 Pre-push hook created at: .husky/pre-push', 'blue');
-    log('📝 Prepare-commit-msg hook created at: .husky/prepare-commit-msg', 'blue');
-    log('📝 Post-merge hook created at: .husky/post-merge', 'blue');
-
-    return true;
-  } catch (error) {
-    log('❌ Error setting up Husky hooks:', 'red');
-    log(error.message, 'red');
-    return false;
-  }
+  // Hook files live in git under .husky/. The bare `husky` call in the
+  // `prepare` / `setup` scripts already registers core.hooksPath. Do not
+  // run `husky init` or seed defaults here — both overwrite the
+  // version-controlled hooks (notably pre-commit gets clobbered to `npm test`).
+  log('🔧 Husky hooks are version-controlled; skipping seeding.', 'blue');
+  return true;
 }
 
 function setupCommitizen() {

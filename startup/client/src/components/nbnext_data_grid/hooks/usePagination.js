@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { MAX_CELL_THRESHOLD } from "../utils/constants.js";
+import { MAX_CELL_THRESHOLD } from "../utils/constants";
 
 const usePagination = (sortedRows, visibleColumnCount, fullScreen = false) => {
   const autoPageSize = Math.max(1, Math.floor(MAX_CELL_THRESHOLD / (visibleColumnCount || 1)));

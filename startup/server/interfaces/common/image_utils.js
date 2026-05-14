@@ -1,8 +1,9 @@
+const env = require('../../src/config/env');
+const { UNREGISTER_FACE_FOLDER } = require('../../src/constants/file_uploads');
+const { ensureDirectoriesExist, storeTempFile, deleteTempFile, getPublicUrlForPath } = require('../../src/utils/fileUtils');
 const fs = require('fs').promises;
 const path = require('path');
-const env = require('../../src/config/env');
-const { ensureDirectoriesExist, storeTempFile, deleteTempFile, getPublicUrlForPath } = require('../../src/utils/fileUtils');
-
+const logger = require('../../logger');
 
 async function prepareTempFolder(subFolder) {
   if (!env.UPLOADS_DIR) {
@@ -24,12 +25,13 @@ async function cleanupTempFiles(filePaths = []) {
     await deleteTempFile(filePath);
   }
 }
-async function getFileFromDir(fileName, SUB_FOLDER_NAME,companyId) {
+async function getFileFromDir(fileName, companyId, subFolder = '') {
   const safeFileName = path.basename(fileName);
   const imagePath = path.join(
     env.UPLOADS_DIR,
-    SUB_FOLDER_NAME,
+    UNREGISTER_FACE_FOLDER,
     String(companyId || '').trim(),
+    subFolder,
     safeFileName
   );
 
@@ -52,10 +54,42 @@ async function getFileFromDir(fileName, SUB_FOLDER_NAME,companyId) {
     mimetype: mimeByExt[extension] || 'application/octet-stream'
   };
 }
+async function moveToUnregisterFaceFolder(filePath, companyId, subFolder = '') {
+  if (!filePath) {
+    return null;
+  }
+  if (!env.UPLOADS_DIR) {
+    logger.warn(`[image_utils] UPLOADS_DIR not configured; skipping move to unregisterface for company=${companyId}`);
+    return null;
+  }
+
+  try {
+    const companyFolder = String(companyId || '').trim();
+    const unregisterDir = path.join(env.UPLOADS_DIR, UNREGISTER_FACE_FOLDER, companyFolder, subFolder);
+    await fs.mkdir(unregisterDir, { recursive: true });
+
+    const fileName = path.basename(filePath);
+    const destPath = path.join(unregisterDir, fileName);
+
+    await fs.access(filePath);
+    await fs.rename(filePath, destPath);
+    logger.info(`[image_utils] Moved image to ${path.relative(env.UPLOADS_DIR, destPath)}`);
+    return destPath;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      logger.debug(`[image_utils] Image already removed, cannot move to unregisterface: ${filePath}`);
+    } else {
+      logger.warn(`[image_utils] Failed to move image to unregisterface: ${filePath} - ${error.message}`);
+    }
+    return null;
+  }
+}
+
 module.exports = {
   prepareTempFolder,
   moveUploadedFileToTemp,
   buildUploadsPublicUrl,
   cleanupTempFiles,
-  getFileFromDir
+  getFileFromDir,
+  moveToUnregisterFaceFolder
 };

@@ -1,7 +1,7 @@
 // No inline components rule
 // Disallows component definitions inside other components
 
-const noInlineComponents = {
+export default {
   'no-inline-components': {
     meta: {
       type: 'problem',
@@ -41,19 +41,19 @@ const noInlineComponents = {
        */
       function returnsJSX(node) {
         if (!node.body) return false;
-
+        
         if (node.body.type === 'JSXElement' || node.body.type === 'JSXFragment') {
           return true;
         }
-
+        
         if (node.body.type === 'BlockStatement') {
-          return node.body.body.some(stmt =>
-            stmt.type === 'ReturnStatement' &&
-            stmt.argument &&
+          return node.body.body.some(stmt => 
+            stmt.type === 'ReturnStatement' && 
+            stmt.argument && 
             (stmt.argument.type === 'JSXElement' || stmt.argument.type === 'JSXFragment')
           );
         }
-
+        
         return false;
       }
 
@@ -116,4 +116,3 @@ const noInlineComponents = {
   }
 };
 
-export { noInlineComponents };

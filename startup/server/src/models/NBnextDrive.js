@@ -1,4 +1,4 @@
-const { companyOwnedFields, objectLinkFields, associateCompanyOwned } = require('./mixins/companyOwned');
+const { ownedAuditFields, associateOwnedAuditModel } = require('./mixins/ownedAuditFields');
 
 module.exports = (sequelize, DataTypes) => {
   const NBnextDrive = sequelize.define('NBnextDrive', {
@@ -27,8 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'mime_type'
     },
-    ...objectLinkFields(DataTypes),
-    ...companyOwnedFields(DataTypes)
+    ...ownedAuditFields(DataTypes)
   }, {
     tableName: 'nbnext_drive',
     timestamps: true,
@@ -55,9 +54,8 @@ module.exports = (sequelize, DataTypes) => {
     ]
   });
 
-  NBnextDrive.associate = (models) => {
-    associateCompanyOwned(NBnextDrive, models);
-  };
+  NBnextDrive.associate = (models) => associateOwnedAuditModel(NBnextDrive, models);
 
   return NBnextDrive;
 };
+

@@ -1,56 +1,48 @@
-// Server-side date utilities.
-//
-// Generic date helpers for use in server-side services and controllers.
-// All functions are timezone-aware; pass a timezone string where needed
-// (defaults to UTC so behaviour is predictable across deployments).
-//
-// For client-side date work use client/src/utils/startup/dateTimeUtils.js.
+const { parse, parseISO } = require('date-fns');
+const logger = require('../../logger');
+const { TIME_ZONE, DEFAULT_DATE_FORMAT } = require('../constants/auth');
 
-/**
- * Format a Date object to a string.
- *
- * @param {Date|string|number} date
- * @param {string} [format='dd-mm-yyyy']  Supported: 'dd-mm-yyyy', 'mm-dd-yyyy', 'yyyy-mm-dd'
- * @param {string} [timeZone='UTC']
- * @returns {string|null}
- */
-const formatDateToString = (date, format = 'dd-mm-yyyy', timeZone = 'UTC') => {
+function formatDate(date, format_str) {
   if (!date) {
     return null;
   }
-
-  const d = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(d.getTime())) {
-    throw new TypeError(`formatDateToString: invalid date: ${date}`);
+  if (!(date instanceof Date)) {
+    date = new Date(date);
   }
 
+  if (format_str === undefined) {
+    format_str = DEFAULT_DATE_FORMAT;
+  }
+
+  // Zero-padded dd-MM-yyyy in target timezone
   const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
+    timeZone: TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
-  }).formatToParts(d);
+  }).formatToParts(date);
+  const day = parts.find(p => p.type === 'day').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const year = parts.find(p => p.type === 'year').value;
+  return `${day}-${month}-${year}`;
+}
 
-  const day   = parts.find((p) => p.type === 'day').value;
-  const month = parts.find((p) => p.type === 'month').value;
-  const year  = parts.find((p) => p.type === 'year').value;
-
-  switch (format) {
-  case 'mm-dd-yyyy': return `${month}-${day}-${year}`;
-  case 'yyyy-mm-dd': return `${year}-${month}-${day}`;
-  default:           return `${day}-${month}-${year}`;
+// Run `parseFn(input)` and, if it returns a valid Date, snap it to the
+// local calendar day (so UTC-shifted inputs don't bleed across midnight).
+// Failures are logged and return null so the next strategy can run.
+function tryParseToLocalDay(input, parseFn, label) {
+  try {
+    const parsedDate = parseFn(input);
+    if (parsedDate && !isNaN(parsedDate.getTime())) {
+      return new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+    }
+  } catch (e) {
+    logger.error(`[parseDate] Failed to parse ${label}: ${input}`, e);
   }
-};
+  return null;
+}
 
-/**
- * Parse a date string or Date into a plain calendar-day Date (no time component).
- * Supports: Date objects, yyyy-MM-dd, yyyy-M-d, ISO 8601 datetime strings,
- * and dd-MM-yyyy fallback.
- *
- * @param {Date|string} dateStr
- * @returns {Date|null}
- */
-const parseDate = (dateStr) => {
+function parseDate(dateStr) {
   if (!dateStr) {
     return null;
   }
@@ -60,230 +52,417 @@ const parseDate = (dateStr) => {
 
   const trimmed = String(dateStr).trim();
 
-  // yyyy-MM-dd or yyyy-M-d
-  const isoDateMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (isoDateMatch) {
-    const y = parseInt(isoDateMatch[1], 10);
-    const m = parseInt(isoDateMatch[2], 10) - 1;
-    const d = parseInt(isoDateMatch[3], 10);
-    const result = new Date(y, m, d);
-    if (!Number.isNaN(result.getTime())) {
-      return result;
+  // ISO 8601 date only (yyyy-MM-dd) — local calendar day
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const parsed = tryParseToLocalDay(trimmed, (s) => parse(s, 'yyyy-MM-dd', new Date()), 'yyyy-MM-dd');
+    if (parsed) {
+      return parsed;
     }
   }
 
-  // ISO 8601 datetime — strip time, keep calendar date
-  const isoDateTimeMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})T/);
-  if (isoDateTimeMatch) {
-    const y = parseInt(isoDateTimeMatch[1], 10);
-    const m = parseInt(isoDateTimeMatch[2], 10) - 1;
-    const d = parseInt(isoDateTimeMatch[3], 10);
-    const result = new Date(y, m, d);
-    if (!Number.isNaN(result.getTime())) {
-      return result;
+  // ISO 8601 date only (yyyy-M-d) — supports single digit month/day
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(trimmed)) {
+    const parsed = tryParseToLocalDay(trimmed, (s) => parse(s, 'yyyy-M-d', new Date()), 'yyyy-M-d');
+    if (parsed) {
+      return parsed;
     }
   }
 
-  // dd-MM-yyyy fallback
-  const dmyMatch = trimmed.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
-  if (dmyMatch) {
-    const d = parseInt(dmyMatch[1], 10);
-    const m = parseInt(dmyMatch[2], 10) - 1;
-    const y = parseInt(dmyMatch[3], 10);
-    const result = new Date(y, m, d);
-    if (!Number.isNaN(result.getTime())) {
-      return result;
+  // ISO 8601 datetime — normalize to local calendar date (avoids UTC day shift from toISOString)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(trimmed)) {
+    const parsed = tryParseToLocalDay(trimmed, parseISO, 'ISO datetime');
+    if (parsed) {
+      return parsed;
     }
   }
 
+  // Try parsing with default format (dd-MM-yyyy)
+  try {
+    const parsedDate = parse(dateStr, DEFAULT_DATE_FORMAT, new Date());
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with default format for ${dateStr}`, e);
+  }
+
+  // Try parsing with dd/MM/yyyy format (2-digit day and month)
+  try {
+    const parsedDate = parse(dateStr, 'dd/MM/yyyy', new Date());
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with dd/MM/yyyy for ${dateStr}`, e);
+  }
+
+  // Try parsing with d/M/yyyy format (single or double digit day and month)
+  try {
+    const parsedDate = parse(dateStr, 'd/M/yyyy', new Date());
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with d/M/yyyy for ${dateStr}`, e);
+  }
+
+  // Try parsing with dd-M-yyyy format (2-digit day, single or double digit month)
+  try {
+    const parsedDate = parse(dateStr, 'dd-M-yyyy', new Date());
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with dd-M-yyyy for ${dateStr}`, e);
+  }
+
+  // Try parsing with d-MM-yyyy format (single or double digit day, 2-digit month)
+  try {
+    const parsedDate = parse(dateStr, 'd-MM-yyyy', new Date());
+    if (!isNaN(parsedDate.getTime())) {
+      return parsedDate;
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with d-MM-yyyy for ${dateStr}`, e);
+  }
+
+  // handle epoch timestamp
+  try {
+    if (typeof dateStr === 'number') {
+      const parsedDate = new Date(Number(dateStr));
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+    } else if (typeof dateStr === 'string') {
+      const parsedDate = new Date(dateStr);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+    }
+  } catch (e) {
+    logger.error(`Error parsing date with fallback for ${dateStr}`, e);
+  }
+
+  logger.error(`[parseDate] Invalid date format: ${dateStr}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd-M-yyyy, or d-MM-yyyy`);
   return null;
+}
+
+function getAllDays(start_date, end_date) {
+  let days = new Set();
+
+  const currentDate = parseDate(start_date);
+  const endDate = parseDate(end_date);
+  while (currentDate <= endDate) {
+    const dateString = formatDate(currentDate);
+    days.add(dateString);
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  days = Array.from(days);
+  return days;
+}
+
+function getAllDaysInArray(start_date, end_date) {
+  return getAllDays(start_date, end_date);
+}
+
+function getDaysBetween(start_date, end_date, weekday) {
+  let days = new Set();
+  const currentDate = new Date(start_date);
+  while (currentDate <= end_date) {
+    if (currentDate.getDay() === weekday) {
+      const dateString = formatDate(currentDate);
+      days.add(dateString);
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  days = Array.from(days);
+  return days;
+}
+
+const calculateWorkDays = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(0, 0, 0, 0);
+
+  let count = 0;
+  while (start <= end) {
+    count++;
+    start.setUTCDate(start.getUTCDate() + 1);
+  }
+  return count;
 };
 
-/**
- * Generate an array of all Date objects between start and end (inclusive).
- *
- * @param {Date|string} startDate
- * @param {Date|string} endDate
- * @returns {Date[]}
- */
-const getAllDaysInArray = (startDate, endDate) => {
-  const start = parseDate(startDate);
-  const end   = parseDate(endDate);
-  if (!start || !end) {
-    return [];
+function getMonthPercentage(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const numberOfDaysInThisMonth = end.getDate() - start.getDate() + 1;
+  const lastDayOfMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+  const totalNumberOfDaysInThisMonth = lastDayOfMonth.getDate();
+  return numberOfDaysInThisMonth / totalNumberOfDaysInThisMonth;
+}
+
+function getCompleteMonthsPercentage(start_date_str, end_date_str) {
+  let startDate = new Date(start_date_str);
+  let endDate = new Date(end_date_str);
+
+  if (startDate.getDate() !== 1) {
+    startDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 1);
   }
 
-  const dates = [];
-  const current = new Date(start);
-  while (current <= end) {
-    dates.push(new Date(current));
-    current.setDate(current.getDate() + 1);
+  const lastDayOfMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+  if (endDate.getDate() !== lastDayOfMonth.getDate()) {
+    endDate = new Date(endDate.getFullYear(), endDate.getMonth(), 0);
   }
-  return dates;
+
+  if (startDate > endDate) {
+    return 0;
+  }
+
+  const startMonth = startDate.getMonth();
+  const endMonth = endDate.getMonth();
+  const startYear = startDate.getFullYear();
+  const endYear = endDate.getFullYear();
+  const numberOfMonths = (endYear - startYear) * 12 + (endMonth - startMonth);
+  return numberOfMonths + 1;
+}
+
+function extract_time_only_to_integer(date) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const seconds = date.getSeconds();
+  const time_only = (hours * 60 * 60) + (minutes * 60) + (seconds);
+  return time_only;
+}
+
+
+function normalizeToDate(value) {
+  if (value instanceof Date) {
+    return new Date(value.getTime());
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return new Date(value);
+  }
+
+  // Handle Sequelize / date-lib style wrappers exposing toDate()
+  if (value && typeof value.toDate === 'function') {
+    return value.toDate();
+  }
+
+  return new Date(NaN);
+}
+
+const formatDateToString = (date, format = 'dd-mm-yyyy') => {
+  const normalizedDate = normalizeToDate(date);
+
+  if (Number.isNaN(normalizedDate.getTime())) {
+    throw new TypeError(`Invalid date provided to formatDateToString: ${date}`);
+  }
+
+  const day = String(normalizedDate.getDate()).padStart(2, '0');
+  const month = String(normalizedDate.getMonth() + 1).padStart(2, '0');
+  const year = normalizedDate.getFullYear();
+  switch (format) {
+  case 'dd-mm-yyyy':
+    return `${day}-${month}-${year}`;
+  case 'mm-dd-yyyy':
+    return `${month}-${day}-${year}`;
+  case 'yyyy-mm-dd':
+    return `${year}-${month}-${day}`;
+  default:
+    return `${day}-${month}-${year}`;
+  }
 };
 
 /**
- * Return start/end Date objects for a date range, with start at 00:00:00.000
- * and end at 23:59:59.999.
- *
- * @param {Date|string} startDateStr
- * @param {Date|string} endDateStr
- * @returns {{ start_date: Date, end_date: Date }}
- */
-const getDayRange = (startDateStr, endDateStr) => {
-  const start_date = parseDate(startDateStr) || new Date(startDateStr);
-  const end_date   = parseDate(endDateStr)   || new Date(endDateStr);
-  start_date.setHours(0, 0, 0, 0);
-  end_date.setHours(23, 59, 59, 999);
-  return { start_date, end_date };
-};
-
-/**
- * Generate an array of date objects with start/end boundaries.
- *
- * @param {Date|string} startDate
- * @param {Date|string} endDate
- * @returns {{ dates: Date[], startDate: Date, endDate: Date }}
+ * Formats a date to YYYY-MM-DD format
+ * @param {Date|string} date - Date object or date string
+ * @returns {string} Formatted date string
  */
 const getDateRange = (startDate, endDate) => {
-  const start = parseDate(startDate) || new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = parseDate(endDate) || new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-
+  // console.log(`[getDateRange] Generating date range from ${startDate} to ${endDate}`);
   const dates = [];
+  const start = new Date(startDate);
+  start.setHours(5, 30, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  end.setHours(end.getHours() + 5, end.getMinutes() + 30);
+
   for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
     dates.push(new Date(d));
   }
-  return { dates, startDate: start, endDate: end };
+  // console.log(`[getDateRange] Generated ${dates.length} dates`);
+  return {
+    dates,
+    startDate: start,
+    endDate: end
+  };
 };
-
 /**
- * Extend a date range by N days on each side.
- *
- * @param {Date|string} startDate
- * @param {Date|string} endDate
- * @param {number} [daysBefore=1]
- * @param {number} [daysAfter=1]
- * @returns {{ extendedStart: Date, extendedEnd: Date }}
- */
-const extendDateRange = (startDate, endDate, daysBefore = 1, daysAfter = 1) => {
-  const extendedStart = parseDate(startDate) || new Date(startDate);
-  extendedStart.setDate(extendedStart.getDate() - daysBefore);
-  const extendedEnd = parseDate(endDate) || new Date(endDate);
-  extendedEnd.setDate(extendedEnd.getDate() + daysAfter);
-  return { extendedStart, extendedEnd };
-};
-
-/**
- * Format a Date to HH:mm (24-hour UTC).
- *
- * @param {Date|string} date
- * @returns {string}
+ * Formats a time to HH:mm:ss format
+ * @param {Date|string} date - Date object or date string
+ * @returns {string} Formatted time string
  */
 const formatTime = (date) => {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-    timeZone: 'UTC'
-  });
+  const dateObj = new Date(date);
+  return dateObj.toLocaleTimeString('en-US',
+    { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }
+  );
 };
 
 /**
- * Format a Date for display (e.g. "January 15, 2024 at 03:30 PM").
- *
- * @param {Date|string|null} date
- * @returns {string}
+ * Formats a date and time to a human-readable format
+ * @param {Date|string} date - Date object or date string
+ * @returns {string} Formatted date and time string
  */
 const formatLastActive = (date) => {
   if (!date) {
     return 'N/A';
   }
-  const d = new Date(date);
-  const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' };
-  const formattedDate = d.toLocaleString('en-US', options);
-  const hours   = d.getUTCHours() % 12 || 12;
-  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-  const ampm    = d.getUTCHours() >= 12 ? 'PM' : 'AM';
+
+  const dateObj = new Date(date);
+  const options = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC'
+  };
+
+  const formattedDate = dateObj.toLocaleString('en-US', options);
+  const hours = dateObj.getUTCHours() % 12 || 12;
+  const minutes = String(dateObj.getUTCMinutes()).padStart(2, '0');
+  const ampm = dateObj.getUTCHours() >= 12 ? 'PM' : 'AM';
+
   return `${formattedDate} at ${hours}:${minutes} ${ampm}`;
 };
 
 /**
- * Format duration in seconds to "HH hr :MM min :SS sec".
- *
- * @param {number} seconds
- * @returns {string}
+ * Formats a date to Indian format (DD/MM/YYYY)
+ * @param {Date|string} date - Date object or date string
+ * @returns {string} Formatted date string in Indian format
+ */
+const formatDateToIndian = (date) => {
+  const dateObj = new Date(date);
+  if (isNaN(dateObj)) {
+    throw new Error(`Invalid date provided to formatDateToIndian: ${date}`);
+  }
+  const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  return dateObj.toLocaleDateString('en-IN', options);
+};
+
+/**
+ * Formats duration in seconds to HH:mm:ss format
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} Formatted duration string
  */
 const formatDuration = (seconds) => {
-  const hrs  = Math.floor(seconds / 3600);
+  const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
   return `${hrs.toString().padStart(2, '0')} hr :${mins.toString().padStart(2, '0')} min :${secs.toString().padStart(2, '0')} sec`;
 };
 
-/**
- * Format duration in seconds to "H.MM" (hours.minutes).
- *
- * @param {number} seconds
- * @returns {string}
- */
-const formatDurationHoursMinutes = (seconds) => {
-  const hours   = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}.${String(minutes).padStart(2, '0')}`;
-};
 
-/**
- * Format duration in seconds to "HH:MM".
- *
- * @param {number} seconds
- * @returns {string}
- */
-const formatDurationTime = (seconds) => {
-  const hours   = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-};
-
-/**
- * Extract seconds from a Date (hours + minutes + seconds).
- *
- * @param {Date} date
- * @returns {number}
- */
-const extractTimeOnlyToInteger = (date) => {
-  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-};
-
-/**
- * Format a Date's time as "HH:MM" string.
- *
- * @param {Date|null} time
- * @returns {string}
- */
-const convertTimeToStr = (time) => {
+function convert_time_to_str(time) {
   if (!time) {
     return '--';
   }
-  const hours   = time.getHours();
+  // str for time will be in format HH:MM
+  const hours = time.getHours();
   const minutes = time.getMinutes();
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-};
+}
+
+
+/**
+ * Format duration in seconds to hours.minutes format
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} - Formatted duration (e.g., "2.30" for 2 hours 30 minutes)
+ */
+function format_duration_hours_minutes(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}.${String(minutes).padStart(2, '0')}`;
+}
+
+/**
+ * Format duration in seconds to HH:MM format
+ * @param {number} seconds - Duration in seconds
+ * @returns {string} - Formatted duration (e.g., "02:30" for 2 hours 30 minutes)
+ */
+function format_duration_time(seconds) {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function getDayRange(start_date_str, end_date_str){
+  const start_date = new Date(start_date_str);
+  const end_date = new Date(end_date_str);
+  start_date.setHours(0, 0, 0, 0);
+  end_date.setHours(23, 59, 59, 999);
+  return { start_date, end_date };
+}
+
+function getDayBounds(dayOffset = 0) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() + dayOffset);
+  const end = new Date(start);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+// Week starts on Monday (local time)
+function getWeekStart() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay(); // 0=Sun
+  const daysToMonday = day === 0 ? 6 : day - 1;
+  start.setDate(start.getDate() - daysToMonday);
+  return start;
+}
+
+/**
+ * Extends a date range by a number of days on each side.
+ * @param {Date|string} startDate - Start date
+ * @param {Date|string} endDate - End date
+ * @param {number} [daysBefore=1] - Days to subtract from start
+ * @param {number} [daysAfter=1] - Days to add to end
+ * @returns {{ extendedStart: Date, extendedEnd: Date }}
+ */
+function extendDateRange(startDate, endDate, daysBefore = 1, daysAfter = 1) {
+  const extendedStart = parseDate(startDate);
+  extendedStart.setDate(extendedStart.getDate() - daysBefore);
+  const extendedEnd = parseDate(endDate);
+  extendedEnd.setDate(extendedEnd.getDate() + daysAfter);
+  return { extendedStart, extendedEnd };
+}
 
 module.exports = {
-  parseDate,
-  formatDateToString,
-  getAllDaysInArray,
-  getDayRange,
-  getDateRange,
-  extendDateRange,
+  formatDate,
   formatTime,
   formatLastActive,
+  formatDateToIndian,
   formatDuration,
-  formatDurationHoursMinutes,
-  formatDurationTime,
-  extractTimeOnlyToInteger,
-  convertTimeToStr
+  getDateRange,
+  parseDate,
+  getAllDays,
+  getDaysBetween,
+  calculateWorkDays,
+  getMonthPercentage,
+  getCompleteMonthsPercentage,
+  normalizeToDate,
+  getAllDaysInArray,
+  extract_time_only_to_integer,
+  formatDateToString,
+  convert_time_to_str,
+  format_duration_hours_minutes,
+  format_duration_time,
+  getDayRange,
+  getDayBounds,
+  getWeekStart,
+  extendDateRange
 };

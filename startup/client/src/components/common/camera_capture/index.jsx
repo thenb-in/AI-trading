@@ -11,7 +11,6 @@ const CameraCapture = ({
   onClose,
   isOpen,
   mode = 'photo',
-  enableFaceDetection = false,
   cameraContainerClassName,
 }) => {
   const handleClose = useCallback(() => {
@@ -29,7 +28,6 @@ const CameraCapture = ({
         onCapture={onCapture}
         onClose={handleClose}
         mode={mode}
-        enableFaceDetection={enableFaceDetection}
         isActive={isOpen}
         variant="modal"
         cameraContainerClassName={cameraContainerClassName}
@@ -43,7 +41,6 @@ CameraCapture.propTypes = {
   onClose: PropTypes.func.isRequired,
   isOpen: PropTypes.bool.isRequired,
   mode: PropTypes.oneOf(['photo', 'video']),
-  enableFaceDetection: PropTypes.bool,
   cameraContainerClassName: PropTypes.string,
 };
 

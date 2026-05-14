@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     company_id: {
       type: DataTypes.UUID,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'nbnext_company',
         key: 'id'
@@ -71,15 +71,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN
     },
     isSupportUser: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true,
-      defaultValue: false
-    },
-    totp_secret: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    is_totp_enabled: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false

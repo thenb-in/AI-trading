@@ -86,8 +86,8 @@ export async function loginWithCredentials(page: Page, logger: TestLogger, usern
             .textContent({ timeout: 1000 })
             .catch(() => null);
 
-        const isSadmin = username === process.env.TEST_SADMIN_USERNAME;
-        const hint = isSadmin
+        const isSupportUser = username === process.env.TEST_SADMIN_USERNAME;
+        const hint = isSupportUser
             ? ` Verify TEST_SADMIN_USERNAME/TEST_SADMIN_PASSWORD in .env match the credentials in the database — a previous test run may have rotated the sadmin password.`
             : '';
         const errorDetails = `Login failed for "${username}" (still on ${loginUrl}).${visibleError ? ` UI error: ${visibleError.trim()}.` : ''}${hint}`;

@@ -11,14 +11,15 @@ const nbnextDriveService = {
     return response.data;
   },
 
-  async getFilesByObject(objectName, objectId) {
-    const response = await ApiService.request('GET', '/nbnext-drive/by-object', null, {
-      params: { objectName, objectId: String(objectId) }
-    });
+  async getFilesByObject(objectName, objectId, startDate, endDate) {
+    const params = { objectName, objectId: String(objectId) };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    const response = await ApiService.request('GET', '/nbnext-drive/by-object', null, { params });
     return response.data;
   },
 
-  async uploadFile(file, objectName = null, objectId = null) {
+  async uploadFile(file, objectName = null, objectId = null, endDate = null) {
     const formData = new FormData();
     formData.append('file', file);
     if (objectName) {
@@ -26,6 +27,9 @@ const nbnextDriveService = {
     }
     if (objectId) {
       formData.append('objectId', objectId);
+    }
+    if (endDate) {
+      formData.append('endDate', endDate);
     }
 
     const response = await ApiService.request('POST', '/nbnext-drive', formData, {

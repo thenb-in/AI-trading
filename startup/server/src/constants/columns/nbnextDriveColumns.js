@@ -6,6 +6,12 @@ const nbnextDriveColumns = [
     hidden: false
   },
   {
+    key: 'objectName',
+    display_name: 'Source',
+    type: 'string',
+    hidden: false
+  },
+  {
     key: 'fileName',
     display_name: 'File Name',
     type: 'string',

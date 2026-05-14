@@ -15,6 +15,7 @@ function mapFileRow(data) {
   return {
     id: data.id,
     fileName: data.fileName,
+    objectName:data.objectName,
     filePath: data.filePath,
     fileSize: formatFileSize(data.fileSize),
     mimeType: data.mimeType || null,
