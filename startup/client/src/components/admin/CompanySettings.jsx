@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
-import { CustomerDetailsFields } from "@startup/components/common/CustomerDetailsFields";
-import { EMPTY_CUSTOMER_FORM } from "@startup/components/common/customerFormConstants";
-import { customerApi, serviceOfferingApi } from "@app/services/api";
 
 const StatusBanner = ({ type, message }) => {
   const styles = type === 'error'
@@ -42,7 +39,6 @@ import {
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
-import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
 
 function CompanySettings() {
@@ -55,17 +51,11 @@ function CompanySettings() {
     desktopWeb: true,
     mobileWeb: false,
   });
-  const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
-  const [companyLogoFile, setCompanyLogoFile] = useState(null);
-  const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
-  const [serviceOfferings, setServiceOfferings] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const companyProfileRef = useRef(null);
-  const logoInputRef = useRef(null);
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -87,76 +77,6 @@ function CompanySettings() {
     };
     fetchSettings();
   }, []);
-
-  // Load self-customer details and service offerings for the company-details section
-  useEffect(() => {
-    serviceOfferingApi.getAllServiceOfferings()
-      .then((res) => {
-        if (res?.data?.success) {
-          setServiceOfferings(res.data.data.offerings || []);
-        }
-      })
-      .catch(() => { /* dropdown can stay empty */ });
-
-    customerApi.getSelf()
-      .then((res) => {
-        if (res?.data?.success && res.data.data) {
-          const d = res.data.data;
-          setCompanyDetails({
-            ...EMPTY_CUSTOMER_FORM,
-            customer_code: d.customer_code || "",
-            customer_gstin: d.customer_gstin || "",
-            service_offering_id: d.service_offering_id || "",
-            pan_no: d.pan_no || "",
-            customer_email: d.customer_email || "",
-            bank_account_holder_name: d.bank_account_holder_name || "",
-            bank_account_number: d.bank_account_number || "",
-            bank_name: d.bank_name || "",
-            bank_ifsc_code: d.bank_ifsc_code || "",
-            bank_branch_name: d.bank_branch_name || "",
-            entity_type: d.entity_type || "",
-            entity_name: d.entity_name || "",
-            phone: d.phone || "",
-            alternate_phone: d.alternate_phone || "",
-            address: d.address || "",
-            district: d.district || "",
-            proprietor_name: d.proprietor_name || "",
-            description: d.description || "",
-            service_charge: d.service_charge ?? ""
-          });
-          setCompanyLogoPreview(d.company_logo || null);
-        }
-      })
-      .catch(() => { /* no self customer yet — keep empty form */ });
-  }, []);
-
-  const handleCompanyDetailsChange = (e) => {
-    const { name, value } = e.target;
-    setCompanyDetails((prev) => ({ ...prev, [name]: value }));
-    setIsDirty(true);
-  };
-
-  const handleCompanyServiceOfferingChange = (selected) => {
-    const value = Array.isArray(selected) && selected.length > 0 ? selected[0] : "";
-    setCompanyDetails((prev) => ({ ...prev, service_offering_id: value }));
-    setIsDirty(true);
-  };
-
-  const handleCompanyLogoChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setCompanyLogoFile(file);
-    if (file) {
-      setCompanyLogoPreview(URL.createObjectURL(file));
-      setIsDirty(true);
-    }
-  };
-
-  const clearCompanyLogo = () => {
-    setCompanyLogoFile(null);
-    setCompanyLogoPreview(null);
-    if (logoInputRef.current) logoInputRef.current.value = "";
-    setIsDirty(true);
-  };
 
   const requiredPermission = "view_company_settings";
   const canViewCompanySettings = hasPermission(requiredPermission, useDataContext());
@@ -199,24 +119,6 @@ function CompanySettings() {
 
       await ApiService.updateCompanySettings(companyData);
 
-      if (companyProfileRef.current?.save) {
-        await companyProfileRef.current.save();
-      }
-
-      // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
-      const selfFd = new FormData();
-      const selfPayload = {
-        ...companyDetails,
-        entity_name: companySettings.name
-      };
-      Object.entries(selfPayload).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== "") {
-          selfFd.append(key, value);
-        }
-      });
-      if (companyLogoFile) selfFd.append("company_logo", companyLogoFile);
-      await customerApi.upsertSelf(selfFd);
-
       setSuccess("Settings updated successfully");
       setIsDirty(false);
       toast.success("Settings updated successfully");
@@ -231,12 +133,6 @@ function CompanySettings() {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleProfileDirtyChange = (isProfileDirty) => {
-    if (isProfileDirty) {
-      setIsDirty(true);
     }
   };
 
@@ -351,38 +247,13 @@ function CompanySettings() {
           />
         </div>
 
-        {/* Company Profile - App-specific settings */}
-        <CompanyProfile
-          ref={companyProfileRef}
-          isLoading={isLoading}
-          onDirtyChange={handleProfileDirtyChange}
-        />
-
-        {/* Company Details — stored as the self-customer row (is_self=true).
-            entity_name is taken from the Company Name field above on save. */}
-        <div className="mt-6">
-          <CustomerDetailsFields
-            formData={companyDetails}
-            onChange={handleCompanyDetailsChange}
-            labelPrefix="Company"
-            omitFields={['customer_code', 'entity_name']}
-            logoFile={companyLogoFile}
-            logoPreview={companyLogoPreview}
-            fileInputRef={logoInputRef}
-            onLogoChange={handleCompanyLogoChange}
-            onClearLogo={clearCompanyLogo}
-            serviceOfferings={serviceOfferings}
-            onServiceOfferingChange={handleCompanyServiceOfferingChange}
-          />
-        </div>
-
         <motion.button
           onClick={handleSaveAll}
-          disabled={isLoading || (!isDirty && !(companyProfileRef.current?.isDirty?.() || false))}
+          disabled={isLoading || !isDirty}
           className={`w-full p-3 rounded-lg text-white font-semibold transition-all flex items-center justify-center ${
             isLoading
               ? "bg-indigo-300 cursor-not-allowed"
-              : !isDirty && !(companyProfileRef.current?.isDirty?.() || false)
+              : !isDirty
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
           }`}

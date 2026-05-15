@@ -1,5 +1,4 @@
 // app_routes.js
-
 const logger = require('@startup/logger');
 const env = require('@startup/src/config/env');
 
@@ -49,8 +48,6 @@ const appRoutes = (app, prefix) => {
   // app.use('${prefix}/v1/users', userRoutes);
   // app.use('${prefix}/v1/company', companyRoutes);
   // app.use('${prefix}/v1/admin', adminRoutes);
-
-
 
   logger.info(`App routes loaded at ${Date.now()}`);
 };

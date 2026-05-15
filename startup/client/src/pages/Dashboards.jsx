@@ -3,7 +3,8 @@
 const DashboardContent = () => {
 
 return (<>
-  {/* dashboard content come here */}
+   <p>dashboard content come here</p>
+
 </>);
 };
 

@@ -40,20 +40,8 @@ const ApiService = {
     return this.request('GET', '/company/settings');
   },
 
-  getTerminalListApi() {
-    return this.request('GET', '/company/terminal-list-api');
-  },
-
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
-  },
-
-  getCompanyProfile() {
-    return this.request('GET', '/company-profile');
-  },
-
-  updateCompanyProfile(profile) {
-    return this.request('PUT', '/company-profile', profile);
   },
 
   getUserCompanies() {

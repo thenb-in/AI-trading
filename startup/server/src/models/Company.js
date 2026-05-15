@@ -26,28 +26,6 @@ module.exports = (sequelize, DataTypes) => {
     role_id: {
       type: DataTypes.INTEGER,
       allowNull: true
-    },
-    job_offer_header_image: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: 'Base64 encoded header image for job offer letter PDF'
-    },
-    job_offer_footer_image: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: 'Base64 encoded footer image for job offer letter PDF'
-    },
-    job_offer_header_height_cm: {
-      type: DataTypes.DECIMAL(5, 2),
-      allowNull: true,
-      defaultValue: 3.0,
-      comment: 'Height of header image in centimeters for PDF generation'
-    },
-    job_offer_footer_height_cm: {
-      type: DataTypes.DECIMAL(5, 2),
-      allowNull: true,
-      defaultValue: 3.0,
-      comment: 'Height of footer image in centimeters for PDF generation'
     }
   }, {
     tableName: 'nbnext_company',
