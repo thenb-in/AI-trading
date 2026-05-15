@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap of publicly indexable URLs. Lists only the routes that DON'T
+  require auth (and aren't behind the license gate's 503). The
+  `<lastmod>` placeholders are filled in at build time by the prerender
+  step; if you regenerate the sitemap by hand, set lastmod to today's
+  ISO date so crawlers re-fetch the latest.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>/signup</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>/forgot-password</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

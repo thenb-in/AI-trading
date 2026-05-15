@@ -29,9 +29,9 @@
 // applies.
 
 const express = require('express');
-const authMiddleware = require('../middleware/authMiddleware');
-const machineFingerprint = require('../license/machineFingerprint');
 const licenseService = require('../license/licenseService');
+const machineFingerprint = require('../license/machineFingerprint');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -55,7 +55,7 @@ router.get('/status', (req, res) => {
     days_until_expiry: snap.days_until_expiry ?? null,
     renewal_after: snap.renewal_after || null,
     renewal_mode: snap.renewal_mode || null,
-    serial: snap.serial ?? null,
+    serial: snap.serial ?? null
   });
 });
 
@@ -74,7 +74,7 @@ router.post('/refresh', authMiddleware.protect, async (req, res) => {
     res.status(200).json({
       ok: true,
       serial: result.payload.serial,
-      expires_at: result.payload.expires_at,
+      expires_at: result.payload.expires_at
     });
   } catch (err) {
     res.status(502).json({ ok: false, error: err.message });
@@ -100,7 +100,7 @@ router.post('/airgap-apply', authMiddleware.protect, async (req, res) => {
     res.status(200).json({
       ok: true,
       serial: result.payload.serial,
-      expires_at: result.payload.expires_at,
+      expires_at: result.payload.expires_at
     });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message, detail: err.detail || null });
@@ -119,7 +119,7 @@ router.post('/install', authMiddleware.protect, async (req, res) => {
       ok: true,
       license_id: result.payload.license_id,
       serial: result.payload.serial,
-      expires_at: result.payload.expires_at,
+      expires_at: result.payload.expires_at
     });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });

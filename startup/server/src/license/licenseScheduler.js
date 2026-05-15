@@ -16,8 +16,8 @@
 // disabled and the wallclock bumper still runs (it's harmless when no
 // license is installed).
 
-const { registerJob } = require('../../scheduler');
 const logger = require('../../logger');
+const { registerJob } = require('../../scheduler');
 const licenseSeal = require('./licenseSeal');
 const licenseService = require('./licenseService');
 
@@ -28,9 +28,13 @@ function isAutoRenewEnabled() {
 
 async function tryRenew() {
   const state = licenseService.getCurrentState();
-  if (!state || !state.ok || state.bypass) return;
+  if (!state || !state.ok || state.bypass) {
+    return;
+  }
   const payload = state.payload;
-  if (!payload) return;
+  if (!payload) {
+    return;
+  }
   if ((payload.renewal_mode || 'online') !== 'online') {
     // Airgap or manual renewal: don't attempt to phone home, but DO log
     // the impending expiry so ops dashboards can pick it up.
@@ -43,17 +47,19 @@ async function tryRenew() {
   const now = Date.now();
   const renewalAfter = payload.renewal_after ? new Date(payload.renewal_after).getTime() : null;
   const expiresAt = new Date(payload.expires_at).getTime();
-  if (renewalAfter && now < renewalAfter) return; // not in renewal window yet
+  if (renewalAfter && now < renewalAfter) {
+    return;
+  } // not in renewal window yet
   if (now >= expiresAt) {
     // Already expired — try anyway; some clock-skew/last-mile failure
     // might be the reason and the wallet may still accept the request.
-    logger.warn('[license] attempting renewal of already-expired license');
+    logger.warn(`[license] attempting renewal of already-expired license (expired_at=${payload.expires_at})`);
   }
   try {
     const result = await licenseService.renewOnline();
     logger.info(`[license] auto-renewed serial=${result.payload.serial} new_expires=${result.payload.expires_at}`);
   } catch (err) {
-    logger.error(`[license] auto-renew failed: ${err.message}`);
+    logger.error(`[license] auto-renew failed: ${err.message}`, err);
   }
 }
 
@@ -63,13 +69,15 @@ function registerLicenseJobs() {
     cronTime: '0 * * * *', // top of every hour
     run: tryRenew,
     enabled: isAutoRenewEnabled(),
-    skipReason: 'LICENSE_AUTO_RENEW=false',
+    skipReason: 'LICENSE_AUTO_RENEW=false'
   });
 
   registerJob({
     name: 'license-wallclock-bump',
     cronTime: '*/5 * * * *',
-    run: () => { licenseSeal.bumpWallclock(); },
+    run: () => {
+      licenseSeal.bumpWallclock();
+    }
   });
 }
 

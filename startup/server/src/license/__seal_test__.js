@@ -1,4 +1,5 @@
-/* eslint-disable no-console */
+/* eslint-disable */
+
 'use strict';
 
 // Anti-rollback seal tests. Verifies that:
@@ -41,6 +42,7 @@ process.env.LICENSE_WALLET_PUBLIC_KEYS = JSON.stringify([publicPem]);
 
 // Require AFTER setting env so config loads the right paths.
 const pinnedKeys = require('./pinnedKeys');
+
 pinnedKeys._reset();
 
 const issuerFmt = require(path.resolve(
@@ -51,8 +53,11 @@ const seal = require('./licenseSeal');
 let pass = 0;
 let fail = 0;
 function check(label, cond, detail) {
-  if (cond) { pass++; console.log(`  ✓ ${label}`); }
-  else { fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`); }
+  if (cond) {
+    pass++; console.log(`  ✓ ${label}`);
+  } else {
+    fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`);
+  }
 }
 
 function makePayload(serial) {
@@ -65,52 +70,56 @@ function makePayload(serial) {
     issued_at: new Date().toISOString(),
     not_before: new Date(Date.now() - 1000).toISOString(),
     expires_at: new Date(Date.now() + 86400000).toISOString(),
-    max_clock_skew_seconds: 300,
+    max_clock_skew_seconds: 300
   };
 }
 
-console.log('── fresh boot accepts first token ─────────────────');
+console.log(`── fresh boot accepts first token ─────────────────`);
 const p1 = makePayload(1);
 const t1 = issuerFmt.signPayload(p1, privatePem);
 const v1 = seal.validateAgainstSeal(p1);
-check('first token validates (no prior seal)', v1.ok);
+check(`first token validates (no prior seal)`, v1.ok);
 seal.advanceSeal({ payload: p1, token: t1 });
 const sealAfter1 = seal.readSealFile();
 check('seal file written', !!sealAfter1 && sealAfter1.highest_serial === 1);
 
-console.log('── second token (higher serial) accepted ──────────');
+console.log(`── second token (higher serial) accepted ──────────`);
 const p2 = makePayload(2);
 const t2 = issuerFmt.signPayload(p2, privatePem);
 const v2 = seal.validateAgainstSeal(p2);
-check('serial=2 accepted after seal=1', v2.ok);
+check(`serial=2 accepted after seal=1`, v2.ok);
 seal.advanceSeal({ payload: p2, token: t2 });
 const sealAfter2 = seal.readSealFile();
 check('seal advanced to 2', sealAfter2.highest_serial === 2);
 
-console.log('── replay of older token rejected ─────────────────');
+console.log(`── replay of older token rejected ─────────────────`);
 const v1Again = seal.validateAgainstSeal(p1);
-check('serial=1 rejected when seal=2', !v1Again.ok && v1Again.reason === 'serial_rollback', v1Again);
+check(`serial=1 rejected when seal=2`, !v1Again.ok && v1Again.reason === 'serial_rollback', v1Again);
 
-console.log('── tampered seal JSON ignored ─────────────────────');
+console.log(`── tampered seal JSON ignored ─────────────────────`);
 const sealFile = path.join(tmp, 'license.seal.json');
 const tampered = JSON.parse(fs.readFileSync(sealFile, 'utf8'));
 tampered.highest_serial = 0; // attacker tries to lower it
 fs.writeFileSync(sealFile, JSON.stringify(tampered));
 // anchor_token (signed) still says serial=2; trusted serial should be 2.
 const v1AfterTamper = seal.validateAgainstSeal(p1);
-check('lowering seal JSON does not let serial=1 through', !v1AfterTamper.ok, v1AfterTamper);
+check(`lowering seal JSON does not let serial=1 through`, !v1AfterTamper.ok, v1AfterTamper);
 
-console.log('── clock rollback detected ────────────────────────');
+console.log(`── clock rollback detected ────────────────────────`);
 const sealNow = JSON.parse(fs.readFileSync(sealFile, 'utf8'));
-sealNow.last_wallclock_iso = new Date(Date.now() + 3600_000).toISOString(); // pretend we saw a wall clock 1h ahead
+sealNow.last_wallclock_iso = new Date(Date.now() + 3600000).toISOString(); // pretend we saw a wall clock 1h ahead
 fs.writeFileSync(sealFile, JSON.stringify(sealNow));
 const p3 = makePayload(3);
 const v3 = seal.validateAgainstSeal(p3);
-check('clock rollback rejected', !v3.ok && v3.reason === 'clock_rollback', v3);
+check(`clock rollback rejected`, !v3.ok && v3.reason === 'clock_rollback', v3);
 
 // cleanup
-if (createdStub) fs.unlinkSync(stubExamplePath);
-if (fs.existsSync(stubEnvPath)) fs.unlinkSync(stubEnvPath);
+if (createdStub) {
+  fs.unlinkSync(stubExamplePath);
+}
+if (fs.existsSync(stubEnvPath)) {
+  fs.unlinkSync(stubEnvPath);
+}
 fs.rmSync(tmp, { recursive: true, force: true });
 
 console.log('');

@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../../logger');
 const env = require('../config/env');
+const { WALLET_KEYS_FILENAME } = require('../constants/license');
 
 // ─── BAKED_KEYS ─────────────────────────────────────────────────────────────
 // Replace these PEM strings with the wallet's public keys at release-cut
@@ -40,11 +41,13 @@ const BAKED_KEYS = Object.freeze([
 
 function parseFromEnv() {
   const raw = process.env.LICENSE_WALLET_PUBLIC_KEYS;
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) {
-      logger.warn('[license] LICENSE_WALLET_PUBLIC_KEYS is not a JSON array; ignoring');
+      logger.warn(`[license] LICENSE_WALLET_PUBLIC_KEYS is not a JSON array (got ${typeof arr}); ignoring`);
       return null;
     }
     return arr.filter(s => typeof s === 'string' && s.includes('BEGIN PUBLIC KEY'));
@@ -55,15 +58,19 @@ function parseFromEnv() {
 }
 
 function parseFromFile() {
-  const file = path.join(env.SECRET_DIR, 'wallet_public_keys.json');
-  if (!fs.existsSync(file)) return null;
+  const file = path.join(env.SECRET_DIR, WALLET_KEYS_FILENAME);
+  if (!fs.existsSync(file)) {
+    return null;
+  }
   try {
     const raw = fs.readFileSync(file, 'utf8');
     const parsed = JSON.parse(raw);
     const arr = Array.isArray(parsed) ? parsed
       : Array.isArray(parsed.keys) ? parsed.keys.map(k => (typeof k === 'string' ? k : k.public_pem))
-      : null;
-    if (!arr) return null;
+        : null;
+    if (!arr) {
+      return null;
+    }
     return arr.filter(s => typeof s === 'string' && s.includes('BEGIN PUBLIC KEY'));
   } catch (err) {
     logger.warn(`[license] wallet_public_keys.json read failed: ${err.message}`);
@@ -74,7 +81,9 @@ function parseFromFile() {
 let cached = null;
 
 function load() {
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const fromEnv = parseFromEnv();
   if (fromEnv && fromEnv.length > 0) {
     logger.info(`[license] loaded ${fromEnv.length} wallet public key(s) from env`);

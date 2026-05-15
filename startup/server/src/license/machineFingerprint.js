@@ -21,10 +21,11 @@
 // careless clone that copies both is a deliberate attempt to evade
 // licensing, which we punish with a verification failure.
 
+const { execSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
-const { execSync } = require('child_process');
+const { LICENSE_ERRORS } = require('../constants/license');
 
 const VIRTUAL_PREFIXES = [
   '00:00:00:00:00:00',
@@ -33,13 +34,17 @@ const VIRTUAL_PREFIXES = [
   '00:15:5d:', // hyper-v
   '00:50:56:', // vmware
   '00:0c:29:',
-  '00:1c:14:',
+  '00:1c:14:'
 ];
 
 function isPhysicalMac(mac, ifaceName) {
-  if (!mac) return false;
+  if (!mac) {
+    return false;
+  }
   const lower = mac.toLowerCase();
-  if (VIRTUAL_PREFIXES.some(p => lower.startsWith(p))) return false;
+  if (VIRTUAL_PREFIXES.some(p => lower.startsWith(p))) {
+    return false;
+  }
   // Skip loopback and common virtual interface names.
   if (/^(lo|docker|veth|virbr|vboxnet|tun|tap|br-|cni|flannel)/i.test(ifaceName || '')) {
     return false;
@@ -52,8 +57,12 @@ function collectPhysicalMacs() {
   const macs = new Set();
   for (const [name, addrs] of Object.entries(ifaces)) {
     for (const a of addrs || []) {
-      if (a.internal) continue;
-      if (!isPhysicalMac(a.mac, name)) continue;
+      if (a.internal) {
+        continue;
+      }
+      if (!isPhysicalMac(a.mac, name)) {
+        continue;
+      }
       macs.add(a.mac.toLowerCase());
     }
   }
@@ -65,7 +74,9 @@ function readLinuxMachineId() {
   for (const p of candidates) {
     try {
       const v = fs.readFileSync(p, 'utf8').trim();
-      if (v) return v.toLowerCase();
+      if (v) {
+        return v.toLowerCase();
+      }
     } catch { /* try next */ }
   }
   return null;
@@ -75,29 +86,33 @@ function readWindowsMachineId() {
   try {
     const out = execSync(
       'reg query "HKLM\\SOFTWARE\\Microsoft\\Cryptography" /v MachineGuid',
-      { stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 },
+      { stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 }
     ).toString();
     const m = out.match(/MachineGuid\s+REG_SZ\s+([^\s]+)/i);
     return m ? m[1].toLowerCase() : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function readMacOsMachineId() {
   try {
     const out = execSync(
-      "ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/ { gsub(/\"/,\"\",$3); print $3 }'",
-      { stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 },
+      'ioreg -rd1 -c IOPlatformExpertDevice | awk \'/IOPlatformUUID/ { gsub(/"/,"",$3); print $3 }\'',
+      { stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 }
     ).toString().trim();
     return out ? out.toLowerCase() : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function collectMachineId() {
   switch (process.platform) {
-    case 'linux': return readLinuxMachineId();
-    case 'win32': return readWindowsMachineId();
-    case 'darwin': return readMacOsMachineId();
-    default: return null;
+  case 'linux': return readLinuxMachineId();
+  case 'win32': return readWindowsMachineId();
+  case 'darwin': return readMacOsMachineId();
+  default: return null;
   }
 }
 
@@ -110,10 +125,10 @@ function compute() {
   const macs = collectPhysicalMacs();
   const machineId = collectMachineId();
   if (macs.length === 0) {
-    throw new Error('machine_fingerprint: no physical MAC addresses detected');
+    throw new Error(LICENSE_ERRORS.FP_NO_MACS);
   }
   if (!machineId) {
-    throw new Error('machine_fingerprint: machine-id unavailable on this platform');
+    throw new Error(LICENSE_ERRORS.FP_NO_MACHINE_ID);
   }
   const canonical = `macs=${macs.join(',')}|machine_id=${machineId}`;
   const fingerprint = crypto.createHash('sha256').update(canonical).digest('hex');
@@ -146,7 +161,7 @@ function verify(expectedFingerprint, expectedDetails = null) {
       ok: false,
       reason: 'fingerprint_mismatch',
       current: current.fingerprint,
-      expected: expectedFingerprint,
+      expected: expectedFingerprint
     };
   }
   if (expectedDetails && Array.isArray(expectedDetails.macs)) {
@@ -164,5 +179,5 @@ function verify(expectedFingerprint, expectedDetails = null) {
 
 module.exports = {
   compute,
-  verify,
+  verify
 };

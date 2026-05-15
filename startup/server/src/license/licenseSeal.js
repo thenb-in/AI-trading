@@ -49,27 +49,30 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../../logger');
 const env = require('../config/env');
+const { LICENSE_SEAL_FILENAME, DEFAULT_CLOCK_SKEW_SECONDS } = require('../constants/license');
 const pinnedKeys = require('./pinnedKeys');
 const tokenFormat = require('./tokenFormat');
 
-const SEAL_FILENAME = 'license.seal.json';
-
 function getSealFilePath() {
-  return path.join(env.SECRET_DIR, SEAL_FILENAME);
+  return path.join(env.SECRET_DIR, LICENSE_SEAL_FILENAME);
 }
 
 function ensureSecretDir() {
   fs.mkdirSync(env.SECRET_DIR, { recursive: true });
-  try { fs.chmodSync(env.SECRET_DIR, 0o700); } catch { /* noop on win */ }
+  try {
+    fs.chmodSync(env.SECRET_DIR, 0o700);
+  } catch { /* noop on win */ }
 }
 
 function readSealFile() {
   const file = getSealFilePath();
-  if (!fs.existsSync(file)) return null;
+  if (!fs.existsSync(file)) {
+    return null;
+  }
   try {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch (err) {
-    logger.error(`[license] seal file corrupt: ${err.message}`);
+    logger.error(`[license] seal file corrupt: ${err.message}`, err);
     return null;
   }
 }
@@ -78,9 +81,12 @@ function writeSealFile(seal) {
   ensureSecretDir();
   const file = getSealFilePath();
   const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
-  fs.writeFileSync(tmp, JSON.stringify(seal, null, 2) + '\n', { mode: 0o600 });
+  fs.writeFileSync(tmp, `${JSON.stringify(seal, null, 2)}
+`, { mode: 0o600 });
   fs.renameSync(tmp, file);
-  try { fs.chmodSync(file, 0o600); } catch { /* noop */ }
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch { /* noop */ }
 }
 
 /**
@@ -89,9 +95,13 @@ function writeSealFile(seal) {
  * treat highest_serial as 0 (no anchor = no defended state, fresh boot).
  */
 function deriveTrustedSerial(seal) {
-  if (!seal || !seal.anchor_token) return { serial: 0, payload: null };
+  if (!seal || !seal.anchor_token) {
+    return { serial: 0, payload: null };
+  }
   const keys = pinnedKeys.load();
-  if (keys.length === 0) return { serial: 0, payload: null };
+  if (keys.length === 0) {
+    return { serial: 0, payload: null };
+  }
   const v = tokenFormat.verifyToken(seal.anchor_token, keys);
   if (!v.ok) {
     logger.warn(`[license] seal anchor_token failed verify: ${v.reason}`);
@@ -119,19 +129,19 @@ function validateAgainstSeal(payload, dbSeal = null) {
       ok: false,
       reason: 'serial_rollback',
       trustedSerial,
-      tokenSerial: payload.serial,
+      tokenSerial: payload.serial
     };
   }
 
   if (sealToTrust && sealToTrust.last_wallclock_iso) {
     const lastWallMs = new Date(sealToTrust.last_wallclock_iso).getTime();
-    const skewMs = (payload.max_clock_skew_seconds || 300) * 1000;
+    const skewMs = (payload.max_clock_skew_seconds || DEFAULT_CLOCK_SKEW_SECONDS) * 1000;
     if (Number.isFinite(lastWallMs) && Date.now() < lastWallMs - skewMs) {
       return {
         ok: false,
         reason: 'clock_rollback',
         sealedClock: sealToTrust.last_wallclock_iso,
-        now: new Date().toISOString(),
+        now: new Date().toISOString()
       };
     }
   }
@@ -162,7 +172,7 @@ function advanceSeal({ payload, token, persistDbSeal = null }) {
     machine_fingerprint: payload.machine_fingerprint,
     highest_serial: payload.serial,
     last_wallclock_iso: newWall,
-    anchor_token: token,
+    anchor_token: token
   };
 
   writeSealFile(newSeal);
@@ -184,7 +194,9 @@ function advanceSeal({ payload, token, persistDbSeal = null }) {
  */
 function bumpWallclock() {
   const seal = readSealFile();
-  if (!seal) return; // nothing to anchor against yet
+  if (!seal) {
+    return;
+  } // nothing to anchor against yet
   const now = Date.now();
   const lastMs = new Date(seal.last_wallclock_iso).getTime();
   if (now > lastMs) {
@@ -198,5 +210,5 @@ module.exports = {
   advanceSeal,
   bumpWallclock,
   readSealFile,
-  getSealFilePath,
+  getSealFilePath
 };

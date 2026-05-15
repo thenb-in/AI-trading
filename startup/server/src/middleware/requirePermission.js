@@ -29,7 +29,7 @@ function requirePermission(permissionName) {
       if (!licenseAllowed) {
         return sendError(res, {
           statusCode: HTTP_STATUS_FORBIDDEN,
-          message: `License does not authorize: ${permissionName}`,
+          message: `License does not authorize: ${permissionName}`
         });
       }
       const hasPermission = await allowedPermissions(req.user.id, [permissionName]);

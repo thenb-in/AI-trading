@@ -8,9 +8,9 @@ const logger = require('./logger');
 const { startAllSchedulers, stopAllSchedulers } = require('./scheduler');
 const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
-const licenseService = require('./src/license/licenseService');
-const licenseSeal = require('./src/license/licenseSeal'); // eslint-disable-line no-unused-vars
 const { registerLicenseJobs } = require('./src/license/licenseScheduler');
+const licenseSeal = require('./src/license/licenseSeal'); // eslint-disable-line no-unused-vars
+const licenseService = require('./src/license/licenseService');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 const httpLogger = require('./src/middleware/httpLogger');
 const licenseGate = require('./src/middleware/licenseGate');
@@ -158,15 +158,15 @@ function buildApp(options = {}) {
         const state = await licenseService.loadAndVerify({ force: true });
         if (state.ok) {
           if (state.bypass) {
-            logger.warn('[license] enforcement bypassed (dev mode). All permissions allowed.');
+            logger.warn(`[license] enforcement bypassed (dev mode, reason=${state.reason}). All permissions allowed.`);
           } else {
             logger.info(`[license] active license_id=${state.payload.license_id} serial=${state.payload.serial} expires=${state.payload.expires_at}`);
           }
         } else {
-          logger.error(`[license] LOCKED at boot: ${state.reason}. All non-recovery endpoints will return 503.`);
+          logger.warn(`[license] LOCKED at boot: reason=${state.reason}. All non-recovery endpoints will return 503.`);
         }
       } catch (err) {
-        logger.error(`[license] boot verification crashed: ${err.message}`);
+        logger.error(`[license] boot verification crashed: ${err.message}`, err);
       }
 
       server.listen(env.PORT, () => {

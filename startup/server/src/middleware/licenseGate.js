@@ -26,7 +26,7 @@ const EXEMPT_PATH_PREFIXES = [
   // run the recovery flow from the UI. Without this, a locked install
   // becomes unrecoverable through the web UI.
   '/api/v1/auth/login',
-  '/api/v1/auth/logout',
+  '/api/v1/auth/logout'
 ];
 
 function isExempt(req) {
@@ -36,7 +36,9 @@ function isExempt(req) {
 
 function licenseGate() {
   return async function licenseGateMiddleware(req, res, next) {
-    if (isExempt(req)) return next();
+    if (isExempt(req)) {
+      return next();
+    }
 
     try {
       const state = await licenseService.loadAndVerify();
@@ -52,14 +54,14 @@ function licenseGate() {
         recovery: {
           status_endpoint: '/api/v1/license/status',
           airgap_request_endpoint: '/api/v1/license/airgap-request',
-          airgap_apply_endpoint: '/api/v1/license/airgap-apply',
-        },
+          airgap_apply_endpoint: '/api/v1/license/airgap-apply'
+        }
       });
     } catch (err) {
       logger.error(`[license-gate] unexpected error: ${err.message}`, err);
       return res.status(503).json({
         error: 'license_check_failed',
-        message: err.message,
+        message: err.message
       });
     }
   };

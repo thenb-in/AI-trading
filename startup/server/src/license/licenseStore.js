@@ -18,18 +18,20 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('../../logger');
 const env = require('../config/env');
+const { LICENSE_TOKEN_FILENAME } = require('../constants/license');
+const db = require('../models');
 const pinnedKeys = require('./pinnedKeys');
 const tokenFormat = require('./tokenFormat');
 
-const LICENSE_FILENAME = 'license.token';
-
 function getLicenseFilePath() {
-  return path.join(env.SECRET_DIR, LICENSE_FILENAME);
+  return path.join(env.SECRET_DIR, LICENSE_TOKEN_FILENAME);
 }
 
 function readFromFile() {
   const file = getLicenseFilePath();
-  if (!fs.existsSync(file)) return null;
+  if (!fs.existsSync(file)) {
+    return null;
+  }
   try {
     const token = fs.readFileSync(file, 'utf8').trim();
     return token || null;
@@ -43,15 +45,19 @@ function writeToFile(token) {
   fs.mkdirSync(env.SECRET_DIR, { recursive: true });
   const file = getLicenseFilePath();
   const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
-  fs.writeFileSync(tmp, token + '\n', { mode: 0o600 });
+  fs.writeFileSync(tmp, `${token}
+`, { mode: 0o600 });
   fs.renameSync(tmp, file);
-  try { fs.chmodSync(file, 0o600); } catch { /* noop */ }
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch { /* noop */ }
 }
 
 async function readFromDb() {
-  const db = require('../models');
   const License = db.License;
-  if (!License) return null;
+  if (!License) {
+    return null;
+  }
   const row = await License.findOne({ order: [['updated_at', 'DESC']] });
   return row;
 }
@@ -79,15 +85,23 @@ async function loadVerifiedToken() {
   const candidates = [];
   if (fileToken) {
     const v = tokenFormat.verifyToken(fileToken, keys);
-    if (v.ok) candidates.push({ source: 'file', token: fileToken, payload: v.payload });
-    else logger.warn(`[license] file token failed verify: ${v.reason}`);
+    if (v.ok) {
+      candidates.push({ source: 'file', token: fileToken, payload: v.payload });
+    } else {
+      logger.warn(`[license] file token failed verify: ${v.reason}`);
+    }
   }
   if (dbToken) {
     const v = tokenFormat.verifyToken(dbToken, keys);
-    if (v.ok) candidates.push({ source: 'db', token: dbToken, payload: v.payload });
-    else logger.warn(`[license] db token failed verify: ${v.reason}`);
+    if (v.ok) {
+      candidates.push({ source: 'db', token: dbToken, payload: v.payload });
+    } else {
+      logger.warn(`[license] db token failed verify: ${v.reason}`);
+    }
   }
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    return null;
+  }
 
   candidates.sort((a, b) => (b.payload.serial || 0) - (a.payload.serial || 0));
   const picked = candidates[0];
@@ -111,10 +125,9 @@ async function loadVerifiedToken() {
 async function persist({ token, payload }) {
   writeToFile(token);
 
-  const db = require('../models');
   const License = db.License;
   if (!License) {
-    logger.warn('[license] License model not registered; skipped DB persist');
+    logger.warn(`[license] License model not registered; skipped DB persist for license_id=${payload.license_id}`);
     return;
   }
 
@@ -132,7 +145,7 @@ async function persist({ token, payload }) {
     renewalAfter: payload.renewal_after ?? null,
     renewalMode: payload.renewal_mode || 'online',
     token,
-    lastVerifiedAt: new Date(),
+    lastVerifiedAt: new Date()
   };
 
   const existing = await License.findOne({ where: { licenseId: payload.license_id } });
@@ -144,28 +157,32 @@ async function persist({ token, payload }) {
 }
 
 async function persistSealMirror(seal) {
-  const db = require('../models');
   const License = db.License;
-  if (!License || !seal) return;
+  if (!License || !seal) {
+    return;
+  }
   await License.update({
     sealAnchorToken: seal.anchor_token,
     sealHighestSerial: seal.highest_serial,
-    sealLastWallclock: seal.last_wallclock_iso,
+    sealLastWallclock: seal.last_wallclock_iso
   }, { where: { licenseId: seal.license_id } });
 }
 
 async function readDbSeal() {
-  const db = require('../models');
   const License = db.License;
-  if (!License) return null;
+  if (!License) {
+    return null;
+  }
   const row = await License.findOne({ order: [['updated_at', 'DESC']] });
-  if (!row || !row.sealAnchorToken) return null;
+  if (!row || !row.sealAnchorToken) {
+    return null;
+  }
   return {
     license_id: row.licenseId,
     machine_fingerprint: row.machineFingerprint,
     highest_serial: row.sealHighestSerial,
     last_wallclock_iso: row.sealLastWallclock?.toISOString?.() || row.sealLastWallclock,
-    anchor_token: row.sealAnchorToken,
+    anchor_token: row.sealAnchorToken
   };
 }
 
@@ -174,5 +191,5 @@ module.exports = {
   loadVerifiedToken,
   persist,
   persistSealMirror,
-  readDbSeal,
+  readDbSeal
 };

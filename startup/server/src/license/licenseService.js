@@ -23,8 +23,13 @@
 
 const crypto = require('crypto');
 const axios = require('axios');
-const logger = require('../../logger');
 const env = require('../config/env');
+const {
+  DEFAULT_CLOCK_SKEW_SECONDS,
+  LICENSE_ERRORS,
+  VERIFY_REASONS,
+  WALLET_RENEW_TIMEOUT_MS
+} = require('../constants/license');
 const licenseSeal = require('./licenseSeal');
 const licenseStore = require('./licenseStore');
 const machineFingerprint = require('./machineFingerprint');
@@ -48,7 +53,9 @@ function getAppName() {
   return env.APP_NAME || 'unknown-app';
 }
 
-function nowMs() { return Date.now(); }
+function nowMs() {
+  return Date.now();
+}
 
 /**
  * Internal: given a freshly-verified payload + token, run all rejection
@@ -68,7 +75,7 @@ async function acceptToken({ token, payload, opts = {} }) {
   // "nbnext-startup" install. Comparison is case-insensitive because
   // package.json names and env values drift.
   if (payload.app_name && payload.app_name.toLowerCase() !== getAppName().toLowerCase()) {
-    return { ok: false, reason: 'app_name_mismatch', expected: getAppName(), got: payload.app_name };
+    return { ok: false, reason: VERIFY_REASONS.APP_NAME_MISMATCH, expected: getAppName(), got: payload.app_name };
   }
 
   if (!skipMachineCheck) {
@@ -82,12 +89,12 @@ async function acceptToken({ token, payload, opts = {} }) {
     const now = nowMs();
     const nbMs = new Date(payload.not_before).getTime();
     const expMs = new Date(payload.expires_at).getTime();
-    const skewMs = (payload.max_clock_skew_seconds || 300) * 1000;
+    const skewMs = (payload.max_clock_skew_seconds || DEFAULT_CLOCK_SKEW_SECONDS) * 1000;
     if (Number.isFinite(nbMs) && now + skewMs < nbMs) {
-      return { ok: false, reason: 'not_yet_valid', notBefore: payload.not_before };
+      return { ok: false, reason: VERIFY_REASONS.NOT_YET_VALID, notBefore: payload.not_before };
     }
     if (Number.isFinite(expMs) && now > expMs + skewMs) {
-      return { ok: false, reason: 'expired', expiresAt: payload.expires_at };
+      return { ok: false, reason: VERIFY_REASONS.EXPIRED, expiresAt: payload.expires_at };
     }
   }
 
@@ -104,7 +111,7 @@ async function acceptToken({ token, payload, opts = {} }) {
   const advance = licenseSeal.advanceSeal({
     payload,
     token,
-    persistDbSeal: licenseStore.persistSealMirror,
+    persistDbSeal: licenseStore.persistSealMirror
   });
 
   currentState = {
@@ -112,7 +119,7 @@ async function acceptToken({ token, payload, opts = {} }) {
     token,
     payload,
     verifiedAt: nowMs(),
-    sealAdvanced: !!advance.advanced,
+    sealAdvanced: !!advance.advanced
   };
   return currentState;
 }
@@ -130,8 +137,8 @@ async function loadAndVerify({ force = false } = {}) {
     currentState = {
       ok: true,
       bypass: true,
-      reason: 'enforcement_disabled',
-      verifiedAt: nowMs(),
+      reason: VERIFY_REASONS.ENFORCEMENT_DISABLED,
+      verifiedAt: nowMs()
     };
     return currentState;
   }
@@ -140,7 +147,7 @@ async function loadAndVerify({ force = false } = {}) {
     // Cheap re-check: only the expiry deadline can change between calls
     // without a renewal.
     const expMs = new Date(currentState.payload.expires_at).getTime();
-    const skewMs = (currentState.payload.max_clock_skew_seconds || 300) * 1000;
+    const skewMs = (currentState.payload.max_clock_skew_seconds || DEFAULT_CLOCK_SKEW_SECONDS) * 1000;
     if (Number.isFinite(expMs) && nowMs() <= expMs + skewMs) {
       return currentState;
     }
@@ -149,13 +156,13 @@ async function loadAndVerify({ force = false } = {}) {
   }
 
   if (!pinnedKeys.isConfigured()) {
-    currentState = { ok: false, reason: 'no_pinned_keys', verifiedAt: nowMs() };
+    currentState = { ok: false, reason: VERIFY_REASONS.NO_PINNED_KEYS, verifiedAt: nowMs() };
     return currentState;
   }
 
   const loaded = await licenseStore.loadVerifiedToken();
   if (!loaded) {
-    currentState = { ok: false, reason: 'no_license', verifiedAt: nowMs() };
+    currentState = { ok: false, reason: VERIFY_REASONS.NO_LICENSE, verifiedAt: nowMs() };
     return currentState;
   }
   return acceptToken({ token: loaded.token, payload: loaded.payload });
@@ -171,18 +178,30 @@ function getCurrentState() {
  * is bypassed (dev mode), returns true.
  */
 function hasLicensedPermission(permissionName) {
-  if (!currentState) return false;
-  if (currentState.bypass) return true;
-  if (!currentState.ok) return false;
+  if (!currentState) {
+    return false;
+  }
+  if (currentState.bypass) {
+    return true;
+  }
+  if (!currentState.ok) {
+    return false;
+  }
   const allowed = currentState.payload?.permissions || [];
-  if (allowed.includes('*')) return true;
+  if (allowed.includes('*')) {
+    return true;
+  }
   return allowed.includes(permissionName);
 }
 
 /** Returns the array of license-whitelisted permission names, or null if licensing is bypassed (everything allowed). */
 function getLicensedPermissions() {
-  if (!currentState) return [];
-  if (currentState.bypass) return null;
+  if (!currentState) {
+    return [];
+  }
+  if (currentState.bypass) {
+    return null;
+  }
   return currentState.payload?.permissions || [];
 }
 
@@ -190,35 +209,41 @@ function getLicensedPermissions() {
 
 function walletRenewUrl() {
   const base = env.WALLET_SERVER_URL;
-  if (!base) throw new Error('WALLET_SERVER_URL not configured');
+  if (!base) {
+    throw new Error(LICENSE_ERRORS.WALLET_URL_NOT_CONFIGURED);
+  }
   return `${base.replace(/\/+$/, '')}/license/renew`;
 }
 
 async function renewOnline() {
   if (!currentState || !currentState.ok || !currentState.token) {
-    throw new Error('no_current_license_to_renew');
+    throw new Error(LICENSE_ERRORS.NO_CURRENT_LICENSE);
   }
   const fp = machineFingerprint.compute();
   const body = {
     currentToken: currentState.token,
-    machineFingerprint: fp.fingerprint,
+    machineFingerprint: fp.fingerprint
   };
   let response;
   try {
-    response = await axios.post(walletRenewUrl(), body, { timeout: 15000 });
+    response = await axios.post(walletRenewUrl(), body, { timeout: WALLET_RENEW_TIMEOUT_MS });
   } catch (err) {
     const detail = err.response?.data?.error || err.message;
-    throw new Error(`wallet_renew_failed: ${detail}`);
+    throw new Error(`${LICENSE_ERRORS.WALLET_RENEW_FAILED}: ${detail}`);
   }
   const newToken = response.data?.token;
-  if (!newToken) throw new Error('wallet_renew_returned_no_token');
+  if (!newToken) {
+    throw new Error(LICENSE_ERRORS.WALLET_RENEW_NO_TOKEN);
+  }
 
   const v = tokenFormat.verifyToken(newToken, pinnedKeys.load());
-  if (!v.ok) throw new Error(`renew_token_verify_failed: ${v.reason}`);
+  if (!v.ok) {
+    throw new Error(`${LICENSE_ERRORS.RENEW_VERIFY_FAILED}: ${v.reason}`);
+  }
 
   const accept = await acceptToken({ token: newToken, payload: v.payload });
   if (!accept.ok) {
-    throw new Error(`renew_token_rejected_locally: ${accept.reason}`);
+    throw new Error(`${LICENSE_ERRORS.RENEW_REJECTED}: ${accept.reason}`);
   }
   return accept;
 }
@@ -232,7 +257,7 @@ async function renewOnline() {
  */
 function buildAirgapRequest() {
   if (!currentState || !currentState.ok || !currentState.token) {
-    throw new Error('no_current_license_to_renew');
+    throw new Error(LICENSE_ERRORS.NO_CURRENT_LICENSE);
   }
   const fp = machineFingerprint.compute();
   return {
@@ -241,7 +266,7 @@ function buildAirgapRequest() {
     current_token: currentState.token,
     machine_fingerprint: fp.fingerprint,
     requested_at: new Date().toISOString(),
-    nonce: crypto.randomBytes(16).toString('hex'),
+    nonce: crypto.randomBytes(16).toString('hex')
   };
 }
 
@@ -250,13 +275,15 @@ function buildAirgapRequest() {
  */
 async function applyAirgapResponse({ token }) {
   if (typeof token !== 'string' || !token) {
-    throw new Error('token_required');
+    throw new Error(LICENSE_ERRORS.TOKEN_REQUIRED);
   }
   const v = tokenFormat.verifyToken(token, pinnedKeys.load());
-  if (!v.ok) throw new Error(`airgap_token_verify_failed: ${v.reason}`);
+  if (!v.ok) {
+    throw new Error(`${LICENSE_ERRORS.AIRGAP_VERIFY_FAILED}: ${v.reason}`);
+  }
   const accept = await acceptToken({ token, payload: v.payload });
   if (!accept.ok) {
-    const err = new Error(`airgap_token_rejected: ${accept.reason}`);
+    const err = new Error(`${LICENSE_ERRORS.AIRGAP_REJECTED}: ${accept.reason}`);
     err.detail = accept;
     throw err;
   }
@@ -278,7 +305,7 @@ async function installToken({ token }) {
 
 function getStatusSnapshot() {
   if (!currentState) {
-    return { ok: false, reason: 'not_loaded' };
+    return { ok: false, reason: VERIFY_REASONS.NOT_LOADED };
   }
   if (currentState.bypass) {
     return { ok: true, bypass: true, reason: currentState.reason };
@@ -305,7 +332,7 @@ function getStatusSnapshot() {
       (new Date(p.expires_at).getTime() - nowMs()) / 86400000
     )),
     machine_fingerprint: p.machine_fingerprint,
-    last_verified_at: new Date(currentState.verifiedAt).toISOString(),
+    last_verified_at: new Date(currentState.verifiedAt).toISOString()
   };
 }
 
@@ -326,5 +353,5 @@ module.exports = {
   buildAirgapRequest,
   applyAirgapResponse,
   installToken,
-  _resetForTest,
+  _resetForTest
 };

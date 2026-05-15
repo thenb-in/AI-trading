@@ -1,4 +1,5 @@
-/* eslint-disable no-console */
+/* eslint-disable */
+
 'use strict';
 
 // End-to-end smoke test for the license crypto + format. Self-contained:
@@ -11,8 +12,8 @@
 
 const crypto = require('crypto');
 const path = require('path');
-
 const verifierFmt = require('./tokenFormat');
+
 const issuerFmt = require(path.resolve(
   __dirname, '../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
 ));
@@ -20,15 +21,18 @@ const issuerFmt = require(path.resolve(
 let pass = 0;
 let fail = 0;
 function check(label, cond, detail) {
-  if (cond) { pass++; console.log(`  ✓ ${label}`); }
-  else { fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`); }
+  if (cond) {
+    pass++; console.log(`  ✓ ${label}`);
+  } else {
+    fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`);
+  }
 }
 
 function genKey() {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
   return {
     publicPem: publicKey.export({ type: 'spki', format: 'pem' }),
-    privatePem: privateKey.export({ type: 'pkcs8', format: 'pem' }),
+    privatePem: privateKey.export({ type: 'pkcs8', format: 'pem' })
   };
 }
 
@@ -41,7 +45,7 @@ const payload = {
   serial: 7,
   machine_fingerprint: 'fp-abc',
   expires_at: new Date(Date.now() + 86400000).toISOString(),
-  permissions: ['User.read', 'User.write'],
+  permissions: ['User.read', 'User.write']
 };
 const token = issuerFmt.signPayload(payload, k.privatePem);
 check('issuer produces token with header', token.startsWith('NBLIC1.'));
@@ -53,12 +57,12 @@ check('verifier returns matching serial', v.ok && v.payload.serial === 7);
 
 console.log('── verifier rejects tampered payload ───────────────');
 const parts = token.split('.');
-const bad = parts[0] + '.' + Buffer.from('{"oops":1}').toString('base64url') + '.' + parts[2];
+const bad = `${parts[0]}.${Buffer.from('{"oops":1}').toString('base64url')}.${parts[2]}`;
 const vBad = verifierFmt.verifyToken(bad, k.publicPem);
 check('payload swap rejected', !vBad.ok, vBad);
 
 console.log('── verifier rejects tampered signature ─────────────');
-const sigBuf = Buffer.from(parts[2].replace(/-/g, '+').replace(/_/g, '/') + '==', 'base64');
+const sigBuf = Buffer.from(`${parts[2].replace(/-/g, '+').replace(/_/g, '/')}==`, 'base64');
 sigBuf[0] ^= 0xff;
 const badSig = `${parts[0]}.${parts[1]}.${sigBuf.toString('base64')
   .replace(/=+$/g, '').replace(/\+/g, '-').replace(/\//g, '_')}`;

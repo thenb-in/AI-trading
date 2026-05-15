@@ -15,116 +15,116 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     licenseId: {
       type: DataTypes.UUID,
       allowNull: false,
       unique: true,
-      field: 'license_id',
+      field: 'license_id'
     },
     customerId: {
       type: DataTypes.UUID,
       allowNull: false,
-      field: 'customer_id',
+      field: 'customer_id'
     },
     appName: {
       type: DataTypes.STRING,
       allowNull: false,
-      field: 'app_name',
+      field: 'app_name'
     },
     machineFingerprint: {
       type: DataTypes.STRING(128),
       allowNull: false,
-      field: 'machine_fingerprint',
+      field: 'machine_fingerprint'
     },
     serial: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
+      defaultValue: 0
     },
     subscriptionId: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'subscription_id',
+      field: 'subscription_id'
     },
     permissions: {
       type: DataTypes.JSONB,
       allowNull: false,
-      defaultValue: [],
+      defaultValue: []
     },
     permissionCaps: {
       type: DataTypes.JSONB,
       allowNull: false,
       defaultValue: {},
-      field: 'permission_caps',
+      field: 'permission_caps'
     },
     notBefore: {
       type: DataTypes.DATE,
       allowNull: false,
-      field: 'not_before',
+      field: 'not_before'
     },
     expiresAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      field: 'expires_at',
+      field: 'expires_at'
     },
     renewalAfter: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'renewal_after',
+      field: 'renewal_after'
     },
     renewalMode: {
       type: DataTypes.ENUM('online', 'airgap', 'manual'),
       allowNull: false,
       defaultValue: 'online',
-      field: 'renewal_mode',
+      field: 'renewal_mode'
     },
     token: {
       type: DataTypes.TEXT,
       allowNull: false,
-      comment: 'The most recently accepted signed license token, verbatim.',
+      comment: 'The most recently accepted signed license token, verbatim.'
     },
     sealAnchorToken: {
       type: DataTypes.TEXT,
       allowNull: true,
       field: 'seal_anchor_token',
-      comment: 'DB-side mirror of the seal file. Verified the same way.',
+      comment: 'DB-side mirror of the seal file. Verified the same way.'
     },
     sealHighestSerial: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-      field: 'seal_highest_serial',
+      field: 'seal_highest_serial'
     },
     sealLastWallclock: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'seal_last_wallclock',
+      field: 'seal_last_wallclock'
     },
     lastVerifiedAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'last_verified_at',
+      field: 'last_verified_at'
     },
     lastRenewalAttemptAt: {
       type: DataTypes.DATE,
       allowNull: true,
-      field: 'last_renewal_attempt_at',
+      field: 'last_renewal_attempt_at'
     },
     lastRenewalError: {
       type: DataTypes.TEXT,
       allowNull: true,
-      field: 'last_renewal_error',
-    },
+      field: 'last_renewal_error'
+    }
   }, {
     tableName: 'nbnext_license_local',
     timestamps: true,
     underscored: true,
     indexes: [
       { unique: true, fields: ['license_id'] },
-      { fields: ['expires_at'] },
-    ],
+      { fields: ['expires_at'] }
+    ]
   });
 
   return License;

@@ -13,8 +13,7 @@
 // wallet's exclusive job.
 
 const crypto = require('crypto');
-
-const HEADER = 'NBLIC1';
+const { LICENSE_TOKEN_HEADER, ED25519_SIGNATURE_BYTES } = require('../constants/license');
 
 function b64uEncode(buf) {
   return Buffer.from(buf)
@@ -39,26 +38,37 @@ function b64uDecode(str) {
  * @param {string|crypto.KeyObject|Array<string|crypto.KeyObject>} publicKey
  */
 function verifyToken(token, publicKey) {
-  if (typeof token !== 'string' || token.length < HEADER.length + 4) {
+  if (typeof token !== 'string' || token.length < LICENSE_TOKEN_HEADER.length + 4) {
     return { ok: false, reason: 'bad-format' };
   }
   const parts = token.split('.');
-  if (parts.length !== 3) return { ok: false, reason: 'bad-format' };
+  if (parts.length !== 3) {
+    return { ok: false, reason: 'bad-format' };
+  }
   const [hdr, payloadB64, sigB64] = parts;
-  if (hdr !== HEADER) return { ok: false, reason: 'bad-version' };
+  if (hdr !== LICENSE_TOKEN_HEADER) {
+    return { ok: false, reason: 'bad-version' };
+  }
 
   let sig;
-  try { sig = b64uDecode(sigB64); }
-  catch { return { ok: false, reason: 'bad-signature-encoding' }; }
-  if (sig.length !== 64) return { ok: false, reason: 'bad-signature-length' };
+  try {
+    sig = b64uDecode(sigB64);
+  } catch {
+    return { ok: false, reason: 'bad-signature-encoding' };
+  }
+  if (sig.length !== ED25519_SIGNATURE_BYTES) {
+    return { ok: false, reason: 'bad-signature-length' };
+  }
 
   const keys = Array.isArray(publicKey) ? publicKey : [publicKey];
-  const signingInput = Buffer.from(`${HEADER}.${payloadB64}`, 'utf8');
+  const signingInput = Buffer.from(`${LICENSE_TOKEN_HEADER}.${payloadB64}`, 'utf8');
 
   let validKeyIndex = -1;
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
-    if (!k) continue;
+    if (!k) {
+      continue;
+    }
     const keyObj = typeof k === 'string'
       ? crypto.createPublicKey({ key: k, format: 'pem' })
       : k;
@@ -67,12 +77,16 @@ function verifyToken(token, publicKey) {
       break;
     }
   }
-  if (validKeyIndex === -1) return { ok: false, reason: 'bad-signature' };
+  if (validKeyIndex === -1) {
+    return { ok: false, reason: 'bad-signature' };
+  }
 
   let payload;
   try {
     payload = JSON.parse(b64uDecode(payloadB64).toString('utf8'));
-  } catch { return { ok: false, reason: 'bad-payload-json' }; }
+  } catch {
+    return { ok: false, reason: 'bad-payload-json' };
+  }
   if (!payload || typeof payload !== 'object') {
     return { ok: false, reason: 'bad-payload-shape' };
   }
@@ -80,18 +94,23 @@ function verifyToken(token, publicKey) {
 }
 
 function decodeUnsafe(token) {
-  if (typeof token !== 'string') return null;
+  if (typeof token !== 'string') {
+    return null;
+  }
   const parts = token.split('.');
-  if (parts.length !== 3 || parts[0] !== HEADER) return null;
+  if (parts.length !== 3 || parts[0] !== LICENSE_TOKEN_HEADER) {
+    return null;
+  }
   try {
     return JSON.parse(b64uDecode(parts[1]).toString('utf8'));
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 module.exports = {
-  HEADER,
   b64uEncode,
   b64uDecode,
   verifyToken,
-  decodeUnsafe,
+  decodeUnsafe
 };

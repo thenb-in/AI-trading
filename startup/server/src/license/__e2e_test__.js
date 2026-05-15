@@ -1,4 +1,5 @@
-/* eslint-disable no-console */
+/* eslint-disable */
+
 'use strict';
 
 // Full end-to-end happy path + tamper detection. Uses the REAL wallet
@@ -32,8 +33,11 @@ const mf = require('./machineFingerprint');
 let pass = 0;
 let fail = 0;
 function check(label, cond, detail) {
-  if (cond) { pass++; console.log(`  ✓ ${label}`); }
-  else { fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`); }
+  if (cond) {
+    pass++; console.log(`  ✓ ${label}`);
+  } else {
+    fail++; console.error(`  ✗ ${label}${detail ? `: ${JSON.stringify(detail)}` : ''}`);
+  }
 }
 
 // Compute this machine's fingerprint (used as if the wallet issued for us).
@@ -42,12 +46,15 @@ const fp = mf.compute();
 // Reset pinnedKeys + licenseService caches so we pick up the test env.
 require('./pinnedKeys')._reset();
 const licenseService = require('./licenseService');
+
 licenseService._resetForTest();
 
 // Make a fake License model so licenseStore can persist without a DB.
 const fakeRows = new Map();
 function wrapRow(row) {
-  row.update = async (f) => { Object.assign(row, f); row.updated_at = Date.now(); return row; };
+  row.update = async (f) => {
+    Object.assign(row, f); row.updated_at = Date.now(); return row;
+  };
   return row;
 }
 const fakeLicense = {
@@ -67,10 +74,10 @@ const fakeLicense = {
         row.updated_at = Date.now();
       }
     }
-  },
+  }
 };
 require.cache[require.resolve('../models')] = {
-  exports: { License: fakeLicense, sequelize: { transaction: async () => ({ commit: async () => {}, rollback: async () => {} }) } },
+  exports: { License: fakeLicense, sequelize: { transaction: async () => ({ commit: async () => {}, rollback: async () => {} }) } }
 };
 
 console.log('── wallet issues + framework accepts ──────────────');
@@ -93,7 +100,7 @@ const issuedPayload = {
   renewal_mode: 'online',
   max_clock_skew_seconds: 300,
   issuer: 'nbnext_wallet',
-  nonce: 'deadbeef',
+  nonce: 'deadbeef'
 };
 const token = issuerFmt.signPayload(issuedPayload, privatePem);
 
@@ -139,7 +146,7 @@ const token = issuerFmt.signPayload(issuedPayload, privatePem);
   const expired = issuerFmt.signPayload({
     ...issuedPayload,
     serial: 99,
-    expires_at: new Date(Date.now() - 86400000).toISOString(),
+    expires_at: new Date(Date.now() - 86400000).toISOString()
   }, privatePem);
   const expRes = await licenseService.applyAirgapResponse({ token: expired }).catch(e => ({ ok: false, msg: e.message }));
   check('expired token refused', !expRes.ok && /expired/.test(expRes.msg || ''), expRes);
