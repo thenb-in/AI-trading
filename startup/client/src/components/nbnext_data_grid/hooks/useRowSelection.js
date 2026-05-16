@@ -1,10 +1,13 @@
 import { useState } from "react";
 
-const useRowSelection = (onRowSelect) => {
+const useRowSelection = (onRowSelect, onRowClick) => {
   const [selectedRowId, setSelectedRowId] = useState(null);
   const [hoveredRowId, setHoveredRowId] = useState(null);
 
   const handleRowClick = (key, row) => {
+    if (typeof onRowClick === "function") {
+      onRowClick(row, key);
+    }
     setSelectedRowId((prev) => {
       const newId = prev === key ? null : key;
       if (typeof onRowSelect === "function") {

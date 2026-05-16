@@ -52,19 +52,29 @@ export default ({ mode }) => {
         '@data': resolve(STARTUP_CLIENT_SRC, 'data'),
         '@': STARTUP_CLIENT_SRC
       },
-      dedupe: ['react', 'react-dom', '@mui/material', '@emotion/react', '@emotion/styled'],
+      dedupe: [
+        'react',
+        'react-dom',
+        'react-router',
+        'react-router-dom',
+        '@mui/material',
+        '@emotion/react',
+        '@emotion/styled'
+      ],
       preserveSymlinks: false
     },
     server: {
       proxy: {
-        '/api': {
-          target: localServerUrl,
-          changeOrigin: true,
-        },
         '/uploads': {
-          target: localServerUrl,
-          changeOrigin: true,
+          target: localServerUrl, // Backend server
+          changeOrigin: true, // Ensure that the host header is updated to the target URL
+          // rewrite: (path) => path.replace(/^\/uploads/, ''), // Optional, remove '/uploads' prefix if needed
         },
+        '/api': {
+          target: localServerUrl, // Backend server
+          changeOrigin: true, // Ensure that the host header is updated to the target URL
+          // rewrite: (path) => path.replace(/^\/api/, ''), // Optional, remove '/api' prefix if needed
+        }
       },
     },
     plugins: [
@@ -85,7 +95,19 @@ export default ({ mode }) => {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'mui-vendor': ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers'],
+            'mui-vendor': [
+              '@mui/material',
+              '@mui/icons-material',
+              '@mui/x-date-pickers',
+              '@emotion/react',
+              '@emotion/styled',
+            ],
+            'monaco-vendor': ['monaco-editor'],
+            'pdf-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas', 'pdf-lib', 'react-pdf'],
+            'spreadsheet-vendor': ['exceljs', 'xlsx', 'papaparse'],
+            'doc-vendor': ['docx', 'mammoth'],
+            'chart-vendor': ['chart.js', 'react-chartjs-2'],
+            'map-vendor': ['react-leaflet'],
           },
         },
       },

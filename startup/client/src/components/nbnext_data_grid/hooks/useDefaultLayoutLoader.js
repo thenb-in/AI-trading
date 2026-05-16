@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ApiService } from "@services/ApiService.js";
+import { ApiService } from "@services/ApiService";
 
 // Loads the user's default layout for a given documentName and applies it via
 // the supplied `applyLayout` callback. Uses a ref so callback identity churn

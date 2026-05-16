@@ -1,0 +1,1 @@
+//user filterconfig if any sharedfilter for report and master , else, create master filter from here

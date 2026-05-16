@@ -1,7 +1,7 @@
 // No inline styles rule
 // Disallows inline style objects in JSX
 
-const noInlineStyles = {
+export default {
   'no-inline-styles': {
     meta: {
       type: 'problem',
@@ -48,4 +48,3 @@ const noInlineStyles = {
   }
 };
 
-export { noInlineStyles };

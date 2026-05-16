@@ -7,6 +7,65 @@ const SYSTEM_ROLE_CONSTANTS = baseRoles.SYSTEM_ROLE_CONSTANTS;
 
 const MASTER_PERMISSION_CONSTANTS = {
   ...basePermissions.MASTER_PERMISSION_CONSTANTS,
+  EMPLOYEE: basePermissions.create_master_permission('employee_master'),
+  EMPLOYEE_SALARY: {
+    create: {
+      name: 'create_employee_salary',
+      display_name: 'Create Employee Salary',
+      description: 'Permission to create employee salary information'
+    },
+    read: {
+      name: 'read_employee_salary',
+      display_name: 'Read Employee Salary',
+      description: 'Permission to read employee salary information'
+    },
+    update: {
+      name: 'update_employee_salary',
+      display_name: 'Update Employee Salary',
+      description: 'Permission to update employee salary information'
+    }
+  },
+  PERSONNEL_AREA: basePermissions.create_master_permission('personnel_area'),
+  LEAVES_TAKEN: basePermissions.create_master_permission('leaves_taken'),
+  REIMBURSEMENT: basePermissions.create_master_permission('reimbursement'),
+  ADVANCE: basePermissions.create_master_permission('advance', true), // approval_required = true
+  REPAYMENT: basePermissions.create_master_permission('repayment'),
+  FORMULA_MASTER: basePermissions.create_master_permission('formula_master'),
+  RAW_PUNCH: basePermissions.create_master_permission('raw_punch'),
+  HOLIDAYS: basePermissions.create_master_permission('holiday'),
+  GATEPASS: basePermissions.create_master_permission('gatepass', true),
+  DEPARTMENT: basePermissions.create_master_permission('department'),
+  POSITION: basePermissions.create_master_permission('position'),
+  LEAVE_TYPE: basePermissions.create_master_permission('leave_type'),
+  ALLOWANCE_TYPE: basePermissions.create_master_permission('allowance_type'),
+  JOB_OFFER_SALARY_STRUCTURE: basePermissions.create_master_permission('job_offer_salary_structure'),
+  SALARY_STRUCTURE: basePermissions.create_master_permission('salary_structure'),
+  PURPOSE_TYPE: basePermissions.create_master_permission('purpose_type'),
+  SERVICE_OFFERING: basePermissions.create_master_permission('service_offering'),
+  CUSTOMER: basePermissions.create_master_permission('customer'),
+  LEAVE_LIST: basePermissions.create_master_permission('leave_list'),
+  EMPLOYEE_MERGE: basePermissions.create_master_permission('employee_merge'),
+  TIMETABLE: basePermissions.create_master_permission('timetable'),
+  MANUAL_ATTENDANCE: basePermissions.create_master_permission('manual_attendance', true),
+  MANUAL_PUNCHES: basePermissions.create_master_permission('manual_punches', true),
+  MANUAL_SALARIES: basePermissions.create_master_permission('manual_salaries'),
+  EMPLOYEE_SCHEDULE: basePermissions.create_master_permission('employee_schedule'),
+  COMPOUND_SHIFT: basePermissions.create_master_permission('compound_shift'),
+  HOLIDAY_TYPE: basePermissions.create_master_permission('holiday_type'),
+  WEEKLY_OFF: basePermissions.create_master_permission('weekly_off'),
+  HOLIDAY_DAYS: basePermissions.create_master_permission('holiday_days'),
+  COST_CENTER: basePermissions.create_master_permission('cost_center'),
+  COST_CENTER_DETAILS: {
+    manage: {
+      name: 'manage_cost_center_details',
+      display_name: 'Manage Cost Center Details',
+      description: 'Permission to view and manage the customer linked to a cost center'
+    }
+  },
+  CONTACT: basePermissions.create_master_permission('contact_master'),
+  WHATSAPP_TEMPLATE: basePermissions.create_master_permission('whatsapp_template'),
+  TERMINAL: basePermissions.create_master_permission('terminal_master'),
+  TERMINAL_COMMANDS: basePermissions.create_master_permission('terminal_commands_master'),
   ACTIVITY: basePermissions.create_master_permission('activity'),
   NBNEXT_DRIVE: {
     create: {
@@ -52,11 +111,69 @@ const create_module_permission = (module, displayName) => {
 const MODULE_PERMISSION_CONSTANTS = {
   ...basePermissions.MODULE_PERMISSION_CONSTANTS,
   ...MASTER_PERMISSION_CONSTANTS,
-  VIEW_ACTIVITIES_MODULE: create_module_permission('activities', 'Activities')
+  VIEW_WAGEMASTER_MODULE: create_module_permission('wagemaster', 'WageMaster'),
+  VIEW_ACTIVITIES_MODULE: create_module_permission('activities', 'Activities'),
+  VIEW_IDENTIFY_OFFICER_MODULE: create_module_permission('identify-officer', 'Identify Officer'),
+  VIEW_BIOMETRIC_PUNCH_MODULE: create_module_permission('biometric-punch', 'Biometric Punch'),
+  VIEW_ALL_CONTACTS:{
+    name: 'view_all_contacts',
+    display_name: 'View All Contacts',
+    description: 'Permission to view all contacts'
+  },
+  ASSIGN_CONTACT_PERMISSION:{
+    name: 'assign_permission',
+    display_name: 'Assign Contact Permission',
+    description: 'Permission to assign contacts to users'
+  },
+  MULTI_ASSIGN_CONTACTS: {
+    name: 'multi_assign_contacts',
+    display_name: 'Allow Multiple Call Executives Per Contact',
+    description: 'If granted, a single contact can be assigned to multiple call executives at the same time'
+  },
+  LOCATION_ACCESS: {
+    name: 'app_location_access',
+    display_name: 'App Location Access',
+    description: 'Permission to access device location in mobile app',
+    type: 'app'
+  },
+  CALL_ACCESS: {
+    name: 'app_call_access',
+    display_name: 'App Call Access',
+    description: 'Permission to access phone call functionality in mobile app',
+    type: 'app'
+  },
+  SALARYMITRA_ACCESS: {
+    name: 'app_salarymitra_access',
+    display_name: 'App SalaryMitra Access',
+    description: 'Permission to access SalaryMitra features in mobile app',
+    type: 'app'
+  }
 };
 
 const REPORT_PERMISSION_CONSTANTS = {
-  ...basePermissions.REPORT_PERMISSION_CONSTANTS
+  ...basePermissions.REPORT_PERMISSION_CONSTANTS,
+  DETAILED_ATTENDANCE_REPORT: basePermissions.create_report_permission('detailed-attendance-report'),
+  CHECKIN_CHECKOUT_REPORT: basePermissions.create_report_permission('checkin-checkout-report'),
+  MISSING_CHECKINS_REPORT: basePermissions.create_report_permission('missing-checkins-report'),
+  TRANSACTION_REPORT: basePermissions.create_report_permission('transaction-report'),
+  DIRECTION_CONFLICTS_REPORT: basePermissions.create_report_permission('direction-conflicts-report'),
+  SALARY_REGISTER_REPORT: basePermissions.create_report_permission('salary-register-report'),
+  SALARY_WITH_ATTENDANCE_REPORT: basePermissions.create_report_permission('salary-with-attendance-report'),
+  DEACTIVATION_USER_REPORT: basePermissions.create_report_permission('deactivation-user-report'),
+  SHIFT_SUMMARY_REPORT: basePermissions.create_report_permission('shift-summary-report'),
+  MONTHLY_ATTENDANCE_REPORT: basePermissions.create_report_permission('monthly-attendance-report'),
+  MONTHLY_WORK_HOURS_REPORT: basePermissions.create_report_permission('monthly-work-hours-report'),
+  DETAILED_HORIZONTAL_REPORT: basePermissions.create_report_permission('detailed-horizontal-report'),
+  PF_REPORT: basePermissions.create_report_permission('pf-report'),
+  ESIC_REPORT: basePermissions.create_report_permission('esic-report'),
+  ALL_LEAVES_REPORT: basePermissions.create_report_permission('all-leaves-report'),
+  LEAVE_BANK_REPORT: basePermissions.create_report_permission('leave-bank-report'),
+  UNREGISTERED_FACES_REPORT: basePermissions.create_report_permission('unregistered-faces-report'),
+  CALL_BUDDY_REPORT: basePermissions.create_report_permission('call-buddy-report'),
+  BIOTEMPLATE_REPORT: basePermissions.create_report_permission('biotemplate-report'),
+  FINAL_WAGE_REPORT_FOR_CONTRACTOR: basePermissions.create_report_permission('final-wage-report-for-contractor'),
+  DAILY_SALES_PERSON_REPORT: basePermissions.create_report_permission('daily-sales-person-report'),
+  SALES_ACTIVITY_REPORT: basePermissions.create_report_permission('sales-activity-report')
 };
 
 

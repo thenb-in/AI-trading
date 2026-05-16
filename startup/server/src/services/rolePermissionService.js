@@ -7,6 +7,8 @@ const { findModelByIdOrThrow, validateName, validateDescription } = require('../
 const companyService = require('./companyService');
 const permissionService = require('./permissionService');
 const userService = require('./userService');
+const { sequelizeErrors } = require('../constants/errors');
+
 
 /**
  * Checks if a role with the given name already exists for the specified company (or globally).
@@ -134,7 +136,7 @@ const getAllPermissions = async () => {
  * Removes a permission from a role. Only super admins can modify global/default roles.
  * @param {number} roleId - Role ID
  * @param {number} permissionId - Permission ID to remove
- * @param {string|number} userId - ID of the user performing the action (for sadmin check)
+ * @param {string|number} userId - ID of the user performing the action (for support-user check)
  * @returns {Promise<{ message: string }>} Success message
  * @throws {{ status: number, message: string }} If role/permission not found or unauthorized
  */
@@ -164,7 +166,7 @@ const removePermissionFromRole = async (roleId, permissionId, userId) => {
  * Adds one or more permissions to a role. Only super admins can modify global/default roles.
  * @param {number} roleId - Role ID
  * @param {number|Array<number>} permissionIds - Permission ID(s) to add
- * @param {string|number} userId - ID of the user performing the action (for sadmin check)
+ * @param {string|number} userId - ID of the user performing the action (for support-user check)
  * @returns {Promise<{ message: string }>} Success message with count
  * @throws {{ status: number, message: string }} If role/permissions not found, unauthorized, or duplicate
  */
@@ -201,7 +203,7 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
       message: `Successfully added ${permissions.length} permission(s) to role`
     };
   } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
+    if (error.name === sequelizeErrors.SEQUELIZE_UNIQUE_CONSTRAINT_ERROR) {
       throw { status: 409, message: `One or more permissions are already assigned to role with id ${roleId}` };
     }
     throw {
@@ -217,7 +219,7 @@ const deletePermission = async (permissionId) => {
 };
 
 // User-Company Assignment methods
-const getSadminUsers = async () => {
+const getSupportUsers = async () => {
   try {
     // Use companyService to get all companies, then multiCompanyService for each
     const companies = await companyService.getAllCompanies();
@@ -232,8 +234,8 @@ const getSadminUsers = async () => {
     // Sort by name
     return allUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   } catch (error) {
-    logger.error('Error fetching sadmin users', error);
-    throw new Error(`Failed to fetch super admin users at  ${new Date()}`);
+    logger.error('Error fetching support users', error);
+    throw new Error(`Failed to fetch support users at  ${new Date()}`);
   }
 };
 
@@ -288,7 +290,7 @@ module.exports = {
   removePermissionFromRole,
   addPermissionToRole,
   deletePermission,
-  getSadminUsers,
+  getSupportUsers,
   getAllCompanies,
   getCompanyUsers,
   getUserWithRoleInclude

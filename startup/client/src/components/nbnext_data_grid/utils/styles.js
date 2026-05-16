@@ -1,6 +1,7 @@
-const getGridContainerStyle = (computedContainerHeight, fullScreen = false, sidebarWidth = 0) => {
-  const baseStyle = {
-    width: fullScreen ? undefined : "100%", // Let left/right handle width in fullscreen
+const getGridContainerStyle = (computedContainerHeight, fullScreen = false, sidebarWidth = 0, borderless = false) => {
+  const stripChrome = fullScreen || borderless;
+  return {
+    width: fullScreen ? undefined : "100%",
     height: fullScreen ? "100vh" : computedContainerHeight,
     position: fullScreen ? "fixed" : "relative",
     top: fullScreen ? 0 : undefined,
@@ -8,15 +9,14 @@ const getGridContainerStyle = (computedContainerHeight, fullScreen = false, side
     right: fullScreen ? 0 : undefined,
     bottom: fullScreen ? 0 : undefined,
     zIndex: fullScreen ? 5 : undefined,
-    border: fullScreen ? "none" : "1px solid #e2e8f0",
-    borderRadius: fullScreen ? 0 : 12,
+    border: stripChrome ? "none" : "1px solid #e2e8f0",
+    borderRadius: stripChrome ? 0 : 12,
     overflow: "hidden",
-    boxShadow: fullScreen ? "none" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    boxShadow: stripChrome ? "none" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
     background: "#fff",
     display: "flex",
     flexDirection: "column",
   };
-  return baseStyle;
 };
 
 const toolbarStyle = {
@@ -48,7 +48,7 @@ const scrollAreaStyle = (fullScreen = false) => ({
   overflowX: "auto",
   overflowY: "auto",
   flex: 1,
-  height: fullScreen ? "calc(100vh - 44px)" : undefined, // Subtract toolbar height in fullscreen
+  height: fullScreen ? "calc(100vh - 44px)" : undefined,
 });
 
 const tableStyle = {
@@ -62,9 +62,9 @@ const headerCellBaseStyle = {
   position: "sticky",
   top: 0,
   zIndex: 2,
-  background: "#1e40af", // Solid dark blue
-  borderBottom: "3px solid #3b82f6",
-  borderRight: "2px solid rgba(59, 130, 246, 0.3)",
+  background: "var(--grid-header-bg)",
+  borderBottom: "3px solid var(--grid-header-border)",
+  borderRight: "2px solid var(--grid-header-border-soft)",
   padding: "12px 16px",
   boxSizing: "border-box",
   fontWeight: 700,
@@ -78,16 +78,21 @@ const headerCellBaseStyle = {
   textTransform: "uppercase",
 };
 
-const cellBaseStyle = (rowHeight) => ({
+const cellBaseStyle = (rowHeight, autoHeight = false) => ({
   borderBottom: "2px solid #d1d5db",
   borderRight: "2px solid #e5e7eb",
   padding: "12px 16px",
-  height: rowHeight,
+  // autoHeight=true: row grows to fit wrapped content; rowHeight is a floor.
+  // autoHeight=false: fixed-height row, content truncates with ellipsis.
+  // Emit both keys with explicit reset values so Object.assign overwrites
+  // stale inline styles cleanly across re-renders.
+  height: autoHeight ? "auto" : rowHeight,
+  minHeight: autoHeight ? rowHeight : 0,
+  whiteSpace: autoHeight ? "pre-wrap" : "nowrap",
+  overflow: autoHeight ? "visible" : "hidden",
+  textOverflow: autoHeight ? "clip" : "ellipsis",
+  overflowWrap: autoHeight ? "anywhere" : "normal",
   boxSizing: "border-box",
-  // background is set via CSS custom property --cell-bg
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
   color: "#1f2937",
   fontSize: 13,
   lineHeight: "1.5",
@@ -132,37 +137,36 @@ const smallButtonStyle = {
 const getSortedHeaderStyle = (isSorted) => {
   if (!isSorted) return null;
   return {
-    background: "#1e3a8a",
-    borderBottom: "2px solid #60a5fa",
-    boxShadow: "inset 0 -3px 0 #60a5fa",
+    background: "var(--grid-header-bg-sorted)",
+    borderBottom: "2px solid var(--grid-header-border-sorted)",
+    boxShadow: "inset 0 -3px 0 var(--grid-header-border-sorted)",
     color: "#ffffff",
   };
 };
 
-const getRowStyle = (isEven, isSelected, isHovered, evenRowColor = "#ffffff", oddRowColor = "#eff6ff") => {
-  const baseBg = isEven ? evenRowColor : oddRowColor;
-  const selectedBg = "#dbeafe";
+const getRowStyle = (isEven, isSelected) => ({
+  background: isSelected
+    ? "var(--grid-row-selected)"
+    : isEven
+      ? "var(--grid-row-even)"
+      : "var(--grid-row-odd)",
+  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+  cursor: "pointer",
+  boxShadow: isSelected ? "inset 4px 0 0 0 var(--grid-row-selected-accent)" : undefined,
+});
 
-  return {
-    background: isSelected ? selectedBg : baseBg,
-    transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-    cursor: "pointer",
-    boxShadow: isSelected ? "inset 4px 0 0 0 #2563eb" : undefined,
-    // Removed hover color and transform effects
-  };
-};
-
-const getCellBackgroundColor = (isEven, isSelected, isHovered, evenRowColor = "#ffffff", oddRowColor = "#eff6ff") => {
-  const baseBg = isEven ? evenRowColor : oddRowColor;
-  const selectedBg = "#dbeafe";
-  return isSelected ? selectedBg : baseBg;
-};
+const getCellBackgroundColor = (isEven, isSelected) =>
+  isSelected
+    ? "var(--grid-row-selected)"
+    : isEven
+      ? "var(--grid-row-even)"
+      : "var(--grid-row-odd)";
 
 const totalRowStyle = {
   background: "#f3f4f6",
   fontWeight: 600,
-  borderTop: "3px solid #2563eb",
-  borderBottom: "3px solid #2563eb",
+  borderTop: "3px solid var(--grid-total-border)",
+  borderBottom: "3px solid var(--grid-total-border)",
   position: "sticky",
   bottom: 0,
   zIndex: 1,
@@ -184,4 +188,3 @@ export {
   getCellBackgroundColor,
   totalRowStyle,
 };
-

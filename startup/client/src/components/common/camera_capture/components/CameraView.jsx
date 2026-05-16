@@ -2,10 +2,12 @@ import PropTypes from 'prop-types';
 import { useRef } from 'react';
 import { SwitchCamera, Camera, Video, Square } from 'lucide-react';
 import { formatTime } from '../utils/formatUtils';
-import { FaceDetectionOverlay } from './FaceDetectionOverlay';
 
 /**
- * Camera view component with video element and controls
+ * Camera view component with video element and controls. Optional `overlay`
+ * slot is rendered absolutely inside the camera container — apps add things
+ * like face-detection bounding boxes there. `containerRef` is forwarded so
+ * the overlay can size itself off the live container.
  */
 const CameraView = ({
   videoRef,
@@ -26,10 +28,9 @@ const CameraView = ({
   onCapturePhoto,
   onStartRecording,
   onStopRecording,
-  enableFaceDetection = false,
-  faceRects = [],
   showCaptureButton = true,
   containerClassName,
+  overlay = null,
 }) => {
   const containerRef = useRef(null);
 
@@ -45,7 +46,7 @@ const CameraView = ({
         autoPlay
         playsInline
         muted
-        className="absolute inset-0 w-full h-full object-cover block"
+        className="absolute inset-0 w-full h-full object-cover block -scale-x-100"
         onLoadedMetadata={onVideoLoadedMetadata}
         onCanPlay={onVideoCanPlay}
         onPlaying={onVideoPlaying}
@@ -69,11 +70,8 @@ const CameraView = ({
         </div>
       </div>
 
-      <FaceDetectionOverlay
-        enableFaceDetection={enableFaceDetection}
-        faceRects={faceRects}
-        containerRef={containerRef}
-      />
+      {/* App-supplied overlay (e.g. face-detection bounding boxes) */}
+      {overlay && typeof overlay === 'function' ? overlay({ containerRef }) : overlay}
 
       {/* Loading Overlay - Only show on initial load */}
       {!isVideoReady && (
@@ -171,17 +169,9 @@ CameraView.propTypes = {
   onCapturePhoto: PropTypes.func.isRequired,
   onStartRecording: PropTypes.func,
   onStopRecording: PropTypes.func,
-  enableFaceDetection: PropTypes.bool,
-  faceRects: PropTypes.arrayOf(
-    PropTypes.shape({
-      left: PropTypes.number,
-      top: PropTypes.number,
-      width: PropTypes.number,
-      height: PropTypes.number,
-    })
-  ),
   showCaptureButton: PropTypes.bool,
   containerClassName: PropTypes.string,
+  overlay: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
 };
 
 export { CameraView };

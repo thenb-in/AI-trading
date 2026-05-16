@@ -1,7 +1,7 @@
-const { companyOwnedEntityFields } = require('../utils/modelFieldDefinitions');
+const { namedCompanyScopedEntityFields } = require('./mixins/namedCompanyScopedEntity');
 
-module.exports = (sequelize) => {
-  const Role = sequelize.define('Role', companyOwnedEntityFields, {
+module.exports = (sequelize, DataTypes) => {
+  const Role = sequelize.define('Role', namedCompanyScopedEntityFields(DataTypes), {
     tableName: 'nbnext_roles',
     indexes: [
       {

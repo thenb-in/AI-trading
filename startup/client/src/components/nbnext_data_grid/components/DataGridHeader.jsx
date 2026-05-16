@@ -6,7 +6,7 @@ import {
 } from "../utils/styles.js";
 import { getColumnWidthWithIcons } from "../utils/helpers.js";
 
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState, useEffect, useMemo } from "react";
 
 function DataGridHeader({
   headerRef,
@@ -25,7 +25,10 @@ function DataGridHeader({
   groupByField = null,
   toggleGroupBy = null,
   onColumnReorder = null,
+  selection = null,
 }) {
+  const selectionEnabled = Boolean(selection?.enabled);
+  const selectionWidth = selectionEnabled ? selection.columnWidth || 40 : 0;
   // Optimized column resizing refs (shared across all columns)
   const resizeStateRef = useRef({});
   const rafRef = useRef();
@@ -35,6 +38,15 @@ function DataGridHeader({
   // Drag-and-drop state
   const [dragField, setDragField] = useState(null);
   const [dragOverField, setDragOverField] = useState(null);
+
+  // Derive field → { sort, priority } map from the sortModel array for header
+  // rendering (priority badge + arrow direction).
+  const sortByField = useMemo(() => {
+    const arr = (sortModel || []).filter((s) => s && s.field && s.sort);
+    const map = new Map();
+    arr.forEach((s, idx) => map.set(s.field, { sort: s.sort, priority: idx + 1 }));
+    return { map, count: arr.length };
+  }, [sortModel]);
 
   const handleToggleFrozen = (field) => (e) => {
     e.stopPropagation();
@@ -118,9 +130,13 @@ function DataGridHeader({
   }, []);
 
   const renderHeaderCell = (col, isFrozen) => {
-    const isSorted = sortModel.field === col.field ? sortModel.sort : null;
+    const sortInfo = sortByField.map.get(col.field) || null;
+    const isSorted = sortInfo?.sort || null;
+    const showPriority = sortByField.count > 1 && Boolean(sortInfo);
     const sortedStyle = getSortedHeaderStyle(isSorted);
-    const left = isFrozen ? cumulativeFrozenLeftOffsets[col.field] || 0 : undefined;
+    const left = isFrozen
+      ? (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth
+      : undefined;
     const isGrouped = groupByField === col.field;
     const isDragging = dragField === col.field;
     const isDragOver = dragOverField === col.field && dragField !== col.field;
@@ -223,6 +239,14 @@ function DataGridHeader({
                 ) : (
                   <ArrowUpDown size={15} color="rgba(255,255,255,0.6)" strokeWidth={2} />
                 )}
+                {showPriority && (
+                  <span
+                    className="ml-1 inline-flex items-center justify-center font-bold rounded-full bg-blue-500 text-white min-w-4 h-4 px-1 text-[10px] leading-none"
+                    title={`Sort priority ${sortInfo.priority}`}
+                  >
+                    {sortInfo.priority}
+                  </span>
+                )}
               </span>
             )}
           </button>
@@ -288,7 +312,9 @@ function DataGridHeader({
   }, [headerRef, columnWidths, frozenColumns, nonFrozenColumns]);
 
   const renderFilterCell = (col, isFrozen) => {
-    const left = isFrozen ? cumulativeFrozenLeftOffsets[col.field] || 0 : undefined;
+    const left = isFrozen
+      ? (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth
+      : undefined;
     const totalWidth = columnWidths && columnWidths[col.field]
       ? columnWidths[col.field]
       : getColumnWidthWithIcons(col);
@@ -325,13 +351,67 @@ function DataGridHeader({
     );
   };
 
+  const selectionHeaderCellStyle = {
+    ...headerCellBaseStyle,
+    width: selectionWidth,
+    minWidth: selectionWidth,
+    maxWidth: selectionWidth,
+    padding: 0,
+    textAlign: "center",
+    position: "sticky",
+    left: 0,
+    zIndex: fullScreen ? 10002 : 2,
+    cursor: "default",
+  };
+
+  const selectionFilterCellStyle = {
+    ...headerCellBaseStyle,
+    padding: 0,
+    height: "auto",
+    background: "linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%)",
+    borderBottom: "2px solid #cbd5e1",
+    borderRight: "2px solid #e5e7eb",
+    position: "sticky",
+    top: headerRowHeight,
+    left: 0,
+    zIndex: fullScreen ? 10004 : 4,
+    width: selectionWidth,
+    minWidth: selectionWidth,
+    maxWidth: selectionWidth,
+  };
+
+  const handleSelectAllChange = (e) => {
+    e.stopPropagation();
+    if (typeof selection?.onToggleAll === "function") {
+      selection.onToggleAll();
+    }
+  };
+
+  const setIndeterminate = (el) => {
+    if (el) el.indeterminate = Boolean(selection?.someSelected) && !selection?.allSelected;
+  };
+
   return (
     <thead>
       <tr ref={headerRef}>
+        {selectionEnabled && (
+          <th style={selectionHeaderCellStyle}>
+            <input
+              type="checkbox"
+              ref={setIndeterminate}
+              checked={Boolean(selection?.allSelected)}
+              onChange={handleSelectAllChange}
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Select all rows on this page"
+              className="cursor-pointer"
+            />
+          </th>
+        )}
         {frozenColumns.map((col) => renderHeaderCell(col, true))}
         {nonFrozenColumns.map((col) => renderHeaderCell(col, false))}
       </tr>
       <tr ref={filterRowRef}>
+        {selectionEnabled && <th style={selectionFilterCellStyle} />}
         {frozenColumns.map((col) => renderFilterCell(col, true))}
         {nonFrozenColumns.map((col) => renderFilterCell(col, false))}
       </tr>
@@ -346,10 +426,12 @@ DataGridHeader.propTypes = {
   frozenColumns: PropTypes.array.isRequired,
   nonFrozenColumns: PropTypes.array.isRequired,
   cumulativeFrozenLeftOffsets: PropTypes.object.isRequired,
-  sortModel: PropTypes.shape({
-    field: PropTypes.string,
-    sort: PropTypes.string,
-  }).isRequired,
+  sortModel: PropTypes.arrayOf(
+    PropTypes.shape({
+      field: PropTypes.string.isRequired,
+      sort: PropTypes.oneOf(["asc", "desc"]).isRequired,
+    })
+  ).isRequired,
   frozenState: PropTypes.object.isRequired,
   handleHeaderClick: PropTypes.func.isRequired,
   toggleFrozen: PropTypes.func.isRequired,
@@ -359,6 +441,13 @@ DataGridHeader.propTypes = {
   groupByField: PropTypes.string,
   toggleGroupBy: PropTypes.func,
   onColumnReorder: PropTypes.func,
+  selection: PropTypes.shape({
+    enabled: PropTypes.bool,
+    columnWidth: PropTypes.number,
+    allSelected: PropTypes.bool,
+    someSelected: PropTypes.bool,
+    onToggleAll: PropTypes.func,
+  }),
 };
 
 export { DataGridHeader };

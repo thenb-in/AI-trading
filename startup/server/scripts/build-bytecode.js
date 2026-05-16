@@ -58,20 +58,20 @@ const DEFAULTS = {
     'scripts',
     'eslint-rules',
     'eslint.config.js',
-    'docs',
+    'docs'
   ],
   encrypt: 'all',
   copyAsJs: [
-    'src/utils/formulaBuilder.js',
+    'src/utils/formulaBuilder.js'
   ],
   skipDirs: [
     'node_modules', 'dist', 'logs', 'docs',
-    'eslint-rules', 'scripts', 'secret', 'uploads', 'trackingImage',
+    'eslint-rules', 'scripts', 'secret', 'uploads', 'trackingImage'
   ],
   skipFiles: [
     'eslint.config.js',
-    CONFIG_FILENAME,
-  ],
+    CONFIG_FILENAME
+  ]
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -104,8 +104,8 @@ function loadEffectiveConfig(srcRoot) {
       encrypt:   cfg.encrypt === 'all' || Array.isArray(cfg.encrypt) ? cfg.encrypt : 'all',
       copyAsJs:  Array.isArray(cfg.copyAsJs)  ? cfg.copyAsJs  : [],
       skipDirs:  Array.isArray(cfg.skipDirs)  ? cfg.skipDirs  : [],
-      skipFiles: Array.isArray(cfg.skipFiles) ? cfg.skipFiles : [],
-    },
+      skipFiles: Array.isArray(cfg.skipFiles) ? cfg.skipFiles : []
+    }
   };
 }
 
@@ -122,7 +122,9 @@ function parseArgs() {
       i++;
     }
   }
-  if (!outDir) outDir = path.join(srcRoot, 'dist');
+  if (!outDir) {
+    outDir = path.join(srcRoot, 'dist');
+  }
   return { srcRoot, outDir };
 }
 
@@ -136,13 +138,18 @@ function copyFileSync(src, dest) {
 }
 
 function copyDirSync(src, dest) {
-  if (!fs.existsSync(src)) return;
+  if (!fs.existsSync(src)) {
+    return;
+  }
   ensureDir(dest);
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) copyDirSync(srcPath, destPath);
-    else fs.copyFileSync(srcPath, destPath);
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
   }
 }
 
@@ -234,8 +241,11 @@ async function main() {
       continue;
     }
     const stat = fs.statSync(src);
-    if (stat.isDirectory()) copyDirSync(src, dest);
-    else copyFileSync(src, dest);
+    if (stat.isDirectory()) {
+      copyDirSync(src, dest);
+    } else {
+      copyFileSync(src, dest);
+    }
     console.log(`  [copy] ${asset}`);
   }
 
@@ -278,7 +288,7 @@ async function main() {
       await bytenode.compileFile({
         filename: fullPath,
         output: jscOutPath,
-        compileAsModule: true,
+        compileAsModule: true
       });
 
       // Write loader stub at the original .js path.
@@ -304,7 +314,7 @@ async function main() {
     compiled,
     copiedAsJs: copied,
     errors,
-    configSource: source,
+    configSource: source
   };
   fs.writeFileSync(
     path.join(outDir, 'build-info.json'),

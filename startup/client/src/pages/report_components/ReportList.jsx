@@ -18,7 +18,7 @@ const ReportList = ({ reports, categories }) => {
       const permissionName = report.permissionName || ("read_" + report.id);
       const isPermissionGranted = hasPermission(permissionName, dataContext);
       if (!isPermissionGranted) {
-        console.log(`No permission for ${permissionName}`, report);
+        // console.log(`No permission for ${permissionName}`, report);
       }
       return matchesFilter && matchesSearch && isPermissionGranted;
     });

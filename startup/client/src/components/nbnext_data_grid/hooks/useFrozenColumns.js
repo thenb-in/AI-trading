@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { calculateFrozenOffsets } from "../utils/helpers.js";
+import { calculateFrozenOffsets } from "../utils/helpers";
 
 const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null, initialFrozenColumns = null) => {
   // Track if we've initialized from the prop (only once)

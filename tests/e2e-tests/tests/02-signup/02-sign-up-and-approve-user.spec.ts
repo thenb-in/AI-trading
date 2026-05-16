@@ -11,7 +11,12 @@ import { saveState } from '../../helpers/sharedState';
 import { User } from '../../interface/auth';
 
 test.describe('Signup - Approve User', () => {
-  test('approve the new user', async ({ page }) => {
+  test('sign up and approve the new user', async ({ page }) => {
+    // Signup + admin re-login + multi-step approve modal regularly pushes
+    // past the 60s default in playwright.config.ts. The `timeout` field on
+    // setupTest options is a no-op (see helpers/setup.ts), so set it here.
+    test.setTimeout(120_000);
+
     const { logger, runTest } = setupTest(page, {
       timeout: 60000,
       captureApiResponses: true,
@@ -19,8 +24,8 @@ test.describe('Signup - Approve User', () => {
     });
 
     await runTest(async () => {
-      const adminCredentials = getAdminCredentials();
-      await loginWithCredentials(page, logger, adminCredentials.username, adminCredentials.password);
+      const { username: adminUsername, password: adminPassword } = getAdminCredentials();
+      await loginWithCredentials(page, logger, adminUsername, adminPassword);
       logger.logStep('Login as admin user', 'completed');
       
       // ========== STEP 2: Copy signup link ==========

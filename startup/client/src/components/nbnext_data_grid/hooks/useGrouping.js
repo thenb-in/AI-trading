@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { convertCellToText } from "../../base_report/ReportUtils.js";
-import { calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
+import { convertCellToText } from "../../base_report/ReportUtils";
+import { calculateTotals, getColumnForFormatting } from "../utils/helpers";
 
-const useGrouping = (columnsToUse, sortedRows, setSortModelProgrammatic) => {
-  const [groupByField, setGroupByField] = useState(null);
+const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGroupByField = null) => {
+  const [groupByField, setGroupByField] = useState(initialGroupByField);
 
   const toggleGroupBy = useCallback((field) => {
     setGroupByField((prev) => (prev === field ? null : field));
   }, []);
 
-  // When grouping is enabled, enforce asc sort on the grouped column.
+  // Grouping needs the grouped column at the top of the sort stack so rows
+  // with the same value are contiguous. Secondary keys still apply within each
+  // group — sorting and grouping share one model instead of competing.
   useEffect(() => {
     if (!groupByField) return;
-    setSortModelProgrammatic({ field: groupByField, sort: "asc" });
-  }, [groupByField, setSortModelProgrammatic]);
+    promoteToPrimarySort(groupByField);
+  }, [groupByField, promoteToPrimarySort]);
 
   // Inject a synthetic "group total" row after each contiguous group of rows.
   const groupedRows = useMemo(() => {

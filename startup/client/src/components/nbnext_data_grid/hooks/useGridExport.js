@@ -5,12 +5,12 @@ import {
   indexRows,
   normalizeColumns,
   sortRows,
-} from "../utils/helpers.js";
-import { detectConstantColumns } from "../utils/constantColumnsUtils.js";
+} from "../utils/helpers";
+import { detectConstantColumns } from "../utils/constantColumnsUtils";
 import {
   handleExport as handleExcelExportToFile,
   handleMultiSheetExport,
-} from "../../base_report/report_export/index.js";
+} from "../../base_report/report_export";
 
 // Resolve a tab's effective (rows, columns, summary). Mirrors useTabsState's
 // resolver but as a pure helper so export can iterate every tab, not just the

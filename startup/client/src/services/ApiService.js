@@ -1,19 +1,6 @@
 import { api } from './axiosConfig';
-import { toast } from 'react-toastify';
 
-/**
- * Centralized API service object. All HTTP calls to the backend go through this service.
- * Methods are organized by domain: Authentication, Company, Users, Admin, Layouts, Subscriptions, Help.
- */
 const ApiService = {
-  /**
-   * Generic request wrapper around the configured Axios instance.
-   * @param {string} method - HTTP method (GET, POST, PUT, DELETE, PATCH)
-   * @param {string} url - API endpoint path (relative to base URL)
-   * @param {Object|null} data - Request body
-   * @param {Object} config - Additional Axios config (params, headers, etc.)
-   * @returns {Promise<Object>} Axios response
-   */
   async request(method, url, data = null, config = {}) {
     return api({
       method,
@@ -28,16 +15,8 @@ const ApiService = {
     return this.request('POST', '/auth/signup', data);
   },
 
-   async login(data) {
-    const response = await this.request('POST', '/auth/login', data);
-    
-    // Check if wallet is insufficient and show toast
-    if (response?.data?.insufficientWallet === true) {
-      const walletMessage = response.data.walletMessage || 'Your wallet is insufficient to process this request, recharge to use';
-      toast.warning(walletMessage);
-    }
-    
-    return response;
+  login(data) {
+    return this.request('POST', '/auth/login', data);
   },
 
   getUser() {
@@ -46,14 +25,6 @@ const ApiService = {
 
   logout() {
     return this.request('POST', '/auth/logout');
-  },
-
-  generateTotpSecret(data) {
-    return this.request('POST', '/auth/generate-totp-secret', data);
-  },
-
-  verifyAndEnableTotp(data) {
-    return this.request('POST', '/auth/verify-totp', data);
   },
 
   updateUserProfile(userId, userProfile) {
@@ -73,28 +44,12 @@ const ApiService = {
     return this.request('PUT', '/company/settings', settings);
   },
 
-  getCompanyProfile() {
-    return this.request('GET', '/company-profile');
-  },
-
-  updateCompanyProfile(profile) {
-    return this.request('PUT', '/company-profile', profile);
-  },
-
   getUserCompanies() {
     return this.request('GET', '/company/my');
   },
 
   switchCompany(companyId) {
     return this.request('POST', '/company/switch', { companyId });
-  },
-
-  createInitialCompany(data) {
-    return this.request('POST', '/company/initial', data);
-  },
-
-  joinCompany(companyId) {
-    return this.request('POST', '/company/join', { companyId });
   },
 
   getAllRoles() {
@@ -181,12 +136,8 @@ const ApiService = {
   },
 
   // Admin - User Company Assignment
-  getSadminUsers() {
-    return this.request('GET', '/admin/users/sadmin');
-  },
-
-  getAllCompanies() {
-    return this.request('GET', '/admin/companies');
+  getSupportUsers() {
+    return this.request('GET', '/admin/users/support');
   },
 
   assignUserToCompany(userId, companyId) {

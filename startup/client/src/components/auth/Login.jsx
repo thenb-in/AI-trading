@@ -225,12 +225,14 @@ function Login() {
       </div>
 
       {/* TOTP Setup Popup */}
-      <SetupTotpPopup
-        isOpen={showTotpPopup}
-        onClose={handleTotpPopupClose}
-        onSuccess={handleTotpSetupSuccess}
-        username={loginSuccessData?.cleanedData?.username}
-      />
+      {showTotpPopup && (
+        <SetupTotpPopup
+          isOpen={showTotpPopup}
+          onClose={handleTotpPopupClose}
+          onSuccess={handleTotpSetupSuccess}
+          username={loginSuccessData?.cleanedData?.username}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,43 @@
+// Validation constants
+// Password validation
+const VALIDATION_MIN_PASSWORD_LENGTH = 8;
+const VALIDATION_MAX_PASSWORD_LENGTH = 128;
+
+// Username validation
+const VALIDATION_MIN_USERNAME_LENGTH = 3;
+const VALIDATION_MAX_USERNAME_LENGTH = 50;
+
+// Email validation
+const VALIDATION_EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Date and time format constants
+const TIME_ZONE = 'Asia/Kolkata';
+const DEFAULT_DATE_FORMAT = 'dd-MM-yyyy';
+const DEFAULT_DATE_LOCALE = 'nl-NL'; // locale as per DEFAULT_DATE_FORMAT
+
+// JWT-related constants
+const JWT_DEFAULT_ACCESS_EXPIRATION = '15m';
+const JWT_DEFAULT_REFRESH_EXPIRATION = '7d';
+const JWT_ALGORITHM = 'HS256';
+
+// Setup script default constants
+const SETUP_DEFAULT_COMPANY_NAME = 'default';
+const SETUP_BCRYPT_ROUNDS = 10;
+
+
+module.exports = {
+  VALIDATION_MIN_PASSWORD_LENGTH,
+  VALIDATION_MAX_PASSWORD_LENGTH,
+  VALIDATION_MIN_USERNAME_LENGTH,
+  VALIDATION_MAX_USERNAME_LENGTH,
+  VALIDATION_EMAIL_REGEX,
+  TIME_ZONE,
+  DEFAULT_DATE_FORMAT,
+  DEFAULT_DATE_LOCALE,
+  JWT_DEFAULT_ACCESS_EXPIRATION,
+  JWT_DEFAULT_REFRESH_EXPIRATION,
+  JWT_ALGORITHM,
+  SETUP_DEFAULT_COMPANY_NAME,
+  SETUP_BCRYPT_ROUNDS
+};
+

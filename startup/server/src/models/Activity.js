@@ -1,4 +1,4 @@
-const { companyOwnedFields, objectLinkFields, associateCompanyOwned } = require('./mixins/companyOwned');
+const { ownedAuditFields, associateOwnedAuditModel } = require('./mixins/ownedAuditFields');
 
 module.exports = (sequelize, DataTypes) => {
   const Activity = sequelize.define('Activity', {
@@ -20,8 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: () => Date.now()
     },
-    ...objectLinkFields(DataTypes),
-    ...companyOwnedFields(DataTypes),
+    ...ownedAuditFields(DataTypes),
     isConfirmed: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
@@ -65,9 +64,7 @@ module.exports = (sequelize, DataTypes) => {
     ]
   });
 
-  Activity.associate = (models) => {
-    associateCompanyOwned(Activity, models);
-  };
+  Activity.associate = (models) => associateOwnedAuditModel(Activity, models);
 
   return Activity;
 };

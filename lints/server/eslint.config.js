@@ -1,37 +1,36 @@
 const customPlugin = require('./eslint-rules/index.js');
 const importPlugin = require('eslint-plugin-import');
 
-const NODE_GLOBALS = {
-  // Node.js globals
-  global: 'readonly',
-  process: 'readonly',
-  Buffer: 'readonly',
-  __dirname: 'readonly',
-  __filename: 'readonly',
-  module: 'readonly',
-  require: 'readonly',
-  exports: 'readonly',
-  console: 'readonly',
-  setTimeout: 'readonly',
-  clearTimeout: 'readonly',
-  setInterval: 'readonly',
-  clearInterval: 'readonly',
-  setImmediate: 'readonly',
-  clearImmediate: 'readonly',
-  // ES2020 globals
-  BigInt: 'readonly',
-  globalThis: 'readonly'
-};
-
-module.exports = [
-  { ignores: ['**/node_modules/**', '**/logs/**', '**/migrations/**', '**/eslint.config.js', '**/scripts/**'] },
-
-  // Node.js server config
-  {
-    files: ['**/*.js'],
+function get_base_config() {
+  return {
     languageOptions: {
       ecmaVersion: 2020,
-      globals: NODE_GLOBALS,
+      globals: {
+        // Node.js globals
+        global: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
+        // ES2020 globals
+        BigInt: 'readonly',
+        globalThis: 'readonly',
+        // Node 18+ global fetch
+        fetch: 'readonly',
+        // WHATWG URL API (available since Node 10)
+        URL: 'readonly',
+        URLSearchParams: 'readonly'
+      },
       sourceType: 'commonjs' // Server uses CommonJS modules
     },
     plugins: {
@@ -51,12 +50,37 @@ module.exports = [
       'curly': ['error', 'all'],
       'brace-style': ['error', '1tbs'],
       'comma-dangle': ['error', 'never'],
-      'quotes': ['error', 'single'],
+      'quotes': ['error', 'single', { allowTemplateLiterals: true }],
       'semi': ['error', 'always'],
       'indent': ['error', 2],
       'no-trailing-spaces': 'error',
       'eol-last': 'error',
 
+      // File length and complexity rules
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 100, skipBlankLines: true, skipComments: true }],
+      'complexity': ['warn', 15],
+
+      // Node.js specific rules
+      'no-process-exit': 'error',
+      'no-path-concat': 'error',
+
+      // Security rules
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-new-func': 'error'
+    }
+  };
+}
+module.exports = [
+  { ignores: ['**/node_modules', '**/logs', '**/migrations', 'eslint.config.js', 'scripts', '**/dist'] },
+
+  // Node.js server config
+  {
+    files: ['**/*.js'],
+    ...get_base_config(),
+    rules: {
+      ...get_base_config().rules,
       // Custom project-specific rules (migrated from legacy checks)
       'custom/no-console-usage': 'error',
       'custom/logger-args-checker': 'error',
@@ -67,101 +91,86 @@ module.exports = [
       'custom/constants-in-single-folder': 'error',
       'custom/file-length-warning': ['warn', { warningLines: 300 }],
       'custom/no-direct-model-imports': 'error',
-      'custom/no-sequelize-models': 'error',
-      'custom/one-model-per-service-warn': ['warn', { warnThreshold: 3 }],
-      // 'custom/one-model-per-service': ['error', { errorThreshold: 3 }],
-      'custom/named-exports-only': ['error', { 
+      'custom/named-exports-only': ['error', {
         excludePatterns: ['eslint-rules', 'scripts', 'migrations']
       }],
-
-      // File length and complexity rules
-      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['warn', { max: 100, skipBlankLines: true, skipComments: true }],
-      'complexity': ['warn', 15],
-
-      // Node.js specific rules
-      'no-process-exit': 'error',
-      'no-path-concat': 'error',
-      'global-require': 'error',
-
-      // Security rules
-      'no-eval': 'error',
-      'no-implied-eval': 'error',
-      'no-new-func': 'error',
+      'custom/no-env-defaults-outside-env-js': 'error',
+      'custom/no-startup-imports-app': 'error',
 
       // Import/export rules
       'import/no-unresolved': 'error',
       'import/named': 'error',
       'import/default': 'error',
       'import/namespace': 'error',
-      'import/no-absolute-path': 'error',
-      'import/no-dynamic-require': 'warn',
-      'import/no-internal-modules': 'off',
-      'import/no-webpack-loader-syntax': 'error',
-      'import/export': 'error',
-      'import/no-named-as-default': 'warn',
-      'import/no-named-as-default-member': 'warn',
-      'import/no-deprecated': 'warn',
-      'import/no-extraneous-dependencies': 'error',
-      'import/no-mutable-exports': 'error',
-      'import/no-unused-modules': 'off',
-      'import/first': 'error',
-      'import/exports-last': 'off',
-      'import/no-duplicates': 'error',
-      'import/no-namespace': 'off',
       'import/extensions': ['error', 'ignorePackages', {
         js: 'never',
         json: 'always'
       }],
-      'import/order': ['error', {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index'
-        ],
-        'newlines-between': 'never',
-        alphabetize: {
-          order: 'asc',
-          caseInsensitive: true
-        }
-      }],
-      'import/newline-after-import': 'error',
-      'import/prefer-default-export': 'off',
-      'import/max-dependencies': 'off',
-      'import/no-unassigned-import': 'off',
-      'import/no-named-default': 'error',
-      'import/no-default-export': 'off',
-      'import/no-named-export': 'off',
-      'import/no-anonymous-default-export': 'off',
-      'import/group-exports': 'off',
-      'import/dynamic-import-chunkname': 'off'
     }
   },
-
+  // Standard formulas config (disable no-undef for runtime-provided globals)
+  {
+    files: ['**/standard_formulas/**/*.js'],
+    ...get_base_config(),
+    languageOptions: {
+      ...get_base_config().languageOptions,
+      globals: {
+        ...get_base_config().languageOptions.globals,
+        // Runtime-provided globals for formula execution
+        logger: 'readonly',
+        getMonthPercentage: 'readonly',
+        getDaysBetween: 'readonly',
+        convertMonthlySalaryToDaily: 'readonly',
+        formatDate: 'readonly'
+      }
+    },
+    rules: {
+      ...get_base_config().rules,
+      // Disable no-undef for standard formulas as they use runtime-provided globals
+      'no-undef': 'off',
+      
+      // Relaxed custom rules for formulas
+      'custom/no-console-usage': 'off', // Allow console in formulas
+      'custom/no-logger-commas': 'off', // Relaxed for formulas
+      'custom/no-direct-dotenv': 'off', // Not applicable to formulas
+      'custom/no-hardcoded-strings': 'off', // Relaxed for formulas
+      'custom/warn-mixed-strings': 'off', // Relaxed for formulas
+      'custom/no-json-stringify-in-logs': 'off', // Relaxed for formulas
+      'custom/constants-in-single-folder': 'off', // Not applicable to formulas
+      'custom/file-length-warning': 'off', // Relaxed for formulas
+      'custom/no-direct-model-imports': 'off', // Not applicable to formulas
+      
+      // File length and complexity rules (relaxed)
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 100 }],
+      'complexity': ['warn', 10]
+    }
+  },
   // Scripts config (more relaxed for utility scripts)
   {
     files: ['**/scripts/**/*.js'],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: NODE_GLOBALS,
-      sourceType: 'commonjs'
-    },
-    plugins: {
-      custom: customPlugin,
-      import: importPlugin
-    },
+    ...get_base_config(),
     rules: {
+      ...get_base_config().rules,
       'no-process-exit': 'off',
 
       // Relaxed custom rules for scripts
       'custom/no-console-usage': 'off', // Allow console in scripts
       // 'custom/logger-args-checker': 'off', // Relaxed for scripts
       'custom/no-direct-dotenv': 'off', // Allow direct dotenv in setup scripts
-      'custom/no-hardcoded-logger-strings': 'off', // Relaxed for scripts
-      'custom/no-json-stringify-in-logs': 'off' // Relaxed for scripts
+      'custom/no-hardcoded-strings': 'off', // Relaxed for scripts
+      'custom/no-json-stringify-in-logs': 'off', // Relaxed for scripts
+      'custom/no-direct-model-imports': 'off', // Scripts may legitimately access models directly
+      'custom/constants-in-single-folder': 'off' // Scripts can have script-local constants
+    }
+  },
+  // Data structures config (more relaxed for data structures)
+  {
+    files: ['**/src/data_structures/**/*.js'],
+    ...get_base_config(),
+    rules: {
+      ...get_base_config().rules,
+      'custom/file-length-warning': 'off',
     }
   }
 ];

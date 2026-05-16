@@ -11,7 +11,7 @@ async function main() {
   try {
     switch (command) {
     case 'check':
-      logger.info('🔍 Checking environment setup...');
+      logger.info(`🔍 Checking environment setup...`);
       const envExists = await checkEnvFile();
       if (envExists) {
         validateEnvFile();
@@ -27,16 +27,16 @@ async function main() {
       break;
 
     case 'setup':
-      logger.info('🚀 Setting up server environment...');
+      logger.info(`🚀 Setting up server environment...`);
       const setupEnvExists = await checkEnvFile();
       if (setupEnvExists) {
-        logger.info('✅ Environment file already exists, validating configuration...');
+        logger.info(`✅ Environment file already exists, validating configuration...`);
         const isValid = validateEnvFile();
         if (isValid) {
-          logger.info('🎉 Environment is properly configured!');
-          logger.info('💡 Use "npm run validate-env" for quick validation in the future.');
+          logger.info(`🎉 Environment is properly configured!`);
+          logger.info(`💡 Use "npm run validate-env" for quick validation in the future.`);
         } else {
-          logger.warn('⚠️  Environment validation failed. Please check your .env file.');
+          logger.warn(`⚠️  Environment validation failed. Please check your .env file.`);
           showSetupInstructions();
         }
       } else {
@@ -45,17 +45,16 @@ async function main() {
       break;
 
     default:
-      logger.info('🔧 Environment Setup Script');
-      logger.warn('Usage:');
-      logger.info('  node scripts/setup-env.js check          - Check if .env file exists');
-      logger.info('  node scripts/setup-env.js validate       - Validate environment variables');
-      logger.info('  node scripts/setup-env.js generate-secrets - Generate JWT secrets');
-      logger.info('  node scripts/setup-env.js setup          - Setup or validate environment');
+      logger.info(`🔧 Environment Setup Script`);
+      logger.warn(`Usage:`);
+      logger.info(`  node scripts/setup-env.js check          - Check if .env file exists`);
+      logger.info(`  node scripts/setup-env.js validate       - Validate environment variables`);
+      logger.info(`  node scripts/setup-env.js generate-secrets - Generate JWT secrets`);
+      logger.info(`  node scripts/setup-env.js setup          - Setup or validate environment`);
       break;
     }
   } catch (error) {
-    logger.error('❌ An error occurred:');
-    logger.error(error.message);
+    logger.error(`❌ An error occurred: ${error.message}`, error);
     process.exit(1);
   }
 }

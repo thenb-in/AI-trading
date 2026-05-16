@@ -25,7 +25,9 @@ const useMediaCapture = (stream, isVideoReady, onCapture) => {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      // Draw current frame
+      // Mirror horizontally to match the mirrored preview (-scale-x-100 on <video>)
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
       context.drawImage(video, 0, 0);
 
       // Convert to blob

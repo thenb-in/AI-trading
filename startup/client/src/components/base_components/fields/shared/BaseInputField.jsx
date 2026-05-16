@@ -125,6 +125,7 @@ function BaseInputField({
       inputId={inputId}
       label={label}
       required={required}
+      disabled={disabled}
       error={error}
       errorId={errorId}
       className={containerClassName}

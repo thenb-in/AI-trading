@@ -1,6 +1,5 @@
 const logger = require('../../logger');
-const multiCompanyService = require('../services/multiCompanyService');
-const rolePermissionService = require('../services/rolePermissionService');
+const adminService = require('../services/admin.service');
 
 
 const createRole = async (req, res) => {
@@ -13,7 +12,7 @@ const createRole = async (req, res) => {
     const companyId = req.user.company_id;
 
     // All roles created from frontend are company-specific
-    const newRole = await rolePermissionService.createRole(name, description, companyId);
+    const newRole = await adminService.createRole(name, description, companyId);
     res.json({
       success: true,
       message: `Role "${newRole.name}" created successfully for your company!`,
@@ -37,7 +36,7 @@ const createPermission = async (req, res) => {
   // }
   try {
     const { name, description ,type} = req.body;
-    const newPermission = await rolePermissionService.createPermission(name, name, description, type);
+    const newPermission = await adminService.createPermission(name, name, description, type);
     res.json({
       success: true,
       message: `Permission "${newPermission.name}" created successfully!`,
@@ -60,12 +59,12 @@ const addPermissionToRole = async (req, res) => {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });
   // }
   try {
-    const { roleId, permissionIds } = req.body;
+    const { role_id, permission_ids } = req.body;
     const userId = req.user.id;
-    await rolePermissionService.addPermissionToRole(roleId, permissionIds, userId);
+    await adminService.addPermissionToRole(role_id, permission_ids, userId);
     res.json({
       success: true,
-      message: `${permissionIds.length} Permissions added successfully!`
+      message: `${permission_ids.length} Permissions added successfully!`
     });
   } catch (error) {
     logger.error('Error adding permission to role', error);
@@ -83,9 +82,9 @@ const removePermissionFromRole = async (req, res) => {
   //   return res.status(404).json({ error: "You are not authorized to access this resource" });
   // }
   try {
-    const { roleId, permissionId } = req.body;
+    const { role_id, permission_id } = req.body;
     const userId = req.user.id;
-    const result = await rolePermissionService.removePermissionFromRole(roleId, permissionId, userId);
+    const result = await adminService.removePermissionFromRole(role_id, permission_id, userId);
     res.json({
       success: true,
       message: `${result.message}`
@@ -105,7 +104,7 @@ const removePermissionFromRole = async (req, res) => {
 const getRoles = async (req, res) => {
   try {
     const companyId = req.user.company_id;
-    const roles = await rolePermissionService.getRolesAndPermissions(companyId);
+    const roles = await adminService.getRolesAndPermissions(companyId);
     res.json({
       success: true,
       data: roles
@@ -121,7 +120,7 @@ const getRoles = async (req, res) => {
 
 const getPermissions = async (req, res) => {
   try {
-    const permissions = await rolePermissionService.getAllPermissions();
+    const permissions = await adminService.getAllPermissions();
     res.json({
       success: true,
       data: permissions
@@ -137,8 +136,8 @@ const getPermissions = async (req, res) => {
 
 const deletePermission = async (req, res) => {
   try {
-    const { permissionId } = req.params;
-    const result = await rolePermissionService.deletePermission(permissionId);
+    const { permission_id } = req.params;
+    const result = await adminService.deletePermission(permission_id);
     res.json({
       success: true,
       message: result.message,
@@ -155,31 +154,15 @@ const deletePermission = async (req, res) => {
 };
 
 // User-Company Assignment endpoints
-const getSadminUsers = async (req, res) => {
+const getSupportUsers = async (req, res) => {
   try {
-    const users = await rolePermissionService.getSadminUsers();
+    const users = await adminService.getSupportUsers();
     res.json({
       success: true,
       data: users
     });
   } catch (error) {
-    logger.error('Error fetching sadmin users', error);
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-const getAllCompanies = async (req, res) => {
-  try {
-    const companies = await rolePermissionService.getAllCompanies();
-    res.json({
-      success: true,
-      data: companies
-    });
-  } catch (error) {
-    logger.error('Error fetching companies', error);
+    logger.error('Error fetching support users', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -198,7 +181,7 @@ const assignUserToCompany = async (req, res) => {
       });
     }
 
-    const result = await multiCompanyService.assignUserToCompanyFinal(userId, companyId);
+    const result = await adminService.assignUserToCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -225,7 +208,7 @@ const removeUserFromCompany = async (req, res) => {
       });
     }
 
-    const result = await multiCompanyService.removeUserFromCompanyFinal(userId, companyId);
+    const result = await adminService.removeUserFromCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -252,7 +235,7 @@ const getCompanyUsers = async (req, res) => {
       });
     }
 
-    const users = await rolePermissionService.getCompanyUsers(companyId);
+    const users = await adminService.getCompanyUsers(companyId);
     res.json({
       success: true,
       data: users
@@ -274,8 +257,7 @@ module.exports = {
   getRoles,
   getPermissions,
   deletePermission,
-  getSadminUsers,
-  getAllCompanies,
+  getSupportUsers,
   assignUserToCompany,
   removeUserFromCompany,
   getCompanyUsers

@@ -4,6 +4,7 @@ import { Maximize2, Minimize2, LayoutGrid, SlidersHorizontal, FilterX } from "lu
 import { toast } from "react-toastify";
 import { PaginationControls } from "./PaginationControls.jsx";
 import { ToolbarExportButtons } from "./ToolbarExportButtons.jsx";
+import { ThemeToggle } from "./ThemeToggle.jsx";
 import {
   TOOLBAR_BTN_CLASS,
   TOOLBAR_DIVIDER_CLASS,
@@ -34,8 +35,12 @@ function Toolbar({
   renderToolbarExtras = null,
   hasActiveFilters = false,
   onClearFilters = null,
+  hidePagination = false,
+  themeLabel = null,
+  onCycleTheme = null,
 }) {
   const isTop = position === "top";
+  const showThemeToggle = !isTop && themeLabel && typeof onCycleTheme === "function";
 
   const toggleColumnMenu = useCallback((v) => !v, []);
 
@@ -117,17 +122,21 @@ function Toolbar({
           </button>
         </div>
 
-        <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
+        {!hidePagination && (
+          <>
+            <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
 
-        <PaginationControls
-          page={page}
-          totalPages={totalPages}
-          autoPageSize={autoPageSize}
-          goToPrevPage={goToPrevPage}
-          goToNextPage={goToNextPage}
-          fullScreen={fullScreen}
-          totalRows={totalRows}
-        />
+            <PaginationControls
+              page={page}
+              totalPages={totalPages}
+              autoPageSize={autoPageSize}
+              goToPrevPage={goToPrevPage}
+              goToNextPage={goToNextPage}
+              fullScreen={fullScreen}
+              totalRows={totalRows}
+            />
+          </>
+        )}
 
         {showExport && (
           <>
@@ -159,6 +168,13 @@ function Toolbar({
             </button>
           </>
         )}
+
+        {showThemeToggle && (
+          <>
+            <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
+            <ThemeToggle themeLabel={themeLabel} onCycle={onCycleTheme} />
+          </>
+        )}
       </div>
     </div>
   );
@@ -188,6 +204,9 @@ Toolbar.propTypes = {
   renderToolbarExtras: PropTypes.func,
   hasActiveFilters: PropTypes.bool,
   onClearFilters: PropTypes.func,
+  hidePagination: PropTypes.bool,
+  themeLabel: PropTypes.string,
+  onCycleTheme: PropTypes.func,
 };
 
 export { Toolbar };

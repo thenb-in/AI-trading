@@ -25,3 +25,4 @@ trackingImage
 *.sln
 *.sw?
 .env
+secret/credentials.json

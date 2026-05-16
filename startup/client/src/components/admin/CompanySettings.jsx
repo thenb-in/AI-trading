@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 
 const StatusBanner = ({ type, message }) => {
@@ -39,7 +39,6 @@ import {
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
-import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
 
 function CompanySettings() {
@@ -57,7 +56,6 @@ function CompanySettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const companyProfileRef = useRef(null);
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -121,10 +119,6 @@ function CompanySettings() {
 
       await ApiService.updateCompanySettings(companyData);
 
-      if (companyProfileRef.current?.save) {
-        await companyProfileRef.current.save();
-      }
-
       setSuccess("Settings updated successfully");
       setIsDirty(false);
       toast.success("Settings updated successfully");
@@ -139,12 +133,6 @@ function CompanySettings() {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleProfileDirtyChange = (isProfileDirty) => {
-    if (isProfileDirty) {
-      setIsDirty(true);
     }
   };
 
@@ -259,20 +247,13 @@ function CompanySettings() {
           />
         </div>
 
-        {/* Company Profile - App-specific settings */}
-        <CompanyProfile
-          ref={companyProfileRef}
-          isLoading={isLoading}
-          onDirtyChange={handleProfileDirtyChange}
-        />
-
         <motion.button
           onClick={handleSaveAll}
-          disabled={isLoading || (!isDirty && !(companyProfileRef.current?.isDirty?.() || false))}
+          disabled={isLoading || !isDirty}
           className={`w-full p-3 rounded-lg text-white font-semibold transition-all flex items-center justify-center ${
             isLoading
               ? "bg-indigo-300 cursor-not-allowed"
-              : !isDirty && !(companyProfileRef.current?.isDirty?.() || false)
+              : !isDirty
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
           }`}

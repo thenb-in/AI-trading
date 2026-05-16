@@ -1,47 +1,26 @@
 {
   "name": "NB Next backend",
-  "version": "1.0.17",
+  "version": "1.0.21",
   "main": "buildApp.js",
   "scripts": {
     "build": "node scripts/build-bytecode.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "description": "",
   "dependencies": {
-    "axios": "^1.9.0",
     "bcrypt": "^6.0.0",
-    "body-parser": "^2.2.0",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "deep-diff": "^1.0.2",
-    "dotenv": "^16.5.0",
     "dotenv-safe": "^9.1.0",
-    "ejs": "^3.1.10",
-    "express": "^5.1.0",
-    "express-validator": "^7.2.1",
-    "form-data": "^4.0.5",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.0",
-    "node-cron": "^4.0.6",
-    "nodemon": "^3.1.10",
-    "pg": "^8.16.0",
+    "jsonwebtoken": "^9.0.0",
+    "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
     "sequelize": "^6.37.7",
-    "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
-    "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
     "bytenode": "^1.5.7",
-    "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
-    "globals": "^15.0.0"
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22"
   }
 }
