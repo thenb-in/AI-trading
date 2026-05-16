@@ -10,11 +10,11 @@ function DataGridBody({
   nonFrozenColumns,
   cumulativeFrozenLeftOffsets,
   selectedRowId = null,
-  hoveredRowId = null,
   handleRowClick,
   handleRowHover,
   handleRowLeave,
   rowHeight,
+  autoHeight = false,
   getRowIdFunc = null,
   columnWidths = {},
   // Virtual scrolling props
@@ -26,11 +26,12 @@ function DataGridBody({
   showTotalRow = false,
   allRows = [],
   allColumns = [],
-  // Row color props
-  evenRowColor = "#ffffff",
-  oddRowColor = "#eff6ff",
+  selection = null,
 }) {
-  const baseCellStyle = cellBaseStyle(rowHeight);
+  const baseCellStyle = cellBaseStyle(rowHeight, autoHeight);
+  const selectionEnabled = Boolean(selection?.enabled);
+  const selectionWidth = selectionEnabled ? selection.columnWidth || 40 : 0;
+  const totalColSpan = frozenColumns.length + nonFrozenColumns.length + (selectionEnabled ? 1 : 0);
 
   // Only show total row if there's more than 1 row
   const shouldShowTotalRow = showTotalRow && allRows.length > 1;
@@ -88,7 +89,7 @@ function DataGridBody({
           <td 
             className="p-0 border-none" 
             ref={setOffsetHeight}
-            colSpan={frozenColumns.length + nonFrozenColumns.length} 
+            colSpan={totalColSpan}
           />
         </tr>
       )}
@@ -101,11 +102,10 @@ function DataGridBody({
         const displayIndex = virtualScrolling ? startIndex + idx : idx;
         const isEven = displayIndex % 2 === 0;
         const isSelected = key === selectedRowId;
-        const isHovered = key === hoveredRowId;
         const isDisabled = row._isDisabled === true || isGroupTotal === true;
 
         const rowStyle = {
-          ...getRowStyle(isEven, isSelected, isHovered, evenRowColor, oddRowColor),
+          ...getRowStyle(isEven, isSelected),
           ...(isGroupTotal && {
             background: "#f3f4f6",
             fontWeight: 600,
@@ -140,6 +140,17 @@ function DataGridBody({
           }
         };
 
+        const isRowSelected = selectionEnabled ? selection.isSelected(key) : false;
+
+        const handleSelectionChange = (e) => {
+          e.stopPropagation();
+          if (!isDisabled && typeof selection?.onToggleRow === "function") {
+            selection.onToggleRow(key);
+          }
+        };
+
+        const stopPropagation = (e) => e.stopPropagation();
+
         return (
           <tr
             key={key}
@@ -150,9 +161,42 @@ function DataGridBody({
             onClick={handleClick}
             className={isDisabled ? 'data-grid-row-disabled' : ''}
           >
+            {selectionEnabled && (() => {
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              const setSelectionCellStyles = (element) => {
+                if (element) {
+                  Object.assign(element.style, baseCellStyle);
+                  element.style.setProperty('--cell-left', `0px`);
+                  element.style.setProperty('--cell-width', `${selectionWidth}px`);
+                  element.style.setProperty('--cell-bg', cellBg);
+                  element.style.padding = '0';
+                  element.style.textAlign = 'center';
+                }
+              };
+              return (
+                <td
+                  key="__selection__"
+                  ref={setSelectionCellStyles}
+                  className="data-grid-cell-frozen"
+                  onClick={stopPropagation}
+                >
+                  {!isGroupTotal && (
+                    <input
+                      type="checkbox"
+                      checked={isRowSelected}
+                      onChange={handleSelectionChange}
+                      onClick={stopPropagation}
+                      disabled={isDisabled}
+                      aria-label="Select row"
+                      className="cursor-pointer"
+                    />
+                  )}
+                </td>
+              );
+            })()}
             {frozenColumns.map((col) => {
-              const left = cumulativeFrozenLeftOffsets[col.field] || 0;
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, isHovered, evenRowColor, oddRowColor);
+              const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
               const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
               
               const setCellStyles = (element) => {
@@ -180,7 +224,7 @@ function DataGridBody({
               );
             })}
             {nonFrozenColumns.map((col) => {
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, isHovered, evenRowColor, oddRowColor);
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
               const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
               
               const setCellStyles = (element) => {
@@ -214,14 +258,32 @@ function DataGridBody({
           <td 
             className="p-0 border-none"
             ref={setTotalHeight}
-            colSpan={frozenColumns.length + nonFrozenColumns.length} 
+            colSpan={totalColSpan}
           />
         </tr>
       )}
       {shouldShowTotalRow && (
         <tr style={totalRowStyle}>
+          {selectionEnabled && (() => {
+            const setSelectionTotalStyles = (element) => {
+              if (element) {
+                Object.assign(element.style, baseCellStyle);
+                element.style.setProperty('--cell-left', `0px`);
+                element.style.setProperty('--cell-width', `${selectionWidth}px`);
+                element.style.setProperty('--cell-bg', '#f3f4f6');
+                element.style.padding = '0';
+              }
+            };
+            return (
+              <td
+                key="total-__selection__"
+                ref={setSelectionTotalStyles}
+                className="data-grid-cell-frozen"
+              />
+            );
+          })()}
           {frozenColumns.map((col) => {
-            const left = cumulativeFrozenLeftOffsets[col.field] || 0;
+            const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
             const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
             
             const setCellStyles = (element) => {
@@ -282,11 +344,11 @@ DataGridBody.propTypes = {
   nonFrozenColumns: PropTypes.array.isRequired,
   cumulativeFrozenLeftOffsets: PropTypes.object.isRequired,
   selectedRowId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  hoveredRowId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   handleRowClick: PropTypes.func.isRequired,
   handleRowHover: PropTypes.func.isRequired,
   handleRowLeave: PropTypes.func.isRequired,
   rowHeight: PropTypes.number.isRequired,
+  autoHeight: PropTypes.bool,
   getRowIdFunc: PropTypes.func,
   virtualScrolling: PropTypes.bool,
   offsetY: PropTypes.number,
@@ -295,8 +357,12 @@ DataGridBody.propTypes = {
   showTotalRow: PropTypes.bool,
   allRows: PropTypes.array,
   allColumns: PropTypes.array,
-  evenRowColor: PropTypes.string,
-  oddRowColor: PropTypes.string,
+  selection: PropTypes.shape({
+    enabled: PropTypes.bool,
+    columnWidth: PropTypes.number,
+    isSelected: PropTypes.func,
+    onToggleRow: PropTypes.func,
+  }),
 };
 
 export { DataGridBody };

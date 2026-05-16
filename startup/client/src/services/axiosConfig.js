@@ -4,11 +4,7 @@ import { toast } from 'react-toastify';
 // URLs
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-/**
- * Pre-configured Axios instance for API communication.
- * Sends cookies with all requests, auto-sets JSON headers (except for FormData),
- * and handles 401 redirects and validation error toasts via interceptors.
- */
+// Create Axios instances
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Send cookies with cross-origin requests
@@ -26,7 +22,16 @@ api.interceptors.request.use(
     const isFormData =
       typeof FormData !== 'undefined' && config.data instanceof FormData;
 
-    if (!isFormData) {
+    if (isFormData) {
+      // Let the browser auto-set "multipart/form-data; boundary=..." — if we
+      // leave Content-Type as 'application/json' (the instance default), axios
+      // will JSON-serialize the FormData and File entries become {}, so multer
+      // never sees the file.
+      delete config.headers['Content-Type'];
+      if (config.headers.common) {
+        delete config.headers.common['Content-Type'];
+      }
+    } else {
       config.headers['Content-Type'] = 'application/json';
     }
 

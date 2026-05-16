@@ -94,18 +94,47 @@ resolve_app_name() {
 fetch_latest_artifact() {
     local workflow_name="$1"
     local artifact_name="$2"
+    local target_branch="${DEPLOY_BRANCH:-main}"
+    local run_conclusion=""
 
-    log_info "Looking for latest successful run of \"$workflow_name\"..."
+    log_info "Looking for latest completed run of \"$workflow_name\" that contains artifact \"$artifact_name\" on branch '$target_branch'..."
 
-    LATEST_RUN_ID=$(
-        curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=success&branch=main&per_page=50" \
-        | jq -r "(.workflow_runs // [])[] | select(.name==\"$workflow_name\") | .id" \
-        | head -n1
+    local runs_json
+    runs_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=completed&branch=$target_branch&per_page=50")
+
+    local run_ids
+    mapfile -t run_ids < <(
+        echo "$runs_json" \
+        | jq -r "(.workflow_runs // [])[] | select(.name==\"$workflow_name\") | .id"
     )
 
-    if [[ -z "$LATEST_RUN_ID" || "$LATEST_RUN_ID" == "null" ]]; then
-        error_exit "No successful workflow runs found for '$workflow_name' on branch main."
+    if [[ ${#run_ids[@]} -eq 0 ]]; then
+        error_exit "No completed workflow runs found for '$workflow_name' on branch $target_branch."
+    fi
+
+    ARTIFACT_URL=""
+    LATEST_RUN_ID=""
+
+    local artifacts_json
+    local candidate_artifact_url
+    for run_id in "${run_ids[@]}"; do
+        artifacts_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs/$run_id/artifacts")
+
+        candidate_artifact_url=$(echo "$artifacts_json" \
+            | jq -r ".artifacts[]? | select(.name==\"$artifact_name\") | .archive_download_url" \
+            | head -n1)
+
+        if [[ -n "$candidate_artifact_url" && "$candidate_artifact_url" != "null" ]]; then
+            LATEST_RUN_ID="$run_id"
+            ARTIFACT_URL="$candidate_artifact_url"
+            break
+        fi
+    done
+
+    if [[ -z "$LATEST_RUN_ID" ]]; then
+        error_exit "No completed run found with artifact '$artifact_name' for workflow '$workflow_name' on branch $target_branch."
     fi
 
     # Fetch full run details
@@ -123,9 +152,45 @@ fetch_latest_artifact() {
     BUILT_AT=$(echo "$run_details" | jq -r '.created_at')
     HEAD_SHA=$(echo "$run_details" | jq -r '.head_sha')
     HEAD_BRANCH=$(echo "$run_details" | jq -r '.head_branch')
+    run_conclusion=$(echo "$run_details" | jq -r '.conclusion // "unknown"')
     COMMIT_MSG=$(echo "$run_details" | jq -r '.head_commit.message' | tr '\n' ' ' | sed 's/  */ /g')
     COMMIT_AUTHOR=$(echo "$run_details" | jq -r '.head_commit.author.name')
     SHORT_SHA="${HEAD_SHA:0:7}"
+
+    if [[ "$run_conclusion" != "success" ]]; then
+        log_warning "Workflow run $LATEST_RUN_ID conclusion is '$run_conclusion', but artifact '$artifact_name' exists and will be used."
+    fi
+
+    # Safety guard: avoid silently deploying a stale artifact when newer
+    # commits exist on the target branch.
+    local latest_branch_sha
+    latest_branch_sha=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/branches/$target_branch" \
+        | jq -r '.commit.sha // empty')
+
+    if [[ -z "$latest_branch_sha" || "$latest_branch_sha" == "null" ]]; then
+        error_exit "Unable to resolve latest SHA for branch '$target_branch'."
+    fi
+
+    if [[ "$HEAD_SHA" != "$latest_branch_sha" ]]; then
+        local latest_branch_short_sha="${latest_branch_sha:0:7}"
+        echo ""
+        log_warning "Selected artifact is stale for branch '$target_branch'."
+        log_warning "  Artifact commit: $SHORT_SHA"
+        log_warning "  Branch HEAD:     $latest_branch_short_sha"
+
+        if [[ "${DEPLOY_ALLOW_STALE_ARTIFACT:-0}" != "1" ]]; then
+            if [[ -t 0 ]]; then
+                read -r -p "Continue with stale artifact deployment? [y/N] " continue_with_stale
+                continue_with_stale="${continue_with_stale:-N}"
+                if [[ ! "$continue_with_stale" =~ ^[Yy]$ ]]; then
+                    error_exit "Aborted stale artifact deployment. Re-run after CI builds the latest commit, or set DEPLOY_ALLOW_STALE_ARTIFACT=1 to force."
+                fi
+            else
+                error_exit "Refusing stale artifact deploy in non-interactive mode. Re-run after CI builds latest commit, or set DEPLOY_ALLOW_STALE_ARTIFACT=1 to force."
+            fi
+        fi
+    fi
 
     echo ""
     echo "=============================================="
@@ -133,6 +198,7 @@ fetch_latest_artifact() {
     echo "=============================================="
     echo "  Workflow:         $workflow_name"
     echo "  Workflow run ID:  $LATEST_RUN_ID"
+    echo "  Run conclusion:   $run_conclusion"
     echo "  Built at:         $BUILT_AT"
     echo "  Branch:           $HEAD_BRANCH"
     echo "  Commit:           $SHORT_SHA ($HEAD_SHA)"
@@ -140,17 +206,6 @@ fetch_latest_artifact() {
     echo "  Author:           $COMMIT_AUTHOR"
     echo "=============================================="
     echo ""
-
-    # Find the specific artifact by name
-    ARTIFACT_URL=$(
-        curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs/$LATEST_RUN_ID/artifacts" \
-        | jq -r ".artifacts[] | select(.name==\"$artifact_name\") | .archive_download_url"
-    )
-
-    if [[ -z "$ARTIFACT_URL" || "$ARTIFACT_URL" == "null" ]]; then
-        error_exit "Artifact '$artifact_name' not found in workflow run $LATEST_RUN_ID."
-    fi
 
     log_success "Found artifact: $artifact_name"
 }

@@ -37,7 +37,7 @@ module.exports = (sequelize) => {
     Permission.belongsToMany(models.Role, {
       through: 'nbnext_role_permission_mapping',
       as: 'roles',
-      foreignKey: 'permissionId'
+      foreignKey: 'permission_id'
     });
   };
 

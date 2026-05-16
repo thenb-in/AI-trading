@@ -9,6 +9,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       allowNull: false,
       unique: true
+    },
+    epf_no: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'EPF establishment / employer code for this company'
+    },
+    sac_code: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'GST Service Accounting Code (SAC) for the services this company provides'
     }
   }, {
     tableName: 'company_profiles',

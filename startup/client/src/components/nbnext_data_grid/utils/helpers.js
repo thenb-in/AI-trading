@@ -139,61 +139,87 @@ const filterRows = (indexedRows, filterModel, columns) => {
 };
 
 /**
- * Sort rows based on sort model
+ * Sort rows based on the canonical array sort model `[{ field, sort }, ...]`
+ * (priority by index). Returns indexedRows unchanged if no valid sorts.
  */
 const sortRows = (indexedRows, sortModel, columns) => {
-  if (!sortModel.field || !sortModel.sort) {
-    return indexedRows;
-  }
-  
-  const col = columns.find((c) => c.field === sortModel.field);
-  if (!col) return indexedRows;
+  const sorts = (sortModel || []).filter((s) => s && s.field && s.sort);
+  if (sorts.length === 0) return indexedRows;
 
-  const formatType = getColumnFormatType(col);
-  const sortAsNumber = formatType === "number" || formatType === "numeric";
+  const comparators = sorts
+    .map((s) => {
+      const col = columns.find((c) => c.field === s.field);
+      if (!col) return null;
+      const formatType = getColumnFormatType(col);
+      const sortAsNumber = formatType === "number" || formatType === "numeric";
+      const sortAsDate = formatType === "date" || formatType === "datetime";
+      const dir = s.sort === "asc" ? 1 : -1;
+      const getter = (row) => {
+        if (typeof col.valueGetter === "function") {
+          return col.valueGetter({ row: row._row, field: col.field });
+        }
+        return row._row?.[col.field];
+      };
+      return (a, b) => {
+        const va = getter(a);
+        const vb = getter(b);
 
-  const getter = (row) => {
-    if (typeof col.valueGetter === "function") {
-      return col.valueGetter({ row: row._row, field: col.field });
-    }
-    return row._row?.[col.field];
-  };
+        if (va == null && vb == null) return 0;
+        if (va == null) return -1 * dir;
+        if (vb == null) return 1 * dir;
 
-  const dir = sortModel.sort === "asc" ? 1 : -1;
+        if (sortAsNumber) {
+          const na = toValidNumber(va);
+          const nb = toValidNumber(vb);
+
+          const isNa = typeof na === "number" && !Number.isNaN(na);
+          const isNb = typeof nb === "number" && !Number.isNaN(nb);
+
+          if (!isNa && !isNb) {
+            return String(na).localeCompare(String(nb)) * dir;
+          }
+          if (!isNa) return 1 * dir;
+          if (!isNb) return -1 * dir;
+
+          if (na < nb) return -1 * dir;
+          if (na > nb) return 1 * dir;
+          return 0;
+        }
+
+        // Sort dates chronologically. Triggers on declared date columns OR
+        // when the cell value is a Date instance — without this, `String(date)`
+        // produces "Mon Apr 13 2026 ..." and lex-sorts by weekday name.
+        if (sortAsDate || va instanceof Date || vb instanceof Date) {
+          const ta = va instanceof Date ? va.getTime() : Date.parse(va);
+          const tb = vb instanceof Date ? vb.getTime() : Date.parse(vb);
+          const isTa = !Number.isNaN(ta);
+          const isTb = !Number.isNaN(tb);
+
+          if (!isTa && !isTb) {
+            return String(va).localeCompare(String(vb)) * dir;
+          }
+          if (!isTa) return 1 * dir;
+          if (!isTb) return -1 * dir;
+
+          if (ta < tb) return -1 * dir;
+          if (ta > tb) return 1 * dir;
+          return 0;
+        }
+
+        return String(va).localeCompare(String(vb)) * dir;
+      };
+    })
+    .filter(Boolean);
+
+  if (comparators.length === 0) return indexedRows;
+
   const copy = [...indexedRows];
   copy.sort((a, b) => {
-    const va = getter(a);
-    const vb = getter(b);
-
-    // null handling
-    if (va == null && vb == null) return 0;
-    if (va == null) return -1 * dir;
-    if (vb == null) return 1 * dir;
-
-    if (sortAsNumber) {
-      const na = toValidNumber(va);
-      const nb = toValidNumber(vb);
-
-      const isNa = typeof na === "number" && !Number.isNaN(na);
-      const isNb = typeof nb === "number" && !Number.isNaN(nb);
-
-      // ✅ both invalid → fallback to string sort
-      if (!isNa && !isNb) {
-        return String(na).localeCompare(String(nb)) * dir;
-      }
-
-      // ✅ push invalid to bottom
-      if (!isNa) return 1 * dir;
-      if (!isNb) return -1 * dir;
-
-      // ✅ numeric compare
-      if (na < nb) return -1 * dir;
-      if (na > nb) return 1 * dir;
-      return 0;
+    for (let i = 0; i < comparators.length; i++) {
+      const r = comparators[i](a, b);
+      if (r !== 0) return r;
     }
-
-    // default string sorting
-    return String(va).localeCompare(String(vb)) * dir;
+    return 0;
   });
 
   return copy;
@@ -311,22 +337,22 @@ const calculateTotals = (rows, columns) => {
     return totals;
   }
 
-  // Identify numeric columns (exclude duration, date, datetime, time, boolean, string types)
-  const excludedTypes = ['duration', 'date', 'datetime', 'time', 'boolean', 'string', 'html', 'status'];
-  /** Seconds stored as numbers; sum in footer (e.g. detailed attendance vertical rows). */
-  const isDurationSecondsTotalable = (col) =>
-    getColumnFormatType(col) === 'duration' && col.field === 'total_work_seconds';
+  // Identify summable columns. Skip non-numeric display types outright.
+  // `duration` is allowed through: when the value is numeric seconds (the
+  // common convention in this codebase) the sum is meaningful and the footer
+  // formats it via convertCellToText. Non-numeric duration payloads (objects,
+  // ISO strings) parse to NaN and get filtered out by the value loop below.
+  const excludedTypes = ['date', 'datetime', 'time', 'boolean', 'string', 'html', 'status'];
 
   const numericColumns = columns.filter(col => {
     const formatType = getColumnFormatType(col);
-    // Skip excluded types except duration columns that hold numeric seconds
-    if (formatType && excludedTypes.includes(formatType) && !isDurationSecondsTotalable(col)) {
+    if (formatType && excludedTypes.includes(formatType)) {
       return false;
     }
-    
-    // Check if column type is number or numeric
+
+    const isDurationType = formatType === 'duration';
     const isNumericType = formatType === 'number' || formatType === 'numeric';
-    
+
     // Also check common numeric field patterns
     const isNumericField = typeof col.field === 'string' && (
       col.field.includes('amount') ||
@@ -339,8 +365,8 @@ const calculateTotals = (rows, columns) => {
       col.field.includes('_amt') ||
       col.field.startsWith('component_')
     );
-    
-    return isNumericType || isNumericField;
+
+    return isDurationType || isNumericType || isNumericField;
   });
 
   // Calculate totals for each numeric column
@@ -375,6 +401,55 @@ const calculateTotals = (rows, columns) => {
   return totals;
 };
 
+/**
+ * Sum the columns flagged `is_summary` on their server-side column config.
+ * Returns `{ field: total }` for each flagged column that has at least one
+ * numeric value across `rows`. When no column carries the flag, returns `{}`
+ * so the caller can fall back to a different strategy.
+ *
+ * `is_summary` is a server-provided curation hint — it says "these specific
+ * columns are the ones worth aggregating", e.g. PF/ESIC statutory totals.
+ * The grid only renders what callers (or this helper) build; it has no
+ * domain knowledge of which columns are summable on its own.
+ */
+const calculateIsSummaryTotals = (rows, columns) => {
+  const totals = {};
+  if (!rows || rows.length === 0 || !columns || columns.length === 0) {
+    return totals;
+  }
+
+  const flaggedColumns = columns.filter(
+    (col) => col.is_summary === true || col.is_summary === 'true'
+  );
+  if (flaggedColumns.length === 0) {
+    return totals;
+  }
+
+  flaggedColumns.forEach((col) => {
+    const key = col.field || col.key;
+    if (!key) return;
+    let sum = 0;
+    let count = 0;
+    rows.forEach((row) => {
+      const value =
+        typeof col.valueGetter === 'function'
+          ? col.valueGetter({ row, field: key })
+          : row?.[key];
+      if (value == null || value === '') return;
+      const num = typeof value === 'number' ? value : parseFloat(value);
+      if (!isNaN(num)) {
+        sum += num;
+        count += 1;
+      }
+    });
+    if (count > 0) {
+      totals[key] = sum;
+    }
+  });
+
+  return totals;
+};
+
 export {
   getColumnFormatType,
   getColumnForFormatting,
@@ -389,6 +464,7 @@ export {
   applyColumnConfig,
   filterRows,
   calculateTotals,
+  calculateIsSummaryTotals,
   formatCellValueForInsight,
   toValidNumber,
 };

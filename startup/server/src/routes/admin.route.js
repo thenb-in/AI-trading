@@ -5,7 +5,6 @@ const subscriptionController = require('../controllers/subscription.controller')
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
-
 router.use(authMiddleware.protect); // Protect all routes
 
 router.get('/roles', adminController.getRoles);
@@ -21,8 +20,7 @@ router.post('/role-permissions/add', adminController.addPermissionToRole);
 router.post('/role-permissions/remove', adminController.removePermissionFromRole);
 
 // User-Company Assignment routes
-router.get('/users/sadmin', adminController.getSadminUsers);
-router.get('/companies', adminController.getAllCompanies);
+router.get('/users/support', adminController.getSupportUsers);
 router.post('/assign-user', adminController.assignUserToCompany);
 router.post('/remove-user', adminController.removeUserFromCompany);
 router.get('/companies/:companyId/users', adminController.getCompanyUsers);
@@ -37,7 +35,5 @@ router.post('/subscription-permissions/update-multiple', subscriptionController.
 router.get('/companies/:companyId/subscriptions', companySubscriptionController.getCompanySubscriptions);
 router.get('/subscriptions/available', companySubscriptionController.getAvailableSubscriptions);
 router.put('/companies/:companyId/subscriptions', companySubscriptionController.setCompanySubscriptions);
-
-
 
 module.exports = router;

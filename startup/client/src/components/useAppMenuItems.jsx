@@ -1,18 +1,9 @@
-import { Headset } from "lucide-react";
-import {
-  Category as CategoryIcon,
-  Settings as SettingsIcon,
-  Storage as StorageIcon,
-  SupervisorAccount as ManagementIcon,
-  Build as CommonMastersIcon,
-  AccountBalance as AccountBalanceIcon,
-  CloudUpload as CloudUploadIcon,
-} from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "../context/useDataContext";
+import { useDataContext, hasPermission } from "@context/useDataContext";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getMasterCategoriesForUser } from "../data/getMasterModules";
 import { getAppModuleDefinitions, isAppModuleVisible } from "../data/getAppModules";
+import { MasterCategoryIcon } from "./base_components/master/MasterCategoryIcon";
 
 // Hook to get App-specific menu items (single source: getAppModuleDefinitions)
 function useAppMenuItems() {
@@ -82,27 +73,6 @@ function useAppMenuItems() {
     setShowMasterFlyout(false);
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case "Setup":
-        return <SettingsIcon className="h-4 w-4" />;
-      case "Raw Data":
-        return <StorageIcon className="h-4 w-4" />;
-      case "Management":
-        return <ManagementIcon className="h-4 w-4" />;
-      case "Common Masters":
-        return <CommonMastersIcon className="h-4 w-4" />;
-      case "Payroll & Calculations":
-        return <AccountBalanceIcon className="h-4 w-4" />;
-      case "CallBuddy":
-         return <Headset className="h-4 w-4"/>
-      case 'File Management':
-        return <CloudUploadIcon className="h-4 w-4"/>;
-      default:
-        return <CategoryIcon className="h-4 w-4" />;
-    }
-  };
-
   const searchParams = new URLSearchParams(location.search);
   const activeCategory = searchParams.get("category") || null;
 
@@ -124,7 +94,7 @@ function useAppMenuItems() {
                   ${isCatActive ? "bg-blue-500/70 text-white" : "hover:bg-gray-700 text-gray-200"}`}
                 title={category.count != null ? `${category.name} (${category.count})` : category.name}
               >
-                <span className="mr-2">{getCategoryIcon(category.name)}</span>
+                <span className="mr-2"><MasterCategoryIcon name={category.name} /></span>
                 <span className="flex-1 truncate">{category.name}</span>
                 {category.count != null && category.count > 0 && (
                   <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>
@@ -176,7 +146,7 @@ function useAppMenuItems() {
                     }`}
                   title={category.count != null ? `${category.name} (${category.count})` : category.name}
                 >
-                  <span className="mr-2">{getCategoryIcon(category.name)}</span>
+                  <span className="mr-2"><MasterCategoryIcon name={category.name} /></span>
                   <span className="flex-1 truncate">{category.name}</span>
                   {category.count != null && category.count > 0 && (
                     <span className={`ml-2 text-xs rounded-full px-2 py-0.5 ${isCatActive ? "bg-blue-600" : "bg-gray-700"}`}>

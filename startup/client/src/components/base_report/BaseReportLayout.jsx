@@ -1,0 +1,53 @@
+import PropTypes from 'prop-types';
+import { ReportHeader } from './ReportHeader';
+import { ReportTitleSection } from './ReportTitleSection';
+import { ReportFilter } from '@startup/components/base_filter/ReportFilter';
+import { LoadingBarReport } from './LoadingBarReport';
+
+/**
+ * Shared "report header + filter + body card" chrome. Reports that need to bring their own
+ * data grid (e.g. an actions column, special grid component, multi-section body) wrap the
+ * grid in this shell so they don't recreate the surrounding markup.
+ */
+const BaseReportLayout = ({
+  report,
+  isFiltering,
+  isLoadingData,
+  filtersConfig,
+  isFilterLoading,
+  onFiltersApply,
+  children,
+}) => (
+  <div className="min-h-screen bg-gray-50">
+    <ReportHeader isFiltering={isFiltering} />
+
+    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mb-6">
+        <ReportTitleSection report={report} />
+        <ReportFilter
+          onFiltersApply={onFiltersApply}
+          filtersConfig={filtersConfig}
+          isLoading={isFilterLoading}
+          disabled={isFiltering || isLoadingData}
+        />
+      </div>
+
+      <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-full w-full">
+        <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+BaseReportLayout.propTypes = {
+  report: PropTypes.object.isRequired,
+  isFiltering: PropTypes.bool,
+  isLoadingData: PropTypes.bool,
+  filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
+  onFiltersApply: PropTypes.func.isRequired,
+  children: PropTypes.node,
+};
+
+export { BaseReportLayout };

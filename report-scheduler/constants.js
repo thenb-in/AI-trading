@@ -1,0 +1,4 @@
+const REPORT_GENERATION_GOTO_URL = ""
+module.exports = {
+  REPORT_GENERATION_GOTO_URL
+}

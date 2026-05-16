@@ -83,8 +83,16 @@ function cleanNodeModules() {
   const rootDir = path.join(__dirname, '..');
   const dirs = [
     path.join(rootDir, 'node_modules'),
+    path.join(rootDir, 'app', 'node_modules'),
+    path.join(rootDir, 'app', 'client', 'node_modules'),
+    path.join(rootDir, 'app', 'server', 'node_modules'),
     path.join(rootDir, 'startup', 'client', 'node_modules'),
-    path.join(rootDir, 'startup', 'server', 'node_modules')
+    path.join(rootDir, 'startup', 'server', 'node_modules'),
+    path.join(rootDir, 'lints', 'node_modules'),
+    path.join(rootDir, 'tests', 'node_modules'),
+    path.join(rootDir, 'tests', 'integration-tests', 'node_modules'),
+    path.join(rootDir, 'tests', 'e2e-tests', 'node_modules'),
+    path.join(rootDir, 'report-scheduler', 'node_modules')
   ];
 
   dirs.forEach(dir => {
@@ -101,6 +109,8 @@ function cleanBuild() {
   console.log('Cleaning build artifacts...');
   const rootDir = path.join(__dirname, '..');
   const dirs = [
+    path.join(rootDir, 'app', 'client', 'dist'),
+    path.join(rootDir, 'app', 'server', 'dist'),
     path.join(rootDir, 'startup', 'client', 'dist'),
     path.join(rootDir, 'startup', 'server', 'dist')
   ];
@@ -118,11 +128,17 @@ function cleanBuild() {
 function cleanLogs() {
   console.log('Cleaning log files...');
   const rootDir = path.join(__dirname, '..');
-  const logsDir = path.join(rootDir, 'startup', 'server', 'logs');
+  const logsDirs = [
+    path.join(rootDir, 'app', 'server', 'logs'),
+    path.join(rootDir, 'startup', 'server', 'logs'),
+    path.join(rootDir, 'tests', 'e2e-tests', 'logs')
+  ];
 
-  if (removeFilesByPattern(logsDir, '*.log')) {
-    console.log(`✓ Removed log files from ${path.relative(rootDir, logsDir)}`);
-  }
+  logsDirs.forEach(logsDir => {
+    if (removeFilesByPattern(logsDir, '*.log')) {
+      console.log(`✓ Removed log files from ${path.relative(rootDir, logsDir)}`);
+    }
+  });
 }
 
 /**

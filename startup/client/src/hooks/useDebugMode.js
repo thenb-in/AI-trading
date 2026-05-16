@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { isDebugMode, subscribeToDebugMode, toggleDebugMode } from '../services/debugModeService';
+import { isDebugMode, subscribeToDebugMode, toggleDebugMode } from '@services/debugModeService';
 
 /**
  * Custom hook to manage debug mode state

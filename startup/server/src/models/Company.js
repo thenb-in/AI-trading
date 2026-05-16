@@ -36,6 +36,12 @@ module.exports = (sequelize, DataTypes) => {
     Company.hasMany(models.User, { foreignKey: 'company_id', as: 'users' });
     Company.belongsTo(models.Role, { foreignKey: 'role_id', as: 'role' });
     Company.hasOne(models.CompanyProfile, { foreignKey: 'company_id', as: 'companyProfile' });
+    Company.belongsToMany(models.Subscription, {
+      through: models.CompanySubscription,
+      foreignKey: 'company_id',
+      otherKey: 'subscription_id',
+      as: 'subscriptions'
+    });
   };
 
   return Company;

@@ -1,9 +1,10 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { PastReportPage } from '@app/components/report/PastReportPage';
 import { ReportList } from './report_components/ReportList';
 import { DummyComponent } from './DummyComponent';
-// import PastReportPage from './ReportComponents/PastReportPage';
-import { reports, categories } from '@data/getReportModules';
+// import PastReportPage from './report_components/PastReportPage';
+import { reports, categories } from '../data/getReportModules';
 
 const staticPages = ['past-report'];
 
@@ -26,7 +27,7 @@ const ReportContent = () => {
     <div className="px-4 py-4 sm:px-6 lg:px-8 max-w-8xl mx-auto">
       <Routes>
         <Route index element={<ReportList reports={reports} categories={categories} />} />
-        {/* <Route path="past-report" element={<PastReportPage />} /> */}
+        <Route path="past-report" element={<PastReportPage />} />
 
         {reports.map((report) => {
           const Component = report.component;

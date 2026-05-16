@@ -42,13 +42,12 @@ const validateRefreshToken = async(refreshToken)=>{
 
 
 const getCookieOptions = () => {
-  const isSecure = env.NODE_ENV === 'production';
   const accessMax = env.MAX_JWT_ACCESS_EXPIRATION_MS;
   const refreshMax = env.MAX_JWT_REFRESH_EXPIRATION_MS;
   return {
-    access:  { httpOnly: true, sameSite: 'strict', secure: isSecure, maxAge: accessMax },
-    refresh: { httpOnly: true, sameSite: 'strict', secure: isSecure, maxAge: refreshMax },
-    isLoggedIn: { sameSite: 'strict', secure: isSecure, maxAge: refreshMax }
+    access:  { httpOnly: true, sameSite: 'strict', secure: env.isSecureCookie, maxAge: accessMax },
+    refresh: { httpOnly: true, sameSite: 'strict', secure: env.isSecureCookie, maxAge: refreshMax },
+    isLoggedIn: { sameSite: 'strict', secure: env.isSecureCookie, maxAge: refreshMax }
   };
 };
 

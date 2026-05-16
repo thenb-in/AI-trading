@@ -30,6 +30,9 @@ const colors = {
     main: '#ed6c02',
     light: '#ff9800',
     dark: '#e65100',
+    background: '#fffde7',
+    border: '#f9a825',
+    highlight: '#fff176',
   },
   info: {
     main: '#0288d1',

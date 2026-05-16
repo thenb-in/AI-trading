@@ -2,7 +2,29 @@
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
 
-const createImportFunction = ({ 
+/**
+ * Common per-cell normalization shared by the Excel and CSV branches: date strings parse to
+ * YYYY-MM-DD; boolean fields fold yes/no/1/0 to true/false. Returns the original value untouched
+ * for non-date/non-boolean fields.
+ */
+function normalizeImportCellValue(value, field, dateFields, booleanFields) {
+  if (dateFields.includes(field)) {
+    if (value instanceof Date) {
+      value = formatDate(value);
+    } else if (typeof value === 'string' && value.trim()) {
+      const date = parseDateValue(value);
+      if (date && !isNaN(date.getTime())) value = formatDate(date);
+    }
+  }
+  if (booleanFields.includes(field)) {
+    const v = String(value ?? '').toLowerCase().trim();
+    if (v === 'true' || v === 'yes' || v === '1' || value === true) value = true;
+    else if (v === 'false' || v === 'no' || v === '0' || value === false) value = false;
+  }
+  return value;
+}
+
+const createImportFunction = ({
   columns = [], 
   existingData = [], 
   api = {},
@@ -101,33 +123,7 @@ const createImportFunction = ({
           row.eachCell((cell, colNumber) => {
             const field = headerToField[colNumber];
             if (!field) return;
-            
-            let value = cell.value;
-            
-            // Handle date fields
-            if (dateFields.includes(field)) {
-              if (value instanceof Date) {
-                // Format date as YYYY-MM-DD using local time
-                value = formatDate(value);
-              } else if (typeof value === 'string' && value.trim()) {
-                // Try to parse date string and format as YYYY-MM-DD using local time
-                const date = parseDateValue(value);
-                if (date && !isNaN(date.getTime())) {
-                  value = formatDate(date);
-                }
-              }
-            }
-            
-            // Handle boolean fields
-            if (booleanFields.includes(field)) {
-              const v = String(value ?? '').toLowerCase().trim();
-              value = v === 'true' || v === 'yes' || v === '1' || value === true;
-              if (v === 'false' || v === 'no' || v === '0' || value === false) {
-                value = false;
-              }
-            }
-            
-            payload[field] = value ?? null;
+            payload[field] = normalizeImportCellValue(cell.value, field, dateFields, booleanFields) ?? null;
           });
 
           // Skip empty rows
@@ -180,28 +176,7 @@ const createImportFunction = ({
           Object.keys(row).forEach(header => {
             const field = headerToField[header];
             if (!field) return;
-            
-            let value = row[header];
-            
-            // Handle date fields
-            if (dateFields.includes(field) && value) {
-              const date = parseDateValue(value);
-              if (date && !isNaN(date.getTime())) {
-                // Format date as YYYY-MM-DD using local time
-                value = formatDate(date);
-              }
-            }
-            
-            // Handle boolean fields
-            if (booleanFields.includes(field)) {
-              const v = String(value ?? '').toLowerCase().trim();
-              value = v === 'true' || v === 'yes' || v === '1';
-              if (v === 'false' || v === 'no' || v === '0') {
-                value = false;
-              }
-            }
-            
-            payload[field] = value ?? null;
+            payload[field] = normalizeImportCellValue(row[header], field, dateFields, booleanFields) ?? null;
           });
           return payload;
         }).filter(payload => {
@@ -275,8 +250,11 @@ const createImportFunction = ({
         const payload = rows[i];
         const rowNumber = i + 2; // Account for header row
 
-        // Validate required fields
-        const missingFields = requiredFields.filter(f => !payload[f] || String(payload[f]).trim() === '');
+        // Validate required fields (treat 0 / false as present; only null/undefined/'' are missing)
+        const missingFields = requiredFields.filter(f => {
+          const v = payload[f];
+          return v === null || v === undefined || String(v).trim() === '';
+        });
         if (missingFields.length > 0) {
           const keyField = uniqueFields && uniqueFields.length > 0 ? uniqueFields[0] : codeField;
           errors.push({
@@ -318,7 +296,10 @@ const createImportFunction = ({
             continue;
           }
           
-          if (existing?.id && updateFunction && typeof updateFunction === 'function') {
+          if (existing?.id && skipExisting) {
+            // Skip existing record when configured (useful for immutable/approved records)
+            skipped += 1;
+          } else if (existing?.id && updateFunction && typeof updateFunction === 'function') {
             // Update existing record
             const updatePayload = { ...existing, ...payload };
             await updateFunction(existing.id, updatePayload);

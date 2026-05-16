@@ -7,6 +7,7 @@ import { useColumnVisibility } from "./hooks/useColumnVisibility.js";
 import { useFrozenColumns } from "./hooks/useFrozenColumns.js";
 import { usePagination } from "./hooks/usePagination.js";
 import { useRowSelection } from "./hooks/useRowSelection.js";
+import { useMultiRowSelection } from "./hooks/useMultiRowSelection.js";
 import { useMeasurements } from "./hooks/useMeasurements.js";
 import { useFiltering } from "./hooks/useFiltering.js";
 import { useVirtualScrolling } from "./hooks/useVirtualScrolling.js";
@@ -22,6 +23,8 @@ import { useFullScreenToggle } from "./hooks/useFullScreenToggle.js";
 import { useTabsState } from "./hooks/useTabsState.js";
 import { useGridExport } from "./hooks/useGridExport.js";
 import { useInsightsCollapse } from "./hooks/useInsightsCollapse.js";
+import { useInfiniteScroll } from "./hooks/useInfiniteScroll.js";
+import { useGridTheme } from "./hooks/useGridTheme.js";
 
 // Components
 import { EmptyState } from "./components/EmptyState.jsx";
@@ -35,31 +38,35 @@ import { GridTabs } from "./components/GridTabs.jsx";
 import { GridScrollToTopButton } from "./components/GridScrollToTopButton.jsx";
 
 // Utilities
-import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig } from "./utils/helpers.js";
+import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig, getKeyForRow, calculateIsSummaryTotals } from "./utils/helpers.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
 
 
 const NbNextDataGrid = forwardRef(({
   rows: rowsProp = [],
   columns: columnsProp = [],
-  height = 560,
-  initialSortModel = { field: null, sort: null },
+  initialSortModel = [],
   onSortModelChange = null,
   initialColumnVisibility = null,
   onColumnVisibilityChange = null,
   getRowId = null,
   density = "comfortable",
-  // eslint-disable-next-line no-unused-vars
-  autoHeight: _autoHeight, // Accept prop but ignore it - always use true
+  autoHeight = false,
   onRowSelect = null,
+  /**
+   * Fires on every row click with `(row, rowId)` — no toggle-deselect
+   * semantics, unlike onRowSelect. Use when consumers need a click handler
+   * (e.g. row-click-to-edit) that fires every time.
+   */
+  onRowClick = null,
   documentName = null,
   fullScreen: externalFullScreen,
   showTotalRow = false,
   frozenColumns = [],
   hideConstantColumns = true,
   summary: summaryProp = null,
-  evenRowColor = "#ffffff",
-  oddRowColor = "#eff6ff",
+  /** Theme id from utils/themes.js — "report" (default) or "master". */
+  theme = "report",
   showExcelExport = false,
   /** { title, slug } for default Excel export. When provided (and onExcelExport not set), grid uses built-in handleExport. */
   exportReport = null,
@@ -92,6 +99,44 @@ const NbNextDataGrid = forwardRef(({
    */
   tabs = null,
   defaultActiveTabId = null,
+  /**
+   * Optional. Field name to group rows by on first render. After mount, the
+   * user can still toggle grouping via the column menu — this only seeds the
+   * initial state. Pass `null`/omit to start ungrouped (default).
+   */
+  defaultGroupByField = null,
+  /**
+   * Optional infinite scroll. When enabled the grid renders all loaded rows
+   * (no internal pagination) and observes a sentinel at the bottom of its
+   * scroll area; on intersection it calls `onLoadMore()` if `hasMore` is
+   * true and `isLoadingMore` is false. The parent owns the row array and
+   * appends as new pages arrive.
+   */
+  infiniteScroll = false,
+  hasMore = false,
+  onLoadMore = null,
+  isLoadingMore = false,
+  /**
+   * Optional multi-row selection (checkbox column). Off by default.
+   * When enabled, a leading sticky checkbox column is rendered and selection
+   * state is exposed via `onSelectionChange(selectedIds)`. Pass `selectedRowIds`
+   * for controlled mode, or omit it for uncontrolled mode.
+   *
+   * Select-all toggles only currently displayed (filtered/paged) rows; ids
+   * selected on prior pages are preserved unless the consumer clears them.
+   */
+  enableRowSelection = false,
+  selectedRowIds = null,
+  onSelectionChange = null,
+  selectionColumnWidth = 40,
+  /**
+   * Optional. Embed-friendly mode for grids placed in tight containers (e.g.
+   * inside a popup). Drops the bottom toolbar, removes the container's own
+   * border/radius/shadow so it sits flush inside its parent, and seeds the
+   * insights panel as collapsed. Top toolbar (export, column menu) stays;
+   * the user can still expand insights via its top-bar toggle.
+   */
+  minimalMode = false,
 }, ref) => {
   // Tabs: active tab drives which rows/summary/columns flow through the pipeline.
   // A tab may override any of rows/summary/columns; if omitted, the top-level
@@ -104,17 +149,23 @@ const NbNextDataGrid = forwardRef(({
     columnsProp,
   });
 
+  // Theme (CSS variables on the container drive all themed colors)
+  const { theme: activeTheme, cycleTheme } = useGridTheme(theme);
+
   // Fullscreen state + Alt+F shortcut (external prop wins if provided)
   const { fullScreen, handleToggleFullScreen } = useFullScreenToggle(externalFullScreen);
 
   // Insights collapse state (owned here; toggle button lives in the top bar)
-  const { collapsed: insightsCollapsed, toggle: toggleInsights } = useInsightsCollapse(fullScreen);
+  const { collapsed: insightsCollapsed, toggle: toggleInsights } = useInsightsCollapse(fullScreen, minimalMode);
 
   // Refs for measuring
   const containerRef = useRef(null);
   const headerRef = useRef(null);
   const firstRowRef = useRef(null);
   const scrollAreaRef = useRef(null);
+  const loadMoreSentinelRef = useRef(null);
+  // Wraps GridTabs + InsightsPanel so its height feeds the container auto-size.
+  const insightsRef = useRef(null);
 
   // Detect sidebar width for fullscreen offset
   const sidebarWidth = useSidebarWidth(fullScreen);
@@ -135,9 +186,19 @@ const NbNextDataGrid = forwardRef(({
   const columnsToUse = shouldHideConstantColumns ? columnsWithoutConstants : normalizedColumns;
   const rowsToUse = shouldHideConstantColumns ? rowsWithoutConstants : rows;
 
+  // Caller-supplied `summary` wins. When the caller doesn't pass one but the
+  // columns themselves carry `is_summary: true` flags (server-curated picks),
+  // build the summary from those — so reports that already opt into the
+  // is_summary contract on the server get a top Summary card for free.
+  const effectiveSummary = useMemo(() => {
+    if (summary && Object.keys(summary).length > 0) return summary;
+    const flagged = calculateIsSummaryTotals(rows, normalizedColumns);
+    return Object.keys(flagged).length > 0 ? flagged : null;
+  }, [summary, rows, normalizedColumns]);
+
   // Whether the insights panel has anything to render (drives the top-bar toggle visibility)
   const insightsAvailable = Boolean(
-    (summary && Object.keys(summary).length > 0) ||
+    (effectiveSummary && Object.keys(effectiveSummary).length > 0) ||
       (shouldHideConstantColumns && constantColumns && constantColumns.size > 0)
   );
 
@@ -160,7 +221,7 @@ const NbNextDataGrid = forwardRef(({
   } = useFrozenColumns(columnsToUse, visibleColumns, columnWidths, frozenColumns);
 
   // Sorting
-  const { sortModel, handleHeaderClick, setSortModelProgrammatic } = useSorting(
+  const { sortModel, handleHeaderClick, promoteToPrimarySort } = useSorting(
     initialSortModel,
     onSortModelChange
   );
@@ -190,7 +251,8 @@ const NbNextDataGrid = forwardRef(({
   const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
     columnsToUse,
     sortedRows,
-    setSortModelProgrammatic
+    promoteToPrimarySort,
+    defaultGroupByField
   );
 
   // Pagination (disabled in fullscreen)
@@ -210,7 +272,14 @@ const NbNextDataGrid = forwardRef(({
 
   // Row selection (click + hover)
   const { selectedRowId, hoveredRowId, handleRowClick, handleRowHover, handleRowLeave } =
-    useRowSelection(onRowSelect);
+    useRowSelection(onRowSelect, onRowClick);
+
+  // Multi-row selection (checkbox column)
+  const multiRowSelection = useMultiRowSelection({
+    enabled: enableRowSelection,
+    selectedRowIds,
+    onSelectionChange,
+  });
 
   // Measurements (row height + container height)
   const { rowHeight, computedContainerHeight } = useMeasurements(
@@ -219,9 +288,9 @@ const NbNextDataGrid = forwardRef(({
     pagedRows,
     visibleColumns,
     density,
-    true, // autoHeight is always forced true; see legacy note
-    height,
-    fullScreen
+    autoHeight,
+    fullScreen,
+    insightsRef
   );
 
   // Virtual scrolling only in fullscreen
@@ -237,7 +306,61 @@ const NbNextDataGrid = forwardRef(({
     scrollAreaRef.current,
     10 // overscan
   );
-  const displayRows = fullScreen ? virtualScrollingResult.visibleRows : pagedRows;
+  // Infinite scroll bypasses internal pagination — render every loaded row;
+  // the parent appends rows as more pages arrive.
+  const displayRows = fullScreen
+    ? virtualScrollingResult.visibleRows
+    : infiniteScroll
+      ? groupedRows
+      : pagedRows;
+
+  useInfiniteScroll({
+    enabled: infiniteScroll,
+    rootRef: scrollAreaRef,
+    sentinelRef: loadMoreSentinelRef,
+    hasMore,
+    isLoadingMore,
+    onLoadMore,
+  });
+
+  // Selection prop bundle for header/body. Visible-row ids drive select-all so
+  // the checkbox reflects only what's currently displayed (post-filter, post-page).
+  const visibleSelectableIds = useMemo(() => {
+    if (!enableRowSelection) return [];
+    const ids = [];
+    for (let i = 0; i < displayRows.length; i++) {
+      const wrapped = displayRows[i];
+      const row = wrapped?._row;
+      if (!row || row._isGroupTotal === true || row._isDisabled === true) continue;
+      ids.push(getKeyForRow(row, wrapped._origIndex, getRowId));
+    }
+    return ids;
+  }, [enableRowSelection, displayRows, getRowId]);
+
+  const { allSelected, someSelected } = multiRowSelection.getSelectionState(visibleSelectableIds);
+
+  const handleToggleAllVisible = useCallback(() => {
+    multiRowSelection.toggleAll(visibleSelectableIds);
+  }, [multiRowSelection, visibleSelectableIds]);
+
+  const headerSelectionProp = enableRowSelection
+    ? {
+        enabled: true,
+        columnWidth: selectionColumnWidth,
+        allSelected,
+        someSelected,
+        onToggleAll: handleToggleAllVisible,
+      }
+    : null;
+
+  const bodySelectionProp = enableRowSelection
+    ? {
+        enabled: true,
+        columnWidth: selectionColumnWidth,
+        isSelected: multiRowSelection.isSelected,
+        onToggleRow: multiRowSelection.toggleRow,
+      }
+    : null;
 
   // Export payload / imperative handle / Excel handler. The last block of
   // params is only consulted when `tabs` has 2+ entries — they let the export
@@ -289,16 +412,14 @@ const NbNextDataGrid = forwardRef(({
   // Auto-load the user's default layout on mount (once per documentName)
   useDefaultLayoutLoader({ documentName, columns, normalizedColumns, applyLayout });
 
-  // Container style (accounts for fullscreen + sidebar offset)
-  const gridContainerStyle = getGridContainerStyle(
-    computedContainerHeight,
-    fullScreen,
-    sidebarWidth
-  );
+  // Container style (accounts for fullscreen + sidebar offset) + theme vars
+  const gridContainerStyle = {
+    ...getGridContainerStyle(computedContainerHeight, fullScreen, sidebarWidth, minimalMode),
+    ...activeTheme.vars,
+  };
 
-  // Header chrome shared by the empty and populated states.
-  const tabsAndInsights = (
-    <>
+  const insightsHeader = (
+    <div ref={insightsRef}>
       <GridTabs
         tabs={hasTabs ? tabs : null}
         activeTabId={activeTabId}
@@ -309,20 +430,20 @@ const NbNextDataGrid = forwardRef(({
       />
       {!insightsCollapsed && (
         <InsightsPanel
-          summary={summary}
+          summary={effectiveSummary}
           columns={columns}
           constantColumns={constantColumns}
           showCommonValues={shouldHideConstantColumns}
         />
       )}
-    </>
+    </div>
   );
 
   // Empty state
   if (!rowsToUse || rowsToUse.length === 0 || visibleColumns.length === 0) {
     return (
       <div ref={containerRef} style={gridContainerStyle}>
-        {tabsAndInsights}
+        {insightsHeader}
         <EmptyState />
       </div>
     );
@@ -331,7 +452,7 @@ const NbNextDataGrid = forwardRef(({
   // Main render
   return (
     <div ref={containerRef} style={gridContainerStyle}>
-      {tabsAndInsights}
+      {insightsHeader}
       <Toolbar
         totalRows={groupedRows.length}
         visibleColumnsCount={visibleColumns.length}
@@ -356,6 +477,7 @@ const NbNextDataGrid = forwardRef(({
         renderToolbarExtras={renderToolbarExtras}
         hasActiveFilters={hasActiveFilters}
         onClearFilters={clearAllFilters}
+        hidePagination={infiniteScroll}
       />
       {showColumnMenu && (
         <ColumnMenu
@@ -398,6 +520,7 @@ const NbNextDataGrid = forwardRef(({
             groupByField={groupByField}
             toggleGroupBy={toggleGroupBy}
             onColumnReorder={handleColumnReorder}
+            selection={headerSelectionProp}
           />
           <DataGridBody
             firstRowRef={firstRowRef}
@@ -411,6 +534,7 @@ const NbNextDataGrid = forwardRef(({
             handleRowHover={handleRowHover}
             handleRowLeave={handleRowLeave}
             rowHeight={rowHeight}
+            autoHeight={autoHeight}
             getRowIdFunc={getRowId}
             columnWidths={columnWidths}
             virtualScrolling={fullScreen}
@@ -420,12 +544,24 @@ const NbNextDataGrid = forwardRef(({
             showTotalRow={showTotalRow}
             allRows={sortedRows}
             allColumns={columnsToUse}
-            evenRowColor={evenRowColor}
-            oddRowColor={oddRowColor}
+            selection={bodySelectionProp}
           />
         </table>
+        {infiniteScroll && (
+          <div
+            ref={loadMoreSentinelRef}
+            className="flex items-center justify-center py-3 min-h-[40px]"
+          >
+            {isLoadingMore && (
+              <span className="text-sm text-gray-500">Loading more records...</span>
+            )}
+            {!isLoadingMore && !hasMore && groupedRows.length > 0 && (
+              <span className="text-sm text-gray-400">No more records to load.</span>
+            )}
+          </div>
+        )}
       </div>
-      {!fullScreen && (
+      {!fullScreen && !minimalMode && (
         <Toolbar
           totalRows={groupedRows.length}
           visibleColumnsCount={visibleColumns.length}
@@ -450,6 +586,9 @@ const NbNextDataGrid = forwardRef(({
           renderToolbarExtras={renderToolbarExtras}
           hasActiveFilters={hasActiveFilters}
           onClearFilters={clearAllFilters}
+          hidePagination={infiniteScroll}
+          themeLabel={activeTheme.label}
+          onCycleTheme={cycleTheme}
         />
       )}
       {showScrollToTop && <GridScrollToTopButton onClick={handleScrollToTop} />}
@@ -476,11 +615,12 @@ NbNextDataGrid.propTypes = {
       type: PropTypes.string,
     })
   ).isRequired,
-  height: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  initialSortModel: PropTypes.shape({
-    field: PropTypes.string,
-    sort: PropTypes.oneOf(["asc", "desc"]),
-  }),
+  initialSortModel: PropTypes.arrayOf(
+    PropTypes.shape({
+      field: PropTypes.string.isRequired,
+      sort: PropTypes.oneOf(["asc", "desc"]).isRequired,
+    })
+  ),
   onSortModelChange: PropTypes.func,
   initialColumnVisibility: PropTypes.object,
   onColumnVisibilityChange: PropTypes.func,
@@ -488,14 +628,14 @@ NbNextDataGrid.propTypes = {
   density: PropTypes.oneOf(["compact", "standard", "comfortable"]),
   autoHeight: PropTypes.bool,
   onRowSelect: PropTypes.func,
+  onRowClick: PropTypes.func,
   documentName: PropTypes.string,
   fullScreen: PropTypes.bool,
   showTotalRow: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   hideConstantColumns: PropTypes.bool,
   summary: PropTypes.object,
-  evenRowColor: PropTypes.string,
-  oddRowColor: PropTypes.string,
+  theme: PropTypes.string,
   showExcelExport: PropTypes.bool,
   exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
   onExcelExport: PropTypes.func,
@@ -521,6 +661,16 @@ NbNextDataGrid.propTypes = {
     })
   ),
   defaultActiveTabId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  defaultGroupByField: PropTypes.string,
+  infiniteScroll: PropTypes.bool,
+  hasMore: PropTypes.bool,
+  onLoadMore: PropTypes.func,
+  isLoadingMore: PropTypes.bool,
+  enableRowSelection: PropTypes.bool,
+  selectedRowIds: PropTypes.oneOfType([PropTypes.array, PropTypes.instanceOf(Set)]),
+  onSelectionChange: PropTypes.func,
+  selectionColumnWidth: PropTypes.number,
+  minimalMode: PropTypes.bool,
 };
 
 export { NbNextDataGrid };

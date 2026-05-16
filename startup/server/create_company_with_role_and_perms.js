@@ -2,13 +2,12 @@
 const readline = require('readline');
 const logger = require('./logger');
 const { createStartingAppData } = require('./scripts/default_data/app');
-const { createDefaultRoles, createDefaultPermissions } = require('./scripts/default_data/startup');
+const { createDefaultRoles, createDefaultPermissions, createDefaultSubscription } = require('./scripts/default_data/startup');
 const env = require('./src/config/env');
 const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
 const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
 const { signup, approveUser } = require('./src/services/authService');
-
 
 
 // Non-TTY (CI, piped stdin): readline would hit EOF immediately and close,
@@ -50,7 +49,7 @@ async function createCompany(transaction, userRole) {
       mobileApp: false,
       desktopWeb: true,
       mobileWeb: false,
-      roleId: userRole.id
+      role_id: userRole.id
     },
     { transaction }
   );
@@ -141,17 +140,16 @@ async function main() {
       logger.info(`No new permissions to add to sadmin role: ${Array.from(existingPermissionNames).join(', ')}`);
     }
 
+    await createDefaultSubscription(company, permissions, transaction);
+
     await transaction.commit();
     transactionCommitted = true;
 
     const user = await createUser(company, null); // No transaction needed after commit
 
-    if (user) {
-      await approveUser(user.id);
-      logger.info(`User ${user.username} approved successfully ${user.id}`);
-    } else {
-      logger.info(`Skipping user creation and approval (user chose not to create a user). user = ${user}`);
-    }
+    // approve user
+    await approveUser(user.id);
+    logger.info(`User ${user.username} approved successfully ${user.id}`);
 
     // Always run createStartingAppData to ensure all default data exists
     // This will skip any data that already exists and only create new data

@@ -5,7 +5,7 @@ import { STORAGE_KEYS } from '@/constants/index';
 import { useDataContext } from '@context/useDataContext';
 
 const useMultiCompanyModule = () => {
-  const { userData } = useDataContext();
+  const { userData, setUserData } = useDataContext();
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -77,7 +77,13 @@ const useMultiCompanyModule = () => {
       if (response?.data?.updatedUser?.company?.name && typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME, response.data.updatedUser.company.name);
       }
-      // Full reload so permissions, subscriptions, and all derived state pick up the new company
+      // Refetch full user data (including role & permissions for the new company)
+      const userResponse = await ApiService.getUser();
+      const user = userResponse?.data ?? null;
+      if (user) {
+        setUserData(user);
+      }
+      await fetchCompanies();
       window.location.reload();
     } catch (e) {
       setError(e?.error || 'Failed to switch company');

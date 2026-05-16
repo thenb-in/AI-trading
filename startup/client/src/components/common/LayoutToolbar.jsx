@@ -13,6 +13,7 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
+import { parseDateValue } from '@utils/dateTimeUtils';
 import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
@@ -20,52 +21,8 @@ import {
   Star as StarIcon,
   StarBorder as StarBorderIcon,
 } from '@mui/icons-material';
-import { getTypeIcon, getTypeColor } from './layoutTypeUtils';
 import { LayoutManager } from './LayoutManager';
-
-const LayoutListSection = ({ layouts: list, label, onLoadLayout, onSetDefault }) => (
-  <>
-    {list.length > 0 && (
-      <Box sx={{ px: 2, py: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {label} ({list.length})
-        </Typography>
-      </Box>
-    )}
-    {list.map((layout) => (
-      <MenuItem key={layout.id} onClick={() => onLoadLayout(layout)} sx={{ px: 2 }}>
-        <ListItemIcon>{getTypeIcon(layout.type)}</ListItemIcon>
-        <ListItemText
-          primary={layout.layout_name}
-          secondary={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip label={layout.type} size="small" color={getTypeColor(layout.type)} variant="outlined" />
-              <Typography variant="caption">
-                {new Date(layout.created_at).toLocaleDateString()}
-              </Typography>
-            </Box>
-          }
-        />
-        <ListItemSecondaryAction>
-          <IconButton edge="end" size="small" onClick={(e) => onSetDefault(e, layout)} sx={{ mr: 1 }}>
-            {layout.is_default ? (
-              <StarIcon color="warning" fontSize="small" />
-            ) : (
-              <StarBorderIcon fontSize="small" />
-            )}
-          </IconButton>
-        </ListItemSecondaryAction>
-      </MenuItem>
-    ))}
-  </>
-);
-
-LayoutListSection.propTypes = {
-  layouts: PropTypes.array.isRequired,
-  label: PropTypes.string.isRequired,
-  onLoadLayout: PropTypes.func.isRequired,
-  onSetDefault: PropTypes.func.isRequired,
-};
+import { getLayoutTypeIcon, getLayoutTypeColor } from './layoutTypeHelpers';
 
 const LayoutToolbar = ({
   documentName,
@@ -142,6 +99,60 @@ const LayoutToolbar = ({
     ...layouts.public.map(layout => ({ ...layout, section: 'public' })),
   ];
 
+  const renderLayoutSection = (label, items) => {
+    if (items.length === 0) return null;
+    return (
+      <>
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {label} ({items.length})
+          </Typography>
+        </Box>
+        {items.map((layout) => (
+          <MenuItem
+            key={layout.id}
+            onClick={() => handleLoadLayout(layout)}
+            sx={{ px: 2 }}
+          >
+            <ListItemIcon>
+              {getLayoutTypeIcon(layout.type)}
+            </ListItemIcon>
+            <ListItemText
+              primary={layout.layout_name}
+              secondary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={layout.type}
+                    size="small"
+                    color={getLayoutTypeColor(layout.type)}
+                    variant="outlined"
+                  />
+                  <Typography variant="caption">
+                    {parseDateValue(layout.created_at)?.toLocaleDateString() ?? ''}
+                  </Typography>
+                </Box>
+              }
+            />
+            <ListItemSecondaryAction>
+              <IconButton
+                edge="end"
+                size="small"
+                onClick={(e) => handleSetDefault(e, layout)}
+                sx={{ mr: 1 }}
+              >
+                {layout.is_default ? (
+                  <StarIcon color="warning" fontSize="small" />
+                ) : (
+                  <StarBorderIcon fontSize="small" />
+                )}
+              </IconButton>
+            </ListItemSecondaryAction>
+          </MenuItem>
+        ))}
+      </>
+    );
+  };
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       {/* Debug info */}
@@ -184,21 +195,9 @@ const LayoutToolbar = ({
             </Box>
             <Divider />
 
-            <LayoutListSection
-              layouts={layouts.private}
-              label="Private"
-              onLoadLayout={handleLoadLayout}
-              onSetDefault={handleSetDefault}
-            />
-
+            {renderLayoutSection('Private', layouts.private)}
             {layouts.private.length > 0 && layouts.public.length > 0 && <Divider />}
-
-            <LayoutListSection
-              layouts={layouts.public}
-              label="Public"
-              onLoadLayout={handleLoadLayout}
-              onSetDefault={handleSetDefault}
-            />
+            {renderLayoutSection('Public', layouts.public)}
 
             <Divider />
             <MenuItem onClick={() => setLayoutManagerOpen(true)} sx={{ px: 2 }}>

@@ -11,9 +11,9 @@ import {
 } from "@mui/material";
 import { MasterCard } from "./master_components/MasterCard";
 import { SearchFilter } from "./master_components/SearchFilter";
-import { getMasterModules, getMasterCategories } from "../data/getMasterModules";
+import { getMasterModules, getMasterCategoriesForUser } from "../data/getMasterModules";
 import { spacing } from "@startup/constants/theme";
-import { useDataContext, hasPermission } from "../context/useDataContext";
+import { useDataContext, hasPermission } from "@context/useDataContext";
 
 
 const MasterContent = () => {
@@ -29,7 +29,7 @@ const MasterContent = () => {
   };
 
   const masterModules = getMasterModules(handleOpenMaster);
-  const categories = getMasterCategories();
+  const categories = getMasterCategoriesForUser(hasPermission, dataContext);
 
   // Sync selectedCategory with URL query param `category` (no param = show All masters)
   useEffect(() => {
@@ -197,7 +197,7 @@ const MasterContent = () => {
                 // Skip permission check if skipPermissionCheck is true
                 const hasMasterPermission = master.skipPermissionCheck || hasPermission(permission, dataContext);
                 if (!hasMasterPermission && !master.skipPermissionCheck) {
-                  console.log(`No permission for ${permission}`, master);
+                  // console.log(`No permission for ${permission}`, master);
                   return null;
                 }
                 return (

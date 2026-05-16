@@ -2,7 +2,7 @@
 // Requires that exports be written at the bottom of the file using export { name }
 // instead of inline exports like export function Component() or export const Component = ...
 
-const bottomExportsOnly = {
+export default {
   'bottom-exports-only': {
     meta: {
       type: 'suggestion',
@@ -30,12 +30,10 @@ const bottomExportsOnly = {
       const filename = context.getFilename();
       const options = context.options[0] || {};
       const excludePatterns = options.excludePatterns || [];
-
       // Check if file matches any exclude pattern
       const isExcluded = excludePatterns.some(pattern => {
         return filename.includes(pattern.replace('**', '').replace('/*', ''));
       });
-
       // Allow inline exports in certain files (config files, entry points, test files)
       const allowedFiles = [
         'eslint.config.js',
@@ -146,13 +144,11 @@ const bottomExportsOnly = {
             },
             fix(fixer) {
               const fixes = [];
-
               // Remove the export keyword from ALL inline exports
               inlineExports.forEach(({ node: exportNode }) => {
                 const exportKeyword = 'export ';
                 const declarationStart = exportNode.declaration.range[0];
                 const exportKeywordStart = declarationStart - exportKeyword.length;
-
                 // Remove export keyword from this declaration
                 fixes.push(
                   fixer.removeRange([exportKeywordStart, declarationStart])
@@ -162,7 +158,6 @@ const bottomExportsOnly = {
               // Add export statement at the bottom if not already present
               if (!hasBottomExports) {
                 const lastStatement = programNode.body[programNode.body.length - 1];
-
                 // Add newline and export statement with all names
                 const exportStatement = `\n\nexport { ${names.join(', ')} };`;
                 fixes.push(
@@ -177,7 +172,6 @@ const bottomExportsOnly = {
                     break;
                   }
                 }
-
                 if (lastExportNode) {
                   // Check if our names are already in the export
                   const existingNames = lastExportNode.specifiers.map(spec => spec.exported.name);
@@ -216,5 +210,3 @@ const bottomExportsOnly = {
     }
   }
 };
-
-export { bottomExportsOnly };

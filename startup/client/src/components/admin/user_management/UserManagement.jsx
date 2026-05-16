@@ -97,13 +97,18 @@ function UserManagement() {
     setShowQRModal(true);
   };
 
+  const signupUrl = companyId ? `${window.location.origin}/signup?company_id=${companyId}` : '';
+  const canCopy = typeof window !== 'undefined' && window.isSecureContext;
+  const signupLinkDisplay = companyId
+    ? (canCopy ? `/signup?company_id=${companyId}` : signupUrl)
+    : 'Sign-up link unavailable';
+
   const handleCopySignupLink = async () => {
     try {
       if (!companyId) {
         toast.error('Company ID not found. Please try again.');
         return;
       }
-      const signupUrl = `${window.location.origin}/signup?company_id=${companyId}`;
       await navigator.clipboard.writeText(signupUrl);
       toast.success('Sign-up link copied to clipboard!');
     } catch {
@@ -164,7 +169,6 @@ function UserManagement() {
 
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
 
-    <div className="flex flex-col sm:flex-row sm:ml-auto gap-2 w-full sm:w-auto">
     <div className="relative w-full sm:w-[20rem] md:w-[24rem]">
       <SearchTypeField
         icon={<Search className="w-4 h-4 text-gray-400" />}
@@ -174,14 +178,20 @@ function UserManagement() {
         className="w-full"
       />
     </div>
-    <div className="w-full sm:w-auto flex gap-2">
+
+    <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
       <button
-        onClick={handleCopySignupLink}
-        className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs sm:text-base"
-        title="Copy sign-up link for current company"
+        onClick={canCopy ? handleCopySignupLink : undefined}
+        disabled={!canCopy}
+        data-testid="copy-signup-link"
+        data-signup-url={signupUrl}
+        className={`flex items-center justify-center max-w-full px-2 py-1 sm:px-3 sm:py-2 bg-green-50 border border-green-300 text-green-700 rounded-md text-xs sm:text-sm font-mono ${
+          canCopy ? 'hover:bg-green-100 transition-colors cursor-pointer' : 'cursor-default select-text'
+        }`}
+        title={canCopy ? 'Copy sign-up link for current company' : 'Sign-up link'}
       >
-        <LinkIcon size={16} className="mr-1" />
-        Copy Sign-up Link
+        <LinkIcon size={16} className="mr-1 flex-shrink-0" />
+        <span className="truncate">{signupLinkDisplay}</span>
       </button>
       <button
         onClick={handleShowQRCode}
@@ -208,7 +218,6 @@ function UserManagement() {
         {bulkDeleteMode ? 'Exit Bulk Delete' : 'Bulk Delete'}
       </button>
     </div>
-  </div>
 
 </div>
 
@@ -298,6 +307,8 @@ function UserManagement() {
           content={companyId}
           heading="Join Company via QR Code"
           message="Scan this QR code to complete your onboarding and join the company."
+          showCopyableValue
+          valueLabel="Company ID"
           onDownload={() => setShowQRModal(false)}
         />
       </MasterModal>

@@ -2,49 +2,18 @@
 
 const fs = require('fs');
 const path = require('path');
-const process = require('process');
 const Sequelize = require('sequelize');
 const logger = require('../../logger');
-const config = require('../config/config');
-const env = require('../config/env');
+const { createSequelize } = require('../utils/createSequelize');
 
 // Normalize __filename so the self-exclusion filter below works in both source
 // mode (__filename = "index.js") and bytenode-compiled mode (__filename =
 // "index.jsc"). Without this, the bundled server re-requires its own stub and
 // ends up calling `{}` as a factory.
 const basename = path.basename(__filename, path.extname(__filename)) + '.js';
-const nodeEnv = env.NODE_ENV;
-const dbConfig = config[nodeEnv];
 
 const db = {};
-
-let sequelize;
-const default_config = {
-  logging: (msg) => {
-    // Enable SQL logging to debug foreign key constraint issues
-    logger.silly(`[Sequelize SQL] ${msg}`);
-  },
-  define: {
-    underscored: true // Use snake_case for automatically added attributes
-  }
-};
-
-if (dbConfig.use_env_variable) {
-  sequelize = new Sequelize(process.env[dbConfig.use_env_variable], {
-    dialect: dbConfig.dialect,
-    ...default_config
-  });
-} else {
-  sequelize = new Sequelize(
-    dbConfig.database,
-    dbConfig.username,
-    dbConfig.password,
-    {
-      ...dbConfig,
-      ...default_config
-    }
-  );
-}
+const sequelize = createSequelize();
 
 
 // load all directories from the models directory
@@ -64,15 +33,7 @@ const directories = fs.readdirSync(__dirname)
 
 
 
-
 // Helper function to load models from a directory
-/**
- * Loads all Sequelize model definition files from a directory, initializes them
- * with the sequelize instance, and adds them to the db object.
- * @param {string} dirPath - Absolute path to the directory containing model files
- * @param {string} dirName - Directory name (used for debug logging)
- * @side_effects Populates the db object with model instances keyed by model name
- */
 const loadModelsFromDirectory = (dirPath, dirName) => {
   fs.readdirSync(dirPath)
     .filter(
@@ -84,7 +45,6 @@ const loadModelsFromDirectory = (dirPath, dirName) => {
     )
     .forEach(file => {
       logger.debug(`Loading ${dirName} model: ${file}`);
-      // eslint-disable-next-line global-require
       const model = require(path.join(dirPath, file))(
         sequelize,
         Sequelize.DataTypes
@@ -110,7 +70,6 @@ fs.readdirSync(__dirname)
   )
   .forEach(file => {
     logger.debug(`Loading app model: ${file}`);
-    // eslint-disable-next-line global-require
     const model = require(path.join(__dirname, file))(
       sequelize,
       Sequelize.DataTypes

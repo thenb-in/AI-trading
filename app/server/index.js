@@ -1,23 +1,78 @@
-// App-side server boot. Wires the framework's buildApp() with this app's
-// own routes, then calls startServer().
-//
-// Add app-specific routes/middleware here. The framework (auth, users,
-// admin, layouts, etc.) is composed by buildApp() under /api/v1/*.
+require('module-alias/register');
+// Let code under @startup resolve npm libs from app/server/node_modules. Most
+// runtime deps (body-parser, cookie-parser, cors, express, …) live here, not
+// in startup/server, so without this, requires from startup-loaded files like
+// startup/server/buildApp.js fail with MODULE_NOT_FOUND.
+require('module-alias').addPath(require('path').join(__dirname, 'node_modules'));
 
-const { buildApp } = require('../../startup/server/buildApp');
+// App-side server boot. Wires the framework's buildApp() with this app's
+// own routes, middleware, schedulers and shutdown hooks.
+//
+// The framework (auth, users, admin, layouts, activity, nbnext-drive,
+// help-support) is composed by buildApp() under /api/v1/*. Everything
+// SalaryMitra-specific (HR, payroll, attendance, ADMS biometric, field sales,
+// reports) is wired here.
+
+const path = require('path');
+const logger = require('@startup/logger');
+const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
+const appRoutes = require('./src/routes/app_routes');
+const companyRoutes = require('./src/routes/companyRoutes');
 
 const { startServer } = buildApp({
+  // 5MB body limit — header/footer image uploads, base64 face photos.
+  bodyParserLimit: '5mb',
+
+
+
+  // App-owned routes that depend on app-specific things (biometric, hr/employee
+  // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
+  // namespace.
   extraRoutes: [
-    // Example:
-    // { prefix: '/api/v1/payroll', router: require('./src/routes/payrollRoutes') }
+    { prefix: '/api/v1/company', router: companyRoutes }
   ],
-  mountAppRoutes: (_app, _prefix) => {
-    // Register app-only routes here, e.g.
-    // _app.get(`${_prefix}/ping`, (req, res) => res.send('pong'));
+
+  // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
+  // formulas, gatepass, reports, masters, etc.). See src/routes/app_routes.js.
+  mountAppRoutes: (app, prefix) => {
+    appRoutes(app, prefix);
   },
-  // Framework starts/stops the registry around server.listen + SIGTERM.
-  registerSchedulerJobs: registerAllJobs
+
+  // Static files — more specific paths first so they win over /uploads
+  // (which is mounted by the framework). path is absolute to this server.
+
+  additionalStaticDirs: [
+    // { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
+    // { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
+  ],
+
+  // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
+  // client bundle from this Express server. Path defaults to ../client (the
+  // deployed layout where app/client/ holds the built bundle); override via
+  // CLIENT_STATIC_DIR for local testing (e.g. CLIENT_STATIC_DIR=../client/dist).
+  // /iclock is app-owned ADMS — keep it strictly server-handled.
+  clientStaticDir: path.resolve(
+    process.cwd(),
+    process.env.CLIENT_STATIC_DIR || '../client'
+  ),
+
+
+  registerSchedulerJobs: registerAllJobs,
+
+  // Initialise heavy app-level resources once the HTTP server is up.
+  onAfterListen: () => {
+
+  },
+
+  // Drain app-level resources before the framework stops schedulers.
+  onBeforeShutdown: async () => {
+
+    try {
+    } catch (err) {
+      logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
+    }
+  }
 });
 
 startServer();

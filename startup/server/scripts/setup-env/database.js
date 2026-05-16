@@ -1,23 +1,6 @@
-const path = require('path');
 const { Client } = require('pg');
 const logger = require('../../logger');
 const { createPrompt, askQuestion } = require('./utils');
-
-function getDefaultDbName() {
-  try {
-    const projectRoot = path.resolve(process.cwd(), '..');
-    const folderName = path.basename(projectRoot);
-    const dbName = folderName.trim().replace(/\s+/g, '_');
-    if (!dbName) {
-      logger.warn('Could not derive default DB name from folder; falling back to nbnext_db');
-      return 'nbnext_db';
-    }
-    return dbName;
-  } catch (error) {
-    logger.warn(`Error deriving default DB name from folder: ${error.message}`);
-    return 'nbnext_db';
-  }
-}
 
 async function testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName = 'postgres') {
   const client = new Client({
@@ -58,7 +41,7 @@ async function checkDatabaseExists(dbHost, dbPort, dbUser, dbPassword, dbName) {
     if (client) {
       try {
         await client.end();
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     }
@@ -86,7 +69,7 @@ async function createDatabase(dbHost, dbPort, dbUser, dbPassword, dbName) {
     if (client) {
       try {
         await client.end();
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     }
@@ -95,17 +78,21 @@ async function createDatabase(dbHost, dbPort, dbUser, dbPassword, dbName) {
 }
 
 async function validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbName) {
-  // Step 1: Test connection to the user-supplied database first (user may only have access to this DB)
-  logger.info('🔌 Testing database connection...');
-  const targetDbTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
+  // Step 1: Test connection to PostgreSQL server (connect to default 'postgres' database)
+  logger.info(`🔌 Testing database connection...`);
+  const connectionTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, 'postgres');
 
-  if (targetDbTest.success) {
-    logger.info(`✅ Connection to database '${dbName}' successful!`);
-    return { success: true, error: null };
+  if (!connectionTest.success) {
+    return {
+      success: false,
+      error: `Failed to connect to PostgreSQL server: ${connectionTest.error}`
+    };
   }
 
-  // Step 2: Target DB connection failed - try connecting to 'postgres' to check/create target database
-  logger.info(`🔌 Could not connect to '${dbName}'. Checking if database exists (connecting to postgres)...`);
+  logger.info(`✅ Database connection successful!`);
+
+  // Step 2: Check if target database exists
+  logger.info(`🔍 Checking if database '${dbName}' exists...`);
   try {
     const dbExists = await checkDatabaseExists(dbHost, dbPort, dbUser, dbPassword, dbName);
 
@@ -116,7 +103,7 @@ async function validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbNa
       if (!createResult.success) {
         return {
           success: false,
-          error: `Failed to create database: ${createResult.error}. Also could not connect to existing database: ${targetDbTest.error}`
+          error: `Failed to create database: ${createResult.error}`
         };
       }
 
@@ -125,36 +112,37 @@ async function validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbNa
       logger.info(`✅ Database '${dbName}' already exists.`);
     }
 
-    // Step 3: Test connection to the target database again
+    // Step 3: Test connection to the target database
     logger.info(`🔌 Testing connection to database '${dbName}'...`);
-    const retryTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
+    const targetDbTest = await testDatabaseConnection(dbHost, dbPort, dbUser, dbPassword, dbName);
 
-    if (!retryTest.success) {
+    if (!targetDbTest.success) {
       return {
         success: false,
-        error: `Failed to connect to database '${dbName}': ${retryTest.error}`
+        error: `Failed to connect to target database '${dbName}': ${targetDbTest.error}`
       };
     }
 
     logger.info(`✅ Connection to database '${dbName}' successful!`);
+
     return { success: true, error: null };
   } catch (error) {
     return {
       success: false,
-      error: `Failed to connect to database '${dbName}': ${targetDbTest.error}. If your user only has access to this database, ensure it exists and credentials are correct.`
+      error: `Database validation error: ${error.message}`
     };
   }
 }
 
 async function configureDatabase() {
-  logger.info('🗄️  Database Configuration');
-  logger.info('Let\'s set up your database connection...');
+  logger.info(`🗄️  Database Configuration`);
+  logger.info(`Let's set up your database connection...`);
 
   // Check if we're in CI environment - use environment variables instead of prompts
   const isCI = process.env.CI === 'true' || process.env.CI === true;
-  
+
   if (isCI) {
-    logger.info('🔧 CI environment detected, using environment variables...');
+    logger.info(`🔧 CI environment detected, using environment variables...`);
     const dbHost = process.env.DB_HOST || 'localhost';
     const dbPort = process.env.DB_PORT || '5432';
     const dbName = process.env.DB_NAME || 'test_db';
@@ -170,7 +158,7 @@ async function configureDatabase() {
       const encodedDbName = encodeURIComponent(dbName);
       const databaseUrl = `postgresql://${encodedUser}:${encodedPassword}@${dbHost}:${dbPort}/${encodedDbName}`;
 
-      logger.info('✅ Database configuration completed!');
+      logger.info(`✅ Database configuration completed!`);
       logger.info(`📊 Connection string: ${dbHost}:${dbPort}/${dbName}`);
 
       return { databaseUrl, dbHost, dbPort, dbName, dbUser, dbPassword };
@@ -181,14 +169,6 @@ async function configureDatabase() {
   }
 
   let prompt = null;
-  const defaultDbName = getDefaultDbName();
-  let lastEntered = {
-    dbHost: 'localhost',
-    dbPort: '5432',
-    dbName: defaultDbName,
-    dbUser: 'postgres',
-    dbPassword: ''
-  };
 
   while (true) {
     try {
@@ -197,20 +177,20 @@ async function configureDatabase() {
         prompt = createPrompt();
       }
 
-      // Database host (use last entered as default on retry)
-      const dbHost = await askQuestion(prompt, 'Database host', lastEntered.dbHost);
+      // Database host
+      const dbHost = await askQuestion(prompt, 'Database host', 'localhost');
 
       // Database port
-      const dbPort = await askQuestion(prompt, 'Database port', lastEntered.dbPort);
+      const dbPort = await askQuestion(prompt, 'Database port', '5432');
 
       // Database name
-      const dbName = await askQuestion(prompt, 'Database name', lastEntered.dbName);
+      const dbName = await askQuestion(prompt, 'Database name', 'nbnext_db');
 
       // Database username
-      const dbUser = await askQuestion(prompt, 'Database username', lastEntered.dbUser);
+      const dbUser = await askQuestion(prompt, 'Database username', 'postgres');
 
       // Database password
-      const dbPassword = await askQuestion(prompt, 'Database password', lastEntered.dbPassword);
+      const dbPassword = await askQuestion(prompt, 'Database password', '');
 
       // Validate and setup database (test connection, check existence, create if needed)
       const validation = await validateAndSetupDatabase(dbHost, dbPort, dbUser, dbPassword, dbName);
@@ -225,16 +205,15 @@ async function configureDatabase() {
         const encodedDbName = encodeURIComponent(dbName);
         const databaseUrl = `postgresql://${encodedUser}:${encodedPassword}@${dbHost}:${dbPort}/${encodedDbName}`;
 
-        logger.info('✅ Database configuration completed!');
+        logger.info(`✅ Database configuration completed!`);
         logger.info(`📊 Connection string: ${dbHost}:${dbPort}/${dbName}`);
 
         return { databaseUrl, dbHost, dbPort, dbName, dbUser, dbPassword };
       } else {
-        // Show error and ask user to retry; use current values as defaults next time
-        lastEntered = { dbHost, dbPort, dbName, dbUser, dbPassword };
+        // Show error and ask user to retry
         logger.error(`❌ ${validation.error}`);
-        logger.warn('⚠️  Please check your database credentials and try again.');
-        logger.info('');
+        logger.warn(`⚠️  Please check your database credentials and try again.`);
+        logger.info(``);
 
         // Continue the loop to ask again
         continue;
@@ -243,8 +222,7 @@ async function configureDatabase() {
       if (prompt) {
         prompt.close();
       }
-      logger.error('❌ Error during database configuration:');
-      logger.error(error.message);
+      logger.error(`❌ Error during database configuration: ${error.message}`, error);
       return null;
     }
   }

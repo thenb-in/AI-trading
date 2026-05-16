@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
+import { parseDateValue } from '@utils/dateTimeUtils';
 import { UserTableRow } from './UserTableRow';
 
 const UserTable = ({
@@ -24,7 +25,7 @@ const UserTable = ({
 
   const formatLastActive = useCallback((dateString) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
+    const date = parseDateValue(dateString);
     const options = {
       day: '2-digit',
       month: 'short',

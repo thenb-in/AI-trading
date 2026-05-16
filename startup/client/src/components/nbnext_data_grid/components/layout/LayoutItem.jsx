@@ -3,7 +3,6 @@
  */
 
 import PropTypes from "prop-types";
-import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { parseDateValue } from "@utils/dateTimeUtils";
 
 function LayoutItem({
@@ -32,8 +31,8 @@ function LayoutItem({
         className="flex items-center cursor-pointer text-xs gap-1"
         title={layout.is_default ? "Unset as default" : "Set as default"}
       >
-        <CheckboxTypeField
-          mode="bare"
+        <input
+          type="checkbox"
           checked={layout.is_default || false}
           onChange={(e) => onSetDefault(layout, e.target.checked)}
           className="cursor-pointer"

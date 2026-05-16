@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 import { X, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useEscapeKey } from '../../hooks/useEscapeKey';
-import { useImageZoom } from '../../hooks/useImageZoom';
-import { getFileType } from '../../utils/file_management/fileTypeUtils';
-import { loadFile } from '../../utils/file_management/fileLoader';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useImageZoom } from '@/hooks/useImageZoom';
+import { getFileType } from '@utils/file_management/fileTypeUtils';
+import { loadFile } from '@utils/file_management/fileLoader';
 import {
   ImageViewer,
   PdfViewer,
@@ -18,6 +18,7 @@ import {
  * Displays files in a modal with appropriate viewer based on file type
  */
 const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File', onLoadError }) => {
+
   const [blobUrl, setBlobUrl] = useState('');
   const [effectiveMime, setEffectiveMime] = useState(mimeType || '');
   const [loadError, setLoadError] = useState(null);

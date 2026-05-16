@@ -9,19 +9,21 @@ import { appRoutes } from "./AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
 import { DashboardContent } from "./Dashboards";
+import { Navigator } from "./navigator/Navigator";
+import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
-import { Navigator } from "./navigator/Navigator";
 import { AppGuide } from "./AppGuide";
-import { HelpSupportPage } from "@/components/admin/help_support/HelpSupportPage";
-import {SubscriptionPage} from '@/components/admin/subscription_module/SubscriptionPage';
+import { appRoutesWithoutSidebar } from "./AppDashboardWithoutSidebar";
+import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
 
 const AdminDashboard = () => {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
         {/* Base startup routes */}
-         <Route index element={<Navigator />} />
+        {/* TODO: Show first route based on user permission */}
+        <Route index element={<Navigator />} />
         <Route path="navigator" element={<Navigator />} />
         <Route path="dashboards" element={<DashboardContent />} />
         <Route path="dashboard/*" element={<DashboardContent />} />
@@ -29,6 +31,7 @@ const AdminDashboard = () => {
         <Route path="report/*" element={<ReportContent />} />
 
         <Route path="masters" element={<MasterContent />} />
+        <Route path="master/users" element={<UserManagement />} />
         <Route path="master/*" element={<MasterContent />} />
         <Route path="master/activity" element={<ActivityMaster />} />
         <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
@@ -45,7 +48,11 @@ const AdminDashboard = () => {
         {appRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
         ))}
+        {/* Add APP extra routes without sidebar */}
       </Route>
+      {appRoutesWithoutSidebar.map((route) => (
+        <Route key={route.path} path={route.path} element={route.element} />
+      ))}
     </Routes>
   );
 };

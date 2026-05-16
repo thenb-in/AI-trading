@@ -2,6 +2,7 @@
 
 import { convertCellToText } from '../ReportUtils.js';
 import { getColumnForFormatting, toValidNumber } from '../../nbnext_data_grid/utils/helpers.js';
+import { parseDateValue, convertToISOString } from '@utils/dateTimeUtils';
 
 /**
  * Format cell value based on column type (legacy path — prefer getExportDisplayString for new code)
@@ -13,8 +14,8 @@ const formatCellValue = (value, columnType) => {
         return value ? 'Yes' : 'No';
 
       case 'date': {
-        const date = new Date(value);
-        if (!isNaN(date)) {
+        const date = parseDateValue(value);
+        if (date) {
           return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -25,8 +26,8 @@ const formatCellValue = (value, columnType) => {
       }
 
       case 'datetime': {
-        const dateTime = new Date(value);
-        if (!isNaN(dateTime)) {
+        const dateTime = parseDateValue(value);
+        if (dateTime) {
           return dateTime.toLocaleString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -40,8 +41,8 @@ const formatCellValue = (value, columnType) => {
       }
 
       case 'time': {
-        const time = new Date(value);
-        if (!isNaN(time)) {
+        const time = parseDateValue(value);
+        if (time) {
           return time.toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit',
@@ -278,7 +279,7 @@ const getCurrentDateTime = () => {
  * Generate filename for export
  */
 const generateFileName = (report) => {
-  const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+  const timestamp = convertToISOString(new Date()).slice(0, 19).replace(/:/g, '-');
   const reportName = report.slug?.replace(/[^a-zA-Z0-9]/g, '_') || 'report';
   return `${reportName}_export_${timestamp}.xlsx`;
 };

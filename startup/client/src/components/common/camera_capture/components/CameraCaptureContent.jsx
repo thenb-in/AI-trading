@@ -6,7 +6,6 @@ import { useCameraStream } from '../hooks/useCameraStream';
 import { useVideoRecording } from '../hooks/useVideoRecording';
 import { useMediaCapture } from '../hooks/useMediaCapture';
 import { useStreamCleanup } from '../hooks/useStreamCleanup';
-// import { useFaceDetection } from '../hooks/useFaceDetection';
 import { useVideoElementHandlers } from '../hooks/useVideoElementHandlers';
 import { getCameraStatusMessage } from '../utils/cameraUtils';
 import { ERROR_MESSAGES, POLLING_CONFIG } from '../constants/cameraConstants';
@@ -17,11 +16,13 @@ import { CameraView } from './CameraView';
 import { CapturedMediaPreview } from './CapturedMediaPreview';
 import { NoCameraState } from './NoCameraState';
 
-
 /**
- * Core camera capture UI and logic without a modal.
- * Use variant="modal" when wrapping in a modal (shows preview + footer).
- * Use variant="inline" for inline usage (e.g. QuickCheckIn) - no preview/footer, just onCapture.
+ * Generic camera capture UI without face-detection awareness. Apps that need
+ * face detection (or any other capture-time validation) compose this with
+ * their own logic — see app/components/common/camera_capture for an example.
+ *
+ * variant="modal"  → preview + footer when wrapped in a modal
+ * variant="inline" → no preview/footer, just onCapture (e.g. QuickCheckIn)
  */
 const CameraCaptureContentBase = (
   props,
@@ -31,11 +32,23 @@ const CameraCaptureContentBase = (
     onCapture,
     onClose,
     mode = 'photo',
-    enableFaceDetection = false,
     isActive = true,
     variant = 'modal',
     layout = 'centered', // 'centered' for modals, 'full' for wide layouts like QuickCheckIn
     showCaptureButton = true,
+    /**
+     * Optional pre-capture validator. Receives `{ videoRef, canvasRef, stream }` and returns a
+     * truthy value (or resolves to one) when capture should proceed. Anything falsy aborts the
+     * capture without calling onCapture / setting an error — the validator is expected to surface
+     * its own UI hint via `preCaptureOverlay`. Used by the face-detection variant.
+     */
+    captureValidator,
+    /** Render-prop for an overlay drawn inside `<CameraView>` (e.g. face rectangles). */
+    cameraOverlay,
+    /** Extra UI drawn over the camera preview (e.g. face guidance message). */
+    preCaptureOverlay,
+    /** Called from `handleClose` / `handleRetake` so callers can clear validator-related state. */
+    onResetExtras,
   } = props;
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -95,35 +108,14 @@ const CameraCaptureContentBase = (
     cleanupCapturedMedia
   } = useMediaCapture(stream, isVideoReady, variant === 'inline' ? handleVideoCapture : onCapture, mode);
 
-  // const {
-  //   faceGuidance,
-  //   faceGuidanceTone,
-  //   faceRects,
-  //   runCaptureValidation,
-  //   resetFaceGuidance,
-  // } = useFaceDetection({
-  //   enabled: enableFaceDetection && mode === 'photo',
-  //   videoRef,
-  //   canvasRef,
-  //   stream,
-  //   isVideoReady,
-  //   capturedMedia,
-  // });
-
   const handleCapturePhoto = useCallback(async () => {
-    if (mode !== 'photo' || !enableFaceDetection) {
-      const result = await capturePhoto(videoRef, canvasRef);
-      if (result?.error) setError(result.error);
-      return;
-    }
-
-    if (!videoRef.current || !canvasRef.current) {
-      setError('Camera not ready');
-      return;
+    if (captureValidator) {
+      const ok = await captureValidator({ videoRef, canvasRef, stream });
+      if (!ok) return;
     }
     const result = await capturePhoto(videoRef, canvasRef);
     if (result?.error) setError(result.error);
-  }, [capturePhoto, setError, mode, enableFaceDetection]);
+  }, [capturePhoto, setError, captureValidator, stream]);
 
   const {
     handleVideoLoadedMetadata,
@@ -157,18 +149,20 @@ const CameraCaptureContentBase = (
     stopAllStreams();
     cleanupRecording();
     cleanupCapturedMedia();
+    if (onResetExtras) onResetExtras();
     setError(null);
     setIsVideoReady(false);
     setIsCameraDetectionComplete(false);
     if (onClose) onClose();
-  }, [stopAllStreams, cleanupRecording, cleanupCapturedMedia, onClose, setError]);
+  }, [stopAllStreams, cleanupRecording, cleanupCapturedMedia, onClose, setError, onResetExtras]);
 
   const handleRetake = useCallback(() => {
     retakeMedia();
     setError(null);
     setIsVideoReady(false);
+    if (onResetExtras) onResetExtras();
     if (currentFacingMode) startCamera(currentFacingMode);
-  }, [retakeMedia, currentFacingMode, startCamera, setError]);
+  }, [retakeMedia, currentFacingMode, startCamera, setError, onResetExtras]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -178,6 +172,7 @@ const CameraCaptureContentBase = (
   useEffect(() => {
     if (!isActive) {
       stopAllStreams();
+      if (onResetExtras) onResetExtras();
       cleanupCapturedMedia();
       setIsCameraDetectionComplete(false);
       return;
@@ -315,9 +310,9 @@ const CameraCaptureContentBase = (
             onCapturePhoto={handleCapturePhoto}
             onStartRecording={handleStartRecording}
             onStopRecording={handleStopRecording}
-            enableFaceDetection={enableFaceDetection}
             showCaptureButton={showCaptureButton}
             containerClassName={props.cameraContainerClassName}
+            overlay={cameraOverlay}
           />
         )}
 
@@ -329,6 +324,7 @@ const CameraCaptureContentBase = (
           <CapturedMediaPreview capturedMedia={capturedMedia} mode={mode} />
         )}
 
+        {!capturedMedia && preCaptureOverlay}
       </div>
 
       {showPreviewAndFooter && capturedMedia && (
@@ -360,12 +356,15 @@ CameraCaptureContentBase.propTypes = {
   onCapture: PropTypes.func.isRequired,
   onClose: PropTypes.func,
   mode: PropTypes.oneOf(['photo', 'video']),
-  enableFaceDetection: PropTypes.bool,
   isActive: PropTypes.bool,
   variant: PropTypes.oneOf(['modal', 'inline']),
   layout: PropTypes.oneOf(['centered', 'full']),
   showCaptureButton: PropTypes.bool,
   cameraContainerClassName: PropTypes.string,
+  captureValidator: PropTypes.func,
+  cameraOverlay: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  preCaptureOverlay: PropTypes.node,
+  onResetExtras: PropTypes.func,
 };
 
 CameraCaptureContent.propTypes = CameraCaptureContentBase.propTypes;

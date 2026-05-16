@@ -2,7 +2,7 @@ import { Headset } from "lucide-react";
 import PropTypes from "prop-types";
 import { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "../context/useDataContext";
+import { useDataContext, hasPermission } from "@context/useDataContext";
 import { openHelpSupportNav } from "../utils/openHelpSupportNav";
 import { ROUTE_HELP_SUPPORT } from "../constants/routes";
 

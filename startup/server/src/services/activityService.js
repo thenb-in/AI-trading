@@ -1,73 +1,69 @@
 // services/startup/activityService.js
 const { pushActivityToExternalServer } = require('../../interfaces/wallet/activityInterface');
 const logger = require('../../logger');
-const { createdByUserInclude } = require('../constants/query_includes');
 const { Activity, User } = require('../models');
 
-const ACTIVITY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
-const ACTIVITY_INCLUDE = [createdByUserInclude(User)];
+const ACTIVITY_SUMMARY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
+
+const ACTIVITY_INCLUDE_CREATED_BY_USER = {
+  model: User,
+  as: 'createdByUser',
+  required: false,
+  attributes: ['id', 'name']
+};
 
 /**
- * Shared query helper for fetching activities with pagination, ordering, and user includes.
- * @param {Object} where - Sequelize where clause
- * @param {number|string} limit - Maximum number of records to return
- * @param {number|string} offset - Number of records to skip
- * @returns {Promise<Array<Object>>} Array of Activity model instances
+ * Fetch activities matching `extraWhere` (plus `companyId` scope when supplied), newest first,
+ * paginated by `limit`/`offset`. Used by every `getActivities*` variant — they differ only in
+ * the where clause and the error context they want to log on failure.
  */
-async function queryActivities(where, limit,offset) {
-  return Activity.findAll({
-    where,
-    limit: parseInt(limit, 10),
-    offset: parseInt(offset, 10),
-    order: [['timestamp', 'DESC']],
-    attributes: ACTIVITY_ATTRIBUTES,
-    include: ACTIVITY_INCLUDE
-  });
+async function fetchActivities({ extraWhere = {}, limit = 100, offset = 0, companyId = null, errorContext, errorMessagePrefix }) {
+  try {
+    const where = { ...extraWhere };
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    return await Activity.findAll({
+      where,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10) || 0,
+      order: [['timestamp', 'DESC']],
+      attributes: ACTIVITY_SUMMARY_ATTRIBUTES,
+      include: [ACTIVITY_INCLUDE_CREATED_BY_USER]
+    });
+  } catch (error) {
+    logger.error(errorContext, error);
+    throw new Error(`${errorMessagePrefix}: ${error.message}`);
+  }
 }
 
 const activityService = {
-  async getAllActivities(limit = 100,offset = 0, companyId = null) {
-    try {
-      const where = {};
-      if (companyId) {
-        where.companyId = companyId;
-      }
-      const activities = await queryActivities(where, limit,offset);
-      return activities;
-    } catch (error) {
-      logger.error('Error fetching all activities', error);
-      throw new Error(`Failed to fetch activities: ${error.message}`);
-    }
+  async getAllActivities(limit = 100, offset = 0, companyId = null) {
+    return fetchActivities({
+      limit, offset, companyId,
+      errorContext: 'Error fetching all activities',
+      errorMessagePrefix: 'Failed to fetch activities'
+    });
   },
 
-  async getActivitiesByHead(head, limit = 100,offset = 0, companyId = null) {
-    try {
-      const where = { head };
-      if (companyId) {
-        where.companyId = companyId;
-      }
-      const activities = await queryActivities(where, limit,offset);
-      return activities;
-    } catch (error) {
-      logger.error(`Error fetching activities by head: ${head}`, error);
-      throw new Error(`Failed to fetch activities by head: ${error.message}`);
-    }
+  async getActivitiesByHead(head, limit = 100, offset = 0, companyId = null) {
+    return fetchActivities({
+      extraWhere: { head },
+      limit, offset, companyId,
+      errorContext: `Error fetching activities by head: ${head}`,
+      errorMessagePrefix: 'Failed to fetch activities by head'
+    });
   },
 
   async getActivitiesByHeadAndObjectId(head, objectId, limit = 100, offset = 0, companyId = null) {
-    try {
-      const where = { head, objectId: String(objectId) };
-      if (companyId) {
-        where.companyId = companyId;
-      }
-      const activities = await queryActivities(where, limit,offset);
-
-      return activities;
-    } catch (error) {
-      logger.error(`Error fetching activities by head/objectId: head=${head} objectId=${objectId}`, error);
-      throw new Error(`Failed to fetch activities: ${error.message}`);
-    }
+    return fetchActivities({
+      extraWhere: { head, objectId: String(objectId) },
+      limit, offset, companyId,
+      errorContext: `Error fetching activities by head/objectId: head=${head} objectId=${objectId}`,
+      errorMessagePrefix: 'Failed to fetch activities'
+    });
   },
+
   async createActivity(head, log, objectName = null, objectId = null, createdBy = null, companyId = null, type = null, transaction = null) {
     try {
       const options = transaction ? { transaction } : {};

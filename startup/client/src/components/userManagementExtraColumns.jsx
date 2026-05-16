@@ -1,10 +1,14 @@
-const getUserManagementExtraColumns = () => {
-//   return [
-//     {
-//       header: 'Name',
-//       accessorKey: 'name',
-//     },
-//   ];
-};
+// import DataAccessCell from './data_acess/DataAccessCell';
+
+const getUserManagementExtraColumns = () => ([
+  // {
+  //   key: 'dataAccess',
+  //   header: 'Data Access',
+  //   render: (user) => <DataAccessCell user={user} />
+  // }
+
+]);
 
 export { getUserManagementExtraColumns };
+
+

@@ -44,11 +44,17 @@ async function getFileById(req, res) {
 async function getFilesByObject(req, res) {
   try {
     const companyId = req.user?.company_id || null;
-    const { objectName, objectId } = req.query;
+    const { objectName, objectId, startDate, endDate } = req.query;
     if (!objectName || objectId === undefined || objectId === null || objectId === '') {
       return res.status(400).json({ error: `objectName and objectId query parameters are required get objectName: ${objectName} , objectId: ${objectId}` });
     }
-    const result = await nbnextDriveController.getFilesByObject(companyId, objectName, String(objectId));
+    const result = await nbnextDriveController.getFilesByObject(
+      companyId,
+      objectName,
+      String(objectId),
+      startDate || null,
+      endDate || null
+    );
     res.status(200).json(result);
   } catch (error) {
     logger.error('Get files by object error', error);
@@ -62,7 +68,7 @@ async function createFile(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { objectName, objectId } = req.body;
+    const { objectName, objectId, endDate } = req.body;
     const createdBy = req.user?.id || null;
     const companyId = req.user?.company_id || null;
 
@@ -72,7 +78,8 @@ async function createFile(req, res) {
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       objectName: objectName || null,
-      objectId: objectId || null
+      objectId: objectId || null,
+      endDate: endDate || null
     };
 
     const file = await nbnextDriveController.createFile(fileData, createdBy, companyId);
