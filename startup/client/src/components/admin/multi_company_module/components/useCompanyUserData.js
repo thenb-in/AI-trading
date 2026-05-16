@@ -6,7 +6,6 @@ import { toast } from 'react-toastify';
 const useCompanyUserData = (isOpen, initialCompany) => {
   const [data, setData] = useState({
     users: [],
-    companies: [],
     companyUsers: [],
     loading: false
   });
@@ -22,15 +21,13 @@ const useCompanyUserData = (isOpen, initialCompany) => {
     setData(prev => ({ ...prev, loading: true }));
 
     try {
-      const [usersRes, companiesRes, companyUsersRes] = await Promise.all([
+      const [usersRes, companyUsersRes] = await Promise.all([
         ApiService.getSupportUsers(),
-        ApiService.getUserCompanies(),
         initialCompany?.id ? ApiService.getCompanyUsers(initialCompany.id) : Promise.resolve({ data: [] })
       ]);
 
       setData({
         users: normalizeResponse(usersRes.data),
-        companies: companiesRes?.data?.companies || [],
         companyUsers: normalizeResponse(companyUsersRes.data),
         loading: false
       });

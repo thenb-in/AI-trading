@@ -1,41 +1,63 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
 import { ApiService } from '@services/ApiService';
 import { toast } from 'react-toastify';
 
-function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], onUpdate }) {
+function CompanySubscriptionSelector({
+  companyId,
+  availableSubscriptions = [],
+  ensureAvailableSubscriptions,
+  getCompanySubscriptionIds,
+  setCompanySubscriptionIds,
+  invalidateCompany,
+  onUpdate,
+}) {
   const [selectedSubscriptions, setSelectedSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [resolvedAvailable, setResolvedAvailable] = useState(availableSubscriptions);
 
-  const fetchCompanySubscriptions = useCallback(async () => {
+  const loadSubscriptions = useCallback(async () => {
     if (!companyId) return;
 
     setLoading(true);
     try {
-      const companyRes = await ApiService.getCompanySubscriptions(companyId);
-      const companySubs = companyRes?.data?.data || [];
-      setSelectedSubscriptions(companySubs.map(s => s.id));
+      const [available, selectedIds] = await Promise.all([
+        ensureAvailableSubscriptions?.() ?? Promise.resolve(availableSubscriptions),
+        getCompanySubscriptionIds(companyId),
+      ]);
+      if (available?.length) {
+        setResolvedAvailable(available);
+      }
+      setSelectedSubscriptions(selectedIds);
+      setHasLoaded(true);
     } catch (error) {
-      console.error('Error fetching company subscriptions', error);
       toast.error(error?.message || 'Failed to load subscriptions');
     } finally {
       setLoading(false);
     }
-  }, [companyId]);
+  }, [
+    companyId,
+    availableSubscriptions,
+    ensureAvailableSubscriptions,
+    getCompanySubscriptionIds,
+  ]);
 
-  useEffect(() => {
-    if (companyId) {
-      fetchCompanySubscriptions();
+  const handleOpen = useCallback(async () => {
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    if (nextOpen && !hasLoaded) {
+      await loadSubscriptions();
     }
-  }, [companyId, fetchCompanySubscriptions]);
+  }, [isOpen, hasLoaded, loadSubscriptions]);
 
   const handleToggleSubscription = useCallback((subscriptionId) => {
-    setSelectedSubscriptions(prev => {
+    setSelectedSubscriptions((prev) => {
       if (prev.includes(subscriptionId)) {
-        return prev.filter(id => id !== subscriptionId);
+        return prev.filter((id) => id !== subscriptionId);
       }
       return [...prev, subscriptionId];
     });
@@ -47,80 +69,100 @@ function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], o
     setSaving(true);
     try {
       await ApiService.setCompanySubscriptions(companyId, selectedSubscriptions);
+      setCompanySubscriptionIds(companyId, selectedSubscriptions);
       toast.success('Subscriptions updated successfully');
       setIsOpen(false);
-      if (onUpdate) {
-        onUpdate();
-      }
+      onUpdate?.();
     } catch (error) {
-      console.error('Error saving subscriptions', error);
       toast.error(error?.message || 'Failed to save subscriptions');
     } finally {
       setSaving(false);
     }
-  }, [companyId, selectedSubscriptions, onUpdate]);
+  }, [companyId, selectedSubscriptions, setCompanySubscriptionIds, onUpdate]);
 
   const handleCancel = useCallback(() => {
-    fetchCompanySubscriptions();
     setIsOpen(false);
-  }, [fetchCompanySubscriptions]);
+    invalidateCompany(companyId);
+    setHasLoaded(false);
+  }, [companyId, invalidateCompany]);
 
+  const subsList = resolvedAvailable.length ? resolvedAvailable : availableSubscriptions;
   const selectedCount = selectedSubscriptions.length;
-  const selectedNames = availableSubscriptions
-    .filter(s => selectedSubscriptions.includes(s.id))
-    .map(s => s.name)
+  const selectedNames = subsList
+    .filter((s) => selectedSubscriptions.includes(s.id))
+    .map((s) => s.name)
     .join(', ');
 
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-gray-600">
-        <Loader2 className="w-3 h-3 animate-spin" />
-        <span>Loading subscriptions...</span>
-      </div>
-    );
-  }
+  return (
+    <SubscriptionSelectorPanel
+      isOpen={isOpen}
+      loading={loading}
+      saving={saving}
+      selectedCount={selectedCount}
+      selectedNames={selectedNames}
+      subsList={subsList}
+      selectedSubscriptions={selectedSubscriptions}
+      onOpen={handleOpen}
+      onClose={() => setIsOpen(false)}
+      onToggle={handleToggleSubscription}
+      onSave={handleSave}
+      onCancel={handleCancel}
+    />
+  );
+}
 
+function SubscriptionSelectorPanel({
+  isOpen,
+  loading,
+  saving,
+  selectedCount,
+  selectedNames,
+  subsList,
+  selectedSubscriptions,
+  onOpen,
+  onClose,
+  onToggle,
+  onSave,
+  onCancel,
+}) {
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onOpen}
         className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
       >
         <span className="text-gray-600">Subscriptions:</span>
         <span className="font-semibold text-gray-900">
-          {selectedCount > 0 ? `${selectedCount} selected` : 'None'}
+          {selectedCount > 0 ? `${selectedCount} selected` : 'Manage'}
         </span>
         <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen ? (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={onClose} />
           <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-96 overflow-hidden flex flex-col">
             <div className="p-3 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-gray-900">Select Subscriptions</h3>
-                <span className="text-xs text-gray-600">{selectedCount} selected</span>
-              </div>
-              {selectedNames && (
-                <p className="text-xs text-gray-600 truncate" title={selectedNames}>
-                  {selectedNames}
-                </p>
-              )}
+              <SubscriptionSelectorHeader
+                selectedCount={selectedCount}
+                selectedNames={selectedNames}
+              />
             </div>
 
             <div className="flex-1 overflow-y-auto p-2">
-              {availableSubscriptions.length === 0 ? (
+              {loading ? (
+                <div className="flex items-center justify-center gap-2 py-6 text-xs text-gray-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Loading subscriptions...</span>
+                </div>
+              ) : subsList.length === 0 ? (
                 <div className="text-center py-4 text-xs text-gray-500">
                   No subscriptions available
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {availableSubscriptions.map((subscription) => {
+                  {subsList.map((subscription) => {
                     const isSelected = selectedSubscriptions.includes(subscription.id);
                     return (
                       <label
@@ -135,7 +177,7 @@ function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], o
                           <input
                             type="checkbox"
                             checked={isSelected}
-                            onChange={() => handleToggleSubscription(subscription.id)}
+                            onChange={() => onToggle(subscription.id)}
                             className="absolute opacity-0 cursor-pointer"
                           />
                           <div
@@ -145,18 +187,18 @@ function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], o
                                 : 'border-gray-300 bg-white'
                             }`}
                           >
-                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                            {isSelected ? <Check className="w-3 h-3 text-white" /> : null}
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium text-gray-900 truncate">
                             {subscription.name}
                           </div>
-                          {subscription.description && (
+                          {subscription.description ? (
                             <div className="text-xs text-gray-500 truncate">
                               {subscription.description}
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       </label>
                     );
@@ -168,16 +210,16 @@ function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], o
             <div className="p-3 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={handleCancel}
-                disabled={saving}
+                onClick={onCancel}
+                disabled={saving || loading}
                 className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleSave}
-                disabled={saving}
+                onClick={onSave}
+                disabled={saving || loading}
                 className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
               >
                 {saving ? (
@@ -192,22 +234,61 @@ function CompanySubscriptionSelector({ companyId, availableSubscriptions = [], o
             </div>
           </div>
         </>
-      )}
+      ) : null}
     </div>
   );
 }
 
+function SubscriptionSelectorHeader({ selectedCount, selectedNames }) {
+  return (
+    <>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-semibold text-gray-900">Select Subscriptions</h3>
+        <span className="text-xs text-gray-600">{selectedCount} selected</span>
+      </div>
+      {selectedNames ? (
+        <p className="text-xs text-gray-600 truncate" title={selectedNames}>
+          {selectedNames}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+const subscriptionShape = PropTypes.shape({
+  id: PropTypes.number.isRequired,
+  name: PropTypes.string.isRequired,
+  description: PropTypes.string,
+});
+
+SubscriptionSelectorPanel.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  loading: PropTypes.bool.isRequired,
+  saving: PropTypes.bool.isRequired,
+  selectedCount: PropTypes.number.isRequired,
+  selectedNames: PropTypes.string.isRequired,
+  subsList: PropTypes.arrayOf(subscriptionShape).isRequired,
+  selectedSubscriptions: PropTypes.arrayOf(PropTypes.number).isRequired,
+  onOpen: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onToggle: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
+SubscriptionSelectorHeader.propTypes = {
+  selectedCount: PropTypes.number.isRequired,
+  selectedNames: PropTypes.string.isRequired,
+};
+
 CompanySubscriptionSelector.propTypes = {
   companyId: PropTypes.string.isRequired,
-  availableSubscriptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string,
-    })
-  ),
+  availableSubscriptions: PropTypes.arrayOf(subscriptionShape),
+  ensureAvailableSubscriptions: PropTypes.func,
+  getCompanySubscriptionIds: PropTypes.func.isRequired,
+  setCompanySubscriptionIds: PropTypes.func.isRequired,
+  invalidateCompany: PropTypes.func.isRequired,
   onUpdate: PropTypes.func,
 };
 
 export { CompanySubscriptionSelector };
-

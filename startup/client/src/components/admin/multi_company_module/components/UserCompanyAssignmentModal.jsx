@@ -32,13 +32,6 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
     }
   }, [isOpen, resetSelection]);
 
-  // Load company users when modal opens or company changes
-  useEffect(() => {
-    if (isOpen && selectedCompany) {
-      loadCompanyUsers(selectedCompany);
-    }
-  }, [isOpen, selectedCompany, loadCompanyUsers]);
-
   const getAvailableUsers = useMemo(() => {
     const assignedUserIds = new Set(companyUsers.map(user => user.id || user.username));
     return users.filter(user => !assignedUserIds.has(user.id || user.username));

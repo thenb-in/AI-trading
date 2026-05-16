@@ -1,11 +1,18 @@
 import PropTypes from 'prop-types';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { toast } from 'react-toastify';
 import { UserCompanyAssignmentModal } from './UserCompanyAssignmentModal';
 import { CompanySubscriptionSelector } from './CompanySubscriptionSelector';
-import { ApiService } from '@services/ApiService';
+import { useCompanySubscriptionsCache } from '../hooks/useCompanySubscriptionsCache';
 
-const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignClick, onSubscriptionUpdate, availableSubscriptions }) => {
+const CompanyCard = memo(function CompanyCard({
+  company,
+  isActive,
+  loading,
+  handleSwitchClick,
+  onAssignClick,
+  subscriptionCache,
+}) {
   const handleCardClick = useCallback(() => {
     onAssignClick(company);
   }, [onAssignClick, company]);
@@ -48,8 +55,11 @@ const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignCl
       <div className="flex items-center gap-2 ml-4">
         <CompanySubscriptionSelector
           companyId={company.id}
-          availableSubscriptions={availableSubscriptions}
-          onUpdate={onSubscriptionUpdate}
+          availableSubscriptions={subscriptionCache.availableSubscriptions}
+          ensureAvailableSubscriptions={subscriptionCache.ensureAvailableSubscriptions}
+          getCompanySubscriptionIds={subscriptionCache.getCompanySubscriptionIds}
+          setCompanySubscriptionIds={subscriptionCache.setCompanySubscriptionIds}
+          invalidateCompany={subscriptionCache.invalidateCompany}
         />
         <button
           onClick={handleSwitchButtonClick}
@@ -63,7 +73,7 @@ const CompanyCard = ({ company, isActive, loading, handleSwitchClick, onAssignCl
       </div>
     </li>
   );
-};
+});
 
 CompanyCard.propTypes = {
   company: PropTypes.shape({ id: PropTypes.string, name: PropTypes.string }).isRequired,
@@ -71,37 +81,21 @@ CompanyCard.propTypes = {
   loading: PropTypes.bool,
   handleSwitchClick: PropTypes.func.isRequired,
   onAssignClick: PropTypes.func.isRequired,
-  onSubscriptionUpdate: PropTypes.func,
-  availableSubscriptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string,
-    })
-  ),
+  subscriptionCache: PropTypes.shape({
+    availableSubscriptions: PropTypes.array,
+    ensureAvailableSubscriptions: PropTypes.func.isRequired,
+    getCompanySubscriptionIds: PropTypes.func.isRequired,
+    setCompanySubscriptionIds: PropTypes.func.isRequired,
+    invalidateCompany: PropTypes.func.isRequired,
+  }).isRequired,
 };
 
 const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, loading }) => {
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
-    const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [debug, setDebug] = useState(false);
-  const [availableSubscriptions, setAvailableSubscriptions] = useState([]);
-
-  useEffect(() => {
-    const fetchAvailableSubscriptions = async () => {
-      try {
-        const response = await ApiService.getAvailableSubscriptions();
-        const subscriptions = response?.data?.data || [];
-        setAvailableSubscriptions(subscriptions);
-      } catch (error) {
-        console.error('Error fetching available subscriptions', error);
-        toast.error(error?.message || 'Failed to load available subscriptions');
-      }
-    };
-
-    fetchAvailableSubscriptions();
-  }, []);
+  const subscriptionCache = useCompanySubscriptionsCache();
 
   const handleSwitchClick = useCallback((companyId) => {
     onSwitch(companyId);
@@ -136,18 +130,16 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
     setSelectedCompany(null);
   };
 
-  const handleAssignmentSuccess = () => {
-    // Could refresh company data if needed
-  };
-
-  const filteredCompanies = (companies || []).filter((c) => {
-    const name = (c.name || '').toLowerCase();
+  const filteredCompanies = useMemo(() => {
     const query = (searchText || '').trim().toLowerCase();
-    if (debug) {
-      return !query || name.includes(query);
-    }
-    return query && name === query;
-  });
+    return (companies || []).filter((c) => {
+      const name = (c.name || '').toLowerCase();
+      if (debug) {
+        return !query || name.includes(query);
+      }
+      return query && name === query;
+    });
+  }, [companies, searchText, debug]);
 
   if (!companies?.length) {
     return (
@@ -209,8 +201,7 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
         loading={loading}
         handleSwitchClick={handleSwitchClick}
         onAssignClick={handleAssignClick}
-        onSubscriptionUpdate={handleAssignmentSuccess}
-        availableSubscriptions={availableSubscriptions}
+        subscriptionCache={subscriptionCache}
       />
     );})}
   </ul>
@@ -220,7 +211,6 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
     isOpen={assignmentModalOpen}
     onClose={handleAssignmentModalClose}
     company={selectedCompany}
-    onSuccess={handleAssignmentSuccess}
   />
 </>
 

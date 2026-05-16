@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
-import { STORAGE_KEYS } from '@/constants/index';
 import { useDataContext } from '@context/useDataContext';
 
 const useMultiCompanyModule = () => {
@@ -13,12 +12,7 @@ const useMultiCompanyModule = () => {
   const [createError, setCreateError] = useState(null);
 
   const activeCompanyId = useMemo(() => userData?.companyId || userData?.company?.id || null, [userData]);
-  // Extract localStorage value to a variable for useMemo dependency
-  const activeCompanyNameFromStorage = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME) : null;
-  const activeCompanyName = useMemo(() => {
-    // Prefer server/userData source; fallback to localStorage if missing
-    return activeCompanyNameFromStorage || null;
-  }, [activeCompanyNameFromStorage]);
+  const activeCompanyName = useMemo(() => userData?.company?.name || null, [userData]);
 
   const fetchCompanies = useCallback(async () => {
     setLoading(true);
@@ -72,24 +66,19 @@ const useMultiCompanyModule = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await ApiService.switchCompany(companyId);
-      // Persist active company name for fallback display
-      if (response?.data?.updatedUser?.company?.name && typeof window !== 'undefined') {
-        localStorage.setItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME, response.data.updatedUser.company.name);
-      }
+      await ApiService.switchCompany(companyId);
       // Refetch full user data (including role & permissions for the new company)
       const userResponse = await ApiService.getUser();
       const user = userResponse?.data ?? null;
       if (user) {
         setUserData(user);
       }
-      await fetchCompanies();
       window.location.reload();
     } catch (e) {
       setError(e?.error || 'Failed to switch company');
       setLoading(false);
     }
-  }, []);
+  }, [setUserData]);
 
   return {
     companies,
