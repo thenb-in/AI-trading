@@ -56,6 +56,10 @@ module.exports = {
   ],
 
   // Specific .js files to skip during encrypt walks (exact relative paths).
-  // None today; the script auto-skips its own config file via DEFAULTS.
-  skipFiles: []
+  // Smoke tests reference sibling repos that aren't present in the deploy
+  // bundle, so they must NOT ship — they're dev-only validation harnesses.
+  skipFiles: [
+    'src/license/__smoke_test__.js',
+    'src/license/__seal_test__.js'
+  ]
 };

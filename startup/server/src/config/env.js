@@ -117,6 +117,16 @@ module.exports = {
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
+  // License configuration. Set LICENSE_ENFORCEMENT=false in dev to bypass
+  // the license gate entirely. LICENSE_AUTO_RENEW=false disables the
+  // hourly auto-renew cron job (use for airgap installs where you don't
+  // want repeated phone-home attempts to the wallet logged as failures).
+  // LICENSE_WALLET_PUBLIC_KEYS is a JSON array of PEM strings; if set,
+  // it overrides the pinned public keys file under SECRET_DIR.
+  LICENSE_ENFORCEMENT: process.env.LICENSE_ENFORCEMENT,
+  LICENSE_AUTO_RENEW: process.env.LICENSE_AUTO_RENEW,
+  LICENSE_WALLET_PUBLIC_KEYS: process.env.LICENSE_WALLET_PUBLIC_KEYS,
+
   // File upload configuration
   UPLOADS_DIR: uploadsDir,
 

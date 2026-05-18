@@ -1,0 +1,21 @@
+# Allow indexing of public marketing/auth pages. Block everything behind
+# auth (license-gated 503s anyway) and all API endpoints (private data).
+
+User-agent: *
+Allow: /$
+Allow: /signup
+Allow: /forgot-password
+Allow: /favicon.ico
+Allow: /icons/
+Allow: /manifest.webmanifest
+Allow: /sitemap.xml
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /onboarding
+Disallow: /app-guide
+Disallow: /user-routes
+Disallow: /uploads/
+
+# Sitemap helps crawlers prioritize the public URLs.
+Sitemap: /sitemap.xml

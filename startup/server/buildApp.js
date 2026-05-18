@@ -9,14 +9,19 @@ const logger = require('./logger');
 const { startAllSchedulers, stopAllSchedulers } = require('./scheduler');
 const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
+const { registerLicenseJobs } = require('./src/license/licenseScheduler');
+const licenseSeal = require('./src/license/licenseSeal'); // eslint-disable-line no-unused-vars
+const licenseService = require('./src/license/licenseService');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 const httpLogger = require('./src/middleware/httpLogger');
+const licenseGate = require('./src/middleware/licenseGate');
 const db = require('./src/models');
 const activityRoutes = require('./src/routes/activityRoutes');
 const adminRoutes = require('./src/routes/admin.route');
 const authRoutes = require('./src/routes/authRoutes');
 const helpSupportRoutes = require('./src/routes/helpSupport.route');
 const layoutRoutes = require('./src/routes/layoutRoutes');
+const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 
@@ -71,6 +76,16 @@ function mountFrameworkMiddleware(app, opts = {}) {
 }
 
 function mountFrameworkRoutes(app) {
+  // License routes must mount BEFORE the gate. Status/recovery endpoints
+  // need to be reachable even when the license is invalid so an operator
+  // can fix the install. The gate's EXEMPT_PATH_PREFIXES list mirrors
+  // these paths.
+  app.use(`${API_PREFIX}/license`, licenseRoutes);
+
+  // License gate guards every subsequent route. Exempt paths (auth/login,
+  // license recovery, healthz) pass through. See middleware/licenseGate.js.
+  app.use(licenseGate());
+
   app.use(`${API_PREFIX}/auth`, authRoutes);
   app.use(`${API_PREFIX}/users`, userRoutes);
   app.use(`${API_PREFIX}/admin`, adminRoutes);
@@ -256,12 +271,38 @@ function buildApp(options = {}) {
       });
     }
 
-    db.sequelize.authenticate().then(() => {
+    db.sequelize.authenticate().then(async () => {
+      // Boot-time license verification. We DO NOT block listen on failure
+      // here — the gate will reject every request anyway, and `/api/license/*`
+      // recovery routes need to be reachable for the operator to install/
+      // renew. Logging the failure prominently is enough.
+      try {
+        const state = await licenseService.loadAndVerify({ force: true });
+        if (state.ok) {
+          if (state.bypass) {
+            logger.warn(`[license] enforcement bypassed (dev mode, reason=${state.reason}). All permissions allowed.`);
+          } else {
+            logger.info(`[license] active license_id=${state.payload.license_id} serial=${state.payload.serial} expires=${state.payload.expires_at}`);
+          }
+        } else {
+          logger.warn(`[license] LOCKED at boot: reason=${state.reason}. All non-recovery endpoints will return 503.`);
+        }
+      } catch (err) {
+        logger.error(`[license] boot verification crashed: ${err.message}`, err);
+      }
+
       server.listen(env.PORT, () => {
         logger.info(`Server running on port ${env.PORT}`);
-        // Start in-process schedulers once the HTTP server is up. No-op
-        // when the app didn't pass registerSchedulerJobs.
-        startAllSchedulers(registerSchedulerJobs);
+        // Start in-process schedulers once the HTTP server is up. The
+        // framework always registers its own jobs (license renewal +
+        // wallclock seal bump) in addition to the app's optional
+        // registration callback.
+        startAllSchedulers(() => {
+          registerLicenseJobs();
+          if (typeof registerSchedulerJobs === 'function') {
+            registerSchedulerJobs();
+          }
+        });
         if (typeof onAfterListen === 'function') {
           try {
             const ret = onAfterListen();
