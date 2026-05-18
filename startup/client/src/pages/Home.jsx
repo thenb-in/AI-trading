@@ -1,10 +1,19 @@
 import { Login } from '@startup/components/auth/Login';
 import { motion } from 'framer-motion';
 import { AnimatedBackground } from '@startup/components/AnimatedBackground';
+import { PageMeta, softwareApplicationJsonLd } from '@startup/seo/PageMeta';
 
 function Home() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Per-page SEO. The structured-data card lets Google render a
+          rich-results "App" preview when this page comes up in search. */}
+      <PageMeta
+        title="Sign in"
+        description="Sign in to NB Next Wallet. Installable on desktop and mobile."
+        path="/"
+        jsonLd={softwareApplicationJsonLd({})}
+      />
       {/* Left Side: Animated Section */}
      <AnimatedBackground/>
       {/* Right Side: Login/Signup */}

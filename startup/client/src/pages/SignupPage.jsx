@@ -2,11 +2,17 @@ import { useState } from 'react';
 import { AnimatedBackground } from '@startup/components/AnimatedBackground';
 import { Signup } from '@startup/components/auth/Signup';
 import { motion } from 'framer-motion';
+import { PageMeta } from '@startup/seo/PageMeta';
 function SignupPage() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+    <PageMeta
+      title="Sign up"
+      description="Create your NB Next Wallet account. Free to get started."
+      path="/signup"
+    />
     {/* Left Side: Animated Section */}
    <AnimatedBackground setShowRoleDropdown={setShowRoleDropdown} />
     {/* Right Side: Login/Signup */}

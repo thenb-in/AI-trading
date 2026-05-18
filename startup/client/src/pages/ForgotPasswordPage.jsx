@@ -1,9 +1,16 @@
 import { AnimatedBackground } from '@startup/components/AnimatedBackground';
 import { ForgotPassword } from '@startup/components/auth/ForgotPassword';
 import { motion } from 'framer-motion';
+import { PageMeta } from '@startup/seo/PageMeta';
 function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+    <PageMeta
+      title="Reset password"
+      description="Recover access to your NB Next Wallet account."
+      path="/forgot-password"
+      noIndex
+    />
     {/* Left Side: Animated Section */}
    <AnimatedBackground/>
     {/* Right Side: Login/Signup */}
