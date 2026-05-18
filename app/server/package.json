@@ -1,6 +1,6 @@
 {
   "name": "@app/server",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "type": "commonjs",
   "main": "index.js",
@@ -13,7 +13,11 @@
     "setup-env": "node ../../startup/server/scripts/setup-env/index.js setup",
     "check-env": "node ../../startup/server/scripts/setup-env/index.js check",
     "validate-env": "node ../../startup/server/scripts/setup-env/index.js validate",
-    "generate-secrets": "node ../../startup/server/scripts/setup-env/index.js generate-secrets"
+    "generate-secrets": "node ../../startup/server/scripts/setup-env/index.js generate-secrets",
+    "license:install": "node ../../startup/server/scripts/license_install.js install",
+    "license:machine": "node ../../startup/server/scripts/license_install.js machine",
+    "license:status": "node ../../startup/server/scripts/license_install.js status",
+    "license:add-public-key": "node ../../startup/server/scripts/license_install.js add-public-key"
   },
   "description": "App-side server boot. Imports buildApp() from startup/server and registers app-specific routes.",
   "_moduleAliases": {

@@ -52,7 +52,7 @@ function isPhysicalMac(mac, ifaceName) {
   return true;
 }
 
-function collectPhysicalMacs() {
+function getPhysicalMacAddresses() {
   const ifaces = os.networkInterfaces();
   const macs = new Set();
   for (const [name, addrs] of Object.entries(ifaces)) {
@@ -107,7 +107,7 @@ function readMacOsMachineId() {
   }
 }
 
-function collectMachineId() {
+function getMachineId() {
   switch (process.platform) {
   case 'linux': return readLinuxMachineId();
   case 'win32': return readWindowsMachineId();
@@ -122,11 +122,11 @@ function collectMachineId() {
  * design.
  */
 function compute() {
-  const macs = collectPhysicalMacs();
-  const machineId = collectMachineId();
+  const macs = getPhysicalMacAddresses();
   if (macs.length === 0) {
     throw new Error(LICENSE_ERRORS.FP_NO_MACS);
   }
+  const machineId = getMachineId();
   if (!machineId) {
     throw new Error(LICENSE_ERRORS.FP_NO_MACHINE_ID);
   }

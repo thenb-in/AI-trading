@@ -18,6 +18,32 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
+
+function promptToken() {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question('Paste license token (starts with NBLIC1...): ', (answer) => {
+      rl.close();
+      resolve((answer || '').trim());
+    });
+  });
+}
+
+function promptPem() {
+  return new Promise((resolve) => {
+    console.log('Paste PEM-encoded public key (ending with -----END PUBLIC KEY-----):');
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
+    const lines = [];
+    rl.on('line', (line) => {
+      lines.push(line);
+      if (line.includes('-----END PUBLIC KEY-----')) {
+        rl.close();
+      }
+    });
+    rl.on('close', () => resolve(lines.join('\n').trim() + '\n'));
+  });
+}
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -41,7 +67,7 @@ function parseArgs(argv) {
 
 function exitErr(msg, code = 1) {
   console.error(`license_install: ${msg}`);
-  process.exit(code); // eslint-disable-line no-process-exit
+  process.exit(code);
 }
 
 async function cmdInstall(args) {
@@ -52,7 +78,15 @@ async function cmdInstall(args) {
     token = fs.readFileSync(args['token-file'], 'utf8').trim();
   }
   if (!token) {
-    exitErr('provide --token or --token-file');
+    token = await promptToken();
+    if (!token) {
+      exitErr('no token provided');
+    }
+    // Persist the pasted token next to the app boot dir so re-running
+    // install --token-file ./license.token works without re-pasting.
+    const savedPath = path.resolve(process.cwd(), 'license.token');
+    fs.writeFileSync(savedPath, token + '\n', { mode: 0o600 });
+    console.log(`Saved token to ${savedPath}`);
   }
   console.log(`Installing license into ${env.SECRET_DIR}/license.token ...`);
   const result = await licenseService.installToken({ token });
@@ -79,12 +113,22 @@ async function cmdStatus() {
   return snap?.ok ? 0 : 1;
 }
 
-function cmdAddPublicKey(args) {
+async function cmdAddPublicKey(args) {
   const env = require('../src/config/env');
   let pem;
-  if (args.pem) pem = args.pem;
-  else if (args['pem-file']) pem = fs.readFileSync(args['pem-file'], 'utf8');
-  else exitErr('provide --pem or --pem-file');
+  if (args.pem) {
+    pem = args.pem;
+  } else if (args['pem-file']) {
+    pem = fs.readFileSync(args['pem-file'], 'utf8');
+  } else {
+    pem = await promptPem();
+    if (!pem || !pem.trim()) {
+      exitErr('no PEM provided');
+    }
+    const savedPath = path.resolve(process.cwd(), 'wallet_public_key.pem');
+    fs.writeFileSync(savedPath, pem, { mode: 0o600 });
+    console.log(`Saved PEM to ${savedPath}`);
+  }
 
   if (!pem.includes('BEGIN PUBLIC KEY')) {
     exitErr('input does not look like a PEM-encoded public key');
@@ -96,7 +140,9 @@ function cmdAddPublicKey(args) {
   if (fs.existsSync(file)) {
     try {
       current = JSON.parse(fs.readFileSync(file, 'utf8'));
-      if (!current.keys) current = { keys: Array.isArray(current) ? current : [] };
+      if (!current.keys) {
+        current = { keys: Array.isArray(current) ? current : [] };
+      }
     } catch (e) {
       console.warn(`Existing wallet_public_keys.json was unparseable; overwriting (${e.message})`);
       current = { keys: [] };
@@ -118,23 +164,25 @@ async function main() {
   const cmd = args._[0];
 
   switch (cmd) {
-    case 'install':         return cmdInstall(args);
-    case 'machine':         return cmdMachine();
-    case 'status':          return cmdStatus();
-    case 'add-public-key':  return cmdAddPublicKey(args);
-    default:
-      console.error('Usage:');
-      console.error('  license_install.js install --token-file <path> | --token <str>');
-      console.error('  license_install.js machine');
-      console.error('  license_install.js status');
-      console.error('  license_install.js add-public-key --pem-file <path>');
-      process.exit(2); // eslint-disable-line no-process-exit
+  case 'install':         return cmdInstall(args);
+  case 'machine':         return cmdMachine();
+  case 'status':          return cmdStatus();
+  case 'add-public-key':  return cmdAddPublicKey(args);
+  default:
+    console.error('Usage:');
+    console.error('  license_install.js install [--token-file <path> | --token <str>]');
+    console.error('                              (prompts for token if neither flag given)');
+    console.error('  license_install.js machine');
+    console.error('  license_install.js status');
+    console.error('  license_install.js add-public-key [--pem-file <path> | --pem <str>]');
+    console.error('                              (prompts for PEM if neither flag given)');
+    process.exit(2);
   }
 }
 
 main()
-  .then(code => process.exit(code || 0)) // eslint-disable-line no-process-exit
+  .then(code => process.exit(code || 0))
   .catch(err => {
     console.error('license_install: fatal:', err);
-    process.exit(1); // eslint-disable-line no-process-exit
+    process.exit(1);
   });

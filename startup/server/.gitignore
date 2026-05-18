@@ -25,4 +25,6 @@ trackingImage
 *.sln
 *.sw?
 .env
-secret/credentials.json
+
+# Runtime secrets dir — credentials, installed license token + seal, pinned wallet keys
+secret/
