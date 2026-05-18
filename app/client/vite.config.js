@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -88,6 +89,35 @@ export default ({ mode }) => {
           );
         },
       },
+         // PWA: installable + auto-update SW + workbox runtime caches. See
+      // startup framework for full inline docs — same config shape here.
+      VitePWA({
+        registerType: 'autoUpdate',
+        injectRegister: false,  // registered manually via registerServiceWorker.js
+        strategies: 'generateSW',
+        filename: 'sw.js',
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff,woff2}'],
+          runtimeCaching: [
+            {
+              urlPattern: /^https?:\/\/[^/]+\/assets\//,
+              handler: 'CacheFirst',
+              options: { cacheName: 'static-assets', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+            },
+            {
+              urlPattern: /^https?:\/\/[^/]+\/(icons|uploads)\//,
+              handler: 'StaleWhileRevalidate',
+              options: { cacheName: 'images' },
+            },
+          ],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        },
+        includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],
+        manifest: false,  // own /manifest.webmanifest via public/
+        devOptions: { enabled: false },
+      }),
     ],
     build: {
       chunkSizeWarningLimit: 1000,

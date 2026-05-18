@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/consoleLogBufferService';
-
+import { PWAInstallPrompt } from './seo/PWAInstallPrompt';
 
 export function App() {
   useEffect(() => {
@@ -20,6 +20,7 @@ export function App() {
 
   return (
     <>
+     <PWAInstallPrompt />
       <GlobalSearchPalette />
       <Routes>
         <Route path="/" element={<Home />} />
