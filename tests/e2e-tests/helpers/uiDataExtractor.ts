@@ -4,26 +4,8 @@
  */
 import { Page } from '@playwright/test';
 
-export async function extractCompanyNameFromLocalStorage(page: Page): Promise<string | null> {
-  return await page.evaluate(() => {
-    try {
-      const raw = localStorage.getItem('activeCompanyName');
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (typeof parsed === 'string') return parsed;
-      if (parsed && typeof parsed === 'object') return parsed.name || parsed.companyName || null;
-      return null;
-    } catch {
-      return null;
-    }
-  });
-}
-
 /**
- * Extract company details from "auth context" user data.
- *
- * We first try localStorage key `userData` (if the app persists it),
- * otherwise fall back to calling the authenticated "me" endpoint.
+ * Extract company details from authenticated user data via the me endpoint.
  */
 export async function extractCompanyFromAuthUserData(page: Page): Promise<{ id?: string; name?: string } | null> {
   return await page.evaluate(async () => {

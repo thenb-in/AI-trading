@@ -1,19 +1,22 @@
 name: Cleanup Old Artifacts
 
 on:
-  push:
-    branches:
-      - main
-      - master
-      - test-ci
+  schedule:
+    - cron: '0 15 * * *'   # once daily
 
-  pull_request:
-    branches:
-      - main
-      - master
+  # push:
+  #   branches:
+  #     - main
+  #     - master
+  #     - test-ci
 
-  release:
-    types: [published]
+  # pull_request:
+  #   branches:
+  #     - main
+  #     - master
+
+  # release:
+  #   types: [published]
 
 jobs:
   cleanup_artifacts:

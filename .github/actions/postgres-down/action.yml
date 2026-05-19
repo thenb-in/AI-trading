@@ -1,0 +1,46 @@
+name: Tear down Postgres + test network
+description: >
+  Drop the test database (explicit DROP — defense in depth), then stop
+  containers and remove the docker network. Pairs with postgres-up.
+  When include_deploy_container=true, also removes $DEPLOY_CONTAINER
+  (used by linux_built_tests).
+  Requires the calling job to define env vars PG_CONTAINER, DEPLOY_CONTAINER,
+  TEST_NETWORK. Reads DB_NAME from $GITHUB_ENV.
+
+inputs:
+  include_deploy_container:
+    description: '"true" → also rm -f $DEPLOY_CONTAINER. Default false.'
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Drop test database
+      # `if: always()` ensures it runs even when tests failed; each shell
+      # error is suppressed (|| true) so a missing container or already-
+      # dropped DB doesn't leave the network/container behind.
+      if: always() && env.DB_NAME != ''
+      shell: bash
+      run: |
+        if docker ps --format '{{.Names}}' | grep -qx "$PG_CONTAINER"; then
+          echo "[cleanup] dropping database '$DB_NAME'"
+          docker exec "$PG_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
+        else
+          echo "[cleanup] postgres container gone — DB '$DB_NAME' already destroyed with it"
+        fi
+
+    - name: Stop containers + remove network
+      if: always()
+      shell: bash
+      run: |
+        if [ "${{ inputs.include_deploy_container }}" = "true" ]; then
+          docker rm -f "$DEPLOY_CONTAINER" "$PG_CONTAINER" 2>/dev/null || true
+        else
+          docker rm -f "$PG_CONTAINER" 2>/dev/null || true
+        fi
+        # Disconnect runner from network first if we joined it.
+        if [ -f /.dockerenv ]; then
+          docker network disconnect "$TEST_NETWORK" "$(hostname)" 2>/dev/null || true
+        fi
+        docker network rm "$TEST_NETWORK" 2>/dev/null || true

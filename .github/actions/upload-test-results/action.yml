@@ -1,0 +1,40 @@
+name: Upload integration + e2e test artifacts
+description: >
+  Uploads integration-tests and e2e-tests reports as build artifacts.
+  `mode` becomes the artifact name prefix — "source" for source_tests,
+  "built" for linux_built_tests — keeping the two phases' artifacts distinct.
+
+inputs:
+  mode:
+    description: 'source | built — determines artifact name prefix.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Upload integration test artifacts
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.mode }}-integration-results
+        path: |
+          tests/integration-tests/test-results/
+          tests/integration-tests/coverage/
+          tests/integration-tests/logs/
+        if-no-files-found: ignore
+        include-hidden-files: true
+        retention-days: 2
+
+    - name: Upload e2e test artifacts
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.mode }}-e2e-results
+        path: |
+          tests/e2e-tests/playwright-report/
+          tests/e2e-tests/test-results/
+          tests/e2e-tests/reports/
+          tests/e2e-tests/logs/
+        if-no-files-found: ignore
+        include-hidden-files: true
+        retention-days: 2

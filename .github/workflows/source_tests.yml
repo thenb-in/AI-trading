@@ -1,0 +1,216 @@
+name: Source Tests
+
+# Reusable workflow — called from builds.yml once client_build is green.
+# Tests against the checked-out source (`node app/server/index.js` + `vite dev`)
+# in parallel with the server_build / site_bundle jobs. No build artifacts
+# consumed.
+on:
+  workflow_call: {}
+
+jobs:
+  source_tests:
+    runs-on: [self-hosted, Linux, X64]
+
+    env:
+      TEST_APP_NAME: nbnext-ci
+      PG_CONTAINER: test-pg
+      DEPLOY_CONTAINER: test-deploy
+      TEST_NETWORK: test-net
+
+    defaults:
+      run:
+        shell: bash
+
+    permissions:
+      # write needed for `gh release upload` (source e2e results are
+      # attached to the release on release events instead of being kept
+      # as a build artifact).
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        # Must come first — composite actions in .github/actions/ can only
+        # be loaded after the repo is checked out.
+        uses: actions/checkout@v5
+
+      - name: Install dependencies (node + playwright + .env)
+        uses: ./.github/actions/install-deps
+
+      - name: Bring up Postgres
+        uses: ./.github/actions/postgres-up
+
+      - name: Start backend (persists across all test phases)
+        # Backend FIRST so its startup runs `sequelize.sync()` (because
+        # SYNC_DB=true in .env.example) and creates the schema. The seed
+        # step below depends on those tables existing.
+        run: |
+          mkdir -p "$RUNNER_TEMP/source"
+          cd app/server
+          node index.js > "$RUNNER_TEMP/source/backend.log" 2>&1 &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/healthz > /dev/null; then
+              echo "Backend up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend failed to start. Last 50 lines:"
+          tail -n 50 "$RUNNER_TEMP/source/backend.log" || true
+          exit 1
+        env:
+          CI: true
+          NODE_ENV: production
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
+
+      - name: Seed default company + admin user
+        # Runs after the backend has come up — by which point sync has
+        # created the schema. The seed script exits non-zero on any error
+        # (see startup/server/create_company_with_role_and_perms.js) so
+        # a failure here fails the whole job.
+        run: |
+          # Pull sadmin credentials from tests/e2e-tests/.env so the seed
+          # creates the same user the e2e suite later logs in as. The .env
+          # is materialized by install-deps from tests/e2e-tests/.env.example
+          # — single source of truth, no second copy of the values to drift.
+          ENV_FILE=tests/e2e-tests/.env
+          TEST_SADMIN_USERNAME=$(grep -E '^TEST_SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
+          TEST_SADMIN_PASSWORD=$(grep -E '^TEST_SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
+          if [ -z "$TEST_SADMIN_USERNAME" ] || [ -z "$TEST_SADMIN_PASSWORD" ]; then
+            echo "[seed] missing TEST_SADMIN_USERNAME or TEST_SADMIN_PASSWORD in $ENV_FILE"; exit 1
+          fi
+          export TEST_SADMIN_USERNAME TEST_SADMIN_PASSWORD
+          echo "[seed] credentials sourced from $ENV_FILE:"
+          echo "[seed]   TEST_SADMIN_USERNAME=$TEST_SADMIN_USERNAME"
+          echo "[seed]   TEST_SADMIN_PASSWORD=$TEST_SADMIN_PASSWORD"
+          npm run create-new-company
+        env:
+          CI: true
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
+
+      - name: Start frontend (vite dev — persists)
+        run: |
+          cd app/client
+          npx vite --host 127.0.0.1 --port 5173 > "$RUNNER_TEMP/source/frontend.log" 2>&1 &
+          echo "FRONTEND_PID=$!" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5173 > /dev/null; then
+              echo "Frontend up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend failed to start. Last 50 lines:"
+          tail -n 50 "$RUNNER_TEMP/source/frontend.log" || true
+          exit 1
+
+      # ─── Test phases (run sequentially against the persistent backend) ───
+      - name: Smoke — /api/healthz
+        run: curl -fsS http://localhost:3000/api/healthz
+
+      - name: Integration tests
+        id: integration
+        # Skip cleanly when no specs exist yet — the integration suite ships
+        # helpers/actions but is gradually getting its first specs. hashFiles
+        # returns '' when nothing matches.
+        if: hashFiles('tests/integration-tests/tests/**/*.spec.ts', 'tests/integration-tests/tests/**/*.test.ts') != ''
+        continue-on-error: true
+        run: npm run test:integration
+        working-directory: tests
+        env:
+          CI: true
+          API_BASE_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
+
+      - name: E2E tests
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e:ci
+        working-directory: tests
+        env:
+          CI: true
+          # Tells playwright.config.ts to skip its webServer block — the
+          # runner has the frontend + backend already running.
+          PW_EXTERNAL_SERVERS: '1'
+          FRONTEND_URL: http://localhost:5173
+          BACKEND_URL: http://localhost:3000
+          DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
+
+      # ─── Teardown (always) ──────────────────────────────────────────────
+      - name: Stop backend + frontend
+        if: always()
+        run: |
+          [ -n "${BACKEND_PID:-}" ] && kill "$BACKEND_PID" 2>/dev/null || true
+          [ -n "${FRONTEND_PID:-}" ] && kill "$FRONTEND_PID" 2>/dev/null || true
+          # Belt-and-braces for any orphaned vite/node children that survived
+          # the parent kill (vite forks from npx; nodemon would do the same).
+          pkill -f 'vite' 2>/dev/null || true
+          pkill -f 'app/server/index.js' 2>/dev/null || true
+
+      - name: Tear down Postgres
+        if: always()
+        uses: ./.github/actions/postgres-down
+
+      # ─── Artifacts (always — most useful on failure) ────────────────────
+      - name: Upload smoke logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-smoke-logs
+          path: |
+            ${{ runner.temp }}/source/backend.log
+            ${{ runner.temp }}/source/frontend.log
+            app/server/logs/
+          if-no-files-found: ignore
+          retention-days: 2
+
+      - name: Upload integration results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: source-integration-results
+          path: |
+            tests/integration-tests/test-results/
+            tests/integration-tests/coverage/
+            tests/integration-tests/logs/
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 2
+
+      # Source e2e results are intentionally NOT uploaded as a build
+      # artifact. On release events the directory is zipped and attached
+      # to the GitHub release instead — keeps artifact storage slim while
+      # still preserving the report alongside the release it documents.
+      - name: Package source e2e results for release
+        if: always() && github.event_name == 'release'
+        id: package_source_e2e
+        run: |
+          OUT="${RUNNER_TEMP}/source-e2e-results.zip"
+          PATHS=()
+          for p in tests/e2e-tests/playwright-report tests/e2e-tests/test-results tests/e2e-tests/reports tests/e2e-tests/logs; do
+            [ -e "$p" ] && PATHS+=("$p")
+          done
+          if [ ${#PATHS[@]} -eq 0 ]; then
+            echo "No source e2e result paths present; nothing to attach."
+            echo "have_archive=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          zip -qr "$OUT" "${PATHS[@]}"
+          echo "have_archive=true" >> "$GITHUB_OUTPUT"
+          echo "archive_path=$OUT" >> "$GITHUB_OUTPUT"
+
+      - name: Attach source e2e results to release
+        if: always() && github.event_name == 'release' && steps.package_source_e2e.outputs.have_archive == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "${{ steps.package_source_e2e.outputs.archive_path }}" \
+            --clobber --repo "${{ github.repository }}"
+
+      - name: Surface phase failures
+        # `continue-on-error` lets each phase keep going so we collect all
+        # artifacts; this step fails the job if any phase failed.
+        if: steps.integration.outcome == 'failure' || steps.e2e.outcome == 'failure'
+        run: |
+          echo "integration: ${{ steps.integration.outcome }}"
+          echo "e2e:         ${{ steps.e2e.outcome }}"
+          exit 1

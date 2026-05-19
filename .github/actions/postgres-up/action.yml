@@ -1,0 +1,130 @@
+name: Bring up Postgres for tests
+description: >
+  Pre-flight docker cleanup, resolve a unique DB name + runner-reachable
+  DB host (and optionally APP_URL for built-mode), then start Postgres on
+  a dedicated docker network. Exports DB_NAME, DB_HOST (and APP_URL when
+  built_mode=true) to $GITHUB_ENV.
+  Requires the calling job to define env vars PG_CONTAINER, DEPLOY_CONTAINER,
+  TEST_NETWORK (and BUILT_HOST_PORT when built_mode=true).
+
+inputs:
+  built_mode:
+    description: >
+      "true" → also export APP_URL pointing at the deploy container
+      (linux_built_tests). "false" (default) → only DB_HOST/DB_NAME.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Pre-flight cleanup (remove any stale containers/networks)
+      # source_tests and linux_built_tests share $TEST_NETWORK, so a leftover
+      # $DEPLOY_CONTAINER from a previous linux_built_tests run can block this
+      # job's `network rm` even when the current job never starts a deploy
+      # container itself. Nuke both, then force-disconnect any remaining
+      # endpoints (including the runner container if a prior run failed
+      # before its disconnect step) before removing the network.
+      shell: bash
+      run: |
+        for c in "$DEPLOY_CONTAINER" "$PG_CONTAINER"; do
+          if docker ps -a --format '{{.Names}}' | grep -qx "$c"; then
+            echo "[pre-flight] container '$c' already present — removing for a clean run"
+            docker rm -f "$c"
+          else
+            echo "[pre-flight] container '$c' not present"
+          fi
+        done
+        if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
+          echo "[pre-flight] network '$TEST_NETWORK' already present — disconnecting endpoints and removing"
+          for ep in $(docker network inspect "$TEST_NETWORK" --format '{{range $k,$v := .Containers}}{{println $k}}{{end}}'); do
+            echo "[pre-flight]   force-disconnecting endpoint '$ep'"
+            docker network disconnect -f "$TEST_NETWORK" "$ep" 2>/dev/null || true
+          done
+          docker network rm "$TEST_NETWORK"
+        else
+          echo "[pre-flight] network '$TEST_NETWORK' not present"
+        fi
+
+    - name: Resolve unique DB name + runner-reachable hosts
+      # DB name carries a UTC timestamp + the workflow run id so two runs
+      # never collide on a leftover DB if the postgres container ever
+      # outlives a single run. Cleanup explicitly DROPs this DB before
+      # tearing down the container — belts and braces.
+      #
+      # DB_HOST: self-hosted runners often run in a container themselves
+      # (DooD). When they do, `localhost:5432` is the runner's own loopback,
+      # not the host's. Reach postgres by container name on a shared docker
+      # network in that case; bare-metal runners use the -p mapping.
+      #
+      # APP_URL: only set when built_mode=true. Same DooD-vs-bare-metal
+      # split — built-mode reaches nginx on the deploy container's :80
+      # inside the network, or via the host port-mapping from outside.
+      shell: bash
+      run: |
+        DB_NAME="test_db_$(date -u +%Y%m%d_%H%M%S)_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT:-1}"
+        echo "DB_NAME=$DB_NAME" >> "$GITHUB_ENV"
+        echo "[db] using unique DB name: $DB_NAME"
+        docker network create "$TEST_NETWORK"
+        if [ -f /.dockerenv ]; then
+          RUNNER_CID=$(hostname)
+          echo "[network] runner is in container '$RUNNER_CID'; joining $TEST_NETWORK"
+          docker network connect "$TEST_NETWORK" "$RUNNER_CID"
+          echo "DB_HOST=$PG_CONTAINER" >> "$GITHUB_ENV"
+          if [ "${{ inputs.built_mode }}" = "true" ]; then
+            echo "APP_URL=http://$DEPLOY_CONTAINER" >> "$GITHUB_ENV"
+          fi
+        else
+          echo "[network] runner on host; reaching siblings via localhost (-p mappings)"
+          echo "DB_HOST=localhost" >> "$GITHUB_ENV"
+          if [ "${{ inputs.built_mode }}" = "true" ]; then
+            echo "APP_URL=http://localhost:$BUILT_HOST_PORT" >> "$GITHUB_ENV"
+          fi
+        fi
+
+    - name: Pre-pull postgres image (self-hosted only)
+      # On self-hosted the docker daemon persists between jobs, so making
+      # the pull explicit turns it into a one-time cost and the log line
+      # tells us whether it was cached.
+      if: runner.environment != 'github-hosted'
+      shell: bash
+      run: |
+        if docker image inspect postgres:15 >/dev/null 2>&1; then
+          echo "[pre-pull] postgres:15 already cached locally — skipping pull"
+        else
+          echo "[pre-pull] postgres:15 not cached — pulling now"
+          docker pull postgres:15
+        fi
+
+    - name: Start Postgres in test network
+      # Both on the test network (so sibling containers reach it by name as
+      # ${PG_CONTAINER}:5432) AND -p published (so the runner reaches it
+      # via $DB_HOST).
+      shell: bash
+      run: |
+        docker run -d \
+          --name "$PG_CONTAINER" \
+          --network "$TEST_NETWORK" \
+          -p 5432:5432 \
+          -e POSTGRES_USER=postgres \
+          -e POSTGRES_PASSWORD=postgres \
+          -e POSTGRES_DB="$DB_NAME" \
+          postgres:15
+        # Inside-container readiness (postgres is accepting connections).
+        for i in $(seq 1 30); do
+          if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
+            echo "Postgres ready inside container"
+            break
+          fi
+          sleep 1
+        done
+        # Outside check — the actual concern: can the runner reach it?
+        for i in $(seq 1 15); do
+          if (echo > /dev/tcp/$DB_HOST/5432) 2>/dev/null; then
+            echo "Postgres reachable from runner at $DB_HOST:5432"; exit 0
+          fi
+          sleep 1
+        done
+        echo "Postgres NOT reachable from runner at $DB_HOST:5432"
+        docker logs "$PG_CONTAINER"
+        exit 1

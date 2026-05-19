@@ -1,0 +1,64 @@
+name: Install test dependencies
+description: >
+  Sets up Node 22, restores or installs node_modules (test-deps cache,
+  separate from build-deps), installs Playwright browsers, and
+  materializes .env files. Assumes the repo has already been checked
+  out — local composite actions can only be loaded after actions/checkout.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: 22
+
+    - name: Restore test dependencies (github-hosted only)
+      # Separate cache key from build-deps — test jobs need tests/ deps
+      # that build jobs don't. On self-hosted, ~/.npm + node_modules persist
+      # locally so this step is skipped and `npm run i` reuses them.
+      if: runner.environment == 'github-hosted'
+      uses: actions/cache@v5
+      id: cache-deps
+      with:
+        path: |
+          node_modules
+          app/node_modules
+          app/client/node_modules
+          app/server/node_modules
+          startup/client/node_modules
+          startup/server/node_modules
+          tests/node_modules
+          tests/integration-tests/node_modules
+          tests/e2e-tests/node_modules
+        key: test-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json', 'tests/package-lock.json', 'tests/integration-tests/package-lock.json', 'tests/e2e-tests/package-lock.json') }}
+
+    - name: Install dependencies
+      # Self-hosted: cache step skipped → cache-hit '' → install runs.
+      # github-hosted: install runs only on cache miss.
+      if: steps.cache-deps.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm run i
+      env:
+        CI: 'true'
+        HUSKY: '0'
+
+    - name: Cache Playwright browsers (github-hosted only)
+      # On self-hosted ~/.cache/ms-playwright persists between runs.
+      if: runner.environment == 'github-hosted'
+      uses: actions/cache@v5
+      id: cache-pw
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/e2e-tests/package-lock.json') }}
+
+    - name: Install Playwright browsers
+      # Self-hosted: cache step skipped → installs (idempotent if already there).
+      if: steps.cache-pw.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: tests/e2e-tests
+      run: npx playwright install --with-deps chromium
+
+    - name: Materialize .env files
+      shell: bash
+      run: node scripts/setup-env.js
