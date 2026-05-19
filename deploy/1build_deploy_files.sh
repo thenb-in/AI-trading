@@ -162,6 +162,61 @@ for file in ${files_to_replace[@]}; do
         replace_in_var "content" "system_user" "$system_user"
     fi
 
+    # Loopback-IP nginx tweak: when deploying to localhost/127.0.0.1 (CI or
+    # local-only dev), strip the deny-by-default block AND the basic_status
+    # block, then promote the API server block to default_server. Without
+    # this, the API block's templated `server_name 127.0.0.1` collides with
+    # the basic_status block's `127.0.0.1 localhost` — nginx warns
+    # "conflicting server name" and drops the API block's name, so /api/*
+    # requests fall to the 404 block (or basic_status). Production keeps
+    # both other blocks since it has a real public IP, basic_status is
+    # useful for stub_status monitoring, and unknown-Host requests should
+    # be rejected by the deny-by-default block.
+    if [[ "$file" == "base.conf" && ( "$ip_address" == "localhost" || "$ip_address" == "127.0.0.1" ) ]]; then
+        log "  Loopback IP detected — stripping default-404 + basic_status blocks and promoting API block to default_server"
+
+        # Block 1 from base.conf, stripped together with the trailing blank
+        # line so we don't leave a double newline behind. Heredoc keeps the
+        # exact whitespace from the template — if base.conf is reformatted,
+        # this string must be kept in sync.
+        IFS= read -r -d '' block1_text <<'EOF' || true
+server {
+      # TODO: test if this is working correctly
+      listen 80 default_server;
+      location / {
+            return 404;
+      }
+}
+
+EOF
+        replace_in_var "content" "$block1_text" ""
+
+        # Block 2 (basic_status) — same heredoc pattern, same caveat about
+        # keeping whitespace in sync with base.conf.
+        IFS= read -r -d '' block2_text <<'EOF' || true
+server {
+      listen 80;
+      server_name 127.0.0.1 localhost;
+
+      location /basic_status {
+            stub_status on;
+            allow 127.0.0.1;   # Allow only local access
+            deny all;          # Deny access to others
+      }
+}
+
+EOF
+        replace_in_var "content" "$block2_text" ""
+
+        # Promote the API block's `listen 80;` to `listen 80 default_server;`.
+        # Now that block 2 is gone the API block is the only remaining
+        # `listen 80;` line, but anchoring on `set $nbnext_app_path` keeps
+        # this robust if other server blocks are added later.
+        api_listen_old=$'    listen 80;\n    server_name '"$ip_address"$';\n\n    set $nbnext_app_path'
+        api_listen_new=$'    listen 80 default_server;\n    server_name '"$ip_address"$';\n\n    set $nbnext_app_path'
+        replace_in_var "content" "$api_listen_old" "$api_listen_new"
+    fi
+
     # Write the modified content directly to the target file
     log "  Writing $target_file"
     printf '%s' "$content" > "$target_file" || error_exit "Failed to write $target_file"

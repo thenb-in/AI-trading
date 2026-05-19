@@ -1,5 +1,6 @@
 *.conf
 *.service
+*.timer
 
 !base.conf
 !base.service
