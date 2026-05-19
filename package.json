@@ -53,6 +53,7 @@
     "git-detect-case-change": "^1.2.1",
     "globals": "^16.3.0",
     "husky": "^9.1.7",
+    "jscpd": "^4.1.0",
     "lint-staged": "^16.1.5",
     "rimraf": "^6.0.1"
   },
@@ -127,8 +128,5 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
-  },
-  "dependencies": {
-    "jscpd": "^4.0.8"
   }
 }
