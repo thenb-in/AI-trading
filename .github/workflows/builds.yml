@@ -540,10 +540,6 @@ jobs:
   # ────────────────────────────────────────────────────────────────────
   source_tests:
     needs: client_build
-    # contents: write is needed by the reusable workflow to attach
-    # source-e2e-results to the GitHub release on release events.
-    permissions:
-      contents: write
     uses: ./.github/workflows/source_tests.yml
 
   # ────────────────────────────────────────────────────────────────────
