@@ -133,7 +133,10 @@ export default ({ mode }) => {
               '@emotion/styled',
             ],
             'monaco-vendor': ['monaco-editor'],
-            'pdf-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas', 'pdf-lib', 'react-pdf'],
+            // pdf-lib intentionally omitted: declared in startup/client/package.json
+            // but never imported anywhere, so npm's hoist doesn't place it where
+            // Rollup (running from app/client) can resolve it as a chunk entry.
+            'pdf-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas', 'react-pdf'],
             'spreadsheet-vendor': ['exceljs', 'xlsx', 'papaparse'],
             'doc-vendor': ['docx', 'mammoth'],
             'chart-vendor': ['chart.js', 'react-chartjs-2'],
