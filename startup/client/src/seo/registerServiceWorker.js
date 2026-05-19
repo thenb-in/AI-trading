@@ -62,7 +62,6 @@ async function registerServiceWorker(options = {}) {
   } catch (err) {
     // SW registration failing isn't fatal — the app still loads. Log so
     // browser devtools surface it during development of the SW config.
-    // eslint-disable-next-line no-console
     console.warn('[pwa] service-worker registration failed', err);
     return null;
   }

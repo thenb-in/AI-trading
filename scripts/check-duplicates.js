@@ -30,7 +30,10 @@
  * 2) The same cli-table3 summary shape as jscpd’s console reporter, but clone-related columns (clones, duplicated
  *    lines/tokens, percentages) are recomputed from listed clones only; then `Found N clones.`, then
  *    `Detection time:: …ms` (wall time for the jscpd subprocess). Plain text (no ANSI) for stable tooling/git output.
- * 3) A final `PASS` or `FAIL` line for the line-limit rule (exit 1 on FAIL).
+ * 3) A "Filtered N of M clones from listing" breakdown explaining why clones were dropped (below per-clone
+ *    threshold vs ignored format), so PASS with visible clone blocks doesn't look contradictory.
+ * 4) A `PASS — …` or `FAIL — …` verdict line that names the rule and per-file limit, followed by a per-file
+ *    aggregate table marking any file over the limit with "← OVER LIMIT". Exit 1 on FAIL.
  *
  * JSCPD_SKIP=1 — skip the check (exit 0).
  */
@@ -373,11 +376,65 @@ function thresholdForClone(dup) {
     : MAX_DUPLICATE_LINES_PER_FILE;
 }
 
-function cloneMeetsLineThreshold(dup) {
-  if (IGNORED_FORMATS.has(dup.format)) {
-    return false;
+/** Split duplicates into ignored-by-format, below-threshold, and listed. The three buckets partition report.duplicates. */
+function partitionClones(allClones) {
+  const ignoredFormat = [];
+  const belowThreshold = [];
+  const listed = [];
+  for (const dup of allClones) {
+    if (IGNORED_FORMATS.has(dup.format)) {
+      ignoredFormat.push(dup);
+    } else if (cloneFragmentLineSpan(dup) < thresholdForClone(dup)) {
+      belowThreshold.push(dup);
+    } else {
+      listed.push(dup);
+    }
   }
-  return cloneFragmentLineSpan(dup) >= thresholdForClone(dup);
+  return { ignoredFormat, belowThreshold, listed };
+}
+
+/** Per-file aggregate of listed clones (each clone adds its span to BOTH files, like jscpd statistics). */
+function perFileListedAggregates(listedClones) {
+  /** @type {Map<string, number>} */
+  const byFile = new Map();
+  for (const dup of listedClones) {
+    const inc = cloneFragmentLineSpan(dup);
+    for (const name of [dup.firstFile.name, dup.secondFile.name]) {
+      byFile.set(name, (byFile.get(name) ?? 0) + inc);
+    }
+  }
+  return byFile;
+}
+
+function printFilterBreakdown(allCount, ignoredFormatClones, belowThresholdCount) {
+  const filtered = ignoredFormatClones.length + belowThresholdCount;
+  if (filtered === 0) {
+    return;
+  }
+  console.log(`Filtered ${filtered} of ${allCount} clones from listing:`);
+  if (belowThresholdCount > 0) {
+    console.log(
+      `  - ${belowThresholdCount} below per-clone listing threshold ` +
+        `(${MAX_DUPLICATE_LINES_PER_FILE} lines; ${MAX_DUPLICATE_LINES_UTILS} when either file is under a utils/ dir)`,
+    );
+  }
+  if (ignoredFormatClones.length > 0) {
+    const formats = Array.from(new Set(ignoredFormatClones.map((d) => d.format))).sort().join(', ');
+    console.log(`  - ${ignoredFormatClones.length} in ignored formats: ${formats}`);
+  }
+}
+
+function printPerFileAggregates(perFileAggregate, violatingPaths) {
+  if (perFileAggregate.size === 0) {
+    return;
+  }
+  const sorted = Array.from(perFileAggregate.entries()).sort((a, b) => b[1] - a[1]);
+  console.log('  Per-file aggregates from listed clones:');
+  for (const [relPath, lines] of sorted) {
+    const violates = violatingPaths.has(relPath);
+    const marker = violates ? '  ← OVER LIMIT' : '';
+    console.log(`    ${relPath}: ${lines} lines (limit ${MAX_DUPLICATE_LINES_PER_FILE})${marker}`);
+  }
 }
 
 /**
@@ -440,7 +497,8 @@ function runJscpd(projectDirs) {
     const raw = fs.readFileSync(reportPath, 'utf8');
     const report = JSON.parse(raw);
 
-    const listedClones = report.duplicates.filter(cloneMeetsLineThreshold);
+    const allClones = report.duplicates;
+    const { ignoredFormat, belowThreshold, listed: listedClones } = partitionClones(allClones);
     const pairAggregates = pairLineAggregatesFromListedClones(listedClones);
     const nearDuplicatePairPercentByKey = nearDuplicatePairOverlapPercentByKey(
       pairAggregates,
@@ -460,8 +518,19 @@ function runJscpd(projectDirs) {
 
     printConsoleSummary(rulePass ? report.statistics : displayStatistics);
     console.log(`Detection time:: ${elapsedMs.toFixed(3)}ms`);
-    console.log(rulePass ? 'PASS' : 'FAIL');
-    if (!rulePass) {
+    printFilterBreakdown(allClones.length, ignoredFormat, belowThreshold.length);
+
+    const perFileAggregate = perFileListedAggregates(listedClones);
+    if (rulePass) {
+      const verdict =
+        listedClones.length === 0
+          ? 'PASS — no clones above the listing threshold.'
+          : `PASS — listed clones don't push any file above the ${MAX_DUPLICATE_LINES_PER_FILE}-line per-file aggregate limit.`;
+      console.log(verdict);
+      printPerFileAggregates(perFileAggregate, violatingPaths);
+    } else {
+      console.log(`FAIL — ${violatingPaths.size} file(s) over the ${MAX_DUPLICATE_LINES_PER_FILE}-line per-file aggregate limit.`);
+      printPerFileAggregates(perFileAggregate, violatingPaths);
       console.log('');
       console.log('Fix guidance: Parameterize functions with useful options instead of');
       console.log('mechanically extracting shared code. Shared functions should represent');
