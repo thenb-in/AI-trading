@@ -40,10 +40,18 @@ const MasterTable = ({
       const fieldKey = column.key || column.id;
       const headerName = column.label || column.display_name || fieldKey;
 
+      // `type` (and `format`) must flow through to NbNextDataGrid so sortRows
+      // can pick the right comparator — e.g. date columns sort chronologically
+      // instead of falling back to string localeCompare on YYYY-MM-DD vs ISO.
+      const sortType = column.format === 'date' || column.format === 'datetime'
+        ? column.format
+        : column.type;
+
       if (typeof column.render === 'function') {
         return {
           field: fieldKey,
           headerName,
+          type: sortType,
           renderCell: ({ row }) => {
             try {
               return column.render(row);
@@ -59,6 +67,7 @@ const MasterTable = ({
         return {
           field: fieldKey,
           headerName,
+          type: sortType,
           renderCell: ({ row }) => {
             const value = row[fieldKey];
             if (!value) return <span>-</span>;
@@ -93,6 +102,7 @@ const MasterTable = ({
         return {
           field: fieldKey,
           headerName,
+          type: 'date',
           renderCell: ({ row }) => (row[fieldKey] ? formatDateForDisplay(row[fieldKey]) : '-'),
         };
       }
@@ -101,6 +111,7 @@ const MasterTable = ({
         return {
           field: fieldKey,
           headerName,
+          type: 'datetime',
           renderCell: ({ row }) => (row[fieldKey] ? formatDateTimeForDisplay(row[fieldKey]) : '-'),
         };
       }
@@ -110,6 +121,7 @@ const MasterTable = ({
         return {
           field: fieldKey,
           headerName,
+          type: sortType,
           renderCell: ({ row }) => {
             const v = row[fieldKey];
             if (v == null) return '-';
@@ -122,6 +134,7 @@ const MasterTable = ({
         return {
           field: fieldKey,
           headerName,
+          type: 'boolean',
           renderCell: ({ row }) => {
             const v = row[fieldKey];
             if (v == null) return '-';
@@ -133,6 +146,7 @@ const MasterTable = ({
       return {
         field: fieldKey,
         headerName,
+        type: sortType,
         valueGetter: ({ row }) => {
           const v = row[fieldKey];
           return v == null || v === '' ? '-' : v;

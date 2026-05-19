@@ -1,17 +1,11 @@
 import PropTypes from 'prop-types';
-import { useSearchParams } from 'react-router-dom';
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 
-import {
-  fetchReportData,
-  handleFiltersApply,
-  processApiData,
-  applyDefaultFiltersToSearchParams,
-} from '@startup/components/base_report/ReportUtils';
 import { NbNextDataGrid } from '@startup/components/nbnext_data_grid/NbNextDataGrid';
 import { getInitialSortModel } from '@utils/getInitialSortModel';
 import { BaseReportContext } from '@startup/context/BaseReportContext';
 import { BaseReportLayout } from './BaseReportLayout';
+import { useDataGridReport } from './useDataGridReport';
 
 /**
  * Generic report shell — chrome + filters + state + grid.
@@ -25,24 +19,10 @@ import { BaseReportLayout } from './BaseReportLayout';
  *
  *  2. **Custom child** — pass a child component (typically a small wrapper).
  *     The child reads state via `useBaseReportState()` and renders whatever
- *     grid / layout / sibling overlays it needs. Use this for reports with
- *     interactive cells, tabs, sibling modals, etc.
+ *     grid / layout / sibling overlays it needs.
  *
- *     ```jsx
- *     <BaseReport report={...} filtersConfig={...}>
- *       <MyCustomGridWrapper />
- *     </BaseReport>
- *
- *     // inside MyCustomGridWrapper:
- *     const { rows, columns, setRows, dataGridRef } = useBaseReportState();
- *     ```
- *
- * Caller-supplied contracts (no domain coupling here):
- *  - `filtersConfig` / `isFilterLoading` — caller decides which filter set + dynamic-options source.
- *  - `applyDefaultFilters` — seed search params from `report.defaultFilters` on mount.
- *
- * Default-grid only props (ignored when `children` is provided):
- *  - `documentName`, `frozenColumns`, `initialSortFallbackColumns`, `showTotalRow`.
+ * State / lifecycle delegated to `useDataGridReport`; the caller still owns
+ * the filtersConfig (so different filter sets per report stay caller-driven).
  */
 const BaseReport = ({
   report,
@@ -56,71 +36,21 @@ const BaseReport = ({
   showTotalRow = false,
   children,
 }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [rows, setRows] = useState([]);
-  const [columns, setColumns] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const dataGridRef = useRef(null);
+  const {
+    rows,
+    setRows,
+    columns,
+    setColumns,
+    isFiltering,
+    onFiltersApply,
+    dataGridRef,
+    isLoadingData,
+  } = useDataGridReport({
+    report,
+    locationState,
+    applyDefaultFilters,
+  });
 
-  const isEditable = false;
-
-  const defaultReportFilters = useMemo(() => ({ ...(report?.defaultFilters || {}) }), [report]);
-
-  useEffect(() => {
-    if (!applyDefaultFilters) return;
-    applyDefaultFiltersToSearchParams(defaultReportFilters, searchParams, setSearchParams);
-  }, [applyDefaultFilters, defaultReportFilters, searchParams, setSearchParams]);
-
-  useEffect(() => {
-    fetchReportData(
-      report,
-      locationState,
-      setRows,
-      setColumns,
-      setLoading,
-      setInitialLoad,
-      () => {},
-      setSearchParams,
-      isEditable,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [report.title, locationState]);
-
-  const onFiltersApply = (filters) => {
-    handleFiltersApply(
-      filters,
-      report,
-      setRows,
-      setColumns,
-      setLoading,
-      setIsFiltering,
-      setSearchParams,
-      () => {},
-      isEditable,
-    );
-  };
-
-  useEffect(() => {
-    if (locationState?.reportData && locationState?.columns) {
-      const processed = processApiData(
-        {
-          columns: locationState.columns,
-          data: locationState.reportData,
-          status_definitions: locationState.statusDefinitions || {},
-        },
-        () => {},
-        false,
-      );
-      setColumns(processed.gridColumns);
-      setRows(processed.gridRows);
-      setLoading(false);
-      setInitialLoad(false);
-    }
-  }, [locationState]);
-
-  const isLoadingData = loading || initialLoad;
   const initialSortModel = getInitialSortModel(columns, initialSortFallbackColumns);
 
   const contextValue = useMemo(
@@ -133,7 +63,7 @@ const BaseReport = ({
       isLoadingData,
       dataGridRef,
     }),
-    [rows, columns, isFiltering, isLoadingData],
+    [rows, columns, setRows, setColumns, isFiltering, isLoadingData, dataGridRef],
   );
 
   return (
