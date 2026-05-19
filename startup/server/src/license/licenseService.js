@@ -50,7 +50,7 @@ function licenseEnforcementEnabled() {
 }
 
 function getAppName() {
-  return env.APP_NAME || 'unknown-app';
+  return env.APP_NAME;
 }
 
 function nowMs() {
