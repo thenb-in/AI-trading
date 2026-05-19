@@ -49,9 +49,20 @@ const CameraCaptureContentBase = (
     preCaptureOverlay,
     /** Called from `handleClose` / `handleRetake` so callers can clear validator-related state. */
     onResetExtras,
+    /**
+     * Optional ref objects forwarded from a wrapper (e.g. the face-detection variant) so the
+     * wrapper can read the live `<video>` / `<canvas>` elements from outside. Defaults to
+     * internal refs; passing these does not change behavior here, it just shares identity.
+     */
+    externalVideoRef,
+    externalCanvasRef,
+    /** Fired whenever `stream` / `isVideoReady` change so wrappers can drive their own effects. */
+    onCameraStateChange,
   } = props;
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
+  const internalVideoRef = useRef(null);
+  const internalCanvasRef = useRef(null);
+  const videoRef = externalVideoRef ?? internalVideoRef;
+  const canvasRef = externalCanvasRef ?? internalCanvasRef;
   const streamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordingTimerRef = useRef(null);
@@ -168,6 +179,10 @@ const CameraCaptureContentBase = (
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  useEffect(() => {
+    if (onCameraStateChange) onCameraStateChange({ stream, isVideoReady });
+  }, [stream, isVideoReady, onCameraStateChange]);
 
   useEffect(() => {
     if (!isActive) {
@@ -365,6 +380,9 @@ CameraCaptureContentBase.propTypes = {
   cameraOverlay: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   preCaptureOverlay: PropTypes.node,
   onResetExtras: PropTypes.func,
+  externalVideoRef: PropTypes.object,
+  externalCanvasRef: PropTypes.object,
+  onCameraStateChange: PropTypes.func,
 };
 
 CameraCaptureContent.propTypes = CameraCaptureContentBase.propTypes;

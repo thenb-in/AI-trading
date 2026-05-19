@@ -6,12 +6,16 @@ import { CameraCaptureContent } from './components/CameraCaptureContent';
 /**
  * Camera capture inside a modal. For inline usage (e.g. QuickCheckIn), use CameraCaptureContent with variant="inline".
  */
+// `Content` lets app-side wrappers swap in an extended CameraCaptureContent
+// (e.g. with Pico face detection) without duplicating the modal scaffolding.
 const CameraCapture = ({
   onCapture,
   onClose,
   isOpen,
   mode = 'photo',
   cameraContainerClassName,
+  Content = CameraCaptureContent,
+  contentProps,
 }) => {
   const handleClose = useCallback(() => {
     if (onClose) onClose();
@@ -24,13 +28,14 @@ const CameraCapture = ({
       title={mode === 'photo' ? 'Take Photo' : 'Record Video'}
       size="lg"
     >
-      <CameraCaptureContent
+      <Content
         onCapture={onCapture}
         onClose={handleClose}
         mode={mode}
         isActive={isOpen}
         variant="modal"
         cameraContainerClassName={cameraContainerClassName}
+        {...contentProps}
       />
     </MasterModal>
   );
@@ -42,6 +47,8 @@ CameraCapture.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   mode: PropTypes.oneOf(['photo', 'video']),
   cameraContainerClassName: PropTypes.string,
+  Content: PropTypes.elementType,
+  contentProps: PropTypes.object,
 };
 
 export { CameraCapture };
