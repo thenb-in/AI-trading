@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-'use strict';
-
 // Build-time prerender for SEO of public routes. After `vite build`
 // produces a single-page-app `dist/index.html`, this script:
 //
@@ -24,9 +22,13 @@
 // crawl the SPA (modern Googlebot executes JS), just slower and with
 // weaker first-byte SEO.
 
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
+import fs from 'fs';
+import path from 'path';
+import http from 'http';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const DEFAULT_ROUTES = ['/', '/signup', '/forgot-password'];
 const DEFAULT_PORT = 51789;
@@ -106,14 +108,14 @@ function staticServer(distDir, port) {
   }).listen(port);
 }
 
-function tryRequirePuppeteer() {
+async function tryImportPuppeteer() {
   // We try `puppeteer` first (full Chromium bundle), then fall back to
   // `puppeteer-core` (no Chromium; requires PUPPETEER_EXECUTABLE_PATH).
   // This lets ops choose: cheap-and-easy (puppeteer) or smaller artifact
   // + system Chrome (puppeteer-core).
-  try { return require('puppeteer'); }
+  try { return (await import('puppeteer')).default; }
   catch { /* try core */ }
-  try { return require('puppeteer-core'); }
+  try { return (await import('puppeteer-core')).default; }
   catch { return null; }
 }
 
@@ -161,14 +163,14 @@ async function main() {
 
   if (!fs.existsSync(distDir)) {
     console.error(`[prerender] dist dir not found: ${distDir}`);
-    process.exit(1);  
+    process.exit(1);
   }
 
   const cfg = loadConfig(distDir, args.config);
   const routes = Array.isArray(cfg.routes) && cfg.routes.length ? cfg.routes : DEFAULT_ROUTES;
   const timeoutMs = cfg.timeoutMs || DEFAULT_TIMEOUT_MS;
 
-  const puppeteer = tryRequirePuppeteer();
+  const puppeteer = await tryImportPuppeteer();
   if (!puppeteer) {
     console.warn(
       '\n[prerender] puppeteer not installed; skipping prerender step.\n'
@@ -176,7 +178,7 @@ async function main() {
       + '             puppeteer for stronger SEO + faster first paint.\n'
       + '             To enable: `npm i -D puppeteer` in the client folder.\n'
     );
-    process.exit(0);  
+    process.exit(0);
   }
 
   console.log(`[prerender] dist=${distDir} routes=${routes.join(', ')}`);
@@ -209,5 +211,5 @@ async function main() {
 
 main().catch(err => {
   console.error('[prerender] fatal:', err);
-  process.exit(1);  
+  process.exit(1);
 });
