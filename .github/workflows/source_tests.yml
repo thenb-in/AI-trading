@@ -73,15 +73,15 @@ jobs:
           # is materialized by install-deps from tests/e2e-tests/.env.example
           # — single source of truth, no second copy of the values to drift.
           ENV_FILE=tests/e2e-tests/.env
-          TEST_SADMIN_USERNAME=$(grep -E '^TEST_SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
-          TEST_SADMIN_PASSWORD=$(grep -E '^TEST_SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
-          if [ -z "$TEST_SADMIN_USERNAME" ] || [ -z "$TEST_SADMIN_PASSWORD" ]; then
-            echo "[seed] missing TEST_SADMIN_USERNAME or TEST_SADMIN_PASSWORD in $ENV_FILE"; exit 1
+          SADMIN_USERNAME=$(grep -E '^SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
+          SADMIN_PASSWORD=$(grep -E '^SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
+          if [ -z "$SADMIN_USERNAME" ] || [ -z "$SADMIN_PASSWORD" ]; then
+            echo "[seed] missing SADMIN_USERNAME or SADMIN_PASSWORD in $ENV_FILE"; exit 1
           fi
-          export TEST_SADMIN_USERNAME TEST_SADMIN_PASSWORD
+          export SADMIN_USERNAME SADMIN_PASSWORD
           echo "[seed] credentials sourced from $ENV_FILE:"
-          echo "[seed]   TEST_SADMIN_USERNAME=$TEST_SADMIN_USERNAME"
-          echo "[seed]   TEST_SADMIN_PASSWORD=$TEST_SADMIN_PASSWORD"
+          echo "[seed]   SADMIN_USERNAME=$SADMIN_USERNAME"
+          echo "[seed]   SADMIN_PASSWORD=$SADMIN_PASSWORD"
           npm run create-new-company
         env:
           CI: true

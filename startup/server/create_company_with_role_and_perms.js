@@ -73,7 +73,7 @@ async function createUser(company, transaction) {
     username = env.SADMIN_USERNAME;
     password = env.SADMIN_PASSWORD;
     if (!username || !password) {
-      logger.info(`Non-interactive run: SADMIN_USERNAME ${username}/TEST_SADMIN_PASSWORD ${password} not set — skipping user creation`);
+      logger.info(`Non-interactive run: SADMIN_USERNAME ${username}/SADMIN_PASSWORD ${password} not set — skipping user creation`);
       return null;
     }
     phone = null;
@@ -148,8 +148,10 @@ async function main() {
     const user = await createUser(company, null); // No transaction needed after commit
 
     // approve user
-    await approveUser(user.id);
-    logger.info(`User ${user.username} approved successfully ${user.id}`);
+    if (user) {
+      await approveUser(user.id);
+      logger.info(`User ${user.username} approved successfully ${user.id}`);
+    }
 
     // Always run createStartingAppData to ensure all default data exists
     // This will skip any data that already exists and only create new data
