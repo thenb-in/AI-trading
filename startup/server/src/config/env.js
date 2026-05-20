@@ -93,6 +93,7 @@ module.exports = {
   SERVER_URL: process.env.SERVER_URL,
   APP_NAME: appName || 'unknown-app',
   SECURE_COOKIE: process.env.SECURE_COOKIE === 'true',
+  LOG_LEVEL: process.env.LOG_LEVEL,
 
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,
@@ -123,8 +124,9 @@ module.exports = {
   // want repeated phone-home attempts to the wallet logged as failures).
   // LICENSE_WALLET_PUBLIC_KEYS is a JSON array of PEM strings; if set,
   // it overrides the pinned public keys file under SECRET_DIR.
-  LICENSE_ENFORCEMENT: process.env.LICENSE_ENFORCEMENT,
-  LICENSE_AUTO_RENEW: process.env.LICENSE_AUTO_RENEW,
+  // Defaults are 'true' so production fails closed if the env var is unset.
+  LICENSE_ENFORCEMENT: process.env.LICENSE_ENFORCEMENT || 'true',
+  LICENSE_AUTO_RENEW: process.env.LICENSE_AUTO_RENEW || 'true',
   LICENSE_WALLET_PUBLIC_KEYS: process.env.LICENSE_WALLET_PUBLIC_KEYS,
 
   // File upload configuration
@@ -148,6 +150,20 @@ module.exports = {
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
 
+  // Django OAuth introspection
+  DJANGO_AUTH_URL: process.env.DJANGO_AUTH_URL,
+
+  // ADMS coalesce windows. See app/server/src/constants/adms.js for the
+  // rationale behind each window. Env-overridable for tests.
+  ADMS_REFRESH_QUERY_COALESCE_MS:
+    Number(process.env.ADMS_REFRESH_QUERY_COALESCE_MS) || 30 * 1000,
+  ADMS_FANOUT_COALESCE_MS:
+    Number(process.env.ADMS_FANOUT_COALESCE_MS) || 30 * 1000,
+
+  // checkin/checkout aggregator batch size. No default — the consumer
+  // treats undefined as "no batching" and falls back to its own limit.
+  EMPLOYEE_BATCH_SIZE: process.env.EMPLOYEE_BATCH_SIZE,
+
   // Piscina worker pool configuration
   // CPU-based defaults: leave 1 core for main thread; keep at least half of cores warm
   PISCINA_MAX_THREADS: PISCINA_MAX_THREADS,
@@ -159,5 +175,18 @@ module.exports = {
   // Helper functions
   isProduction,
   isSecureCookie,
-  isDevelopment
+  isDevelopment,
+
+
+
+  // local installs
+  // Path to the built client bundle; resolved against process.cwd() at use.
+  CLIENT_STATIC_DIR: process.env.CLIENT_STATIC_DIR || '../client',
+
+
+
+  // CI/tests - Non-interactive create_company script credentials (scripted runs).
+  SADMIN_USERNAME: process.env.SADMIN_USERNAME,
+  SADMIN_PASSWORD: process.env.SADMIN_PASSWORD
+
 };

@@ -45,7 +45,7 @@ function licenseEnforcementEnabled() {
   // production this MUST be true; deploy scripts should fail if it
   // isn't. We don't enforce that here — env handling is the operator's
   // responsibility — but log loudly so misconfigurations are obvious.
-  const v = (process.env.LICENSE_ENFORCEMENT || 'true').toLowerCase();
+  const v = env.LICENSE_ENFORCEMENT.toLowerCase();
   return v === 'true' || v === '1' || v === 'on' || v === 'yes';
 }
 

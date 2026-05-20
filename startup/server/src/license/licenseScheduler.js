@@ -17,12 +17,13 @@
 // license is installed).
 
 const logger = require('../../logger');
+const env = require('../config/env');
 const { registerJob } = require('../../scheduler');
 const licenseSeal = require('./licenseSeal');
 const licenseService = require('./licenseService');
 
 function isAutoRenewEnabled() {
-  const v = (process.env.LICENSE_AUTO_RENEW || 'true').toLowerCase();
+  const v = env.LICENSE_AUTO_RENEW.toLowerCase();
   return v === 'true' || v === '1' || v === 'on' || v === 'yes';
 }
 

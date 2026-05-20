@@ -11,7 +11,7 @@ const constantsInSingleFolder = require('./rules/constants-in-single-folder');
 const fileLengthWarning = require('./rules/file-length-warning');
 const noDirectModelImports = require('./rules/no-direct-model-imports');
 const namedExportsOnly = require('./rules/named-exports-only');
-const noEnvDefaultsOutsideEnvJs = require('./rules/no-env-defaults-outside-env-js');
+const noEnvOutsideEnvJs = require('./rules/no-env-outside-env-js');
 const noStartupImportsApp = require('./rules/no-startup-imports-app');
 
 // Combine all rules into a single object
@@ -26,7 +26,7 @@ const customRules = {
   ...fileLengthWarning,
   ...noDirectModelImports,
   ...namedExportsOnly,
-  ...noEnvDefaultsOutsideEnvJs,
+  ...noEnvOutsideEnvJs,
   ...noStartupImportsApp
 };
 

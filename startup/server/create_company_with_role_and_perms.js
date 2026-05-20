@@ -70,10 +70,10 @@ async function createUser(company, transaction) {
     // CI / scripted runs: pull credentials from env. If they're missing,
     // skip user creation rather than guess — downstream tests will fail
     // loudly on missing login, which is the right signal.
-    username = process.env.TEST_SADMIN_USERNAME;
-    password = process.env.TEST_SADMIN_PASSWORD;
+    username = env.SADMIN_USERNAME;
+    password = env.SADMIN_PASSWORD;
     if (!username || !password) {
-      logger.info(`Non-interactive run: TEST_SADMIN_USERNAME ${username}/TEST_SADMIN_PASSWORD ${password} not set — skipping user creation`);
+      logger.info(`Non-interactive run: SADMIN_USERNAME ${username}/TEST_SADMIN_PASSWORD ${password} not set — skipping user creation`);
       return null;
     }
     phone = null;

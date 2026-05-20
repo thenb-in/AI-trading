@@ -1,7 +1,6 @@
 'use strict';
 
 const Sequelize = require('sequelize');
-const process = require('process');
 const env = require('../config/env');
 const logger = require('../../logger');
 
@@ -29,7 +28,7 @@ const baseOptions = {
 const createSequelize = () => {
   const config = require('../config/config')[env.NODE_ENV];
   if (config.use_env_variable) {
-    return new Sequelize(process.env[config.use_env_variable], {
+    return new Sequelize(env.DATABASE_URL, {
       dialect: config.dialect,
       ...baseOptions
     });

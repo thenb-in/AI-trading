@@ -40,7 +40,7 @@ const BAKED_KEYS = Object.freeze([
 ]);
 
 function parseFromEnv() {
-  const raw = process.env.LICENSE_WALLET_PUBLIC_KEYS;
+  const raw = env.LICENSE_WALLET_PUBLIC_KEYS;
   if (!raw) {
     return null;
   }

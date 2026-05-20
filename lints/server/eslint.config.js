@@ -94,7 +94,7 @@ module.exports = [
       'custom/named-exports-only': ['error', {
         excludePatterns: ['eslint-rules', 'scripts', 'migrations']
       }],
-      'custom/no-env-defaults-outside-env-js': 'error',
+      'custom/no-env-outside-env-js': 'error',
       'custom/no-startup-imports-app': 'error',
 
       // Import/export rules
@@ -133,6 +133,7 @@ module.exports = [
       'custom/no-console-usage': 'off', // Allow console in formulas
       'custom/no-logger-commas': 'off', // Relaxed for formulas
       'custom/no-direct-dotenv': 'off', // Not applicable to formulas
+      'custom/no-env-outside-env-js': 'off', // Not applicable to formulas
       'custom/no-hardcoded-strings': 'off', // Relaxed for formulas
       'custom/warn-mixed-strings': 'off', // Relaxed for formulas
       'custom/no-json-stringify-in-logs': 'off', // Relaxed for formulas
@@ -158,6 +159,7 @@ module.exports = [
       'custom/no-console-usage': 'off', // Allow console in scripts
       // 'custom/logger-args-checker': 'off', // Relaxed for scripts
       'custom/no-direct-dotenv': 'off', // Allow direct dotenv in setup scripts
+      'custom/no-env-outside-env-js': 'off', // Scripts run before env.js bootstrap; raw process.env is fine
       'custom/no-hardcoded-strings': 'off', // Relaxed for scripts
       'custom/no-json-stringify-in-logs': 'off', // Relaxed for scripts
       'custom/no-direct-model-imports': 'off', // Scripts may legitimately access models directly
@@ -171,6 +173,28 @@ module.exports = [
     rules: {
       ...get_base_config().rules,
       'custom/file-length-warning': 'off',
+    }
+  },
+  // Test files (including __*_test__.js sentinels and anything under tests/)
+  // legitimately set process.env.X before requiring modules that consume env,
+  // so the strict env-centralization rule is relaxed here.
+  {
+    files: ['**/__*test*__.js', '**/*.test.js', '**/tests/**/*.js'],
+    ...get_base_config(),
+    rules: {
+      ...get_base_config().rules,
+      'custom/no-env-outside-env-js': 'off'
+    }
+  },
+  // logger.js is required by config/env.js during the dotenv bootstrap, so it
+  // cannot itself import env.js (circular). It reads NODE_ENV / LOG_LEVEL
+  // directly — the only place outside env.js that's allowed to.
+  {
+    files: ['**/startup/server/logger.js'],
+    ...get_base_config(),
+    rules: {
+      ...get_base_config().rules,
+      'custom/no-env-outside-env-js': 'off'
     }
   }
 ];

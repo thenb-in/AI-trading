@@ -1,4 +1,5 @@
 const logger = require('../../logger');
+const env = require('../config/env');
 
 const errorMiddleware = (err, req, res, _next) => {
   const status = err.status || err.statusCode || 500;
@@ -11,7 +12,7 @@ const errorMiddleware = (err, req, res, _next) => {
 
   res.status(validStatus).json({
     error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(env.isDevelopment && { stack: err.stack })
   });
 };
 
