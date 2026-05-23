@@ -199,8 +199,8 @@ function GlobalSearchPalette({
       sx={{ zIndex: PALETTE_Z_INDEX }}
       PaperProps={{
         sx: {
-          mt: 10,
-          borderRadius: 2,
+          mt: { xs: 0, sm: 10 },
+          borderRadius: { xs: 0, sm: 2 },
           overflow: "hidden",
           position: "relative",
           zIndex: PALETTE_Z_INDEX + 1,
@@ -215,21 +215,36 @@ function GlobalSearchPalette({
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
-            gap: 2,
+            gap: { xs: 1, sm: 2 },
             flexGrow: 1,
             mr: 1,
+            minWidth: 0,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              fontSize: { xs: "1rem", sm: "1.25rem" },
+              whiteSpace: "nowrap",
+            }}
+          >
            Global Search
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              display: { xs: "none", sm: "block" },
+              whiteSpace: "nowrap",
+            }}
+          >
             {shortcutLabel} / Ctrl+K
           </Typography>
         </Box>
       }
     >
-      <Box sx={{ pt: 0.5 }}>
+      <Box sx={{ pt: 0.5, flexShrink: 0 }}>
         <MasterSearchInput
           ref={inputRef}
           value={query}
@@ -244,9 +259,18 @@ function GlobalSearchPalette({
         )}
       </Box>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: { xs: 1.5, sm: 2 }, flexShrink: 0 }} />
 
-      <Box sx={{ maxHeight: 420, overflow: "auto", mx: -3, px: 3 }}>
+      <Box
+        sx={{
+          flexGrow: { xs: 1, sm: 0 },
+          minHeight: 0,
+          maxHeight: { xs: "none", sm: 420 },
+          overflow: "auto",
+          mx: { xs: -2, sm: -3 },
+          px: { xs: 2, sm: 3 },
+        }}
+      >
         {filtered.length ? (
           <List disablePadding>
             {filtered.map(renderSearchResultItem)}

@@ -47,17 +47,26 @@ const SearchResultItem = ({ item, idx, activeIndex, onMouseEnter, onClick, query
     >
       <ListItemText
         primary={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body1" sx={{ fontWeight: 700 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            <Typography
+              variant="body1"
+              sx={{
+                fontWeight: 700,
+                fontSize: { xs: "0.95rem", sm: "1rem" },
+                wordBreak: "break-word",
+              }}
+            >
               <HighlightText text={item.title} highlight={query} />
             </Typography>
-            <Chip 
-              size="small" 
-              label={item.type} 
+            <Chip
+              size="small"
+              label={item.type}
               color={item.type === REPORT ? "primary" : "default"}
               variant={isQueryReport && isItemReport ? "filled" : "outlined"}
-              sx={{ 
+              sx={{
                 fontWeight: 700,
+                height: 20,
+                fontSize: fontSize.xs,
                 boxShadow: isQueryReport && isItemReport ? `0 0 8px ${colors.warning.light}` : "none"
               }}
             />
