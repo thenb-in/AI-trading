@@ -1,19 +1,7 @@
-import { Filter } from './filter';
 import PropTypes from 'prop-types';
+import { BaseFilter } from './BaseFilter';
 
-const ReportFilter = ({
-  onFiltersApply,
-  filtersConfig = [],
-  isLoading = false,
-  disabled = false,
-}) => (
-  <Filter
-    filtersConfig={filtersConfig}
-    onFiltersApply={onFiltersApply}
-    isLoading={isLoading}
-    disabled={disabled}
-  />
-);
+const ReportFilter = (props) => <BaseFilter {...props} />;
 
 ReportFilter.propTypes = {
   onFiltersApply: PropTypes.func,

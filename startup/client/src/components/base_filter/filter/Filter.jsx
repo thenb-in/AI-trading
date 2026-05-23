@@ -17,6 +17,7 @@ const Filter = ({
   onFilterChange,
   disabled = false,
   isLoading = false,
+  hideToggle = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const filterContainerRef = useRef(null);
@@ -49,16 +50,22 @@ const Filter = ({
 
   const toggleExpanded = useCallback(() => setIsExpanded((v) => !v), []);
 
-  const { standardFilters, nonStandardFilters } = useMemo(() => {
+  const { standardFilters, nonStandardFilters, checkboxFilters } = useMemo(() => {
     const standard = [];
     const nonStandard = [];
+    const checkbox = [];
     allFilters.forEach((c) => {
       if (c.hidden) return;
+      if (c.type === 'checkbox') {
+        checkbox.push(c);
+        return;
+      }
       (c.is_standard ? standard : nonStandard).push(c);
     });
     standard.sort(sortByOrder);
     nonStandard.sort(sortByOrder);
-    return { standardFilters: standard, nonStandardFilters: nonStandard };
+    checkbox.sort(sortByOrder);
+    return { standardFilters: standard, nonStandardFilters: nonStandard, checkboxFilters: checkbox };
   }, [allFilters]);
 
   const activeFiltersCount = useMemo(
@@ -104,6 +111,7 @@ const Filter = ({
         isExpanded={isExpanded}
         onLabelClick={handleFiltersLabelClick}
         onToggleExpanded={toggleExpanded}
+        hideToggle={hideToggle}
       />
 
       <div
@@ -128,6 +136,12 @@ const Filter = ({
               <div className={FILTER_GRID_CLASS}>
                 {nonStandardFilters.map((c) => renderCell(c, false))}
               </div>
+            </div>
+          )}
+
+          {checkboxFilters.length > 0 && (
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {checkboxFilters.map((c) => renderCell(c, false))}
             </div>
           )}
 
@@ -165,6 +179,7 @@ Filter.propTypes = {
   onFilterChange: PropTypes.func,
   disabled: PropTypes.bool,
   isLoading: PropTypes.bool,
+  hideToggle: PropTypes.bool,
 };
 
 export { Filter };

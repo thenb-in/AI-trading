@@ -9,6 +9,7 @@ const FilterHeader = ({
   isExpanded,
   onLabelClick,
   onToggleExpanded,
+  hideToggle = false,
 }) => (
   <div className="flex items-center justify-between px-4 py-2.5 border-b-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50/50 rounded-t-lg overflow-hidden">
     <div className="flex items-center gap-2.5">
@@ -38,19 +39,21 @@ const FilterHeader = ({
         </div>
       )}
 
-      <button
-        onClick={onToggleExpanded}
-        disabled={isBusy}
-        className="p-2 text-gray-600 hover:text-gray-800 hover:bg-blue-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-blue-200"
-        aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
-      >
-        <ChevronDown
-          size={16}
-          className={`transform transition-transform duration-200 ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
-        />
-      </button>
+      {!hideToggle && (
+        <button
+          onClick={onToggleExpanded}
+          disabled={isBusy}
+          className="p-2 text-gray-600 hover:text-gray-800 hover:bg-blue-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-blue-200"
+          aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
+        >
+          <ChevronDown
+            size={16}
+            className={`transform transition-transform duration-200 ${
+              isExpanded ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+      )}
     </div>
   </div>
 );
@@ -62,6 +65,7 @@ FilterHeader.propTypes = {
   isExpanded: PropTypes.bool.isRequired,
   onLabelClick: PropTypes.func.isRequired,
   onToggleExpanded: PropTypes.func.isRequired,
+  hideToggle: PropTypes.bool,
 };
 
 export { FilterHeader };

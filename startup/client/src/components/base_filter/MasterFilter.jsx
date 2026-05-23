@@ -1,19 +1,7 @@
-import { Filter } from './filter';
 import PropTypes from 'prop-types';
+import { BaseFilter } from './BaseFilter';
 
-const MasterFilter = ({
-  onFiltersApply,
-  filtersConfig = [],
-  isLoading = false,
-  disabled = false,
-}) => (
-  <Filter
-    filtersConfig={filtersConfig}
-    onFiltersApply={onFiltersApply}
-    isLoading={isLoading}
-    disabled={disabled}
-  />
-);
+const MasterFilter = (props) => <BaseFilter {...props} />;
 
 MasterFilter.propTypes = {
   onFiltersApply: PropTypes.func.isRequired,
