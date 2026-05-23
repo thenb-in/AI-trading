@@ -9,21 +9,21 @@ const ReportCard = ({ report }) => {
   const Icon = report.icon;
 
   return (
-    <NavLink to={report.slug} className="block group"> 
+    <NavLink to={report.slug} className="block group">
       <div
-        className={`relative p-6 rounded-xl border transition-all duration-300 ease-in-out transform group-hover:-translate-y-1 group-hover:shadow-lg ${colorClasses.border} ${colorClasses.bg}`}
+        className={`relative p-4 sm:p-6 rounded-xl border transition-all duration-300 ease-in-out transform group-hover:-translate-y-1 group-hover:shadow-lg ${colorClasses.border} ${colorClasses.bg}`}
       >
-        <div className={`absolute top-0 left-6 w-1 h-full ${colorClasses.accent} rounded-l-xl`}></div>
-        <div className="flex items-start gap-4">
-          <div className={`flex-shrink-0 w-12 h-12 ml-4 rounded-lg flex items-center justify-center ${colorClasses.iconBg}`}>
-            <Icon className={colorClasses.text} size={24} />
+        <div className={`absolute top-0 left-4 sm:left-6 w-1 h-full ${colorClasses.accent} rounded-l-xl`}></div>
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 ml-3 sm:ml-4 rounded-lg flex items-center justify-center ${colorClasses.iconBg}`}>
+            <Icon className={colorClasses.text} size={20} />
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-800 text-md mb-1">{report.title}</h3>
-            <p className="text-sm text-gray-600 mb-4">{report.desc}</p>
-            <div className={`inline-flex items-center gap-1 text-sm font-medium ${colorClasses.text}`}>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-md mb-1 break-words">{report.title}</h3>
+            <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4">{report.desc}</p>
+            <div className={`inline-flex items-center gap-1 text-xs sm:text-sm font-medium ${colorClasses.text}`}>
               <span>View</span>
-              <ChevronRight size={16} className="mt-0.5" />
+              <ChevronRight size={14} className="mt-0.5" />
             </div>
           </div>
         </div>
