@@ -1,10 +1,10 @@
-import { ArrowLeft, Plus, RefreshCw, Download, Upload, FileText } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
-import { hasPermission } from "@utils/hasPermission";
-import { exportMaster, importMaster } from "@utils/masterExportimport.js";
 import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
+import { KebabMenu } from '@startup/components/base_components/menu/KebabMenu';
+import { useMasterHeader } from './useMasterHeader';
 
 const MasterHeader = forwardRef(({
   title,
@@ -34,8 +34,35 @@ const MasterHeader = forwardRef(({
   headerDisabled = false
 }, ref) => {
   const navigate = useNavigate();
-  const importInputRef = useRef(null);
-  const [isImporting, setIsImporting] = useState(false);
+  const {
+    importInputRef,
+    onImportChange,
+    canAdd,
+    secondaryActions,
+    mobileMenuActions,
+  } = useMasterHeader({
+    title,
+    onAdd,
+    onRefresh,
+    userData,
+    permissionKey,
+    showRefresh,
+    showExport,
+    showImport,
+    exportColumns,
+    exportRows,
+    exportFileName,
+    importApi,
+    onExport,
+    onImport,
+    onDownloadTemplate,
+    addButtonText,
+    refreshButtonText,
+    exportButtonText,
+    importButtonText,
+    templateButtonText,
+    headerDisabled,
+  });
 
   useImperativeHandle(ref, () => ({
     clickImportInput: () => {
@@ -43,132 +70,78 @@ const MasterHeader = forwardRef(({
       else importInputRef.current?.click();
     },
     clickDownloadTemplate: () => onDownloadTemplate?.()
-  }), [onImport, onDownloadTemplate]);
-  
-  const onExportClick = () => {
-    if (onExport) {
-      // Use custom export function if provided
-      onExport();
-    } else if (exportColumns?.length || exportRows?.length) {
-      // Use generic export function
-      exportMaster({ columns: exportColumns, rows: exportRows, fileName: exportFileName || title });
-    }
-  };
-
-  const onImportClick = () => {
-    if (onImport) {
-      // Use custom import function if provided
-      onImport();
-    } else if (importInputRef.current) {
-      // Use generic import function
-      importInputRef.current.click();
-    }
-  };
-
-  const onImportChange = async (e) => {
-    if (!importApi) return;
-    await importMaster({ event: e, api: importApi, setImporting: setIsImporting });
-  };
+  }), [onImport, onDownloadTemplate, importInputRef]);
  
   return (
-    <div className="bg-white text-gray-800 p-4 sm:p-6 mb-4 sm:mb-6 rounded-lg shadow-md flex flex-col md:flex-row items-start md:items-center justify-between border border-gray-100">
+    <div className="bg-white text-gray-800 px-4 py-3 sm:p-6 mb-3 sm:mb-6 rounded-lg shadow-md flex flex-row items-start md:items-center justify-between gap-3 md:gap-6 border border-gray-100">
       {/* Left: Back Button + Title */}
-      <div className="flex items-center gap-4 mb-4 md:mb-0">
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         {showBack && (
           <>
             <button
               onClick={() => navigate(backUrl)}
-              className="hover:bg-gray-100 p-2 rounded-full transition duration-200"
+              className="flex-shrink-0 hover:bg-gray-100 p-1.5 sm:p-2 rounded-full transition duration-200"
               aria-label="Go back"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
-            <div className="h-6 w-px bg-gray-300"></div>
+            <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
           </>
         )}
-        <div className="flex flex-col">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
+        <div className="flex flex-col min-w-0">
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-800 truncate leading-tight">{title}</h1>
           {description && (
-            <p className="text-sm text-gray-600 font-medium mt-1">{description}</p>
+            <p className="text-xs sm:text-sm text-gray-600 font-medium mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">{description}</p>
           )}
         </div>
       </div>
 
+      {/* Hidden import file input (always rendered when import is enabled) */}
+      {showImport && (
+        <FileTypeField
+          id="master-import-file"
+          name="masterImportFile"
+          inputRef={importInputRef}
+          accept=".csv,.xlsx,.xls"
+          onChange={onImportChange}
+          fileChangeMode="native"
+          containerClassName="hidden"
+          className=""
+          label=""
+          showClearButton={false}
+          icon={<span className="hidden" />}
+        />
+      )}
+
       {/* Right: Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-        {showRefresh && onRefresh && (
-          <button
-            onClick={onRefresh}
-            disabled={headerDisabled}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {refreshButtonText}
-          </button>
-        )}
-        {showExport && (
-          <button
-            onClick={onExportClick}
-            disabled={headerDisabled}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {exportButtonText}
-          </button>
-        )}
-        {showImport && (
-          <>
-            <FileTypeField
-              id="master-import-file"
-              name="masterImportFile"
-              inputRef={importInputRef}
-              accept=".csv,.xlsx,.xls"
-              onChange={onImportChange}
-              fileChangeMode="native"
-              containerClassName="hidden"
-              className=""
-              label=""
-              showClearButton={false}
-              icon={<span className="hidden" />}
-            />
+      <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
+        {/* Mobile: kebab menu containing ALL actions (including Add) */}
+        <KebabMenu actions={mobileMenuActions} className="sm:hidden" />
+
+        {/* Desktop (sm+): inline labeled secondary buttons */}
+        <div className="hidden sm:flex items-center gap-3">
+          {secondaryActions.map(({ icon: Icon, label, onClick, disabled, spinning }) => (
             <button
-              onClick={onImportClick}
-              disabled={isImporting}
-              className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+              key={label}
+              type="button"
+              onClick={onClick}
+              disabled={disabled}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors whitespace-nowrap"
             >
-              {isImporting ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  {importButtonText}
-                </>
-              )}
+              <Icon className={`h-4 w-4 mr-2 flex-shrink-0 ${spinning ? 'animate-spin' : ''}`} />
+              {label}
             </button>
-          </>
-        )}
-        {onDownloadTemplate && (
-          <button
-            type="button"
-            onClick={onDownloadTemplate}
-            disabled={headerDisabled}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-            title="Download Import Template"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {templateButtonText}
-          </button>
-        )}
-        {onAdd && (!permissionKey || hasPermission(userData, permissionKey)) && (
+          ))}
+        </div>
+
+        {/* Primary Add button — desktop only (mobile has it in the menu) */}
+        {canAdd && (
           <button
             onClick={onAdd}
             disabled={headerDisabled}
-            className="flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+            className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors whitespace-nowrap"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
             {addButtonText}
           </button>
         )}
