@@ -102,8 +102,14 @@ const MasterContent = () => {
     <div className="flex min-h-screen bg-gray-50">
       {/* Main Content */}
       <div className="flex-1">
-        <Container maxWidth="xl" sx={{ py: isLargeScreen ? 3 : 4 }}>
-          <Box sx={{ mb: isLargeScreen ? 4 : 5, textAlign: "center" }}>
+        <Container
+          maxWidth="xl"
+          sx={{
+            py: { xs: 2, sm: 3, lg: 3 },
+            px: { xs: 1.5, sm: 3 },
+          }}
+        >
+          <Box sx={{ mb: { xs: 3, sm: 4, lg: 4 }, textAlign: "center" }}>
             <Typography
               variant="h3"
               component="h1"
@@ -111,7 +117,7 @@ const MasterContent = () => {
               sx={{
                 fontWeight: 700,
                 color: "text.primary",
-                fontSize: isLargeScreen ? "2.5rem" : "2rem",
+                fontSize: { xs: "1.5rem", sm: "2rem", lg: "2.5rem" },
                 background: "linear-gradient(45deg, #1976d2, #9c27b0)",
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
@@ -128,6 +134,8 @@ const MasterContent = () => {
                 mx: "auto",
                 lineHeight: 1.5,
                 fontWeight: 400,
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+                px: { xs: 1, sm: 0 },
               }}
             >
               Streamline organization data management with our comprehensive master modules
@@ -175,7 +183,7 @@ const MasterContent = () => {
           <Box sx={{ mb: 3 }}>
             <Grid
               container
-              spacing={isLargeScreen ? 4 : 3}
+              spacing={{ xs: 2, sm: 3, lg: 4 }}
               justifyContent="center"
               sx={{
                 maxWidth: isLargeScreen ? "none" : "100%",

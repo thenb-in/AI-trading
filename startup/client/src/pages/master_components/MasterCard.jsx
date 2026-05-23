@@ -29,9 +29,9 @@ const MasterCard = ({
       <Card
         elevation={4}
         sx={{
-          width: fullWidth ? "100%" : "auto",
-          minWidth: 350,
-          maxWidth: 450,
+          width: fullWidth ? "100%" : { xs: "100%", sm: "auto" },
+          minWidth: { xs: 0, sm: 320 },
+          maxWidth: { xs: "100%", sm: 450 },
           height: "100%",
           display: "flex",
           flexDirection: "column",
@@ -78,7 +78,7 @@ const MasterCard = ({
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            p: spacing.xl,
+            p: { xs: 2.5, sm: spacing.xl },
             textAlign: "center",
             position: "relative",
             zIndex: 1,
@@ -89,18 +89,18 @@ const MasterCard = ({
             sx={{
               bgcolor: `${color}.main`,
               color: `${color}.contrastText`,
-              p: 2.5,
+              p: { xs: 2, sm: 2.5 },
               borderRadius: "20px",
-              width: 80,
-              height: 80,
+              width: { xs: 64, sm: 80 },
+              height: { xs: 64, sm: 80 },
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 24px",
+              margin: { xs: "0 auto 16px", sm: "0 auto 24px" },
               transition: "transform 0.3s ease-in-out",
               boxShadow: 4,
               "& svg": {
-                fontSize: fontSize['4xl'],
+                fontSize: { xs: fontSize['3xl'], sm: fontSize['4xl'] },
               },
             }}
           >
@@ -113,8 +113,9 @@ const MasterCard = ({
             sx={{
               fontWeight: 700,
               color: "text.primary",
-              mb: 2,
+              mb: { xs: 1.5, sm: 2 },
               letterSpacing: "-0.5px",
+              fontSize: { xs: "1.15rem", sm: "1.5rem" },
             }}
           >
             {title}
@@ -123,10 +124,11 @@ const MasterCard = ({
             variant="body1"
             color="text.secondary"
             sx={{
-              mb: 3,
+              mb: { xs: 2, sm: 3 },
               lineHeight: 1.6,
               flexGrow: 1,
               fontWeight: 400,
+              fontSize: { xs: "0.875rem", sm: "1rem" },
             }}
           >
             {description}
@@ -167,13 +169,14 @@ const MasterCard = ({
             size="large"
             sx={{
               alignSelf: "center",
-              px: spacing.xl,
-              py: 1.5,
-              fontSize: fontSize.base,
+              px: { xs: 3, sm: spacing.xl },
+              py: { xs: 1.25, sm: 1.5 },
+              fontSize: { xs: fontSize.sm, sm: fontSize.base },
               fontWeight: 600,
               borderRadius: 3,
               textTransform: "none",
-              minWidth: 200,
+              minWidth: { xs: "auto", sm: 200 },
+              width: { xs: "100%", sm: "auto" },
               boxShadow: 3,
               "&:hover": {
                 boxShadow: 6,
