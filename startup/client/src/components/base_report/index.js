@@ -3,7 +3,7 @@ export { BaseReportLayout } from './BaseReportLayout';
 export { RowActionButton } from './RowActionButton';
 export { ReportHeader } from './ReportHeader';
 export { ReportTitleSection } from './ReportTitleSection';
-export { ReportFilter } from '../base_filter/ReportFilter';
+export { BaseFilter } from '../base_filter/BaseFilter';
 export { LoadingBarReport } from './LoadingBarReport';
 export {
   fetchReportData,

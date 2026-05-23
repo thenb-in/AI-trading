@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { ReportHeader } from './ReportHeader';
 import { ReportTitleSection } from './ReportTitleSection';
-import { ReportFilter } from '@startup/components/base_filter/ReportFilter';
+import { BaseFilter } from '@startup/components/base_filter/BaseFilter';
 import { LoadingBarReport } from './LoadingBarReport';
 
 /**
@@ -24,7 +24,7 @@ const BaseReportLayout = ({
     <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div className="mb-6">
         <ReportTitleSection report={report} />
-        <ReportFilter
+        <BaseFilter
           onFiltersApply={onFiltersApply}
           filtersConfig={filtersConfig}
           isLoading={isFilterLoading}

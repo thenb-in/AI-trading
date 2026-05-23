@@ -7,7 +7,7 @@ export { MasterModal } from './master/master_modal/MasterModal.jsx';
 export { useMasterModal } from './master/master_modal/useMasterModal';
 export { useMasterExportImport } from './utils/useMasterExportImport';
 export { createImportFunction } from './utils/createImportFunction';
-export { MasterFilter } from '../base_filter/MasterFilter';
+export { BaseFilter } from '../base_filter/BaseFilter';
 export { MasterSearch } from './master/MasterSearch';
 export { MasterSearch as MasterSearchInput } from './master/MasterSearch';
 export { MasterModalActions } from './master/MasterModalActions';

@@ -6,7 +6,7 @@ import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
 import { MasterModal } from './master_modal/MasterModal';
 import { MasterSearch } from './MasterSearch';
-import { MasterFilter } from '../../base_filter/MasterFilter';
+import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@utils/hasPermission';
 import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
 
@@ -208,7 +208,7 @@ const BaseMaster = ({
           onImport={boundOnImport}
         />
         {filtersConfig && (
-          <MasterFilter
+          <BaseFilter
             onFiltersApply={handleFiltersApply}
             filtersConfig={filtersConfig}
             isLoading={isFilterLoading}
