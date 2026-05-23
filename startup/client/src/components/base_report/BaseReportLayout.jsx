@@ -21,8 +21,8 @@ const BaseReportLayout = ({
   <div className="min-h-screen bg-gray-50">
     <ReportHeader isFiltering={isFiltering} />
 
-    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-6">
+    <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+      <div className="mb-4 sm:mb-6">
         <ReportTitleSection report={report} />
         <BaseFilter
           onFiltersApply={onFiltersApply}
@@ -32,7 +32,7 @@ const BaseReportLayout = ({
         />
       </div>
 
-      <div className="relative bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden h-full w-full">
+      <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-sm sm:shadow-lg border border-gray-200 overflow-hidden h-full w-full min-w-0">
         <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
         {children}
       </div>

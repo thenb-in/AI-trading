@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { getColorClasses } from "@startup/constants/theme";
 import { CalendarDays } from "lucide-react";
+import { formatLastActive } from "@utils/dateTimeUtils";
 
 /**
  * Generic ReportTitleSection component displaying report title, description, last updated time, and export button.
@@ -8,43 +9,30 @@ import { CalendarDays } from "lucide-react";
  */
 const ReportTitleSection = ({ report }) => {
   const colorClasses = getColorClasses(report.color);
-  const now = new Date();
-  const formattedDate = now.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const formattedTime = now.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  const lastUpdated = formatLastActive(new Date());
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-200">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 pb-4 sm:pb-6 border-b border-gray-200">
       {/* Left: Title & Description */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-3">
+      <div className="min-w-0">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 flex items-center gap-2 sm:gap-3">
           <span
-            className={`w-3 h-10 rounded-full shadow-sm transition-transform transform hover:scale-105 ${colorClasses.accent}`}
+            className={`flex-shrink-0 w-2 sm:w-3 h-8 sm:h-10 rounded-full shadow-sm transition-transform transform hover:scale-105 ${colorClasses.accent}`}
             title="Report color"
           ></span>
-          <span>{report.title}</span>
+          <span className="break-words">{report.title}</span>
         </h1>
         {report.desc && (
-          <p className="text-gray-500 text-sm mt-1">{report.desc}</p>
+          <p className="text-gray-500 text-xs sm:text-sm mt-1">{report.desc}</p>
         )}
       </div>
 
       {/* Right: Last Updated & Export */}
-     <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-3 mt-2 md:mt-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2 sm:gap-3">
         {/* Last Updated */}
-        <div className="flex items-center text-sm text-gray-500 gap-2">
-          <CalendarDays className="w-4 h-4 text-gray-400" />
-          <span>
-            Last updated: {formattedDate}, {formattedTime}
-          </span>
+        <div className="flex items-center text-xs sm:text-sm text-gray-500 gap-1.5 sm:gap-2">
+          <CalendarDays className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <span className="truncate">Last updated: {lastUpdated}</span>
         </div>
       </div>
     </div>
