@@ -102,10 +102,10 @@ fi
 
 # ─── Everything below here runs only in the re-exec'd (new) update.sh ──────
 
-# Read app_name from the existing install
-# shellcheck disable=SC1091
-source "$INSTALL/VERSION"
-APP_NAME="${app_name:-}"
+# Read app_name from the existing install. Parse with grep instead of `source`
+# — VERSION may contain unquoted free-form fields (e.g. commit_msg) that bash
+# would mis-execute as commands.
+APP_NAME=$(grep '^app_name=' "$INSTALL/VERSION" | cut -d= -f2-)
 [[ -n "$APP_NAME" ]] || die "Install VERSION has no app_name."
 SERVICE="$APP_NAME.service"
 NGINX_SERVE_DIR="/app/$APP_NAME"
