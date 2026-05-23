@@ -40,8 +40,20 @@ const ApiService = {
     return this.request('GET', '/company/settings');
   },
 
+  getTerminalListApi() {
+    return this.request('GET', '/company/terminal-list-api');
+  },
+
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
+  },
+
+  getCompanyProfile() {
+    return this.request('GET', '/company-profile');
+  },
+
+  updateCompanyProfile(profile) {
+    return this.request('PUT', '/company-profile', profile);
   },
 
   getUserCompanies() {
@@ -197,6 +209,16 @@ const ApiService = {
 
   updateMultipleSubscriptionPermissionStatuses(data) {
     return this.request('POST', '/admin/subscription-permissions/update-multiple', data);
+  },
+
+  exportSubscription(subscriptionId) {
+    return this.request('GET', `/admin/subscriptions/${subscriptionId}/export`, null, {
+      responseType: 'blob'
+    });
+  },
+
+  importSubscription(payload) {
+    return this.request('POST', '/admin/subscriptions/import', payload);
   },
 
   // Company-Subscription methods

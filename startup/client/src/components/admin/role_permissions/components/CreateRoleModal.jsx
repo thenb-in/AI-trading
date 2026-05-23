@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
 import { CreateEntityModal } from '../../CreateEntityModal';
+import { useDataContext } from '@context/useDataContext';
 
 function CreateRoleModal({ isOpen, onClose, onSuccess }) {
+  const { userData } = useDataContext();
   return (
     <CreateEntityModal
       isOpen={isOpen}
@@ -10,6 +12,7 @@ function CreateRoleModal({ isOpen, onClose, onSuccess }) {
       onSuccess={onSuccess}
       entityName="Role"
       onSubmitApi={(payload) => ApiService.createRole(payload)}
+      canCreateGlobal={!!userData?.isSupportUser}
     />
   );
 }

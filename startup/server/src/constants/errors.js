@@ -11,8 +11,15 @@ const sequelizeErrors = {
 
 const COMPANY_ID_REQUIRED = 'Company ID is required';
 
+const ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_ROLES = 'Only superadmins can create global roles';
+const ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_SUBSCRIPTIONS = 'Only superadmins can create global subscriptions';
+const ONLY_SUPERADMINS_CAN_IMPORT_GLOBAL_SUBSCRIPTIONS = 'Only superadmins can import global subscriptions';
+
 
 module.exports = {
   sequelizeErrors,
-  COMPANY_ID_REQUIRED
+  COMPANY_ID_REQUIRED,
+  ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_ROLES,
+  ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_SUBSCRIPTIONS,
+  ONLY_SUPERADMINS_CAN_IMPORT_GLOBAL_SUBSCRIPTIONS
 };

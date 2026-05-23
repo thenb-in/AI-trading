@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Globe } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
 
-function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi }) {
+function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi, canCreateGlobal = false }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isGlobal, setIsGlobal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -67,6 +68,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
       const payload = {
         name: name.trim(),
         description: description.trim() || null,
+        ...(canCreateGlobal && { isGlobal }),
       };
 
       await onSubmitApi(payload);
@@ -75,6 +77,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
 
       setName('');
       setDescription('');
+      setIsGlobal(false);
       setErrors({});
 
       onClose();
@@ -93,6 +96,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
     if (!submitting) {
       setName('');
       setDescription('');
+      setIsGlobal(false);
       setErrors({});
       onClose();
     }
@@ -167,6 +171,29 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
             )}
           </div>
 
+          {/* Global toggle - only for super users */}
+          {canCreateGlobal && (
+            <div className="flex items-start gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
+              <input
+                id="entity-isGlobal"
+                type="checkbox"
+                checked={isGlobal}
+                onChange={(e) => setIsGlobal(e.target.checked)}
+                disabled={submitting}
+                className="mt-0.5"
+              />
+              <label htmlFor="entity-isGlobal" className="text-xs text-purple-900 select-none">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <Globe className="w-3 h-3" />
+                  Create as global {entityName.toLowerCase()}
+                </span>
+                <p className="text-purple-700 mt-0.5">
+                  Available to every company instead of just yours.
+                </p>
+              </label>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end items-center gap-2 pt-2 border-t">
             <button
@@ -204,6 +231,7 @@ CreateEntityModal.propTypes = {
   onSuccess: PropTypes.func,
   entityName: PropTypes.string.isRequired,
   onSubmitApi: PropTypes.func.isRequired,
+  canCreateGlobal: PropTypes.bool,
 };
 
 export { CreateEntityModal };

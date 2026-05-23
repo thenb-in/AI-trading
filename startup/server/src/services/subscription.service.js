@@ -2,6 +2,9 @@ const { Op } = require('sequelize');
 const logger = require('../../logger');
 const { Subscription, Permission, User,SubscriptionPermission } = require('../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../utils/modelHelpers');
+const { importSubscription } = require('./subscription.import');
+
+const EXPORT_VISIBLE_STATUSES = ['subscribed', 'hidden'];
 
 const checkSubscriptionExists = async (name, companyId = null) => {
   const whereClause = { name: name.trim() };
@@ -166,11 +169,48 @@ const updateMultipleSubscriptionPermissionStatuses = async (subscription_id, per
   }
 };
 
+/**
+ * Export a subscription's permissions to a portable JSON shape:
+ *   { name, description, isGlobal, permissions: [{ name, status }] }
+ * Only permissions with status 'subscribed' or 'hidden' are exported;
+ * 'not_subscribed' is the implicit default.
+ */
+const exportSubscription = async (subscriptionId) => {
+  const subscription = await Subscription.findByPk(subscriptionId, {
+    include: [{
+      model: Permission,
+      as: 'permissions',
+      through: { attributes: ['status'], as: 'subscriptionPermission' },
+      attributes: ['id', 'name', 'display_name', 'description', 'type']
+    }]
+  });
+  if (!subscription) {
+    throw { status: 404, message: `Subscription ${subscriptionId} not found` };
+  }
+
+  const json = subscription.toJSON();
+  const permissions = (json.permissions || [])
+    .map(p => ({
+      name: p.name,
+      status: p.subscriptionPermission?.status || 'not_subscribed'
+    }))
+    .filter(p => EXPORT_VISIBLE_STATUSES.includes(p.status));
+
+  return {
+    name: json.name,
+    description: json.description || null,
+    isGlobal: subscription.companyId === null,
+    permissions
+  };
+};
+
 module.exports = {
   createSubscription,
   getSubscriptionsAndPermissions,
   getAllPermissions,
   updateSubscriptionPermissionStatus,
-  updateMultipleSubscriptionPermissionStatuses
+  updateMultipleSubscriptionPermissionStatuses,
+  exportSubscription,
+  importSubscription
 };
 

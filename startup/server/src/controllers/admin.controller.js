@@ -1,21 +1,30 @@
 const logger = require('../../logger');
 const adminService = require('../services/admin.service');
+const userService = require('../services/userService');
+const { ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_ROLES } = require('../constants/errors');
 
 
 const createRole = async (req, res) => {
-  // const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
-  // if (!hasPermission) {
-  //   return res.status(404).json({ error: "You are not authorized to access this resource" });
-  // }
   try {
-    const { name, description } = req.body;
-    const companyId = req.user.company_id;
+    const { name, description, isGlobal } = req.body;
 
-    // All roles created from frontend are company-specific
+    if (isGlobal) {
+      const user = await userService.getUserById(req.user.id);
+      if (!user.isSupportUser) {
+        return res.status(403).json({
+          success: false,
+          message: ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_ROLES
+        });
+      }
+    }
+
+    const companyId = isGlobal ? null : req.user.company_id;
     const newRole = await adminService.createRole(name, description, companyId);
     res.json({
       success: true,
-      message: `Role "${newRole.name}" created successfully for your company!`,
+      message: isGlobal
+        ? `Global role "${newRole.name}" created successfully!`
+        : `Role "${newRole.name}" created successfully for your company!`,
       data: newRole
     });
   } catch (error) {

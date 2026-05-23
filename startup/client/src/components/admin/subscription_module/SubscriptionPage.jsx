@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { CreditCard, Loader2, Plus, Globe, Building2 ,Crown} from 'lucide-react';
+import { useRef, useState } from 'react';
+import { CreditCard, Loader2, Plus, Globe, Building2, Crown, Download, Upload } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useSubscriptions } from './hooks/useSubscriptions';
 import { SubscriptionSelector } from './components/SubscriptionSelector';
 import { SubscriptionPermissionSection } from './components/SubscriptionPermissionSection';
@@ -7,9 +8,13 @@ import { AlertMessage } from '../role_permissions/components/AlertMessage';
 import { CreateSubscriptionModal } from './components/CreateSubscriptionModal';
 import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/useDataContext';
+import { ApiService } from '@services/ApiService';
   
 function SubscriptionPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const importFileRef = useRef(null);
   const { userData } = useDataContext();
   const {
     subscriptions,
@@ -26,6 +31,66 @@ function SubscriptionPage() {
   } = useSubscriptions();
 
   const organizedPermissions = organizePermissions(permissions);
+
+  const handleExport = async () => {
+    if (!selectedSubscription) {
+      toast.error('Select a subscription to export');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const response = await ApiService.exportSubscription(selectedSubscription.id);
+      const blob = response.data instanceof Blob
+        ? response.data
+        : new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const safeName = (selectedSubscription.name || 'subscription').replace(/[^a-z0-9-_]+/gi, '_');
+      link.href = url;
+      link.download = `subscription_${safeName}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Subscription exported');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to export subscription');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportClick = () => {
+    if (importFileRef.current) {
+      importFileRef.current.value = '';
+      importFileRef.current.click();
+    }
+  };
+
+  const handleImportFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      let payload;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new Error('Selected file is not valid JSON');
+      }
+      if (payload?.isGlobal && !userData?.isSupportUser) {
+        throw new Error('Only superadmins can import global subscriptions');
+      }
+      const response = await ApiService.importSubscription(payload);
+      toast.success(response.data?.message || 'Subscription imported');
+      refetch();
+    } catch (err) {
+      toast.error(err?.message || 'Failed to import subscription');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -44,13 +109,40 @@ function SubscriptionPage() {
             <Crown className="w-5 h-5 text-yellow-600" />
             <h1 className="text-xl font-bold text-gray-900">Subscriptions</h1>
           </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Subscription
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              disabled={!selectedSubscription || isExporting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={selectedSubscription ? 'Export the selected subscription' : 'Select a subscription to export'}
+            >
+              {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Export
+            </button>
+            <button
+              onClick={handleImportClick}
+              disabled={isImporting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Import a subscription JSON file"
+            >
+              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              Import
+            </button>
+            <input
+              ref={importFileRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Subscription
+            </button>
+          </div>
         </div>
         <p className="text-xs text-gray-600">
           Manage subscription permissions by selecting a subscription and setting permission status below.

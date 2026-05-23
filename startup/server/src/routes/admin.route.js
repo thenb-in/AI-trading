@@ -30,6 +30,8 @@ router.get('/subscriptions', subscriptionController.getSubscriptions);
 router.post('/subscriptions', subscriptionController.createSubscription);
 router.post('/subscription-permissions/update', subscriptionController.updateSubscriptionPermissionStatus);
 router.post('/subscription-permissions/update-multiple', subscriptionController.updateMultipleSubscriptionPermissionStatuses);
+router.get('/subscriptions/:subscription_id/export', subscriptionController.exportSubscription);
+router.post('/subscriptions/import', subscriptionController.importSubscription);
 
 // Company-Subscription routes
 router.get('/companies/:companyId/subscriptions', companySubscriptionController.getCompanySubscriptions);
