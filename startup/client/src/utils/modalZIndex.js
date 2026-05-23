@@ -9,10 +9,11 @@ const Z_INDEX = {
   FULLSCREEN_GRID: 9999,
   // Grid header in fullscreen uses 10000-10003
   FULLSCREEN_GRID_HEADER: 10003,
-  // Modals should be above fullscreen elements
-  MODAL: 10010,
-  // Material-UI Dialog default is 1300, but we need higher for fullscreen
-  MATERIAL_UI_DIALOG: 10010,
+  // Modals must sit above the app sidebar (z-[99999] in AdminSidebar.jsx)
+  // and the fullscreen grid. Anything lower gets visually covered by the
+  // sidebar on mobile where the sidebar can overlay the page.
+  MODAL: 100010,
+  MATERIAL_UI_DIALOG: 100010,
   // Toast notifications
   TOAST: 10000,
 };
@@ -66,7 +67,7 @@ const getMaterialUIDialogZIndex = () => {
  * @returns {string} Tailwind z-index class
  */
 const getModalZIndexClass = () => {
-  return 'z-[10010]';
+  return 'z-[100010]';
 };
 
 export {

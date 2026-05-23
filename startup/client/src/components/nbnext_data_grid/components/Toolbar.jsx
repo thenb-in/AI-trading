@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 import { PaginationControls } from "./PaginationControls.jsx";
 import { ToolbarExportButtons } from "./ToolbarExportButtons.jsx";
 import { ThemeToggle } from "./ThemeToggle.jsx";
+import { ViewModeToggle } from "./ViewModeToggle.jsx";
 import {
   TOOLBAR_BTN_CLASS,
   TOOLBAR_DIVIDER_CLASS,
@@ -38,9 +39,12 @@ function Toolbar({
   hidePagination = false,
   themeLabel = null,
   onCycleTheme = null,
+  viewMode = null,
+  onCycleViewMode = null,
 }) {
   const isTop = position === "top";
   const showThemeToggle = !isTop && themeLabel && typeof onCycleTheme === "function";
+  const showViewModeToggle = !isTop && viewMode && typeof onCycleViewMode === "function";
 
   const toggleColumnMenu = useCallback((v) => !v, []);
 
@@ -76,9 +80,9 @@ function Toolbar({
 
   return (
     <div
-      className={`flex items-center justify-between min-h-[44px] bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200 ${isTop ? "px-4 py-2.5 border-b" : "px-4 py-2 border-t"}`}
+      className={`flex flex-wrap items-center justify-between gap-y-2 min-h-[44px] bg-gradient-to-b from-slate-50 to-slate-100 border-slate-200 ${isTop ? "px-2 sm:px-4 py-2 sm:py-2.5 border-b" : "px-2 sm:px-4 py-2 border-t"}`}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-wrap">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
         {hasActiveFilters && typeof onClearFilters === "function" && (
           <button
             type="button"
@@ -88,16 +92,16 @@ function Toolbar({
             aria-label="Clear all filters"
           >
             <FilterX size={14} strokeWidth={2} className="text-amber-800" aria-hidden />
-            Clear filters
+            <span className="hidden sm:inline">Clear filters</span>
           </button>
         )}
-        <span className="text-sm font-semibold text-slate-800 tracking-tight">NbNext DataGrid</span>
-        <span className="text-[13px] text-slate-600" aria-live="polite">
-          {totalRows} rows · {visibleColumnsCount} columns
+        <span className=" sm:inline text-sm font-semibold text-slate-800 tracking-tight">NbNext DataGrid</span>
+        <span className="text-xs sm:text-[13px] text-slate-600" aria-live="polite">
+          {totalRows} rows · {visibleColumnsCount} cols
         </span>
       </div>
 
-      <div className="flex items-center">
+      <div className="flex items-center flex-wrap gap-1.5 sm:gap-0">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -107,7 +111,7 @@ function Toolbar({
             aria-label="Columns"
           >
             <SlidersHorizontal size={14} strokeWidth={2} />
-            Columns
+            <span className="hidden sm:inline">Columns</span>
           </button>
           <button
             type="button"
@@ -118,7 +122,7 @@ function Toolbar({
             aria-label="Layouts"
           >
             <LayoutGrid size={14} strokeWidth={2} />
-            Layouts
+            <span className="hidden sm:inline">Layouts</span>
           </button>
         </div>
 
@@ -164,15 +168,22 @@ function Toolbar({
               aria-label={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {fullScreen ? <Minimize2 size={14} strokeWidth={2} /> : <Maximize2 size={14} strokeWidth={2} />}
-              <span>{fullScreen ? "Exit" : "Fullscreen"}</span>
+              <span className="hidden sm:inline">{fullScreen ? "Exit" : "Fullscreen"}</span>
             </button>
           </>
         )}
 
-        {showThemeToggle && (
+        {(showViewModeToggle || showThemeToggle) && (
           <>
             <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
-            <ThemeToggle themeLabel={themeLabel} onCycle={onCycleTheme} />
+            <div className="flex items-center gap-1.5">
+              {showViewModeToggle && (
+                <ViewModeToggle viewMode={viewMode} onCycle={onCycleViewMode} />
+              )}
+              {showThemeToggle && (
+                <ThemeToggle themeLabel={themeLabel} onCycle={onCycleTheme} />
+              )}
+            </div>
           </>
         )}
       </div>
@@ -207,6 +218,8 @@ Toolbar.propTypes = {
   hidePagination: PropTypes.bool,
   themeLabel: PropTypes.string,
   onCycleTheme: PropTypes.func,
+  viewMode: PropTypes.oneOf(["table", "cards"]),
+  onCycleViewMode: PropTypes.func,
 };
 
 export { Toolbar };

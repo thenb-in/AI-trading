@@ -25,6 +25,7 @@ import { useGridExport } from "./hooks/useGridExport.js";
 import { useInsightsCollapse } from "./hooks/useInsightsCollapse.js";
 import { useInfiniteScroll } from "./hooks/useInfiniteScroll.js";
 import { useGridTheme } from "./hooks/useGridTheme.js";
+import { useGridViewMode } from "./hooks/useGridViewMode.js";
 
 // Components
 import { EmptyState } from "./components/EmptyState.jsx";
@@ -33,6 +34,7 @@ import { ColumnMenu } from "./components/ColumnMenu.jsx";
 import { LayoutMenu } from "./components/layout/LayoutMenu.jsx";
 import { DataGridHeader } from "./components/DataGridHeader.jsx";
 import { DataGridBody } from "./components/DataGridBody.jsx";
+import { CardView } from "./components/CardView.jsx";
 import { InsightsPanel } from "./components/InsightsPanel.jsx";
 import { GridTabs } from "./components/GridTabs.jsx";
 import { GridScrollToTopButton } from "./components/GridScrollToTopButton.jsx";
@@ -64,16 +66,34 @@ const NbNextDataGrid = forwardRef(({
   showTotalRow = false,
   frozenColumns = [],
   hideConstantColumns = true,
+  /**
+   * Excel export only. When false (default), columns with the same value on
+   * every row are moved to the top summary block and omitted from the data table.
+   * When true, only the `summary` prop appears at the top; constant columns
+   * export as normal table columns (same value repeated per row).
+   */
+  showInsightsAsHeader = false,
+  /**
+   * Excel export only. When false (default), columns with no data in any row are
+   * omitted from the export. When true, all visible export columns are included
+   * even when every cell is empty.
+   */
+  showEmptyColumns = false,
   summary: summaryProp = null,
   /** Theme id from utils/themes.js — "report" (default) or "master". */
   theme = "report",
+  /**
+   * Layout mode — "auto" (default: cards on <640px, table otherwise), "table", or "cards".
+   * Users can flip between table and cards via the bottom toolbar regardless of this default.
+   */
+  viewMode: viewModeProp = "auto",
   showExcelExport = false,
   /** { title, slug } for default Excel export. When provided (and onExcelExport not set), grid uses built-in handleExport. */
   exportReport = null,
   /**
    * Optional. When provided, Excel button calls this with payload: { rows, columns, summary, constantColumns } (grid data).
    * Use this when your report has a different data/response structure: pass your own rows/columns to handleExport.
-   * Example: onExcelExport={async (payload) => { await handleExport({ title, slug }, myRows, myColumns, window.location.href, mySummary, payload.constantColumns); }}
+   * Example: onExcelExport={async (payload) => { await handleExport({ title, slug }, myRows, myColumns, window.location.href, mySummary, payload.constantColumns, payload.totalRow, payload.showInsightsAsHeader, payload.showEmptyColumns); }}
    */
   onExcelExport = null,
   /**
@@ -151,6 +171,9 @@ const NbNextDataGrid = forwardRef(({
 
   // Theme (CSS variables on the container drive all themed colors)
   const { theme: activeTheme, cycleTheme } = useGridTheme(theme);
+
+  // View mode: table vs cards (auto-switches on mobile, user can override).
+  const { viewMode, cycleViewMode } = useGridViewMode(viewModeProp);
 
   // Fullscreen state + Alt+F shortcut (external prop wins if provided)
   const { fullScreen, handleToggleFullScreen } = useFullScreenToggle(externalFullScreen);
@@ -370,9 +393,13 @@ const NbNextDataGrid = forwardRef(({
     groupedRows,
     sortedRows,
     visibleColumns,
+    normalizedColumns,
+    columnOrder,
     summary,
     constantColumns,
     showTotalRow,
+    showInsightsAsHeader,
+    showEmptyColumns,
     onExcelExport,
     exportReport,
     tabs,
@@ -412,11 +439,30 @@ const NbNextDataGrid = forwardRef(({
   // Auto-load the user's default layout on mount (once per documentName)
   useDefaultLayoutLoader({ documentName, columns, normalizedColumns, applyLayout });
 
-  // Container style (accounts for fullscreen + sidebar offset) + theme vars
+  // Container style (accounts for fullscreen + sidebar offset) + theme vars.
+  // Default to natural document flow (container auto-sizes, page scrolls).
+  // The legacy fixed-height layout was computed from `rowHeight × rowCount`
+  // which silently omitted the filter row + total row + variable card height,
+  // so the bottom toolbar would land before the last rows on table view and
+  // clip cards on card view. Natural flow sidesteps the entire formula.
+  //
+  // Exceptions that still need a constrained, internally-scrolling area:
+  //   - fullscreen: pinned 100vh layout with sticky chrome
+  //   - infinite scroll: the IntersectionObserver sentinel needs a scrollable
+  //     root, otherwise it'd report intersecting on every render
+  const useNaturalFlow = !fullScreen && !infiniteScroll;
   const gridContainerStyle = {
     ...getGridContainerStyle(computedContainerHeight, fullScreen, sidebarWidth, minimalMode),
+    ...(useNaturalFlow && {
+      height: "auto",
+      maxHeight: "none",
+      overflow: "visible",
+    }),
     ...activeTheme.vars,
   };
+  const bodyScrollAreaStyle = useNaturalFlow
+    ? { position: "relative", overflowX: "auto" }
+    : scrollAreaStyle(fullScreen);
 
   const insightsHeader = (
     <div ref={insightsRef}>
@@ -501,52 +547,62 @@ const NbNextDataGrid = forwardRef(({
           onClose={() => setShowLayoutMenu(false)}
         />
       )}
-      <div ref={scrollAreaRef} style={scrollAreaStyle(fullScreen)}>
-        <table style={tableStyle}>
-          <DataGridHeader
-            headerRef={headerRef}
-            frozenColumns={computedFrozenColumns}
-            nonFrozenColumns={nonFrozenColumns}
-            cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
-            sortModel={sortModel}
-            frozenState={frozenState}
-            handleHeaderClick={handleHeaderClick}
-            toggleFrozen={toggleFrozen}
-            columnWidths={columnWidths}
-            handleColumnResize={handleColumnResize}
-            fullScreen={fullScreen}
-            filterModel={filterModel}
-            handleFilterChange={handleFilterChange}
-            groupByField={groupByField}
-            toggleGroupBy={toggleGroupBy}
-            onColumnReorder={handleColumnReorder}
-            selection={headerSelectionProp}
-          />
-          <DataGridBody
-            firstRowRef={firstRowRef}
-            pagedRows={displayRows}
-            frozenColumns={computedFrozenColumns}
-            nonFrozenColumns={nonFrozenColumns}
-            cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
+      <div ref={scrollAreaRef} style={bodyScrollAreaStyle}>
+        {viewMode === "cards" ? (
+          <CardView
+            rows={displayRows}
+            columns={[...computedFrozenColumns, ...nonFrozenColumns]}
             selectedRowId={selectedRowId}
-            hoveredRowId={hoveredRowId}
             handleRowClick={handleRowClick}
-            handleRowHover={handleRowHover}
-            handleRowLeave={handleRowLeave}
-            rowHeight={rowHeight}
-            autoHeight={autoHeight}
             getRowIdFunc={getRowId}
-            columnWidths={columnWidths}
-            virtualScrolling={fullScreen}
-            offsetY={fullScreen ? virtualScrollingResult.offsetY : 0}
-            totalHeight={fullScreen ? virtualScrollingResult.totalHeight : 0}
-            startIndex={fullScreen ? virtualScrollingResult.startIndex : 0}
-            showTotalRow={showTotalRow}
-            allRows={sortedRows}
-            allColumns={columnsToUse}
-            selection={bodySelectionProp}
           />
-        </table>
+        ) : (
+          <table style={tableStyle}>
+            <DataGridHeader
+              headerRef={headerRef}
+              frozenColumns={computedFrozenColumns}
+              nonFrozenColumns={nonFrozenColumns}
+              cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
+              sortModel={sortModel}
+              frozenState={frozenState}
+              handleHeaderClick={handleHeaderClick}
+              toggleFrozen={toggleFrozen}
+              columnWidths={columnWidths}
+              handleColumnResize={handleColumnResize}
+              fullScreen={fullScreen}
+              filterModel={filterModel}
+              handleFilterChange={handleFilterChange}
+              groupByField={groupByField}
+              toggleGroupBy={toggleGroupBy}
+              onColumnReorder={handleColumnReorder}
+              selection={headerSelectionProp}
+            />
+            <DataGridBody
+              firstRowRef={firstRowRef}
+              pagedRows={displayRows}
+              frozenColumns={computedFrozenColumns}
+              nonFrozenColumns={nonFrozenColumns}
+              cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
+              selectedRowId={selectedRowId}
+              hoveredRowId={hoveredRowId}
+              handleRowClick={handleRowClick}
+              handleRowHover={handleRowHover}
+              handleRowLeave={handleRowLeave}
+              rowHeight={rowHeight}
+              autoHeight={autoHeight}
+              getRowIdFunc={getRowId}
+              columnWidths={columnWidths}
+              virtualScrolling={fullScreen}
+              offsetY={fullScreen ? virtualScrollingResult.offsetY : 0}
+              totalHeight={fullScreen ? virtualScrollingResult.totalHeight : 0}
+              startIndex={fullScreen ? virtualScrollingResult.startIndex : 0}
+              showTotalRow={showTotalRow}
+              allRows={sortedRows}
+              allColumns={columnsToUse}
+              selection={bodySelectionProp}
+            />
+          </table>
+        )}
         {infiniteScroll && (
           <div
             ref={loadMoreSentinelRef}
@@ -589,6 +645,8 @@ const NbNextDataGrid = forwardRef(({
           hidePagination={infiniteScroll}
           themeLabel={activeTheme.label}
           onCycleTheme={cycleTheme}
+          viewMode={viewMode}
+          onCycleViewMode={cycleViewMode}
         />
       )}
       {showScrollToTop && <GridScrollToTopButton onClick={handleScrollToTop} />}
@@ -634,8 +692,11 @@ NbNextDataGrid.propTypes = {
   showTotalRow: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   hideConstantColumns: PropTypes.bool,
+  showInsightsAsHeader: PropTypes.bool,
+  showEmptyColumns: PropTypes.bool,
   summary: PropTypes.object,
   theme: PropTypes.string,
+  viewMode: PropTypes.oneOf(["auto", "table", "cards"]),
   showExcelExport: PropTypes.bool,
   exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
   onExcelExport: PropTypes.func,

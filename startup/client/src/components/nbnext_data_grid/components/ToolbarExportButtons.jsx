@@ -25,7 +25,7 @@ function ToolbarExportButtons({
         ) : (
           <FileSpreadsheet size={14} className="text-emerald-600 shrink-0" strokeWidth={2} aria-hidden />
         )}
-        <span>Excel</span>
+        <span className=" sm:inline">Excel</span>
       </button>
     </div>
   );

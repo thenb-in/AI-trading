@@ -15,7 +15,7 @@ function PaginationControls({ page, totalPages, autoPageSize, goToPrevPage, goTo
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-slate-600 shrink-0">Rows/page: {autoPageSize}</span>
+      <span className="hidden sm:inline text-sm text-slate-600 shrink-0">Rows/page: {autoPageSize}</span>
       <div className="flex items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 overflow-hidden">
         <button
           type="button"

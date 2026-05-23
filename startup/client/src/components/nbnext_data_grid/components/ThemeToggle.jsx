@@ -15,7 +15,7 @@ function ThemeToggle({ themeLabel, onCycle }) {
       style={themeToggleStyle}
     >
       <Palette size={14} strokeWidth={2} />
-      <span>{themeLabel}</span>
+      <span className="hidden sm:inline">{themeLabel}</span>
     </button>
   );
 }
