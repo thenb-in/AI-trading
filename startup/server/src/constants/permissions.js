@@ -66,6 +66,32 @@ const MASTER_PERMISSION_CONSTANTS = {
   WHATSAPP_TEMPLATE: basePermissions.create_master_permission('whatsapp_template'),
   TERMINAL: basePermissions.create_master_permission('terminal_master'),
   TERMINAL_COMMANDS: basePermissions.create_master_permission('terminal_commands_master'),
+  // Feature-flag permissions for terminal command generation. Each is a
+  // single `manage` entry so the subscription module can toggle them
+  // per-company without exposing CRUD shape. requirePermission on the
+  // routes + assertCompanyPermission inside the biometric interface read
+  // these names; see app/server/interfaces/biometric/adms/index.js.
+  TERMINAL_EMPLOYEE_SYNC: {
+    manage: {
+      name: 'manage_terminal_employee_sync',
+      display_name: 'Manage Terminal Employee Sync',
+      description: 'Permission to push/pull employee data to/from terminals'
+    }
+  },
+  TERMINAL_ATTENDANCE_SYNC: {
+    manage: {
+      name: 'manage_terminal_attendance_sync',
+      display_name: 'Manage Terminal Attendance Sync',
+      description: 'Permission to sync attendance/transactions and clear attendance data from terminals'
+    }
+  },
+  TERMINAL_DEVICE_MANAGEMENT: {
+    manage: {
+      name: 'manage_terminal_device_management',
+      display_name: 'Manage Terminal Device Management',
+      description: 'Permission to perform device management actions on terminals (reboot, initial sync, timezone, custom commands, TCP test, enable/disable)'
+    }
+  },
   ACTIVITY: basePermissions.create_master_permission('activity'),
   NBNEXT_DRIVE: {
     create: {
