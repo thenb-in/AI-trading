@@ -11,6 +11,15 @@ jobs:
   source_tests:
     runs-on: [self-hosted, Linux, X64]
 
+    # Serialize with linux_built_tests so the two jobs don't race on the
+    # fixed docker names ($PG_CONTAINER / $TEST_NETWORK / $DEPLOY_CONTAINER).
+    # Without this, a teardown from an earlier-started run can `docker rm -f`
+    # the container a freshly-started run just brought up — manifests as
+    # "Error response from daemon: container ... is not running" mid-step.
+    concurrency:
+      group: ci-self-hosted-linux-tests
+      cancel-in-progress: false
+
     env:
       TEST_APP_NAME: nbnext-ci
       PG_CONTAINER: test-pg
