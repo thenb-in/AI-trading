@@ -18,6 +18,7 @@ const BaseMaster = ({
   modalAddTitle,
   modalEditTitle,
   modalMaxWidth = 'md',
+  baseMasterContainerWidth = 'max-w-7xl',
   auditHead,
   permissionKeys,
   loadRows,
@@ -52,6 +53,11 @@ const BaseMaster = ({
   getRowClassName,
   initialSortKey,
   initialSortDirection,
+
+  showGridExport = true,
+  exportReport = { title: 'Export', slug: 'export' },
+  showInsightsAsHeader = true,
+  showEmptyColumns = true,
 }) => {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -179,7 +185,7 @@ const BaseMaster = ({
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className={`${baseMasterContainerWidth} mx-auto`}>
         <MasterHeader
           ref={headerRef}
           title={title}
@@ -227,6 +233,12 @@ const BaseMaster = ({
             getRowClassName={getRowClassName}
             initialSortKey={initialSortKey}
             initialSortDirection={initialSortDirection}
+            
+            
+            showGridExport={showGridExport}
+            exportReport={exportReport}
+            showInsightsAsHeader={showInsightsAsHeader}
+            showEmptyColumns={showEmptyColumns}
           />
         ) : (
           <UnauthorisedTable />
@@ -261,6 +273,7 @@ BaseMaster.propTypes = {
   modalAddTitle: PropTypes.string.isRequired,
   modalEditTitle: PropTypes.string.isRequired,
   modalMaxWidth: PropTypes.string,
+  baseMasterContainerWidth: PropTypes.string,
   auditHead: PropTypes.string,
   permissionKeys: PropTypes.shape({
     read: PropTypes.string.isRequired,
@@ -280,6 +293,10 @@ BaseMaster.propTypes = {
   showExport: PropTypes.bool,
   showImport: PropTypes.bool,
   exportFileName: PropTypes.string,
+  showGridExport: PropTypes.bool,
+  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
+  showInsightsAsHeader: PropTypes.bool,
+  showEmptyColumns: PropTypes.bool,
   importApi: PropTypes.func,
   buildExportColumns: PropTypes.func,
   FormComponent: PropTypes.elementType.isRequired,
