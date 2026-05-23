@@ -20,6 +20,7 @@ const MasterModal = ({
   auditPageSize = 25,
   disableContentScroll = false,
   PaperProps: paperPropsFromCaller,
+  sx: sxFromCaller,
   ...props
 }) => {
   const theme = useTheme();
@@ -47,6 +48,14 @@ const MasterModal = ({
       }
     : paperPropsFromCaller;
 
+  const baseSidebarSx = getDialogSidebarSx(fullScreen);
+  const callerSxArray = Array.isArray(sxFromCaller)
+    ? sxFromCaller
+    : sxFromCaller
+    ? [sxFromCaller]
+    : [];
+  const mergedSx = [baseSidebarSx, ...callerSxArray];
+
   return (
     <>
       <Dialog
@@ -55,9 +64,9 @@ const MasterModal = ({
         maxWidth={maxWidth}
         fullWidth
         fullScreen={fullScreen}
-        sx={getDialogSidebarSx(fullScreen)}
-        {...(mergedPaperProps ? { PaperProps: mergedPaperProps } : {})}
         {...props}
+        sx={mergedSx}
+        {...(mergedPaperProps ? { PaperProps: mergedPaperProps } : {})}
       >
         {hasTitle && (
           <DialogTitle sx={{
@@ -172,6 +181,7 @@ MasterModal.propTypes = {
   auditPageSize: PropTypes.number,
   disableContentScroll: PropTypes.bool,
   PaperProps: PropTypes.object,
+  sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };
 
 export { MasterModal };
