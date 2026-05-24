@@ -73,7 +73,8 @@ function detectConstantColumns(rows, columns) {
           field,
           value: firstValue,
           displayName: col.display_name || col.headerName || col.label || col.name || field,
-          type: col.type || 'string'
+          type: col.type || 'string',
+          renderCell: typeof col.renderCell === 'function' ? col.renderCell : null,
         });
       }
     }

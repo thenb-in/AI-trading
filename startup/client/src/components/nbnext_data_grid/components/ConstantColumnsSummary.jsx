@@ -34,13 +34,15 @@ function ConstantColumnsSummary({ constantColumns, compact = false }) {
       </div>
       <div className={compact ? 'p-3' : 'p-4'}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-          {nonActionColumns.map(([field, { displayName, value, type }]) => (
+          {nonActionColumns.map(([field, { displayName, value, type, renderCell }]) => (
             <div key={field} className="flex flex-col">
               <p className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-1">
                 {displayName}
               </p>
               <p className="text-sm font-semibold text-blue-900 break-words">
-                {formatCellValueForInsight({ type }, value)}
+                {typeof renderCell === 'function'
+                  ? renderCell({ row: { [field]: value }, field })
+                  : formatCellValueForInsight({ type }, value)}
               </p>
             </div>
           ))}
