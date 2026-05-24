@@ -19,37 +19,19 @@ const env = require('@startup/src/config/env');
 const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
-const admsRoutes = require('./src/routes/admsRoutes');
-const biomaxHdataRoutes = require('./src/routes/biomaxHdataRoutes');
 const companyRoutes = require('./src/routes/companyRoutes');
-const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
-const { piscinaPool } = require('./src/config/piscinaPool');
-const { startAutoSync, stopAutoSync } = require('./interfaces/biometric/adms/att/syncEmployeesToDevices');
 
 const { startServer } = buildApp({
   // 5MB body limit — header/footer image uploads, base64 face photos.
   bodyParserLimit: '5mb',
 
-  // ADMS /iclock must mount BEFORE the json/urlencoded parsers: ZK devices
-  // POST ATTLOG as application/x-www-form-urlencoded (raw "key=value" lines)
-  // and the parsers would otherwise reduce req.body to "[object Object]".
-  // Mount on both /adms/iclock (domain/ADMS mode) and /iclock (legacy direct).
-  //
-  // Biomax/Anviz hdata.aspx also mounts here: it ships mixed JSON+binary
-  // bodies as application/octet-stream and must reach its own raw parser.
-  // The router itself owns the path (/hdata, /hdata.aspx) so we mount at /.
-  mountBeforeBodyParser: (app) => {
-    app.use('/api/v1/iclock', admsRoutes);
-    app.use('/iclock', admsRoutes);
-    app.use('/', biomaxHdataRoutes);
-  },
+
 
   // App-owned routes that depend on app-specific things (biometric, hr/employee
   // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
   // namespace.
   extraRoutes: [
-    { prefix: '/api/v1/company', router: companyRoutes },
-    { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
+    { prefix: '/api/v1/company', router: companyRoutes }
   ],
 
   // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
@@ -60,9 +42,10 @@ const { startServer } = buildApp({
 
   // Static files — more specific paths first so they win over /uploads
   // (which is mounted by the framework). path is absolute to this server.
+
   additionalStaticDirs: [
-    { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
-    { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
+    // { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
+    // { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
   ],
 
   // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
@@ -70,23 +53,23 @@ const { startServer } = buildApp({
   // deployed layout where app/client/ holds the built bundle); override via
   // CLIENT_STATIC_DIR for local testing (e.g. CLIENT_STATIC_DIR=../client/dist).
   // /iclock is app-owned ADMS — keep it strictly server-handled.
-  clientStaticDir: path.resolve(process.cwd(), env.CLIENT_STATIC_DIR),
-  serverOnlyPrefixes: ['/iclock'],
+  clientStaticDir: path.resolve(
+    process.cwd(),
+    env.CLIENT_STATIC_DIR
+  ),
+
 
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
   onAfterListen: () => {
-    piscinaPool.initialize();
-    // ADMS auto-sync: periodic employee push to online terminals.
-    startAutoSync();
+
   },
 
   // Drain app-level resources before the framework stops schedulers.
   onBeforeShutdown: async () => {
-    stopAutoSync();
+
     try {
-      await piscinaPool.shutdown();
     } catch (err) {
       logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
     }
