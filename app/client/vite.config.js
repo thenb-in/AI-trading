@@ -1,8 +1,30 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa'
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { VitePWA } from 'vite-plugin-pwa';
+import { existsSync, readFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname_local = dirname(fileURLToPath(import.meta.url));
+
+// Object-form manualChunks makes rollup treat each listed package as an
+// entry module it must resolve up-front; a single missing vendor (e.g.
+// pdf-lib not installed in a downstream consumer that reuses this config)
+// aborts the whole build. Filter the chunk list to only packages this
+// install can actually resolve, so the object form stays safe.
+//
+// Existence is checked via node_modules/<pkg>/package.json rather than
+// require.resolve — the latter fails for ESM-only packages with no
+// `main` field (e.g. monaco-editor) and would wrongly drop them.
+const isInstalled = (pkg) =>
+  existsSync(resolve(__dirname_local, 'node_modules', pkg, 'package.json'));
+
+const filterInstalled = (candidates) =>
+  Object.fromEntries(
+    Object.entries(candidates)
+      .map(([chunk, mods]) => [chunk, mods.filter(isInstalled)])
+      .filter(([, mods]) => mods.length > 0)
+  );
 
 // App-side Vite config. Resolves @startup/* and @app/* aliases so that
 // client code can `import ... from '@startup/...'` regardless of physical
@@ -60,7 +82,13 @@ export default ({ mode }) => {
         'react-router-dom',
         '@mui/material',
         '@emotion/react',
-        '@emotion/styled'
+        '@emotion/styled',
+        // Both app/client and startup/client install their own copy. Without
+        // dedupe, <HelmetProvider> (imported from app/client/main.jsx) and
+        // <Helmet> (imported from startup/client/seo/PageMeta.jsx) end up
+        // using two different React Context instances, so Helmet reads the
+        // default (unprovided) context and crashes with `r.add` on undefined.
+        'react-helmet-async'
       ],
       preserveSymlinks: false
     },
@@ -85,12 +113,12 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'NB Next'}</title>`
+            `<title>${clientName || 'SalaryMitra'}</title>`
           );
         },
       },
-         // PWA: installable + auto-update SW + workbox runtime caches. See
-      // startup framework for full inline docs — same config shape here.
+      // PWA: installable + auto-update SW + workbox runtime caches. See
+      // startup framework for inline rationale; identical config shape.
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: false,  // registered manually via registerServiceWorker.js
@@ -123,7 +151,7 @@ export default ({ mode }) => {
       chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
-          manualChunks: {
+          manualChunks: filterInstalled({
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
             'mui-vendor': [
               '@mui/material',
@@ -138,7 +166,7 @@ export default ({ mode }) => {
             'doc-vendor': ['docx', 'mammoth'],
             'chart-vendor': ['chart.js', 'react-chartjs-2'],
             'map-vendor': ['react-leaflet'],
-          },
+          }),
         },
       },
     },

@@ -1,21 +1,26 @@
 {
-  "name": "NB Next Platform",
-  "short_name": "NB Next",
-  "description": "Integrated AI based IOT 4.0 platforms — admin, attendance, role-based access, reports.",
+  "name": "SalaryMitra — Time + Payroll",
+  "short_name": "SalaryMitra",
+  "description": "Time, attendance and payroll for modern teams. Field-sales, ADMS biometric, reports, HR — installable on desktop and mobile.",
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
-  "theme_color": "#1976d2",
+  "theme_color": "#d32f2f",
   "background_color": "#ffffff",
   "lang": "en",
   "categories": ["business", "productivity", "utilities"],
   "icons": [
-    { "src": "/icons/nbnext.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/icons/nbnext.svg", "sizes": "any",      "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/pwa-192.png", "sizes": "192x192", "type": "image/png",     "purpose": "any" },
+    { "src": "/icons/pwa-512.png", "sizes": "512x512", "type": "image/png",     "purpose": "any" },
+    { "src": "/icons/pwa-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/pwa-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Dashboard", "url": "/admin", "description": "Open admin dashboard" }
+    { "name": "Attendance",  "url": "/admin/attendance", "description": "Open attendance dashboard" },
+    { "name": "Payroll",     "url": "/admin/payroll",    "description": "Open payroll dashboard" }
   ]
 }
