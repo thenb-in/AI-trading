@@ -19,6 +19,7 @@ import { useGrouping } from "./hooks/useGrouping.js";
 import { useScrollToTopOnPagination } from "./hooks/useScrollToTopOnPagination.js";
 import { useScrollContainerHeight } from "./hooks/useScrollContainerHeight.js";
 import { useDefaultLayoutLoader } from "./hooks/useDefaultLayoutLoader.js";
+import { useLayouts } from "./hooks/useLayouts.js";
 import { useFullScreenToggle } from "./hooks/useFullScreenToggle.js";
 import { useTabsState } from "./hooks/useTabsState.js";
 import { useGridExport } from "./hooks/useGridExport.js";
@@ -40,7 +41,7 @@ import { GridTabs } from "./components/GridTabs.jsx";
 import { GridScrollToTopButton } from "./components/GridScrollToTopButton.jsx";
 
 // Utilities
-import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig, getKeyForRow, calculateIsSummaryTotals } from "./utils/helpers.js";
+import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig, getKeyForRow, calculateIsSummaryTotals, isLayoutActive } from "./utils/helpers.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
 
 
@@ -225,19 +226,29 @@ const NbNextDataGrid = forwardRef(({
       (shouldHideConstantColumns && constantColumns && constantColumns.size > 0)
   );
 
-  // Column visibility
-  const { columnVisibility, toggleColumnVisibility, setColumnVisibilityState } =
-    useColumnVisibility(columnsToUse, initialColumnVisibility, onColumnVisibilityChange);
+  // Column visibility. `originalColumnVisibility` tracks the user/layout
+  // baseline — programmatic re-syncs (backend overlay) don't mutate it, so
+  // save persists the user's intent rather than the runtime-modified view.
+  const {
+    columnVisibility,
+    originalColumnVisibility,
+    toggleColumnVisibility,
+    setColumnVisibilityState,
+    setOriginalColumnVisibilityState,
+  } = useColumnVisibility(columnsToUse, initialColumnVisibility, onColumnVisibilityChange);
 
   // Column order + derived visible columns
   const { columnOrder, setColumnOrder, handleColumnReorder, visibleColumns } =
     useColumnOrder(columnsToUse, columnVisibility);
 
-  // Frozen columns (initial setup seeded from prop)
+  // Frozen columns (initial setup seeded from prop). `originalFrozenState`
+  // follows the same baseline-tracking pattern as originalColumnVisibility.
   const {
     frozenState,
+    originalFrozenState,
     toggleFrozen,
     setFrozenStateState,
+    setOriginalFrozenStateState,
     frozenColumns: computedFrozenColumns,
     nonFrozenColumns,
     cumulativeFrozenLeftOffsets,
@@ -416,7 +427,28 @@ const NbNextDataGrid = forwardRef(({
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
-  // Layout apply (shared between manual LayoutMenu and the auto-loader)
+  // Layouts list (shared between Toolbar's active-layout indicator and
+  // LayoutMenu). A layout is "active" when its stored originalColumns matches
+  // the client's current baseline — i.e. the user hasn't diverged from what
+  // was saved. Backend overlay drifts visible but not original, so an
+  // overlay-modified grid still resolves to the loaded layout as active.
+  const {
+    layouts,
+    loading: layoutsLoading,
+    error: layoutsError,
+    refetch: refetchLayouts,
+  } = useLayouts(documentName);
+
+  const activeLayout = useMemo(() => {
+    if (!originalColumnVisibility || !originalFrozenState) return null;
+    const all = [...(layouts.private || []), ...(layouts.public || [])];
+    return all.find((l) => isLayoutActive(l, originalColumnVisibility, originalFrozenState)) || null;
+  }, [layouts, originalColumnVisibility, originalFrozenState]);
+
+  // Layout apply (shared between manual LayoutMenu and the auto-loader).
+  // Sets visible state and original baseline independently — the baseline
+  // gates subsequent backend overlay re-applies (visible == original per field).
+  // Legacy layouts without `originalColumns` get baseline = visible (no-op).
   const applyLayout = useCallback(
     (columnConfig) => {
       if (!columnConfig) return;
@@ -425,10 +457,14 @@ const NbNextDataGrid = forwardRef(({
         frozenState: newFrozenState,
         columnOrder: newOrder,
         sortModel: newSortModel,
+        originalColumnVisibility: newOriginalVisibility,
+        originalFrozenState: newOriginalFrozen,
       } = applyColumnConfig(normalizedColumns, columnConfig);
 
       setColumnVisibilityState(newVisibility);
       setFrozenStateState(newFrozenState);
+      setOriginalColumnVisibilityState(newOriginalVisibility);
+      setOriginalFrozenStateState(newOriginalFrozen);
 
       if (newOrder && newOrder.length > 0) {
         setColumnOrder(newOrder);
@@ -438,7 +474,15 @@ const NbNextDataGrid = forwardRef(({
         applyLayoutSortModel(newSortModel);
       }
     },
-    [normalizedColumns, setColumnVisibilityState, setFrozenStateState, setColumnOrder, applyLayoutSortModel]
+    [
+      normalizedColumns,
+      setColumnVisibilityState,
+      setFrozenStateState,
+      setOriginalColumnVisibilityState,
+      setOriginalFrozenStateState,
+      setColumnOrder,
+      applyLayoutSortModel,
+    ]
   );
 
   // Auto-load the user's default layout on mount (once per documentName)
@@ -512,6 +556,7 @@ const NbNextDataGrid = forwardRef(({
         showLayoutMenu={showLayoutMenu}
         setShowLayoutMenu={setShowLayoutMenu}
         documentName={documentName}
+        activeLayoutName={activeLayout?.layout_name || null}
         page={page}
         totalPages={totalPages}
         autoPageSize={autoPageSize}
@@ -543,11 +588,24 @@ const NbNextDataGrid = forwardRef(({
       {showLayoutMenu && documentName && (
         <LayoutMenu
           documentName={documentName}
-          normalizedColumns={normalizedColumns}
+          // Save only the columns the layout actively controls — constants
+          // are filtered out (they're shown in the summary panel, not the
+          // table). Persisting them as hide=true would incorrectly keep them
+          // hidden if a future re-run produces non-constant data for that
+          // field. On restore, applyColumnConfig falls back to c.hide for
+          // any field missing from the saved array.
+          normalizedColumns={columnsToUse}
           columnVisibility={columnVisibility}
           frozenState={frozenState}
           columnOrder={columnOrder}
           sortModel={sortModel}
+          originalColumnVisibility={originalColumnVisibility}
+          originalFrozenState={originalFrozenState}
+          layouts={layouts}
+          layoutsLoading={layoutsLoading}
+          layoutsError={layoutsError}
+          refetchLayouts={refetchLayouts}
+          activeLayout={activeLayout}
           onLayoutLoad={applyLayout}
           onClose={() => setShowLayoutMenu(false)}
         />
@@ -631,6 +689,7 @@ const NbNextDataGrid = forwardRef(({
           showLayoutMenu={showLayoutMenu}
           setShowLayoutMenu={setShowLayoutMenu}
           documentName={documentName}
+          activeLayoutName={activeLayout?.layout_name || null}
           page={page}
           totalPages={totalPages}
           autoPageSize={autoPageSize}

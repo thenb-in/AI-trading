@@ -261,9 +261,24 @@ const getColumnWidthWithIcons = (col) => {
 
 /**
  * Build column config from current grid state for saving to layout.
- * Returns { columns, sortModel } so both column state and sort order are persisted.
+ * Returns { columns, originalColumns, sortModel }.
+ *
+ * `columns` reflects the effective (visible) grid state at save time —
+ * what gets restored on load.
+ * `originalColumns` is the user-intent baseline (set on layout load and on
+ * each manual toggle, but not by programmatic backend overlays). Persisting
+ * both lets the next session re-establish the gate so backend re-runs can
+ * keep applying their unhide/unfreeze overlay without clobbering user edits.
  */
- const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, columnOrder = [], sortModel = []) => {
+ const buildColumnConfig = (
+   normalizedColumns,
+   columnVisibility,
+   frozenState,
+   columnOrder = [],
+   sortModel = [],
+   originalColumnVisibility = null,
+   originalFrozenState = null,
+ ) => {
   const orderedFields = columnOrder.length > 0
     ? columnOrder
     : normalizedColumns.map((col) => col.field);
@@ -275,16 +290,32 @@ const getColumnWidthWithIcons = (col) => {
     order: orderedFields.indexOf(col.field),
   }));
 
-  return { columns, sortModel: sortModel || [] };
+  const result = { columns, sortModel: sortModel || [] };
+
+  // Only attach originalColumns when both baselines are supplied. Order isn't
+  // duplicated — it's already in `columns` and is shared between the two.
+  if (originalColumnVisibility && originalFrozenState) {
+    result.originalColumns = normalizedColumns.map((col) => ({
+      field: col.field,
+      frozen: originalFrozenState[col.field] || false,
+      hide: !originalColumnVisibility[col.field],
+    }));
+  }
+
+  return result;
 };
 
 /**
  * Apply column config from layout to grid state.
- * Handles both legacy array format and new { columns, sortModel } object format.
- * Returns { columnVisibility, frozenState, columnOrder, sortModel }.
+ * Handles legacy array format, plus new { columns, sortModel, originalColumns }.
+ * Returns { columnVisibility, frozenState, columnOrder, sortModel,
+ *           originalColumnVisibility, originalFrozenState }.
+ *
+ * Legacy layouts (no originalColumns) fall back to using the visible state
+ * as the baseline — equivalent to the pre-baseline behavior.
  */
  const applyColumnConfig = (normalizedColumns, columnConfig) => {
-  // Normalise: support legacy plain-array format and new { columns, sortModel } format
+  // Normalise: support legacy plain-array format and new object format.
   const columnArray = Array.isArray(columnConfig)
     ? columnConfig
     : Array.isArray(columnConfig?.columns)
@@ -293,6 +324,9 @@ const getColumnWidthWithIcons = (col) => {
   const savedSortModel = Array.isArray(columnConfig?.sortModel)
     ? columnConfig.sortModel
     : [];
+  const originalColumnArray = Array.isArray(columnConfig?.originalColumns)
+    ? columnConfig.originalColumns
+    : null;
 
   const columnVisibility = {};
   const frozenState = {};
@@ -312,6 +346,32 @@ const getColumnWidthWithIcons = (col) => {
       frozenState[col.field] = col.frozen === true;
     }
   });
+
+  // Build the baseline. If `originalColumns` was stored, use it. Otherwise
+  // mirror the visible state (legacy fallback).
+  let originalColumnVisibility;
+  let originalFrozenState;
+  if (originalColumnArray) {
+    const origMap = {};
+    originalColumnArray.forEach((c) => {
+      origMap[c.field] = c;
+    });
+    originalColumnVisibility = {};
+    originalFrozenState = {};
+    normalizedColumns.forEach((col) => {
+      const config = origMap[col.field];
+      if (config) {
+        originalColumnVisibility[col.field] = !config.hide;
+        originalFrozenState[col.field] = config.frozen === true;
+      } else {
+        originalColumnVisibility[col.field] = !col.hide;
+        originalFrozenState[col.field] = col.frozen === true;
+      }
+    });
+  } else {
+    originalColumnVisibility = { ...columnVisibility };
+    originalFrozenState = { ...frozenState };
+  }
 
   let columnOrder = [];
   if (columnArray.length > 0) {
@@ -340,7 +400,46 @@ const getColumnWidthWithIcons = (col) => {
     }
   }
 
-  return { columnVisibility, frozenState, columnOrder, sortModel: savedSortModel };
+  return {
+    columnVisibility,
+    frozenState,
+    columnOrder,
+    sortModel: savedSortModel,
+    originalColumnVisibility,
+    originalFrozenState,
+  };
+};
+
+/**
+ * Whether a saved layout's stored original baseline matches the client's
+ * current baseline (originalColumnVisibility/originalFrozenState).
+ *
+ * Prefers `originalColumns` from the stored config; falls back to `columns`
+ * for legacy layouts that predate the baseline split. Only compares fields
+ * the layout knows about — new client-side columns added after the save
+ * don't count as a mismatch.
+ */
+const isLayoutActive = (layout, originalColumnVisibility, originalFrozenState) => {
+  const config = layout?.column_config;
+  if (!config || !originalColumnVisibility || !originalFrozenState) return false;
+
+  const baselineArray = Array.isArray(config.originalColumns)
+    ? config.originalColumns
+    : Array.isArray(config.columns)
+      ? config.columns
+      : Array.isArray(config)
+        ? config
+        : null;
+  if (!baselineArray || baselineArray.length === 0) return false;
+
+  for (const c of baselineArray) {
+    if (!(c.field in originalColumnVisibility)) continue;
+    const expectVisible = !c.hide;
+    const expectFrozen = c.frozen === true;
+    if (originalColumnVisibility[c.field] !== expectVisible) return false;
+    if (originalFrozenState[c.field] !== expectFrozen) return false;
+  }
+  return true;
 };
 /**
  * Calculate totals for numeric columns across all rows
@@ -473,13 +572,14 @@ export {
   getColumnForFormatting,
   normalizeColumns,
   renderCellContent,
-  getKeyForRow, 
-  indexRows, 
-  sortRows, 
-  calculateFrozenOffsets, 
-  getColumnWidthWithIcons, 
-  buildColumnConfig, 
+  getKeyForRow,
+  indexRows,
+  sortRows,
+  calculateFrozenOffsets,
+  getColumnWidthWithIcons,
+  buildColumnConfig,
   applyColumnConfig,
+  isLayoutActive,
   filterRows,
   calculateTotals,
   calculateIsSummaryTotals,

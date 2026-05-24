@@ -20,6 +20,7 @@ function Toolbar({
   showLayoutMenu,
   setShowLayoutMenu,
   documentName,
+  activeLayoutName = null,
   page,
   totalPages,
   autoPageSize,
@@ -117,12 +118,20 @@ function Toolbar({
             type="button"
             onClick={handleLayoutMenuClick}
             disabled={layoutDisabled}
-            className={TOOLBAR_BTN_CLASS}
-            title={layoutDisabled ? "Set documentName to manage layouts" : "Manage saved layouts"}
-            aria-label="Layouts"
+            className={activeLayoutName ? TOOLBAR_HIGHLIGHT_BTN_CLASS : TOOLBAR_BTN_CLASS}
+            title={
+              layoutDisabled
+                ? "Set documentName to manage layouts"
+                : activeLayoutName
+                  ? `Active layout: ${activeLayoutName}`
+                  : "Manage saved layouts"
+            }
+            aria-label={activeLayoutName ? `Layouts — ${activeLayoutName} active` : "Layouts"}
           >
             <LayoutGrid size={14} strokeWidth={2} />
-            <span className="hidden sm:inline">Layouts</span>
+            <span className="hidden sm:inline">
+              {activeLayoutName ? `Layout: ${activeLayoutName}` : "Layouts"}
+            </span>
           </button>
         </div>
 
@@ -199,6 +208,7 @@ Toolbar.propTypes = {
   showLayoutMenu: PropTypes.bool,
   setShowLayoutMenu: PropTypes.func,
   documentName: PropTypes.string,
+  activeLayoutName: PropTypes.string,
   page: PropTypes.number.isRequired,
   totalPages: PropTypes.number.isRequired,
   autoPageSize: PropTypes.number.isRequired,

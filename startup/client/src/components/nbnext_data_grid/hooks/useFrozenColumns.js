@@ -1,62 +1,104 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { calculateFrozenOffsets } from "../utils/helpers";
 
+// Returns both `frozenState` (the effective state used to render) and
+// `originalFrozenState` (the user-intended baseline — set on layout load and
+// on every manual toggle, but NOT touched by programmatic re-syncs from new
+// column-definition `frozen` flags). Saving a layout persists the original
+// snapshot so runtime backend overlays (e.g. unfreezing a column for a
+// particular report run) don't leak into the stored layout.
 const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null, initialFrozenColumns = null) => {
-  // Track if we've initialized from the prop (only once)
   const hasInitializedFromProp = useRef(false);
-  
+
   const [frozenState, setFrozenState] = useState(() => {
     const initial = {};
-    // Initialize from column definition (will be overridden by prop if provided)
     normalizedColumns.forEach((c) => {
       initial[c.field] = c.frozen === true;
     });
     return initial;
   });
+  const [originalFrozenState, setOriginalFrozenState] = useState(() => {
+    const initial = {};
+    normalizedColumns.forEach((c) => {
+      initial[c.field] = c.frozen === true;
+    });
+    return initial;
+  });
+  // Read by the column-change effect without making originalFrozenState a dep
+  // (which would re-fire the overlay immediately after a manual toggle and
+  // revert it).
+  const originalRef = useRef(originalFrozenState);
 
-  // Initialize from prop when both normalizedColumns and initialFrozenColumns are available
-  // This handles the case where columns load asynchronously (like in reports)
+  // Initialize from initialFrozenColumns prop once (handles async column load)
   useEffect(() => {
-    if (hasInitializedFromProp.current) return; // Only initialize once
-    if (!normalizedColumns.length) return; // Wait for columns to be available
-    
-    // If initialFrozenColumns prop is provided, use it for initialization
+    if (hasInitializedFromProp.current) return;
+    if (!normalizedColumns.length) return;
+
     if (initialFrozenColumns && Array.isArray(initialFrozenColumns) && initialFrozenColumns.length > 0) {
+      const propBased = {};
+      normalizedColumns.forEach((c) => {
+        propBased[c.field] = initialFrozenColumns.includes(c.field) || c.frozen === true;
+      });
       setFrozenState((prev) => {
         const updated = {};
         normalizedColumns.forEach((c) => {
-          // Initialize from prop if field is in the array, otherwise from column definition or existing state
-          if (prev[c.field] !== undefined) {
-            // Preserve existing state if already set
-            updated[c.field] = prev[c.field];
-          } else {
-            // Initialize from prop if field is in the array, otherwise from column definition
-            updated[c.field] = initialFrozenColumns.includes(c.field) || c.frozen === true;
-          }
+          updated[c.field] = prev[c.field] !== undefined ? prev[c.field] : propBased[c.field];
         });
+        return updated;
+      });
+      setOriginalFrozenState((prev) => {
+        const updated = {};
+        normalizedColumns.forEach((c) => {
+          updated[c.field] = prev[c.field] !== undefined ? prev[c.field] : propBased[c.field];
+        });
+        originalRef.current = updated;
         return updated;
       });
       hasInitializedFromProp.current = true;
     } else {
-      // No prop provided, mark as initialized so we don't try again
       hasInitializedFromProp.current = true;
     }
   }, [normalizedColumns, initialFrozenColumns]);
 
-  // Handle new columns being added (but don't override user changes)
+  // On column-set changes: add newly-introduced columns with their c.frozen
+  // default, and drop columns the backend no longer ships. Existing fields
+  // are sticky — layout/user choices aren't overridden by the column-def flag.
   useEffect(() => {
     if (!normalizedColumns.length) return;
-    setFrozenState((prev) => {
-      const updated = {};
+
+    setOriginalFrozenState((prev) => {
+      const updated = { ...prev };
       let changed = false;
       normalizedColumns.forEach((c) => {
         if (prev[c.field] === undefined) {
-          // New column: use column definition's frozen property
           updated[c.field] = c.frozen === true;
           changed = true;
-        } else {
-          // Existing column: preserve current state
-          updated[c.field] = prev[c.field];
+        }
+      });
+      Object.keys(prev).forEach((f) => {
+        if (!normalizedColumns.find((c) => c.field === f)) {
+          delete updated[f];
+          changed = true;
+        }
+      });
+      if (!changed) return prev;
+      originalRef.current = updated;
+      return updated;
+    });
+
+    setFrozenState((prev) => {
+      const updated = { ...prev };
+      let changed = false;
+      normalizedColumns.forEach((c) => {
+        if (prev[c.field] === undefined) {
+          updated[c.field] = c.frozen === true;
+          changed = true;
+        }
+      });
+      Object.keys(prev).forEach((f) => {
+        if (!normalizedColumns.find((c) => c.field === f)) {
+          delete updated[f];
+          changed = true;
         }
       });
       return changed ? updated : prev;
@@ -64,14 +106,24 @@ const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null
   }, [normalizedColumns]);
 
   const toggleFrozen = useCallback((field) => {
-    setFrozenState((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
+    setFrozenState((prev) => {
+      const newValue = !prev[field];
+      setOriginalFrozenState((origPrev) => {
+        const next = { ...origPrev, [field]: newValue };
+        originalRef.current = next;
+        return next;
+      });
+      return { ...prev, [field]: newValue };
+    });
   }, []);
 
   const setFrozenStateState = useCallback((newFrozenState) => {
     setFrozenState(newFrozenState);
+  }, []);
+
+  const setOriginalFrozenStateState = useCallback((newOriginal) => {
+    setOriginalFrozenState(newOriginal);
+    originalRef.current = newOriginal;
   }, []);
 
   const frozenColumns = useMemo(() => {
@@ -88,8 +140,10 @@ const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null
 
   return {
     frozenState,
+    originalFrozenState,
     toggleFrozen,
     setFrozenStateState,
+    setOriginalFrozenStateState,
     frozenColumns,
     nonFrozenColumns,
     cumulativeFrozenLeftOffsets,
@@ -97,4 +151,3 @@ const useFrozenColumns = (normalizedColumns, visibleColumns, columnWidths = null
 };
 
 export { useFrozenColumns };
-

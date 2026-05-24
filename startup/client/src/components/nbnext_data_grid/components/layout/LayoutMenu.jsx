@@ -19,11 +19,16 @@ function LayoutMenu({
   frozenState,
   columnOrder = [],
   sortModel = [],
+  originalColumnVisibility = null,
+  originalFrozenState = null,
+  layouts,
+  layoutsLoading = false,
+  layoutsError = null,
+  refetchLayouts,
+  activeLayout = null,
   onLayoutLoad,
   onClose,
 }) {
-  const [layouts, setLayouts] = useState({ private: [], public: [] });
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -31,46 +36,27 @@ function LayoutMenu({
   const [newLayoutType, setNewLayoutType] = useState("private");
   const [selectedLayout, setSelectedLayout] = useState(null);
 
+  // Seed selection from the currently-active layout, or fall back to the
+  // user's default. Re-runs when the layouts list refreshes so save/delete
+  // operations keep the selection coherent.
   useEffect(() => {
-    if (documentName) {
-      loadLayouts();
-    }
-  }, [documentName]);
-
-  const loadLayouts = async () => {
-    if (!documentName) return;
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await ApiService.getLayoutsByDocument(documentName);
-      const newLayouts = response.data.data;
-      setLayouts(newLayouts);
-
-      const allLayouts = [...newLayouts.private, ...newLayouts.public];
-
-      // Preserve selected layout after reload (only if it was already set)
-      // This is useful when refreshing after save/delete/setDefault operations
-      if (selectedLayout) {
-        const found = allLayouts.find(l => l.id === selectedLayout.id);
-        if (found) {
-          setSelectedLayout(found);
-        } else {
-          // Layout was deleted, clear selection
-          setSelectedLayout(null);
-        }
+    const allLayouts = [...(layouts.private || []), ...(layouts.public || [])];
+    if (selectedLayout) {
+      const found = allLayouts.find((l) => l.id === selectedLayout.id);
+      if (found) {
+        if (found !== selectedLayout) setSelectedLayout(found);
       } else {
-        // On initial load or when no selection exists, automatically select the default layout
-        const defaultLayout = allLayouts.find(layout => layout.is_default === true);
-        if (defaultLayout) {
-          setSelectedLayout(defaultLayout);
-        }
+        setSelectedLayout(null);
       }
-    } catch (err) {
-      setError(err.message || "Failed to load layouts");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+    if (activeLayout) {
+      setSelectedLayout(activeLayout);
+      return;
+    }
+    const defaultLayout = allLayouts.find((l) => l.is_default === true);
+    if (defaultLayout) setSelectedLayout(defaultLayout);
+  }, [layouts, activeLayout, selectedLayout]);
 
   const handleSaveLayout = async () => {
     if (!newLayoutName.trim()) {
@@ -82,7 +68,19 @@ function LayoutMenu({
       setSaving(true);
       setError(null);
 
-      const columnConfig = buildColumnConfig(normalizedColumns, columnVisibility, frozenState, columnOrder, sortModel);
+      // Persist both visible state (for restore) and the user-intent baseline
+      // (so the next session can gate backend overlay re-applies correctly).
+      // Re-saving an existing layout naturally refreshes both — picking up any
+      // baseline changes from manual toggles since the layout was loaded.
+      const columnConfig = buildColumnConfig(
+        normalizedColumns,
+        columnVisibility,
+        frozenState,
+        columnOrder,
+        sortModel,
+        originalColumnVisibility,
+        originalFrozenState,
+      );
       const layoutData = {
         document_name: documentName,
         layout_name: newLayoutName.trim(),
@@ -90,27 +88,16 @@ function LayoutMenu({
         column_config: columnConfig,
       };
 
-      // If a layout is selected, update it instead of creating new
       if (selectedLayout) {
         layoutData.id = selectedLayout.id;
       }
 
       const response = await ApiService.createOrUpdateLayout(layoutData);
-      await loadLayouts();
+      await refetchLayouts();
 
-      // Keep the layout selected after update
-      if (selectedLayout) {
-        // The response contains the updated layout
-        const updatedLayout = response.data.data;
-        if (updatedLayout) {
-          setSelectedLayout(updatedLayout);
-        }
-      } else {
-        // If creating new, set it as selected
-        const newLayout = response.data.data;
-        if (newLayout) {
-          setSelectedLayout(newLayout);
-        }
+      const persisted = response.data.data;
+      if (persisted) {
+        setSelectedLayout(persisted);
       }
 
       setSaveDialogOpen(false);
@@ -126,7 +113,6 @@ function LayoutMenu({
   const handleLoadLayout = async (layout) => {
     try {
       setError(null);
-      // Set this layout as selected
       setSelectedLayout(layout);
       if (onLayoutLoad) {
         onLayoutLoad(layout.column_config, layout);
@@ -145,11 +131,10 @@ function LayoutMenu({
     try {
       setError(null);
       await ApiService.deleteLayout(layoutId);
-      // Clear selection if deleted layout was selected
       if (selectedLayout?.id === layoutId) {
         setSelectedLayout(null);
       }
-      await loadLayouts();
+      await refetchLayouts();
     } catch (err) {
       setError(err.message || "Failed to delete layout");
     }
@@ -163,8 +148,7 @@ function LayoutMenu({
       } else {
         await ApiService.unsetDefaultLayout(documentName);
       }
-      // Refresh layouts to update is_default flags
-      await loadLayouts();
+      await refetchLayouts();
     } catch (err) {
       setError(err.message || "Failed to set default layout");
     }
@@ -193,15 +177,20 @@ function LayoutMenu({
     setNewLayoutType("private");
   };
 
+  // Surface either a save-time error or a load-time error from the shared
+  // layouts hook — whichever is current. Save errors take precedence since
+  // they're the most recent user action.
+  const displayedError = error || layoutsError;
+
   return (
     <div style={columnMenuStyle}>
       <div className="font-semibold text-sm mb-4">
         Layout Manager
       </div>
 
-      <ErrorDisplay error={error} />
+      <ErrorDisplay error={displayedError} />
 
-      {loading ? (
+      {layoutsLoading ? (
         <div className="text-center text-xs text-gray-600 py-8">
           Loading layouts...
         </div>
@@ -266,9 +255,18 @@ LayoutMenu.propTypes = {
   frozenState: PropTypes.object.isRequired,
   columnOrder: PropTypes.array,
   sortModel: PropTypes.array,
+  originalColumnVisibility: PropTypes.object,
+  originalFrozenState: PropTypes.object,
+  layouts: PropTypes.shape({
+    private: PropTypes.array,
+    public: PropTypes.array,
+  }).isRequired,
+  layoutsLoading: PropTypes.bool,
+  layoutsError: PropTypes.string,
+  refetchLayouts: PropTypes.func.isRequired,
+  activeLayout: PropTypes.object,
   onLayoutLoad: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
 };
 
 export { LayoutMenu };
-
