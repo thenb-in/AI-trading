@@ -113,7 +113,7 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'SalaryMitra'}</title>`
+            `<title>${clientName || 'NB Next'}</title>`
           );
         },
       },
