@@ -320,11 +320,23 @@ const getColumnWidthWithIcons = (col) => {
       columnOrder = [...columnArray]
         .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
         .map((c) => c.field);
-      normalizedColumns.forEach((col) => {
-        if (!columnOrder.includes(col.field)) {
-          columnOrder.push(col.field);
+
+      // Insert columns not in the saved config at their natural position
+      // (relative to normalizedColumns order) rather than blindly appending.
+      const allFields = normalizedColumns.map((c) => c.field);
+      const newFields = allFields.filter((f) => !columnOrder.includes(f));
+      for (const field of newFields) {
+        const naturalIdx = allFields.indexOf(field);
+        let insertAfter = -1;
+        for (let i = naturalIdx - 1; i >= 0; i--) {
+          const pos = columnOrder.indexOf(allFields[i]);
+          if (pos !== -1) {
+            insertAfter = pos;
+            break;
+          }
         }
-      });
+        columnOrder.splice(insertAfter + 1, 0, field);
+      }
     }
   }
 

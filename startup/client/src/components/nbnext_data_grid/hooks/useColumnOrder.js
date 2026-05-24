@@ -3,18 +3,44 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const useColumnOrder = (columnsToUse, columnVisibility) => {
   const [columnOrder, setColumnOrder] = useState([]);
 
-  // Keep order in sync with columns: preserve existing order for known fields, append new ones.
+  // Keep order in sync with columns: preserve existing order for known fields,
+  // and insert genuinely new fields at their natural position (based on the
+  // server-supplied columnsToUse order) rather than always appending at the end.
   useEffect(() => {
     setColumnOrder((prev) => {
+      const allFields = columnsToUse.map((c) => c.field);
+
       if (prev.length === 0) {
-        return columnsToUse.map((c) => c.field);
+        return allFields;
       }
-      const existing = prev.filter((f) => columnsToUse.some((c) => c.field === f));
-      const added = columnsToUse
-        .filter((c) => !prev.includes(c.field))
-        .map((c) => c.field);
-      const merged = [...existing, ...added];
-      return merged.join("|") !== prev.join("|") ? merged : prev;
+
+      // Retain saved/reordered columns that still exist; drop removed ones.
+      const retained = prev.filter((f) => allFields.includes(f));
+
+      // Find columns not yet tracked.
+      const newFields = allFields.filter((f) => !prev.includes(f));
+
+      if (newFields.length === 0) {
+        return retained.join("|") !== prev.join("|") ? retained : prev;
+      }
+
+      // Insert each new field after the closest preceding neighbour that is
+      // already in the retained order, mirroring the server-supplied sequence.
+      const result = [...retained];
+      for (const field of newFields) {
+        const naturalIdx = allFields.indexOf(field);
+        let insertAfter = -1;
+        for (let i = naturalIdx - 1; i >= 0; i--) {
+          const pos = result.indexOf(allFields[i]);
+          if (pos !== -1) {
+            insertAfter = pos;
+            break;
+          }
+        }
+        result.splice(insertAfter + 1, 0, field);
+      }
+
+      return result.join("|") !== prev.join("|") ? result : prev;
     });
   }, [columnsToUse]);
 
