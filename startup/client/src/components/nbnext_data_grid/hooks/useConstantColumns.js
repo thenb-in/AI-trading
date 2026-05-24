@@ -1,24 +1,14 @@
-import { useMemo } from 'react';
-import { detectConstantColumns } from '../utils/constantColumnsUtils';
+import { useMemo } from "react";
+import { detectConstantColumns } from "../utils/constantColumnsUtils";
 
-/**
- * Hook to detect columns where all rows have the same value
- * @param {Array} rows - Array of row objects
- * @param {Array} columns - Array of column definitions
- * @returns {Object} - { constantColumns: Map, filteredColumns: Array, filteredRows: Array }
- */
-function useConstantColumns(rows, columns) {
+// Computes the common-values card content from L1 + rows. `assertedFields` is
+// the set of column fields the user has expressed any visibility opinion on
+// (via L2 or L3) — those columns are excluded from auto-promotion to the card.
+const useConstantColumns = (rows, l1Columns, assertedFields = null) => {
   return useMemo(() => {
-    const { constantColumns, filteredColumns } = detectConstantColumns(rows, columns);
-    
-    return {
-      constantColumns,
-      filteredColumns,
-      filteredRows: rows
-    };
-  }, [rows, columns]);
-}
-
-export {
-  useConstantColumns
+    const { constantColumns } = detectConstantColumns(rows, l1Columns, assertedFields);
+    return { constantColumns };
+  }, [rows, l1Columns, assertedFields]);
 };
+
+export { useConstantColumns };

@@ -1,24 +1,18 @@
-import { useMemo, useState, useRef, useCallback, forwardRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, forwardRef } from "react";
 import PropTypes from "prop-types";
 
 // Hooks
-import { useSorting } from "./hooks/useSorting.js";
-import { useColumnVisibility } from "./hooks/useColumnVisibility.js";
-import { useFrozenColumns } from "./hooks/useFrozenColumns.js";
+import { useLayoutState } from "./hooks/useLayoutState.js";
 import { usePagination } from "./hooks/usePagination.js";
 import { useRowSelection } from "./hooks/useRowSelection.js";
 import { useMultiRowSelection } from "./hooks/useMultiRowSelection.js";
 import { useMeasurements } from "./hooks/useMeasurements.js";
-import { useFiltering } from "./hooks/useFiltering.js";
 import { useVirtualScrolling } from "./hooks/useVirtualScrolling.js";
 import { useConstantColumns } from "./hooks/useConstantColumns.js";
 import { useSidebarWidth } from "./hooks/useSidebarWidth.js";
-import { useColumnWidths } from "./hooks/useColumnWidths.js";
-import { useColumnOrder } from "./hooks/useColumnOrder.js";
 import { useGrouping } from "./hooks/useGrouping.js";
 import { useScrollToTopOnPagination } from "./hooks/useScrollToTopOnPagination.js";
 import { useScrollContainerHeight } from "./hooks/useScrollContainerHeight.js";
-import { useDefaultLayoutLoader } from "./hooks/useDefaultLayoutLoader.js";
 import { useLayouts } from "./hooks/useLayouts.js";
 import { useFullScreenToggle } from "./hooks/useFullScreenToggle.js";
 import { useTabsState } from "./hooks/useTabsState.js";
@@ -41,7 +35,15 @@ import { GridTabs } from "./components/GridTabs.jsx";
 import { GridScrollToTopButton } from "./components/GridScrollToTopButton.jsx";
 
 // Utilities
-import { normalizeColumns, indexRows, filterRows, sortRows, applyColumnConfig, getKeyForRow, calculateIsSummaryTotals, isLayoutActive } from "./utils/helpers.js";
+import {
+  indexRows,
+  filterRows,
+  sortRows,
+  getKeyForRow,
+  calculateIsSummaryTotals,
+  calculateFrozenOffsets,
+} from "./utils/helpers.js";
+import { adaptLayoutConfig } from "./utils/layoutConfig.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
 
 
@@ -160,8 +162,6 @@ const NbNextDataGrid = forwardRef(({
   minimalMode = false,
 }, ref) => {
   // Tabs: active tab drives which rows/summary/columns flow through the pipeline.
-  // A tab may override any of rows/summary/columns; if omitted, the top-level
-  // props are shared across tabs (letting callers ship one dataset for many tabs).
   const { hasTabs, activeTabId, setActiveTabId, rows, summary, columns } = useTabsState({
     tabs,
     defaultActiveTabId,
@@ -194,103 +194,172 @@ const NbNextDataGrid = forwardRef(({
   // Detect sidebar width for fullscreen offset
   const sidebarWidth = useSidebarWidth(fullScreen);
 
-  // Column widths (with manual-resize preservation)
-  const { columnWidths, handleColumnResize } = useColumnWidths(columns);
-
-  // Normalize columns and detect ones with identical values across all rows
-  const normalizedColumns = useMemo(() => normalizeColumns(columns), [columns]);
+  // ── Layout state (L1 / L2 / L3) ─────────────────────────────────────────
+  // Single source of truth for all column-level state: visibility, freeze,
+  // order, widths, sort, and per-column filter. The hook produces a `merged`
+  // render state by overlaying L1 (server) → L2 (saved layout) → L3 (manual).
   const {
-    constantColumns,
-    filteredColumns: columnsWithoutConstants,
-    filteredRows: rowsWithoutConstants,
-  } = useConstantColumns(rows, normalizedColumns);
+    l1,
+    l2,
+    dirty,
+    merged,
+    toggleColumnVisibility,
+    toggleFrozen,
+    setColumnWidth,
+    reorderColumns,
+    handleHeaderClick,
+    promoteToPrimarySort,
+    setFilterValue,
+    clearAllFilters,
+    applyLayout: applyLayoutRaw,
+    isLayoutActive: isLoadedLayout,
+    buildSavePayload,
+    applySavedSnapshot,
+  } = useLayoutState({
+    columnsProp: columns,
+    initialSortModel,
+    initialFrozenColumns: frozenColumns,
+  });
 
-  // Don't hide constant columns or show summary when there's only 1 row
+  // Notify external listeners of merged visibility/sort changes. Keeps the
+  // existing prop contract — consumers don't see L1/L2/L3.
+  useEffect(() => {
+    if (typeof onColumnVisibilityChange === "function") {
+      onColumnVisibilityChange(merged.columnVisibility);
+    }
+  }, [merged.columnVisibility, onColumnVisibilityChange]);
+  useEffect(() => {
+    if (typeof onSortModelChange === "function") {
+      onSortModelChange(merged.sortModel);
+    }
+  }, [merged.sortModel, onSortModelChange]);
+
+  // Seed initial L2 from the legacy `initialColumnVisibility` prop. One-shot
+  // per mount; subsequent column-set changes don't re-trigger. Callers that
+  // don't pass the prop skip this entirely. Acts as a session-only L2 hide
+  // seed (no DB roundtrip).
+  const seededInitialVisibilityRef = useRef(false);
+  useEffect(() => {
+    if (seededInitialVisibilityRef.current) return;
+    if (!initialColumnVisibility) return;
+    if (l1.length === 0) return;
+    seededInitialVisibilityRef.current = true;
+    const byField = {};
+    Object.keys(initialColumnVisibility).forEach((field) => {
+      byField[field] = { hide: !initialColumnVisibility[field] };
+    });
+    applyLayoutRaw({ byField, order: null, sortModel: [], filterModel: null, savedFilters: false }, null);
+  }, [initialColumnVisibility, l1, applyLayoutRaw]);
+
+  // ── Layout list + default-layout auto-apply ─────────────────────────────
+  const applyLayoutFromConfig = useCallback((rawConfig, layoutMeta = null) => {
+    const adapted = adaptLayoutConfig(rawConfig);
+    if (!adapted) return;
+    applyLayoutRaw(adapted, layoutMeta);
+  }, [applyLayoutRaw]);
+
+  const {
+    layouts,
+    loading: layoutsLoading,
+    error: layoutsError,
+    refetch: refetchLayouts,
+  } = useLayouts(documentName, applyLayoutFromConfig);
+
+  const activeLayout = useMemo(() => {
+    const all = [...(layouts.private || []), ...(layouts.public || [])];
+    return all.find((l) => isLoadedLayout(l)) || null;
+  }, [layouts, isLoadedLayout]);
+
+  // ── Derived render set ──────────────────────────────────────────────────
+  // The set of fields whose visibility is user-asserted (L2 or L3). Used to
+  // gate constant-card promotion: only auto-promote columns the user hasn't
+  // opined on. (L3-hide wins over card; L3-show wins too.)
+  const assertedHideFields = useMemo(() => {
+    const set = new Set();
+    if (l2?.byField) {
+      Object.keys(l2.byField).forEach((f) => {
+        if (l2.byField[f]?.hide !== undefined) set.add(f);
+      });
+    }
+    return set;
+  }, [l2]);
+
+  // shouldHideConstantColumns: don't auto-promote when there's a single row
+  // (the table is already the "summary").
   const shouldHideConstantColumns = hideConstantColumns && rows.length > 1;
-  const columnsToUse = shouldHideConstantColumns ? columnsWithoutConstants : normalizedColumns;
-  const rowsToUse = shouldHideConstantColumns ? rowsWithoutConstants : rows;
+
+  const { constantColumns } = useConstantColumns(
+    rows,
+    shouldHideConstantColumns ? l1 : [],
+    assertedHideFields
+  );
+
+  // Render columns = L1 reordered by merged.columnOrder, filtered to visible,
+  // minus the constant-card fields (those move to the insights panel).
+  const renderColumns = useMemo(() => {
+    const byField = new Map(l1.map((c) => [c.field, c]));
+    return merged.columnOrder
+      .map((f) => byField.get(f))
+      .filter(Boolean)
+      .filter((c) => merged.columnVisibility[c.field])
+      .filter((c) => !constantColumns.has(c.field));
+  }, [l1, merged.columnOrder, merged.columnVisibility, constantColumns]);
+
+  // For the column menu: show every L1 column the user can manage, except
+  // those auto-promoted to the card (those have no per-column controls).
+  const menuColumns = useMemo(() => {
+    return l1.filter((c) => !constantColumns.has(c.field));
+  }, [l1, constantColumns]);
 
   // Caller-supplied `summary` wins. When the caller doesn't pass one but the
-  // columns themselves carry `is_summary: true` flags (server-curated picks),
-  // build the summary from those — so reports that already opt into the
-  // is_summary contract on the server get a top Summary card for free.
+  // columns themselves carry `is_summary: true` flags, build the summary
+  // from those.
   const effectiveSummary = useMemo(() => {
     if (summary && Object.keys(summary).length > 0) return summary;
-    const flagged = calculateIsSummaryTotals(rows, normalizedColumns);
+    const flagged = calculateIsSummaryTotals(rows, l1);
     return Object.keys(flagged).length > 0 ? flagged : null;
-  }, [summary, rows, normalizedColumns]);
+  }, [summary, rows, l1]);
 
-  // Whether the insights panel has anything to render (drives the top-bar toggle visibility)
   const insightsAvailable = Boolean(
     (effectiveSummary && Object.keys(effectiveSummary).length > 0) ||
       (shouldHideConstantColumns && constantColumns && constantColumns.size > 0)
   );
 
-  // Column visibility. `originalColumnVisibility` tracks the user/layout
-  // baseline — programmatic re-syncs (backend overlay) don't mutate it, so
-  // save persists the user's intent rather than the runtime-modified view.
-  const {
-    columnVisibility,
-    originalColumnVisibility,
-    toggleColumnVisibility,
-    setColumnVisibilityState,
-    setOriginalColumnVisibilityState,
-  } = useColumnVisibility(columnsToUse, initialColumnVisibility, onColumnVisibilityChange);
-
-  // Column order + derived visible columns
-  const { columnOrder, setColumnOrder, handleColumnReorder, visibleColumns } =
-    useColumnOrder(columnsToUse, columnVisibility);
-
-  // Frozen columns (initial setup seeded from prop). `originalFrozenState`
-  // follows the same baseline-tracking pattern as originalColumnVisibility.
-  const {
-    frozenState,
-    originalFrozenState,
-    toggleFrozen,
-    setFrozenStateState,
-    setOriginalFrozenStateState,
-    frozenColumns: computedFrozenColumns,
-    nonFrozenColumns,
-    cumulativeFrozenLeftOffsets,
-  } = useFrozenColumns(columnsToUse, visibleColumns, columnWidths, frozenColumns);
-
-  // Sorting
-  const { sortModel, handleHeaderClick, promoteToPrimarySort, applyLayoutSortModel } = useSorting(
-    initialSortModel,
-    onSortModelChange
-  );
-
-  // Filtering
-  const { filterModel, handleFilterChange, clearAllFilters } = useFiltering();
-  const hasActiveFilters = useMemo(
-    () =>
-      Object.entries(filterModel).some(
-        ([, value]) => value != null && value !== ""
-      ),
-    [filterModel]
-  );
-
-  // Pipeline: index → filter → sort
-  const indexedRows = useMemo(() => indexRows(rowsToUse), [rowsToUse]);
+  // ── Pipeline: index → filter → sort ────────────────────────────────────
+  const indexedRows = useMemo(() => indexRows(rows), [rows]);
   const filteredRows = useMemo(
-    () => filterRows(indexedRows, filterModel, columnsToUse),
-    [indexedRows, filterModel, columnsToUse]
+    () => filterRows(indexedRows, merged.filterModel, l1),
+    [indexedRows, merged.filterModel, l1]
   );
   const sortedRows = useMemo(
-    () => sortRows(filteredRows, sortModel, columnsToUse),
-    [filteredRows, sortModel, columnsToUse]
+    () => sortRows(filteredRows, merged.sortModel, l1),
+    [filteredRows, merged.sortModel, l1]
   );
 
   // Grouping injects synthetic total rows between groups
   const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
-    columnsToUse,
+    l1,
     sortedRows,
     promoteToPrimarySort,
     defaultGroupByField
   );
 
-  // Pagination (disabled in fullscreen)
-  const visibleColumnCount = visibleColumns.length || 1;
+  // ── Frozen/non-frozen split + offsets ──────────────────────────────────
+  const frozenColumnsRender = useMemo(
+    () => renderColumns.filter((c) => merged.frozenState[c.field]),
+    [renderColumns, merged.frozenState]
+  );
+  const nonFrozenColumnsRender = useMemo(
+    () => renderColumns.filter((c) => !merged.frozenState[c.field]),
+    [renderColumns, merged.frozenState]
+  );
+  const cumulativeFrozenLeftOffsets = useMemo(
+    () => calculateFrozenOffsets(frozenColumnsRender, merged.columnWidths),
+    [frozenColumnsRender, merged.columnWidths]
+  );
+
+  // ── Pagination (disabled in fullscreen) ────────────────────────────────
+  const visibleColumnCount = renderColumns.length || 1;
   const { page, totalPages, autoPageSize, pagedRows, goToNextPage, goToPrevPage } =
     usePagination(groupedRows, visibleColumnCount, fullScreen);
 
@@ -304,30 +373,28 @@ const NbNextDataGrid = forwardRef(({
     handleBottomGoToPrevPage,
   } = useScrollToTopOnPagination({ page, fullScreen, goToNextPage, goToPrevPage });
 
-  // Row selection (click + hover)
+  // ── Selection ──────────────────────────────────────────────────────────
   const { selectedRowId, hoveredRowId, handleRowClick, handleRowHover, handleRowLeave } =
     useRowSelection(onRowSelect, onRowClick);
 
-  // Multi-row selection (checkbox column)
   const multiRowSelection = useMultiRowSelection({
     enabled: enableRowSelection,
     selectedRowIds,
     onSelectionChange,
   });
 
-  // Measurements (row height + container height)
+  // ── Measurements + virtual scrolling ───────────────────────────────────
   const { rowHeight, computedContainerHeight } = useMeasurements(
     headerRef,
     firstRowRef,
     pagedRows,
-    visibleColumns,
+    renderColumns,
     density,
     autoHeight,
     fullScreen,
     insightsRef
   );
 
-  // Virtual scrolling only in fullscreen
   const scrollContainerHeight = useScrollContainerHeight(
     fullScreen,
     scrollAreaRef,
@@ -338,10 +405,9 @@ const NbNextDataGrid = forwardRef(({
     rowHeight,
     scrollContainerHeight,
     scrollAreaRef.current,
-    10 // overscan
+    10
   );
-  // Infinite scroll bypasses internal pagination — render every loaded row;
-  // the parent appends rows as more pages arrive.
+
   const displayRows = fullScreen
     ? virtualScrollingResult.visibleRows
     : infiniteScroll
@@ -357,8 +423,7 @@ const NbNextDataGrid = forwardRef(({
     onLoadMore,
   });
 
-  // Selection prop bundle for header/body. Visible-row ids drive select-all so
-  // the checkbox reflects only what's currently displayed (post-filter, post-page).
+  // Selection prop bundle for header/body
   const visibleSelectableIds = useMemo(() => {
     if (!enableRowSelection) return [];
     const ids = [];
@@ -396,16 +461,14 @@ const NbNextDataGrid = forwardRef(({
       }
     : null;
 
-  // Export payload / imperative handle / Excel handler. The last block of
-  // params is only consulted when `tabs` has 2+ entries — they let the export
-  // re-run the pipeline per tab so every tab becomes its own Excel sheet.
+  // ── Export ─────────────────────────────────────────────────────────────
   const { isExcelExporting, handleExcelExport, getExportPayload } = useGridExport({
     ref,
     groupedRows,
     sortedRows,
-    visibleColumns,
-    normalizedColumns,
-    columnOrder,
+    visibleColumns: renderColumns,
+    normalizedColumns: l1,
+    columnOrder: merged.columnOrder,
     summary,
     constantColumns,
     showTotalRow,
@@ -417,88 +480,25 @@ const NbNextDataGrid = forwardRef(({
     rowsProp,
     columnsProp,
     summaryProp,
-    filterModel,
-    sortModel,
-    columnVisibility,
+    filterModel: merged.filterModel,
+    sortModel: merged.sortModel,
+    columnVisibility: merged.columnVisibility,
     hideConstantColumns,
   });
 
-  // Menus
+  // ── Menus ──────────────────────────────────────────────────────────────
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
-  // Layouts list (shared between Toolbar's active-layout indicator and
-  // LayoutMenu). A layout is "active" when its stored originalColumns matches
-  // the client's current baseline — i.e. the user hasn't diverged from what
-  // was saved. Backend overlay drifts visible but not original, so an
-  // overlay-modified grid still resolves to the loaded layout as active.
-  const {
-    layouts,
-    loading: layoutsLoading,
-    error: layoutsError,
-    refetch: refetchLayouts,
-  } = useLayouts(documentName);
-
-  const activeLayout = useMemo(() => {
-    if (!originalColumnVisibility || !originalFrozenState) return null;
-    const all = [...(layouts.private || []), ...(layouts.public || [])];
-    return all.find((l) => isLayoutActive(l, originalColumnVisibility, originalFrozenState)) || null;
-  }, [layouts, originalColumnVisibility, originalFrozenState]);
-
-  // Layout apply (shared between manual LayoutMenu and the auto-loader).
-  // Sets visible state and original baseline independently — the baseline
-  // gates subsequent backend overlay re-applies (visible == original per field).
-  // Legacy layouts without `originalColumns` get baseline = visible (no-op).
-  const applyLayout = useCallback(
-    (columnConfig) => {
-      if (!columnConfig) return;
-      const {
-        columnVisibility: newVisibility,
-        frozenState: newFrozenState,
-        columnOrder: newOrder,
-        sortModel: newSortModel,
-        originalColumnVisibility: newOriginalVisibility,
-        originalFrozenState: newOriginalFrozen,
-      } = applyColumnConfig(normalizedColumns, columnConfig);
-
-      setColumnVisibilityState(newVisibility);
-      setFrozenStateState(newFrozenState);
-      setOriginalColumnVisibilityState(newOriginalVisibility);
-      setOriginalFrozenStateState(newOriginalFrozen);
-
-      if (newOrder && newOrder.length > 0) {
-        setColumnOrder(newOrder);
-      }
-
-      if (newSortModel && newSortModel.length > 0) {
-        applyLayoutSortModel(newSortModel);
-      }
-    },
-    [
-      normalizedColumns,
-      setColumnVisibilityState,
-      setFrozenStateState,
-      setOriginalColumnVisibilityState,
-      setOriginalFrozenStateState,
-      setColumnOrder,
-      applyLayoutSortModel,
-    ]
+  const hasActiveFilters = useMemo(
+    () =>
+      Object.entries(merged.filterModel || {}).some(
+        ([, value]) => value != null && value !== ""
+      ),
+    [merged.filterModel]
   );
 
-  // Auto-load the user's default layout on mount (once per documentName)
-  useDefaultLayoutLoader({ documentName, columns, normalizedColumns, applyLayout });
-
-  // Container style (accounts for fullscreen + sidebar offset) + theme vars.
-  // Default to natural document flow (container auto-sizes, page scrolls).
-  // The legacy fixed-height layout was computed from `rowHeight × rowCount`
-  // which silently omitted the filter row + total row + variable card height,
-  // so the bottom toolbar would land before the last rows on table view and
-  // clip cards on card view. Natural flow sidesteps the entire formula.
-  //
-  // Exceptions that still need a constrained, internally-scrolling area:
-  //   - fullscreen: pinned 100vh layout with sticky chrome
-  //   - infinite scroll: the IntersectionObserver sentinel needs a scrollable
-  //     root, otherwise it'd report intersecting on every render
+  // ── Container style ────────────────────────────────────────────────────
   const useNaturalFlow = !fullScreen && !infiniteScroll;
   const gridContainerStyle = {
     ...getGridContainerStyle(computedContainerHeight, fullScreen, sidebarWidth, minimalMode),
@@ -535,7 +535,7 @@ const NbNextDataGrid = forwardRef(({
   );
 
   // Empty state
-  if (!rowsToUse || rowsToUse.length === 0 || visibleColumns.length === 0) {
+  if (!rows || rows.length === 0 || renderColumns.length === 0) {
     return (
       <div ref={containerRef} style={gridContainerStyle}>
         {insightsHeader}
@@ -544,19 +544,20 @@ const NbNextDataGrid = forwardRef(({
     );
   }
 
-  // Main render
+  // ── Main render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} style={gridContainerStyle}>
       {insightsHeader}
       <Toolbar
         totalRows={groupedRows.length}
-        visibleColumnsCount={visibleColumns.length}
+        visibleColumnsCount={renderColumns.length}
         setShowColumnMenu={setShowColumnMenu}
         showColumnMenu={showColumnMenu}
         showLayoutMenu={showLayoutMenu}
         setShowLayoutMenu={setShowLayoutMenu}
         documentName={documentName}
         activeLayoutName={activeLayout?.layout_name || null}
+        isLayoutDirty={dirty}
         page={page}
         totalPages={totalPages}
         autoPageSize={autoPageSize}
@@ -577,9 +578,9 @@ const NbNextDataGrid = forwardRef(({
       />
       {showColumnMenu && (
         <ColumnMenu
-          normalizedColumns={normalizedColumns}
-          columnVisibility={columnVisibility}
-          frozenState={frozenState}
+          normalizedColumns={menuColumns}
+          columnVisibility={merged.columnVisibility}
+          frozenState={merged.frozenState}
           toggleColumnVisibility={toggleColumnVisibility}
           toggleFrozen={toggleFrozen}
           onClose={() => setShowColumnMenu(false)}
@@ -588,25 +589,15 @@ const NbNextDataGrid = forwardRef(({
       {showLayoutMenu && documentName && (
         <LayoutMenu
           documentName={documentName}
-          // Save only the columns the layout actively controls — constants
-          // are filtered out (they're shown in the summary panel, not the
-          // table). Persisting them as hide=true would incorrectly keep them
-          // hidden if a future re-run produces non-constant data for that
-          // field. On restore, applyColumnConfig falls back to c.hide for
-          // any field missing from the saved array.
-          normalizedColumns={columnsToUse}
-          columnVisibility={columnVisibility}
-          frozenState={frozenState}
-          columnOrder={columnOrder}
-          sortModel={sortModel}
-          originalColumnVisibility={originalColumnVisibility}
-          originalFrozenState={originalFrozenState}
+          dirty={dirty}
           layouts={layouts}
           layoutsLoading={layoutsLoading}
           layoutsError={layoutsError}
           refetchLayouts={refetchLayouts}
           activeLayout={activeLayout}
-          onLayoutLoad={applyLayout}
+          onLayoutLoad={applyLayoutFromConfig}
+          buildSavePayload={buildSavePayload}
+          onSavedSnapshot={applySavedSnapshot}
           onClose={() => setShowLayoutMenu(false)}
         />
       )}
@@ -614,7 +605,7 @@ const NbNextDataGrid = forwardRef(({
         {viewMode === "cards" ? (
           <CardView
             rows={displayRows}
-            columns={[...computedFrozenColumns, ...nonFrozenColumns]}
+            columns={[...frozenColumnsRender, ...nonFrozenColumnsRender]}
             selectedRowId={selectedRowId}
             handleRowClick={handleRowClick}
             getRowIdFunc={getRowId}
@@ -623,28 +614,28 @@ const NbNextDataGrid = forwardRef(({
           <table style={tableStyle}>
             <DataGridHeader
               headerRef={headerRef}
-              frozenColumns={computedFrozenColumns}
-              nonFrozenColumns={nonFrozenColumns}
+              frozenColumns={frozenColumnsRender}
+              nonFrozenColumns={nonFrozenColumnsRender}
               cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
-              sortModel={sortModel}
-              frozenState={frozenState}
+              sortModel={merged.sortModel}
+              frozenState={merged.frozenState}
               handleHeaderClick={handleHeaderClick}
               toggleFrozen={toggleFrozen}
-              columnWidths={columnWidths}
-              handleColumnResize={handleColumnResize}
+              columnWidths={merged.columnWidths}
+              handleColumnResize={setColumnWidth}
               fullScreen={fullScreen}
-              filterModel={filterModel}
-              handleFilterChange={handleFilterChange}
+              filterModel={merged.filterModel}
+              handleFilterChange={setFilterValue}
               groupByField={groupByField}
               toggleGroupBy={toggleGroupBy}
-              onColumnReorder={handleColumnReorder}
+              onColumnReorder={reorderColumns}
               selection={headerSelectionProp}
             />
             <DataGridBody
               firstRowRef={firstRowRef}
               pagedRows={displayRows}
-              frozenColumns={computedFrozenColumns}
-              nonFrozenColumns={nonFrozenColumns}
+              frozenColumns={frozenColumnsRender}
+              nonFrozenColumns={nonFrozenColumnsRender}
               cumulativeFrozenLeftOffsets={cumulativeFrozenLeftOffsets}
               selectedRowId={selectedRowId}
               hoveredRowId={hoveredRowId}
@@ -654,14 +645,14 @@ const NbNextDataGrid = forwardRef(({
               rowHeight={rowHeight}
               autoHeight={autoHeight}
               getRowIdFunc={getRowId}
-              columnWidths={columnWidths}
+              columnWidths={merged.columnWidths}
               virtualScrolling={fullScreen}
               offsetY={fullScreen ? virtualScrollingResult.offsetY : 0}
               totalHeight={fullScreen ? virtualScrollingResult.totalHeight : 0}
               startIndex={fullScreen ? virtualScrollingResult.startIndex : 0}
               showTotalRow={showTotalRow}
               allRows={sortedRows}
-              allColumns={columnsToUse}
+              allColumns={l1}
               selection={bodySelectionProp}
             />
           </table>
@@ -683,13 +674,14 @@ const NbNextDataGrid = forwardRef(({
       {!fullScreen && !minimalMode && (
         <Toolbar
           totalRows={groupedRows.length}
-          visibleColumnsCount={visibleColumns.length}
+          visibleColumnsCount={renderColumns.length}
           setShowColumnMenu={setShowColumnMenu}
           showColumnMenu={showColumnMenu}
           showLayoutMenu={showLayoutMenu}
           setShowLayoutMenu={setShowLayoutMenu}
           documentName={documentName}
           activeLayoutName={activeLayout?.layout_name || null}
+          isLayoutDirty={dirty}
           page={page}
           totalPages={totalPages}
           autoPageSize={autoPageSize}
@@ -769,19 +761,10 @@ NbNextDataGrid.propTypes = {
     PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
       label: PropTypes.node.isRequired,
-      /** Optional palette key for the tab pill (see GridTabs COLOR_PALETTE). */
       color: PropTypes.string,
-      /** Optional per-tab rows. If omitted, tab shares top-level `rows`. */
       rows: PropTypes.array,
-      /** Optional per-tab summary. If omitted, tab shares top-level `summary`. */
       summary: PropTypes.object,
-      /**
-       * Optional. Field-name subset of top-level `columns` to show in this tab
-       * (order follows this array). Lets multiple tabs share one row set while
-       * showing different column groupings — no redundant row data needed.
-       */
       columnFields: PropTypes.arrayOf(PropTypes.string),
-      /** Optional. Full column override for this tab. Wins over `columnFields`. */
       columns: PropTypes.array,
     })
   ),

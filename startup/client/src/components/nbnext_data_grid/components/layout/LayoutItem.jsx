@@ -1,17 +1,25 @@
-/**
- * Layout Item component for individual layout rows
- */
-
 import PropTypes from "prop-types";
 import { parseDateValue } from "@utils/dateTimeUtils";
 
 function LayoutItem({
   layout,
   isSelected,
+  isActive = false,
+  dirty = false,
   onLoad,
   onDelete,
   onSetDefault,
 }) {
+  // "Active" = this is the layout the grid is rendering against. The
+  // selection state is independent — selection is the row the user has
+  // focused in the dialog (for save/update).
+  const loadButtonLabel = isActive ? (dirty ? "Active *" : "Active") : "Load";
+  const loadButtonClass = isActive
+    ? "py-1 px-2 rounded cursor-pointer text-xs bg-blue-100 border border-blue-500 font-semibold"
+    : isSelected
+      ? "py-1 px-2 rounded cursor-pointer text-xs bg-gray-100 border border-gray-400"
+      : "py-1 px-2 rounded cursor-pointer text-xs bg-white border border-gray-200";
+
   return (
     <div className="flex items-center bg-gray-50 border border-gray-200 rounded gap-2 py-1 px-2 mb-1">
       <div className="flex-1 text-xs">
@@ -42,10 +50,10 @@ function LayoutItem({
       <button
         type="button"
         onClick={() => onLoad(layout)}
-        className={`py-1 px-2 rounded cursor-pointer text-xs ${isSelected ? "bg-blue-100 border border-blue-500 font-semibold" : "bg-white border border-gray-200"}`}
-        title="Load layout"
+        className={loadButtonClass}
+        title={isActive ? "Currently active layout" : "Load layout"}
       >
-        {isSelected ? "Active" : "Load"}
+        {loadButtonLabel}
       </button>
       <button
         type="button"
@@ -62,10 +70,11 @@ function LayoutItem({
 LayoutItem.propTypes = {
   layout: PropTypes.object.isRequired,
   isSelected: PropTypes.bool.isRequired,
+  isActive: PropTypes.bool,
+  dirty: PropTypes.bool,
   onLoad: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onSetDefault: PropTypes.func.isRequired,
 };
 
 export { LayoutItem };
-

@@ -21,6 +21,7 @@ function Toolbar({
   setShowLayoutMenu,
   documentName,
   activeLayoutName = null,
+  isLayoutDirty = false,
   page,
   totalPages,
   autoPageSize,
@@ -123,14 +124,16 @@ function Toolbar({
               layoutDisabled
                 ? "Set documentName to manage layouts"
                 : activeLayoutName
-                  ? `Active layout: ${activeLayoutName}`
-                  : "Manage saved layouts"
+                  ? `Active layout: ${activeLayoutName}${isLayoutDirty ? " (unsaved manual changes)" : ""}`
+                  : isLayoutDirty
+                    ? "Manage saved layouts (unsaved manual changes)"
+                    : "Manage saved layouts"
             }
-            aria-label={activeLayoutName ? `Layouts — ${activeLayoutName} active` : "Layouts"}
+            aria-label={activeLayoutName ? `Layouts — ${activeLayoutName} active${isLayoutDirty ? ", unsaved" : ""}` : "Layouts"}
           >
             <LayoutGrid size={14} strokeWidth={2} />
             <span className="hidden sm:inline">
-              {activeLayoutName ? `Layout: ${activeLayoutName}` : "Layouts"}
+              {activeLayoutName ? `Layout: ${activeLayoutName}${isLayoutDirty ? "*" : ""}` : `Layouts${isLayoutDirty ? "*" : ""}`}
             </span>
           </button>
         </div>
@@ -209,6 +212,7 @@ Toolbar.propTypes = {
   setShowLayoutMenu: PropTypes.func,
   documentName: PropTypes.string,
   activeLayoutName: PropTypes.string,
+  isLayoutDirty: PropTypes.bool,
   page: PropTypes.number.isRequired,
   totalPages: PropTypes.number.isRequired,
   autoPageSize: PropTypes.number.isRequired,

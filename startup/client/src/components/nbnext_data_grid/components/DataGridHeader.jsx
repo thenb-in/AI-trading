@@ -4,7 +4,7 @@ import {
   headerCellBaseStyle,
   getSortedHeaderStyle,
 } from "../utils/styles.js";
-import { getColumnWidthWithIcons } from "../utils/helpers.js";
+import { fallbackColumnWidth } from "../utils/helpers.js";
 
 import { useRef, useCallback, useState, useEffect, useMemo } from "react";
 
@@ -145,7 +145,7 @@ function DataGridHeader({
     // Use columnWidths if present, else fallback
     const totalWidth = columnWidths && columnWidths[col.field]
       ? columnWidths[col.field]
-      : getColumnWidthWithIcons(col);
+      : fallbackColumnWidth(col);
 
     const cellStyle = {
       ...headerCellBaseStyle,
@@ -317,7 +317,7 @@ function DataGridHeader({
       : undefined;
     const totalWidth = columnWidths && columnWidths[col.field]
       ? columnWidths[col.field]
-      : getColumnWidthWithIcons(col);
+      : fallbackColumnWidth(col);
 
     const filterCellStyle = {
       ...headerCellBaseStyle,

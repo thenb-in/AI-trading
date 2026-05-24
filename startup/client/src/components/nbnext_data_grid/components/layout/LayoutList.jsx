@@ -1,7 +1,3 @@
-/**
- * Layout List component for rendering lists of layouts
- */
-
 import PropTypes from "prop-types";
 import { LayoutItem } from "./LayoutItem.jsx";
 
@@ -9,6 +5,8 @@ function LayoutList({
   layoutList,
   title,
   selectedLayoutId,
+  activeLayoutId = null,
+  dirty = false,
   onLoad,
   onDelete,
   onSetDefault,
@@ -31,6 +29,8 @@ function LayoutList({
           key={layout.id}
           layout={layout}
           isSelected={selectedLayoutId === layout.id}
+          isActive={activeLayoutId === layout.id}
+          dirty={dirty}
           onLoad={onLoad}
           onDelete={onDelete}
           onSetDefault={onSetDefault}
@@ -44,10 +44,11 @@ LayoutList.propTypes = {
   layoutList: PropTypes.array.isRequired,
   title: PropTypes.string.isRequired,
   selectedLayoutId: PropTypes.number,
+  activeLayoutId: PropTypes.number,
+  dirty: PropTypes.bool,
   onLoad: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onSetDefault: PropTypes.func.isRequired,
 };
 
 export { LayoutList };
-

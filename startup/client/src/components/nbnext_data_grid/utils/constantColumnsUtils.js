@@ -1,126 +1,101 @@
-/**
- * Utility functions for detecting and processing constant columns
- */
+// Detect columns where every row holds the same value.
+//
+// Under the 3-layer layout model, this runs as a render-time overlay over the
+// pristine L1 column set. A column qualifies for the common-values card only
+// when:
+//
+//   • all rows hold the same value, AND
+//   • the user has NOT asserted visibility on the column (L2 or L3 hide is
+//     unset). L3-hide wins over card promotion (user said "hide" → don't show
+//     it anywhere); L3-show wins too (user explicitly opted in → keep it as a
+//     column).
+//
+// The `assertedFields` set is the union of fields with any hide override in
+// L2 or L3 — callers compute it from `useLayoutState` and pass it in.
 
-/**
- * Detects columns where all rows have the same value
- * @param {Array} rows - Array of row objects
- * @param {Array} columns - Array of column definitions
- * @returns {Object} - { constantColumns: Map, filteredColumns: Array }
- */
-function detectConstantColumns(rows, columns) {
+const detectConstantColumns = (rows, columns, assertedFields = null) => {
   if (!rows || rows.length === 0 || !columns || columns.length === 0) {
-    return {
-      constantColumns: new Map(),
-      filteredColumns: columns || []
-    };
+    return { constantColumns: new Map() };
   }
 
   const constantColumns = new Map();
-  const columnFieldMap = new Map();
-  
-  // Create a map of field -> column for quick lookup
-  columns.forEach(col => {
-    const field = col.field || col.key;
-    if (field) {
-      columnFieldMap.set(field, col);
-    }
-  });
 
-  // Check each column to see if all rows have the same value
-  columnFieldMap.forEach((col, field) => {
-    // Skip action columns, hidden columns, skip_insight, and certain types
-    // Also skip fields with "action" in the name (e.g., "lock_action", "actions")
+  for (const col of columns) {
+    const field = col.field || col.key;
+    if (!field) continue;
+
+    // Skip action columns, hidden columns, skip_insight, and certain types.
     if (
       col.skip_insight === true ||
-      col.type === 'action' ||
+      col.type === "action" ||
       col.hide === true ||
       col.hidden === true ||
-      field === 'actions' ||
-      (typeof field === 'string' && field.includes('_action'))
+      field === "actions" ||
+      (typeof field === "string" && field.includes("_action"))
     ) {
-      return;
+      continue;
     }
 
-    // Get all values for this column
-    const values = rows.map(row => {
-      const rowData = row._row || row;
-      return rowData[field];
-    });
+    // Respect user assertions: if the user has an L2/L3 opinion on this
+    // column's visibility, don't auto-promote it to the card.
+    if (assertedFields && assertedFields.has(field)) continue;
 
-    // Check if all rows have the same value (including null/undefined/empty string)
-    if (values.length === rows.length && values.length > 0) {
-      const firstValue = values[0];
-      const allSame = values.every(val => {
-        // Handle null/undefined comparison
-        if (val === null || val === undefined) {
-          return firstValue === null || firstValue === undefined;
+    const firstRow = rows[0]._row || rows[0];
+    const firstValue = firstRow?.[field];
+    let allSame = true;
+    for (let i = 1; i < rows.length; i++) {
+      const rowData = rows[i]._row || rows[i];
+      const val = rowData?.[field];
+      if (val === null || val === undefined) {
+        if (firstValue !== null && firstValue !== undefined) {
+          allSame = false;
+          break;
         }
-        if (firstValue === null || firstValue === undefined) {
-          return false;
+        continue;
+      }
+      if (firstValue === null || firstValue === undefined) {
+        allSame = false;
+        break;
+      }
+      if (typeof val === "object" && val !== null) {
+        if (JSON.stringify(val) !== JSON.stringify(firstValue)) {
+          allSame = false;
+          break;
         }
-        // Deep comparison for objects/arrays
-        if (typeof val === 'object' && val !== null) {
-          return JSON.stringify(val) === JSON.stringify(firstValue);
-        }
-        // String comparison (case-sensitive)
-        return String(val) === String(firstValue);
-      });
-
-      if (allSame) {
-        // Store the constant value and column info
-        constantColumns.set(field, {
-          field,
-          value: firstValue,
-          displayName: col.display_name || col.headerName || col.label || col.name || field,
-          type: col.type || 'string',
-          renderCell: typeof col.renderCell === 'function' ? col.renderCell : null,
-        });
+      } else if (String(val) !== String(firstValue)) {
+        allSame = false;
+        break;
       }
     }
-  });
 
-  // Filter out constant columns from the columns array
-  const filteredColumns = columns.filter(col => {
-    const field = col.field || col.key;
-    return !constantColumns.has(field);
-  });
-
-  return {
-    constantColumns,
-    filteredColumns
-  };
-}
-
-/**
- * Converts constant columns Map to summary object format
- * @param {Map} constantColumns - Map of constant columns
- * @returns {Object} - Summary object with key-value pairs
- */
-function constantColumnsToSummary(constantColumns) {
-  if (!constantColumns || constantColumns.size === 0) {
-    return {};
+    if (allSame) {
+      constantColumns.set(field, {
+        field,
+        value: firstValue,
+        displayName: col.display_name || col.headerName || col.label || col.name || field,
+        type: col.type || "string",
+        renderCell: typeof col.renderCell === "function" ? col.renderCell : null,
+      });
+    }
   }
 
+  return { constantColumns };
+};
+
+const constantColumnsToSummary = (constantColumns) => {
+  if (!constantColumns || constantColumns.size === 0) return {};
+
   const summary = {};
-  constantColumns.forEach(({ field, value, displayName }, key) => {
-    // Use displayName as key for better readability in Excel.
-    // Ensure keys are unique to avoid overwriting when displayName duplicates exist.
-    void key;
-    const baseKey = (typeof displayName === 'string' && displayName.trim())
-      ? displayName.trim()
-      : field;
+  constantColumns.forEach(({ field, value, displayName }) => {
+    const baseKey =
+      typeof displayName === "string" && displayName.trim() ? displayName.trim() : field;
     let finalKey = baseKey;
     if (Object.prototype.hasOwnProperty.call(summary, finalKey)) {
       finalKey = `${baseKey} (${field})`;
     }
     summary[finalKey] = value;
   });
-
   return summary;
-}
-
-export {
-  detectConstantColumns,
-  constantColumnsToSummary
 };
+
+export { detectConstantColumns, constantColumnsToSummary };

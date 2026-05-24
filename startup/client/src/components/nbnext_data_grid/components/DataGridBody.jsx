@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { cellBaseStyle, getRowStyle, getCellBackgroundColor, totalRowStyle } from "../utils/styles.js";
-import { renderCellContent, getKeyForRow, getColumnWidthWithIcons, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
+import { renderCellContent, getKeyForRow, fallbackColumnWidth, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
 
 function DataGridBody({
@@ -197,7 +197,7 @@ function DataGridBody({
             {frozenColumns.map((col) => {
               const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
               const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
-              const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+              const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
               
               const setCellStyles = (element) => {
                 if (element) {
@@ -225,7 +225,7 @@ function DataGridBody({
             })}
             {nonFrozenColumns.map((col) => {
               const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
-              const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+              const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
               
               const setCellStyles = (element) => {
                 if (element) {
@@ -284,7 +284,7 @@ function DataGridBody({
           })()}
           {frozenColumns.map((col) => {
             const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
-            const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+            const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
             
             const setCellStyles = (element) => {
               if (element) {
@@ -308,7 +308,7 @@ function DataGridBody({
             );
           })}
           {nonFrozenColumns.map((col) => {
-            const totalWidth = columnWidths[col.field] || getColumnWidthWithIcons(col);
+            const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
             
             const setCellStyles = (element) => {
               if (element) {

@@ -225,222 +225,28 @@ const sortRows = (indexedRows, sortModel, columns) => {
   return copy;
 };
 
-/**
- * Calculate cumulative frozen column offsets
- * @param {Array} frozenColumns - Array of frozen column objects
- * @param {Object} columnWidths - Optional object mapping field names to actual rendered widths
- */
-const calculateFrozenOffsets = (frozenColumns, columnWidths = null) => {
+// Cumulative left offsets for frozen columns. Reads widths from the
+// `columnWidths` map produced by `mergeLayout` — every L1 field has an entry
+// there, so no fallback math is needed.
+const calculateFrozenOffsets = (frozenColumns, columnWidths) => {
   const offsets = {};
   let current = 0;
   frozenColumns.forEach((c) => {
     offsets[c.field] = current;
-    // Use columnWidths if provided (actual rendered width), otherwise fallback to getColumnWidthWithIcons
-    const width = columnWidths && columnWidths[c.field] 
-      ? columnWidths[c.field]
-      : getColumnWidthWithIcons(c);
-    current += width;
+    current += (columnWidths && columnWidths[c.field]) || DEFAULT_COLUMN_WIDTH;
   });
   return offsets;
 };
 
-/**
- * Calculate total column width including space for sorting and freeze icons
- * Sorting icon: ~16px + 6px margin = ~22px (only if sortable)
- * Freeze icon: ~14px icon + 4px padding * 2 + 1px border * 2 + 8px marginLeft = ~32px
- * Group icon: ~14px icon + 4px padding * 2 + 1px border * 2 + 8px marginLeft = ~32px
- */
-const getColumnWidthWithIcons = (col) => {
-  const baseWidth = col.width || DEFAULT_COLUMN_WIDTH;
-  const sortIconWidth = col.sortable !== false ? 22 : 0; // Default sortable is true
-  const freezeIconWidth = 32; // Always show freeze icon
-  const groupIconWidth = 32; // Always show group icon
-  const extraWidth = sortIconWidth + freezeIconWidth + groupIconWidth;
-  return baseWidth + extraWidth;
+// Width used by DataGridHeader for cells when `columnWidths[field]` isn't yet
+// populated (transient render before merge has run). Matches `baseWidthFor` in
+// layoutMerge.js so the header and body agree.
+const fallbackColumnWidth = (col) => {
+  if (Number.isFinite(col.width)) return col.width;
+  const n = (col.headerName || col.field || "").length;
+  return Math.max(15 * n + 18 + 22 + 32 + 32, 80, DEFAULT_COLUMN_WIDTH);
 };
 
-/**
- * Build column config from current grid state for saving to layout.
- * Returns { columns, originalColumns, sortModel }.
- *
- * `columns` reflects the effective (visible) grid state at save time —
- * what gets restored on load.
- * `originalColumns` is the user-intent baseline (set on layout load and on
- * each manual toggle, but not by programmatic backend overlays). Persisting
- * both lets the next session re-establish the gate so backend re-runs can
- * keep applying their unhide/unfreeze overlay without clobbering user edits.
- */
- const buildColumnConfig = (
-   normalizedColumns,
-   columnVisibility,
-   frozenState,
-   columnOrder = [],
-   sortModel = [],
-   originalColumnVisibility = null,
-   originalFrozenState = null,
- ) => {
-  const orderedFields = columnOrder.length > 0
-    ? columnOrder
-    : normalizedColumns.map((col) => col.field);
-
-  const columns = normalizedColumns.map((col) => ({
-    field: col.field,
-    frozen: frozenState[col.field] || false,
-    hide: !columnVisibility[col.field],
-    order: orderedFields.indexOf(col.field),
-  }));
-
-  const result = { columns, sortModel: sortModel || [] };
-
-  // Only attach originalColumns when both baselines are supplied. Order isn't
-  // duplicated — it's already in `columns` and is shared between the two.
-  if (originalColumnVisibility && originalFrozenState) {
-    result.originalColumns = normalizedColumns.map((col) => ({
-      field: col.field,
-      frozen: originalFrozenState[col.field] || false,
-      hide: !originalColumnVisibility[col.field],
-    }));
-  }
-
-  return result;
-};
-
-/**
- * Apply column config from layout to grid state.
- * Handles legacy array format, plus new { columns, sortModel, originalColumns }.
- * Returns { columnVisibility, frozenState, columnOrder, sortModel,
- *           originalColumnVisibility, originalFrozenState }.
- *
- * Legacy layouts (no originalColumns) fall back to using the visible state
- * as the baseline — equivalent to the pre-baseline behavior.
- */
- const applyColumnConfig = (normalizedColumns, columnConfig) => {
-  // Normalise: support legacy plain-array format and new object format.
-  const columnArray = Array.isArray(columnConfig)
-    ? columnConfig
-    : Array.isArray(columnConfig?.columns)
-      ? columnConfig.columns
-      : [];
-  const savedSortModel = Array.isArray(columnConfig?.sortModel)
-    ? columnConfig.sortModel
-    : [];
-  const originalColumnArray = Array.isArray(columnConfig?.originalColumns)
-    ? columnConfig.originalColumns
-    : null;
-
-  const columnVisibility = {};
-  const frozenState = {};
-  const columnConfigMap = {};
-
-  columnArray.forEach((config) => {
-    columnConfigMap[config.field] = config;
-  });
-
-  normalizedColumns.forEach((col) => {
-    const config = columnConfigMap[col.field];
-    if (config) {
-      columnVisibility[col.field] = !config.hide;
-      frozenState[col.field] = config.frozen === true;
-    } else {
-      columnVisibility[col.field] = !col.hide;
-      frozenState[col.field] = col.frozen === true;
-    }
-  });
-
-  // Build the baseline. If `originalColumns` was stored, use it. Otherwise
-  // mirror the visible state (legacy fallback).
-  let originalColumnVisibility;
-  let originalFrozenState;
-  if (originalColumnArray) {
-    const origMap = {};
-    originalColumnArray.forEach((c) => {
-      origMap[c.field] = c;
-    });
-    originalColumnVisibility = {};
-    originalFrozenState = {};
-    normalizedColumns.forEach((col) => {
-      const config = origMap[col.field];
-      if (config) {
-        originalColumnVisibility[col.field] = !config.hide;
-        originalFrozenState[col.field] = config.frozen === true;
-      } else {
-        originalColumnVisibility[col.field] = !col.hide;
-        originalFrozenState[col.field] = col.frozen === true;
-      }
-    });
-  } else {
-    originalColumnVisibility = { ...columnVisibility };
-    originalFrozenState = { ...frozenState };
-  }
-
-  let columnOrder = [];
-  if (columnArray.length > 0) {
-    const hasOrder = columnArray.some((c) => typeof c.order === "number");
-    if (hasOrder) {
-      columnOrder = [...columnArray]
-        .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
-        .map((c) => c.field);
-
-      // Insert columns not in the saved config at their natural position
-      // (relative to normalizedColumns order) rather than blindly appending.
-      const allFields = normalizedColumns.map((c) => c.field);
-      const newFields = allFields.filter((f) => !columnOrder.includes(f));
-      for (const field of newFields) {
-        const naturalIdx = allFields.indexOf(field);
-        let insertAfter = -1;
-        for (let i = naturalIdx - 1; i >= 0; i--) {
-          const pos = columnOrder.indexOf(allFields[i]);
-          if (pos !== -1) {
-            insertAfter = pos;
-            break;
-          }
-        }
-        columnOrder.splice(insertAfter + 1, 0, field);
-      }
-    }
-  }
-
-  return {
-    columnVisibility,
-    frozenState,
-    columnOrder,
-    sortModel: savedSortModel,
-    originalColumnVisibility,
-    originalFrozenState,
-  };
-};
-
-/**
- * Whether a saved layout's stored original baseline matches the client's
- * current baseline (originalColumnVisibility/originalFrozenState).
- *
- * Prefers `originalColumns` from the stored config; falls back to `columns`
- * for legacy layouts that predate the baseline split. Only compares fields
- * the layout knows about — new client-side columns added after the save
- * don't count as a mismatch.
- */
-const isLayoutActive = (layout, originalColumnVisibility, originalFrozenState) => {
-  const config = layout?.column_config;
-  if (!config || !originalColumnVisibility || !originalFrozenState) return false;
-
-  const baselineArray = Array.isArray(config.originalColumns)
-    ? config.originalColumns
-    : Array.isArray(config.columns)
-      ? config.columns
-      : Array.isArray(config)
-        ? config
-        : null;
-  if (!baselineArray || baselineArray.length === 0) return false;
-
-  for (const c of baselineArray) {
-    if (!(c.field in originalColumnVisibility)) continue;
-    const expectVisible = !c.hide;
-    const expectFrozen = c.frozen === true;
-    if (originalColumnVisibility[c.field] !== expectVisible) return false;
-    if (originalFrozenState[c.field] !== expectFrozen) return false;
-  }
-  return true;
-};
 /**
  * Calculate totals for numeric columns across all rows
  * @param {Array} rows - Array of row objects
@@ -576,10 +382,7 @@ export {
   indexRows,
   sortRows,
   calculateFrozenOffsets,
-  getColumnWidthWithIcons,
-  buildColumnConfig,
-  applyColumnConfig,
-  isLayoutActive,
+  fallbackColumnWidth,
   filterRows,
   calculateTotals,
   calculateIsSummaryTotals,

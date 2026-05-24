@@ -1,25 +1,21 @@
-/**
- * Save Layout Dialog component for saving/updating layouts
- */
-
 import PropTypes from "prop-types";
 
 function SaveLayoutDialog({
   selectedLayout,
   newLayoutName,
   newLayoutType,
+  includeFilters,
   saving,
   onNameChange,
   onTypeChange,
+  onIncludeFiltersChange,
   onSave,
   onCancel,
 }) {
   const getSaveButtonClasses = () => {
-    const baseClasses = "flex-1 text-white border-none py-1 px-2 rounded border border-gray-200 cursor-pointer text-xs";
-    if (saving) {
-      return `${baseClasses} bg-gray-300 text-gray-600 cursor-not-allowed`;
-    }
-    return `${baseClasses} ${selectedLayout ? 'bg-emerald-600' : 'bg-blue-600'}`;
+    const base = "flex-1 text-white border-none py-1 px-2 rounded border border-gray-200 cursor-pointer text-xs";
+    if (saving) return `${base} bg-gray-300 text-gray-600 cursor-not-allowed`;
+    return `${base} ${selectedLayout ? "bg-emerald-600" : "bg-blue-600"}`;
   };
 
   return (
@@ -48,6 +44,14 @@ function SaveLayoutDialog({
         <option value="public">Public</option>
         <option value="temp">Temporary</option>
       </select>
+      <label className="flex items-center gap-2 text-xs text-gray-700 mb-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={includeFilters}
+          onChange={(e) => onIncludeFiltersChange(e.target.checked)}
+        />
+        Save per-column filters with this layout
+      </label>
       <div className="flex gap-1">
         <button
           type="button"
@@ -73,12 +77,13 @@ SaveLayoutDialog.propTypes = {
   selectedLayout: PropTypes.object,
   newLayoutName: PropTypes.string.isRequired,
   newLayoutType: PropTypes.string.isRequired,
+  includeFilters: PropTypes.bool.isRequired,
   saving: PropTypes.bool.isRequired,
   onNameChange: PropTypes.func.isRequired,
   onTypeChange: PropTypes.func.isRequired,
+  onIncludeFiltersChange: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
 };
 
 export { SaveLayoutDialog };
-

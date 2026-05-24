@@ -1,12 +1,18 @@
-/**
- * Layout Menu component for saving, loading, and managing layouts
- */
+// Layout manager dialog: list saved layouts, load/save/delete, mark default.
+//
+// Save flow (new 3-layer model):
+//   1. Caller (NbNextDataGrid) provides `buildSavePayload({ includeFilters })`
+//      which collapses L2 + L3 into one L2 + an L1 snapshot.
+//   2. Save dialog calls `serializeLayoutConfig(l2, l1Snapshot)` to produce
+//      the on-disk JSON, then PUT/POSTs via ApiService.
+//   3. On success, `applySavedSnapshot(newL2, layoutId)` is invoked so the
+//      grid resets L3 and treats the freshly-saved layout as the active one.
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { ApiService } from "@services/ApiService.js";
 import { columnMenuStyle } from "../../utils/styles.js";
-import { buildColumnConfig } from "../../utils/helpers.js";
+import { serializeLayoutConfig } from "../../utils/layoutConfig.js";
 import { LayoutList } from "./LayoutList.jsx";
 import { ErrorDisplay } from "./ErrorDisplay.jsx";
 import { SaveLayoutDialog } from "./SaveLayoutDialog.jsx";
@@ -14,19 +20,15 @@ import { LayoutActions } from "./LayoutActions.jsx";
 
 function LayoutMenu({
   documentName,
-  normalizedColumns,
-  columnVisibility,
-  frozenState,
-  columnOrder = [],
-  sortModel = [],
-  originalColumnVisibility = null,
-  originalFrozenState = null,
+  dirty = false,
   layouts,
   layoutsLoading = false,
   layoutsError = null,
   refetchLayouts,
   activeLayout = null,
   onLayoutLoad,
+  buildSavePayload,
+  onSavedSnapshot,
   onClose,
 }) {
   const [saving, setSaving] = useState(false);
@@ -34,11 +36,11 @@ function LayoutMenu({
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState("");
   const [newLayoutType, setNewLayoutType] = useState("private");
+  const [includeFilters, setIncludeFilters] = useState(false);
   const [selectedLayout, setSelectedLayout] = useState(null);
 
-  // Seed selection from the currently-active layout, or fall back to the
-  // user's default. Re-runs when the layouts list refreshes so save/delete
-  // operations keep the selection coherent.
+  // Keep selection coherent with the layout list. When the active layout
+  // changes (e.g. after a save), reflect that.
   useEffect(() => {
     const allLayouts = [...(layouts.private || []), ...(layouts.public || [])];
     if (selectedLayout) {
@@ -50,12 +52,7 @@ function LayoutMenu({
       }
       return;
     }
-    if (activeLayout) {
-      setSelectedLayout(activeLayout);
-      return;
-    }
-    const defaultLayout = allLayouts.find((l) => l.is_default === true);
-    if (defaultLayout) setSelectedLayout(defaultLayout);
+    if (activeLayout) setSelectedLayout(activeLayout);
   }, [layouts, activeLayout, selectedLayout]);
 
   const handleSaveLayout = async () => {
@@ -68,26 +65,15 @@ function LayoutMenu({
       setSaving(true);
       setError(null);
 
-      // Persist both visible state (for restore) and the user-intent baseline
-      // (so the next session can gate backend overlay re-applies correctly).
-      // Re-saving an existing layout naturally refreshes both — picking up any
-      // baseline changes from manual toggles since the layout was loaded.
-      const columnConfig = buildColumnConfig(
-        normalizedColumns,
-        columnVisibility,
-        frozenState,
-        columnOrder,
-        sortModel,
-        originalColumnVisibility,
-        originalFrozenState,
-      );
+      const { l2: newL2, l1Snapshot } = buildSavePayload({ includeFilters });
+      const columnConfig = serializeLayoutConfig(newL2, l1Snapshot);
+
       const layoutData = {
         document_name: documentName,
         layout_name: newLayoutName.trim(),
         type: newLayoutType,
         column_config: columnConfig,
       };
-
       if (selectedLayout) {
         layoutData.id = selectedLayout.id;
       }
@@ -98,11 +84,16 @@ function LayoutMenu({
       const persisted = response.data.data;
       if (persisted) {
         setSelectedLayout(persisted);
+        // Reset L3 to empty and treat the saved layout as the active one.
+        if (typeof onSavedSnapshot === "function") {
+          onSavedSnapshot(newL2, persisted.id);
+        }
       }
 
       setSaveDialogOpen(false);
       setNewLayoutName("");
       setNewLayoutType("private");
+      setIncludeFilters(false);
     } catch (err) {
       setError(err.message || "Failed to save layout");
     } finally {
@@ -113,8 +104,17 @@ function LayoutMenu({
   const handleLoadLayout = async (layout) => {
     try {
       setError(null);
+      // Confirm-on-switch when L3 has unsaved tweaks. Skip the prompt when
+      // the user clicks the already-active layout (no behaviour change to
+      // discard).
+      if (dirty && (!activeLayout || activeLayout.id !== layout.id)) {
+        const ok = window.confirm(
+          "You have unsaved manual changes. Switching layouts will discard them. Continue?"
+        );
+        if (!ok) return;
+      }
       setSelectedLayout(layout);
-      if (onLayoutLoad) {
+      if (typeof onLayoutLoad === "function") {
         onLayoutLoad(layout.column_config, layout);
       }
       onClose();
@@ -124,16 +124,12 @@ function LayoutMenu({
   };
 
   const handleDeleteLayout = async (layoutId) => {
-    if (!window.confirm("Are you sure you want to delete this layout?")) {
-      return;
-    }
+    if (!window.confirm("Are you sure you want to delete this layout?")) return;
 
     try {
       setError(null);
       await ApiService.deleteLayout(layoutId);
-      if (selectedLayout?.id === layoutId) {
-        setSelectedLayout(null);
-      }
+      if (selectedLayout?.id === layoutId) setSelectedLayout(null);
       await refetchLayouts();
     } catch (err) {
       setError(err.message || "Failed to delete layout");
@@ -158,9 +154,12 @@ function LayoutMenu({
     if (selectedLayout) {
       setNewLayoutName(selectedLayout.layout_name);
       setNewLayoutType(selectedLayout.type);
+      // Preserve the existing layout's filter-saving choice as the default.
+      setIncludeFilters(Boolean(selectedLayout.column_config?.savedFilters));
     } else {
       setNewLayoutName("");
       setNewLayoutType("private");
+      setIncludeFilters(false);
     }
     setSaveDialogOpen(true);
   };
@@ -175,31 +174,27 @@ function LayoutMenu({
     setSelectedLayout(null);
     setNewLayoutName("");
     setNewLayoutType("private");
+    setIncludeFilters(false);
   };
 
-  // Surface either a save-time error or a load-time error from the shared
-  // layouts hook — whichever is current. Save errors take precedence since
-  // they're the most recent user action.
   const displayedError = error || layoutsError;
 
   return (
     <div style={columnMenuStyle}>
-      <div className="font-semibold text-sm mb-4">
-        Layout Manager
-      </div>
+      <div className="font-semibold text-sm mb-4">Layout Manager</div>
 
       <ErrorDisplay error={displayedError} />
 
       {layoutsLoading ? (
-        <div className="text-center text-xs text-gray-600 py-8">
-          Loading layouts...
-        </div>
+        <div className="text-center text-xs text-gray-600 py-8">Loading layouts...</div>
       ) : (
         <div className="max-h-[300px] overflow-y-auto">
           <LayoutList
             layoutList={layouts.private}
             title="Private Layouts"
             selectedLayoutId={selectedLayout?.id}
+            activeLayoutId={activeLayout?.id}
+            dirty={dirty}
             onLoad={handleLoadLayout}
             onDelete={handleDeleteLayout}
             onSetDefault={handleSetDefault}
@@ -209,6 +204,8 @@ function LayoutMenu({
             layoutList={layouts.public}
             title="Public Layouts"
             selectedLayoutId={selectedLayout?.id}
+            activeLayoutId={activeLayout?.id}
+            dirty={dirty}
             onLoad={handleLoadLayout}
             onDelete={handleDeleteLayout}
             onSetDefault={handleSetDefault}
@@ -221,15 +218,18 @@ function LayoutMenu({
           selectedLayout={selectedLayout}
           newLayoutName={newLayoutName}
           newLayoutType={newLayoutType}
+          includeFilters={includeFilters}
           saving={saving}
           onNameChange={setNewLayoutName}
           onTypeChange={setNewLayoutType}
+          onIncludeFiltersChange={setIncludeFilters}
           onSave={handleSaveLayout}
           onCancel={handleCancelSave}
         />
       ) : (
         <LayoutActions
           selectedLayout={selectedLayout}
+          dirty={dirty}
           onOpenSaveDialog={handleOpenSaveDialog}
           onClearSelection={handleClearSelection}
         />
@@ -250,13 +250,7 @@ function LayoutMenu({
 
 LayoutMenu.propTypes = {
   documentName: PropTypes.string.isRequired,
-  normalizedColumns: PropTypes.array.isRequired,
-  columnVisibility: PropTypes.object.isRequired,
-  frozenState: PropTypes.object.isRequired,
-  columnOrder: PropTypes.array,
-  sortModel: PropTypes.array,
-  originalColumnVisibility: PropTypes.object,
-  originalFrozenState: PropTypes.object,
+  dirty: PropTypes.bool,
   layouts: PropTypes.shape({
     private: PropTypes.array,
     public: PropTypes.array,
@@ -266,6 +260,8 @@ LayoutMenu.propTypes = {
   refetchLayouts: PropTypes.func.isRequired,
   activeLayout: PropTypes.object,
   onLayoutLoad: PropTypes.func.isRequired,
+  buildSavePayload: PropTypes.func.isRequired,
+  onSavedSnapshot: PropTypes.func,
   onClose: PropTypes.func.isRequired,
 };
 
