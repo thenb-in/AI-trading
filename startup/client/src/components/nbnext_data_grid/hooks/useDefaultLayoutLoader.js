@@ -34,17 +34,15 @@ const useDefaultLayoutLoader = ({ documentName, columns, normalizedColumns, appl
         const allLayouts = [...(layouts.private || []), ...(layouts.public || [])];
         const defaultLayout = allLayouts.find((layout) => layout.is_default === true);
 
-        if (
-          defaultLayout &&
-          defaultLayout.column_config &&
-          Array.isArray(defaultLayout.column_config)
-        ) {
+        const config = defaultLayout?.column_config;
+        const isValidConfig = config && (Array.isArray(config) || Array.isArray(config?.columns));
+        if (defaultLayout && isValidConfig) {
           defaultLayoutAppliedRef.current[documentName] = true;
 
           // Small delay to ensure state setters are ready
           await new Promise((resolve) => setTimeout(resolve, 50));
 
-          applyLayoutRef.current(defaultLayout.column_config);
+          applyLayoutRef.current(config);
         } else {
           defaultLayoutAppliedRef.current[documentName] = true;
         }

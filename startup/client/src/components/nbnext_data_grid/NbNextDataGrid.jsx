@@ -244,7 +244,7 @@ const NbNextDataGrid = forwardRef(({
   } = useFrozenColumns(columnsToUse, visibleColumns, columnWidths, frozenColumns);
 
   // Sorting
-  const { sortModel, handleHeaderClick, promoteToPrimarySort } = useSorting(
+  const { sortModel, handleHeaderClick, promoteToPrimarySort, applyLayoutSortModel } = useSorting(
     initialSortModel,
     onSortModelChange
   );
@@ -419,11 +419,12 @@ const NbNextDataGrid = forwardRef(({
   // Layout apply (shared between manual LayoutMenu and the auto-loader)
   const applyLayout = useCallback(
     (columnConfig) => {
-      if (!columnConfig || !Array.isArray(columnConfig)) return;
+      if (!columnConfig) return;
       const {
         columnVisibility: newVisibility,
         frozenState: newFrozenState,
         columnOrder: newOrder,
+        sortModel: newSortModel,
       } = applyColumnConfig(normalizedColumns, columnConfig);
 
       setColumnVisibilityState(newVisibility);
@@ -432,8 +433,12 @@ const NbNextDataGrid = forwardRef(({
       if (newOrder && newOrder.length > 0) {
         setColumnOrder(newOrder);
       }
+
+      if (newSortModel && newSortModel.length > 0) {
+        applyLayoutSortModel(newSortModel);
+      }
     },
-    [normalizedColumns, setColumnVisibilityState, setFrozenStateState, setColumnOrder]
+    [normalizedColumns, setColumnVisibilityState, setFrozenStateState, setColumnOrder, applyLayoutSortModel]
   );
 
   // Auto-load the user's default layout on mount (once per documentName)

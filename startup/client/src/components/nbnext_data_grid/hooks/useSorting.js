@@ -88,10 +88,17 @@ const useSorting = (initialSortModel, onSortModelChange) => {
     });
   }, []);
 
+  const applyLayoutSortModel = useCallback((newSortModel) => {
+    const normalized = normalizeIncomingSortModel(newSortModel);
+    hasManualSortRef.current = false;
+    setSortModel(normalized);
+  }, []);
+
   return {
     sortModel,
     handleHeaderClick,
     promoteToPrimarySort,
+    applyLayoutSortModel,
   };
 };
 

@@ -260,40 +260,48 @@ const getColumnWidthWithIcons = (col) => {
 };
 
 /**
- * Build column config from current grid state for saving to layout
- * Only saves which columns are frozen and which are hidden
+ * Build column config from current grid state for saving to layout.
+ * Returns { columns, sortModel } so both column state and sort order are persisted.
  */
- const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, columnOrder = []) => {
-  // If columnOrder is provided, use it for ordering; otherwise use normalizedColumns order
+ const buildColumnConfig = (normalizedColumns, columnVisibility, frozenState, columnOrder = [], sortModel = []) => {
   const orderedFields = columnOrder.length > 0
     ? columnOrder
     : normalizedColumns.map((col) => col.field);
 
-  return normalizedColumns.map((col) => ({
+  const columns = normalizedColumns.map((col) => ({
     field: col.field,
     frozen: frozenState[col.field] || false,
     hide: !columnVisibility[col.field],
     order: orderedFields.indexOf(col.field),
   }));
+
+  return { columns, sortModel: sortModel || [] };
 };
 
 /**
- * Apply column config from layout to grid state
- * Returns updated column visibility and frozen state
+ * Apply column config from layout to grid state.
+ * Handles both legacy array format and new { columns, sortModel } object format.
+ * Returns { columnVisibility, frozenState, columnOrder, sortModel }.
  */
  const applyColumnConfig = (normalizedColumns, columnConfig) => {
+  // Normalise: support legacy plain-array format and new { columns, sortModel } format
+  const columnArray = Array.isArray(columnConfig)
+    ? columnConfig
+    : Array.isArray(columnConfig?.columns)
+      ? columnConfig.columns
+      : [];
+  const savedSortModel = Array.isArray(columnConfig?.sortModel)
+    ? columnConfig.sortModel
+    : [];
+
   const columnVisibility = {};
   const frozenState = {};
   const columnConfigMap = {};
 
-  // Create a map of column config by field
-  if (Array.isArray(columnConfig)) {
-    columnConfig.forEach((config) => {
-      columnConfigMap[config.field] = config;
-    });
-  }
+  columnArray.forEach((config) => {
+    columnConfigMap[config.field] = config;
+  });
 
-  // Apply config to each normalized column
   normalizedColumns.forEach((col) => {
     const config = columnConfigMap[col.field];
     if (config) {
@@ -305,15 +313,13 @@ const getColumnWidthWithIcons = (col) => {
     }
   });
 
-  // Build column order from saved config (if order info exists)
   let columnOrder = [];
-  if (Array.isArray(columnConfig)) {
-    const hasOrder = columnConfig.some((c) => typeof c.order === "number");
+  if (columnArray.length > 0) {
+    const hasOrder = columnArray.some((c) => typeof c.order === "number");
     if (hasOrder) {
-      columnOrder = [...columnConfig]
+      columnOrder = [...columnArray]
         .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
         .map((c) => c.field);
-      // Add any columns not in config at the end
       normalizedColumns.forEach((col) => {
         if (!columnOrder.includes(col.field)) {
           columnOrder.push(col.field);
@@ -322,7 +328,7 @@ const getColumnWidthWithIcons = (col) => {
     }
   }
 
-  return { columnVisibility, frozenState, columnOrder };
+  return { columnVisibility, frozenState, columnOrder, sortModel: savedSortModel };
 };
 /**
  * Calculate totals for numeric columns across all rows
