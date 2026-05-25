@@ -544,37 +544,41 @@ const NbNextDataGrid = forwardRef(({
     );
   }
 
+  const sharedToolbarProps = {
+    totalRows: groupedRows.length,
+    visibleColumnsCount: renderColumns.length,
+    setShowColumnMenu,
+    showColumnMenu,
+    showLayoutMenu,
+    setShowLayoutMenu,
+    documentName,
+    activeLayoutName: activeLayout?.layout_name || null,
+    isLayoutDirty: dirty,
+    page,
+    totalPages,
+    autoPageSize,
+    fullScreen,
+    onToggleFullScreen: externalFullScreen !== undefined ? null : handleToggleFullScreen,
+    showExcelExport,
+    onExcelExport: handleExcelExport,
+    isExcelExporting,
+    hasData: groupedRows.length > 0,
+    getExportPayload,
+    renderToolbarExtras,
+    hasActiveFilters,
+    onClearFilters: clearAllFilters,
+    hidePagination: infiniteScroll,
+  };
+
   // ── Main render ────────────────────────────────────────────────────────
   return (
     <div ref={containerRef} style={gridContainerStyle}>
       {insightsHeader}
       <Toolbar
-        totalRows={groupedRows.length}
-        visibleColumnsCount={renderColumns.length}
-        setShowColumnMenu={setShowColumnMenu}
-        showColumnMenu={showColumnMenu}
-        showLayoutMenu={showLayoutMenu}
-        setShowLayoutMenu={setShowLayoutMenu}
-        documentName={documentName}
-        activeLayoutName={activeLayout?.layout_name || null}
-        isLayoutDirty={dirty}
-        page={page}
-        totalPages={totalPages}
-        autoPageSize={autoPageSize}
+        {...sharedToolbarProps}
         goToPrevPage={handleTopGoToPrevPage}
         goToNextPage={handleTopGoToNextPage}
-        fullScreen={fullScreen}
-        onToggleFullScreen={externalFullScreen !== undefined ? null : handleToggleFullScreen}
         position="top"
-        showExcelExport={showExcelExport}
-        onExcelExport={handleExcelExport}
-        isExcelExporting={isExcelExporting}
-        hasData={groupedRows.length > 0}
-        getExportPayload={getExportPayload}
-        renderToolbarExtras={renderToolbarExtras}
-        hasActiveFilters={hasActiveFilters}
-        onClearFilters={clearAllFilters}
-        hidePagination={infiniteScroll}
       />
       {showColumnMenu && (
         <ColumnMenu
@@ -673,32 +677,10 @@ const NbNextDataGrid = forwardRef(({
       </div>
       {!fullScreen && !minimalMode && (
         <Toolbar
-          totalRows={groupedRows.length}
-          visibleColumnsCount={renderColumns.length}
-          setShowColumnMenu={setShowColumnMenu}
-          showColumnMenu={showColumnMenu}
-          showLayoutMenu={showLayoutMenu}
-          setShowLayoutMenu={setShowLayoutMenu}
-          documentName={documentName}
-          activeLayoutName={activeLayout?.layout_name || null}
-          isLayoutDirty={dirty}
-          page={page}
-          totalPages={totalPages}
-          autoPageSize={autoPageSize}
+          {...sharedToolbarProps}
           goToPrevPage={handleBottomGoToPrevPage}
           goToNextPage={handleBottomGoToNextPage}
-          fullScreen={fullScreen}
-          onToggleFullScreen={externalFullScreen !== undefined ? null : handleToggleFullScreen}
           position="bottom"
-          showExcelExport={showExcelExport}
-          onExcelExport={handleExcelExport}
-          isExcelExporting={isExcelExporting}
-          hasData={groupedRows.length > 0}
-          getExportPayload={getExportPayload}
-          renderToolbarExtras={renderToolbarExtras}
-          hasActiveFilters={hasActiveFilters}
-          onClearFilters={clearAllFilters}
-          hidePagination={infiniteScroll}
           themeLabel={activeTheme.label}
           onCycleTheme={cycleTheme}
           viewMode={viewMode}
