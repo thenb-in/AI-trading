@@ -55,28 +55,42 @@ const populateReportSheet = (
   { startDate, endDate },
   summary = {},
   constantColumns = null,
-  totalRow = null
+  totalRow = null,
+  showInsightsAsHeader = false,
+  showEmptyColumns = false
 ) => {
-  const hasProvidedConstantColumns = constantColumns instanceof Map && constantColumns.size > 0;
-
-  let constantColumnsMap = hasProvidedConstantColumns ? constantColumns : new Map();
   let columnsWithoutConstants = columns || [];
+  let mergedSummary = { ...(summary || {}) };
 
-  if (hasProvidedConstantColumns) {
-    columnsWithoutConstants = (columns || []).filter((col) => {
-      const field = col?.field || col?.key;
-      return !field || !constantColumnsMap.has(field);
-    });
-  } else {
-    const detected = detectConstantColumns(rows, columns);
-    constantColumnsMap = detected.constantColumns;
-    columnsWithoutConstants = detected.filteredColumns;
+  // Default: constant-value columns move to the top summary block and are
+  // removed from the data table. When showInsightsAsHeader is true, only the
+  // caller `summary` appears at the top; constant columns stay in the table.
+  if (!showInsightsAsHeader) {
+    const hasProvidedConstantColumns = constantColumns instanceof Map && constantColumns.size > 0;
+
+    let constantColumnsMap = hasProvidedConstantColumns ? constantColumns : new Map();
+
+    if (hasProvidedConstantColumns) {
+      columnsWithoutConstants = (columns || []).filter((col) => {
+        const field = col?.field || col?.key;
+        return !field || !constantColumnsMap.has(field);
+      });
+    } else {
+      const detected = detectConstantColumns(rows, columns);
+      constantColumnsMap = detected.constantColumns;
+      columnsWithoutConstants = (columns || []).filter((col) => {
+        const field = col?.field || col?.key;
+        return !field || !constantColumnsMap.has(field);
+      });
+    }
+
+    const constantColumnsSummary = constantColumnsToSummary(constantColumnsMap);
+    mergedSummary = { ...summary, ...constantColumnsSummary };
   }
 
-  const constantColumnsSummary = constantColumnsToSummary(constantColumnsMap);
-  const mergedSummary = { ...summary, ...constantColumnsSummary };
-
-  const columnsWithData = filterEmptyColumns(columnsWithoutConstants, rows);
+  const columnsWithData = showEmptyColumns
+    ? columnsWithoutConstants
+    : filterEmptyColumns(columnsWithoutConstants, rows);
 
   const reportSheet = workbook.addWorksheet(uniqueSheetName(workbook, sheetName));
   const excelColumns = setupWorksheetColumns(reportSheet, columnsWithData);
@@ -134,7 +148,9 @@ const handleExport = async (
   currentUrl,
   summary = {},
   constantColumns = null,
-  totalRow = null
+  totalRow = null,
+  showInsightsAsHeader = false,
+  showEmptyColumns = false
 ) => {
   if (!rows || rows?.length === 0) {
     alert("No data available to export");
@@ -154,7 +170,9 @@ const handleExport = async (
       dateRange,
       summary,
       constantColumns,
-      totalRow
+      totalRow,
+      showInsightsAsHeader,
+      showEmptyColumns
     );
 
     await saveExcelFile(workbook, report);
@@ -168,7 +186,13 @@ const handleExport = async (
 // same shape as the positional args to `handleExport` (rows, columns, summary,
 // constantColumns, totalRow), plus a sheet `name`. Used by the grid when the
 // user exports a tabs-enabled report — each tab becomes its own sheet.
-const handleMultiSheetExport = async ({ report, sheets, currentUrl }) => {
+const handleMultiSheetExport = async ({
+  report,
+  sheets,
+  currentUrl,
+  showInsightsAsHeader = false,
+  showEmptyColumns = false,
+}) => {
   const usable = (sheets || []).filter((s) => s && Array.isArray(s.rows) && s.rows.length > 0);
   if (usable.length === 0) {
     alert("No data available to export");
@@ -189,7 +213,9 @@ const handleMultiSheetExport = async ({ report, sheets, currentUrl }) => {
         dateRange,
         sheet.summary || {},
         sheet.constantColumns || null,
-        sheet.totalRow || null
+        sheet.totalRow || null,
+        sheet.showInsightsAsHeader ?? showInsightsAsHeader,
+        sheet.showEmptyColumns ?? showEmptyColumns
       );
     });
 
