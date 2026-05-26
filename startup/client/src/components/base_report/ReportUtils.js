@@ -3,6 +3,7 @@ import { reportApi } from "@app/services/api";
 import { sanitizeHTML, formatDate, formatDateTime, formatTime, formatDuration, formatDurationJson } from "@utils/formattingUtils";
 import { parseDateValue } from "@utils/dateTimeUtils";
 import { toValidNumber } from "@utils/toValidNumber";
+import { runReportViaSocket } from "@startup/socket";
 // getStatusClass is imported but not currently used - reserved for future status styling functionality
 
 /**
@@ -360,8 +361,36 @@ const fetchReportData = async (
   }
 };
 
-// Handle filter application
-const handleFiltersApply = async (
+// Socket RPC path — routes the report through the dedicated runner server.
+// Returns the normalised { apiData, successMessage } shape the shared
+// post-processing in handleFiltersApply consumes.
+const runReportViaReportRunner = async (reportKey, sanitizedFilters) => {
+  const envelope = await runReportViaSocket({ reportKey, filters: sanitizedFilters });
+  return {
+    apiData: envelope?.data ?? envelope,
+    successMessage: 'Report ready',
+  };
+};
+
+// HTTP path — runs the report on the app server directly via reportApi.
+// Same return shape as runReportViaReportRunner so handleFiltersApply stays
+// oblivious to transport.
+const runReportOnMainServer = async (report, sanitizedFilters) => {
+  const response = await reportApi.getReportData(report.slug, sanitizedFilters);
+  return {
+    apiData: response.data.data,
+    successMessage: response.data.message || 'Filters applied successfully!',
+  };
+};
+
+// Apply filters and load report data into the grid.
+//
+// `transport` picks which path runs the query:
+//   'runner' → runReportViaReportRunner  (socket → dedicated runner process)
+//   'http'   → runReportOnMainServer     (REST → app server, default)
+//
+// Everything after the fetch is shared.
+const handleFiltersApply = async ({
   filters,
   report,
   setRows,
@@ -371,16 +400,13 @@ const handleFiltersApply = async (
   setSearchParams,
   setStatusDefinitions,
   hasStatusDefinitions = false,
-  setEmployeeSummary,
-  setOriginalColumns = null
-) => {
+  setOriginalColumns = null,
+  transport = 'http',
+}) => {
   try {
-    // Don't clear columns/rows separately - this causes partial renders
-    // Instead, set loading state and let the new data replace them atomically
     setIsFiltering(true);
     setLoading(true);
-    
-    // Sanitize filters to remove undefined/null values
+
     const sanitizedFilters = {};
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== "") {
@@ -396,35 +422,28 @@ const handleFiltersApply = async (
     });
 
     updateSearchParams(sanitizedFilters, setSearchParams);
-    const response = await reportApi.getReportData(report.slug, sanitizedFilters);
 
-    // Store original columns if callback is provided
-    if (setOriginalColumns && response?.data?.data?.columns) {
-      setOriginalColumns(response.data.data.columns);
-    }
+    const { apiData, successMessage } = transport === 'runner'
+      ? await runReportViaReportRunner(report.slug, sanitizedFilters)
+      : await runReportOnMainServer(report, sanitizedFilters);
 
-    const { gridColumns, gridRows } = processApiData(response.data.data, setStatusDefinitions, hasStatusDefinitions);
-    
-    // Batch column and row updates together to prevent partial renders
-    // Check if setColumns is a combined function that accepts both columns and rows
+    if (setOriginalColumns && apiData?.columns) setOriginalColumns(apiData.columns);
+
+    const { gridColumns, gridRows } = processApiData(apiData, setStatusDefinitions, hasStatusDefinitions);
+
+    // Batch column and row updates together to prevent partial renders.
+    // setColumns can be an arity-2 (cols, rows) combined setter from the caller.
     if (typeof setColumns === 'function' && setColumns.length === 2) {
-      // Combined function that sets both columns and rows togetherqq
       setColumns(gridColumns, gridRows);
     } else {
-      // Separate functions - batch them together using React's automatic batching
       setColumns(gridColumns);
       setRows(gridRows);
     }
-    
-    if (setEmployeeSummary && (response?.data?.data?.employee_summary || response?.data?.employeeSummary)) {
-      const employeeSummaryData = response.data.data.employee_summary || response.data.employeeSummary;
-      setEmployeeSummary(normalizeEmployeeSummary(employeeSummaryData));
-    }
 
-    toast.success(response.data.message || "Filters applied successfully!");
+    toast.success(successMessage);
   } catch (error) {
-    console.error("Error fetching report data:", error);
-    toast.error(error?.response?.data?.message || error.message || "Failed to fetch report data. Please try again.");
+    console.error('Error applying filters:', error);
+    toast.error(error?.response?.data?.message || error?.message || 'Failed to fetch report data. Please try again.');
   } finally {
     setLoading(false);
     setIsFiltering(false);
@@ -460,6 +479,7 @@ const handleAttendanceToggle = async (rowData, rows, setRows, reportActionApi) =
     return false; // Error
   }
 };
+
 
 
 export { convertCellToText, filterRelevantData, processApiData, handleStatusUpdate, handleAttendanceToggle, getFiltersFromSearchParams, updateSearchParams, fetchReportData, handleFiltersApply, normalizeEmployeeSummary, getEmployeeDetails, applyDefaultFiltersToSearchParams };

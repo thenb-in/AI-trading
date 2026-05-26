@@ -118,6 +118,11 @@ module.exports = {
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
+  // Report runner
+  REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
+  REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
+  REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
+
   // License configuration. Set LICENSE_ENFORCEMENT=false in dev to bypass
   // the license gate entirely. LICENSE_AUTO_RENEW=false disables the
   // hourly auto-renew cron job (use for airgap installs where you don't

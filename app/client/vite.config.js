@@ -103,6 +103,13 @@ export default ({ mode }) => {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/api/, ''), // Optional, remove '/api' prefix if needed
+        },
+        // socket.io upgrades to websocket on /socket.io — ws:true is
+        // required or the upgrade handshake hits the dev server's HTML 404.
+        '/socket.io': {
+          target: localServerUrl,
+          ws: true,
+          changeOrigin: true,
         }
       },
     },
@@ -113,7 +120,7 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'NB Next'}</title>`
+            `<title>${clientName || 'SalaryMitra'}</title>`
           );
         },
       },

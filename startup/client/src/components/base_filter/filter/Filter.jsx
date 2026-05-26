@@ -26,6 +26,7 @@ const Filter = ({
     filters,
     allFilters,
     isApplyingFilters,
+    isApplyingViaRunner,
     isDisabled,
     isBusy,
     hasDateFilters,
@@ -36,6 +37,7 @@ const Filter = ({
     handleCheckboxChange,
     resetFilters,
     applyFilters,
+    applyFiltersViaRunner,
   } = useFilterState({ filtersConfig, onFilterChange, onFiltersApply, isLoading });
 
   useFilterShortcuts({
@@ -146,9 +148,12 @@ const Filter = ({
           )}
 
           <FilterActions
-            disabled={disabled}
+            disabled={disabled || isDisabled}
             onReset={resetFilters}
             onApply={applyFilters}
+            onApplyViaRunner={applyFiltersViaRunner}
+            isApplyingFilters={isApplyingFilters}
+            isApplyingViaRunner={isApplyingViaRunner}
           />
         </div>
       </div>

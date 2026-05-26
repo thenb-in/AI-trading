@@ -18,8 +18,9 @@ import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
  * `layoutProps` object for `<BaseReportLayout>`.
  *
  * Optional setters (`setOriginalColumns`, `setStatusDefinitions`,
- * `setEmployeeSummary`) are forwarded to fetchReportData / handleFiltersApply
- * so reports that need them don't have to override onFiltersApply.
+ * `setEmployeeSummary`) are forwarded to fetchReportData. employeeSummary is
+ * only populated from route locationState now (no report API returns it);
+ * handleFiltersApply ignores it.
  */
 const useDataGridReport = ({
   report,
@@ -88,20 +89,22 @@ const useDataGridReport = ({
     }
   }, [locationState, setOriginalColumns]);
 
-  const onFiltersApply = (nextFilters) => {
-    handleFiltersApply(
-      nextFilters,
+  // useFilterState fires this with the transport tag ('http' | 'runner');
+  // handleFiltersApply picks the matching fetcher.
+  const onFiltersApply = (nextFilters, transport = 'http') => {
+    handleFiltersApply({
+      filters: nextFilters,
       report,
       setRows,
       setColumns,
       setLoading,
       setIsFiltering,
       setSearchParams,
-      setStatusDefinitions ?? (() => {}),
-      isEditable,
-      setEmployeeSummary,
-      setOriginalColumns ?? null,
-    );
+      setStatusDefinitions: setStatusDefinitions ?? (() => {}),
+      hasStatusDefinitions: isEditable,
+      setOriginalColumns: setOriginalColumns ?? null,
+      transport,
+    });
   };
 
   const isLoadingData = loading || initialLoad;

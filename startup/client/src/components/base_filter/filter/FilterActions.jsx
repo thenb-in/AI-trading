@@ -1,8 +1,15 @@
 import PropTypes from 'prop-types';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, Server } from 'lucide-react';
 
 
-const FilterActions = ({ disabled, onReset, onApply }) => (
+const FilterActions = ({
+  disabled,
+  onReset,
+  onApply,
+  onApplyViaRunner,
+  isApplyingFilters = false,
+  isApplyingViaRunner = false,
+}) => (
   <div className="flex flex-col sm:flex-row justify-end gap-2 pt-3 mt-3 border-t-2 border-blue-200 bg-gradient-to-r from-gray-50 to-blue-50/30 -mx-3 sm:-mx-4 px-3 sm:px-4 pb-3">
     <button
       onClick={onReset}
@@ -30,7 +37,7 @@ const FilterActions = ({ disabled, onReset, onApply }) => (
         }
       `}
     >
-      {disabled ? (
+      {isApplyingFilters ? (
         <>
           <Loader2 size={14} className="animate-spin" />
           Applying...
@@ -42,6 +49,33 @@ const FilterActions = ({ disabled, onReset, onApply }) => (
         </>
       )}
     </button>
+
+    {onApplyViaRunner && (
+      <button
+        onClick={onApplyViaRunner}
+        disabled={disabled}
+        title="Run this report on the dedicated report-runner server (offloads CPU from the app server)"
+        className={`
+          inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs font-bold uppercase tracking-wide text-white rounded-md transition-all duration-200 w-full sm:w-auto shadow-md
+          ${disabled
+            ? 'bg-emerald-400 cursor-not-allowed shadow-sm'
+            : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-lg active:scale-95'
+          }
+        `}
+      >
+        {isApplyingViaRunner ? (
+          <>
+            <Loader2 size={14} className="animate-spin" />
+            Running...
+          </>
+        ) : (
+          <>
+            <Server size={14} />
+            Apply on Report Runner
+          </>
+        )}
+      </button>
+    )}
   </div>
 );
 
@@ -49,6 +83,9 @@ FilterActions.propTypes = {
   disabled: PropTypes.bool,
   onReset: PropTypes.func.isRequired,
   onApply: PropTypes.func.isRequired,
+  onApplyViaRunner: PropTypes.func,
+  isApplyingFilters: PropTypes.bool,
+  isApplyingViaRunner: PropTypes.bool,
 };
 
 export { FilterActions };

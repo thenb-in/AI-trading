@@ -24,6 +24,7 @@ const useFilterState = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [showDebugFilters, setShowDebugFilters] = useState(() => isDebugMode());
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  const [isApplyingViaRunner, setIsApplyingViaRunner] = useState(false);
   const previousSearchParamsRef = useRef(searchParams.toString());
   const mountedRef = useRef(true);
 
@@ -92,8 +93,8 @@ const useFilterState = ({
     }
   }, [showDebugFilters]);
 
-  const isDisabled = isApplyingFilters;
-  const isBusy = isApplyingFilters || isLoading;
+  const isDisabled = isApplyingFilters || isApplyingViaRunner;
+  const isBusy = isApplyingFilters || isApplyingViaRunner || isLoading;
 
   const updateFilter = useCallback((name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -204,28 +205,47 @@ const useFilterState = ({
     writeValuesToParams(resetValues);
   }, [allFilters, getDefaultDateValue, isDisabled, onFilterChange, writeValuesToParams]);
 
-  const applyFilters = useCallback(async () => {
+  const collectAppliedFilters = useCallback(() => {
+    const appliedFilters = {};
+    allFilters.forEach((config) => {
+      const serialized = serializeAppliedValue(config, filters[config.name]);
+      if (serialized !== undefined) appliedFilters[config.name] = serialized;
+    });
+    return appliedFilters;
+  }, [allFilters, filters]);
+
+  // Internal: drive one apply through the busy flag for its transport and
+  // forward to the report's onFiltersApply callback with the transport tag.
+  // 'http' goes to the app server's REST API; 'runner' goes through the
+  // socket to the dedicated report-runner process.
+  const doApply = useCallback(async (transport, setBusy) => {
     if (isDisabled) return;
-    setIsApplyingFilters(true);
+    setBusy(true);
     try {
-      const appliedFilters = {};
-      allFilters.forEach((config) => {
-        const serialized = serializeAppliedValue(config, filters[config.name]);
-        if (serialized !== undefined) appliedFilters[config.name] = serialized;
-      });
+      const appliedFilters = collectAppliedFilters();
       writeValuesToParams(appliedFilters);
-      await onFiltersApply?.(appliedFilters);
+      await onFiltersApply?.(appliedFilters, transport);
     } catch (error) {
       console.error('Error applying filters:', error);
     } finally {
-      if (mountedRef.current) setIsApplyingFilters(false);
+      if (mountedRef.current) setBusy(false);
     }
-  }, [allFilters, filters, isDisabled, onFiltersApply, writeValuesToParams]);
+  }, [collectAppliedFilters, isDisabled, onFiltersApply, writeValuesToParams]);
+
+  const applyFilters = useCallback(
+    () => doApply('http', setIsApplyingFilters),
+    [doApply]
+  );
+  const applyFiltersViaRunner = useCallback(
+    () => doApply('runner', setIsApplyingViaRunner),
+    [doApply]
+  );
 
   return {
     filters,
     allFilters,
     isApplyingFilters,
+    isApplyingViaRunner,
     isDisabled,
     isBusy,
     hasDateFilters,
@@ -236,6 +256,7 @@ const useFilterState = ({
     handleCheckboxChange,
     resetFilters,
     applyFilters,
+    applyFiltersViaRunner,
   };
 };
 
