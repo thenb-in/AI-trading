@@ -1,0 +1,252 @@
+name: Sync startup/ → thenb-in/startup
+
+# Nightly job that replays new etime-payroll commits onto the
+# `thenb-in/startup` framework repo, per the rules in
+# `scripts/sync-startup.js`. Pushes each night's batch to a fresh sync
+# branch and opens a PR for human review.
+#
+# State (= last successfully synced source SHA) is kept as a lightweight
+# tag `startup-sync-state` on this repo. The tag advances at the end of
+# every successful run.
+
+on:
+  schedule:
+    # 18:30 UTC = ~midnight IST. Picked to land after `cleanup_artifacts`
+    # (15:00 UTC) so the two cron jobs don't fight for self-hosted slots.
+    - cron: '30 18 * * *'
+
+  workflow_dispatch:
+    inputs:
+      start_from_sha:
+        description: >
+          Override the starting source SHA. Defaults to the
+          `startup-sync-state` tag, or (if absent) commits in the last 24h.
+        required: false
+        type: string
+      dry_run:
+        description: 'Run the sync but do NOT push the branch / open a PR / advance the tag.'
+        required: false
+        type: boolean
+        default: false
+
+# Don't let two sync runs stomp each other.
+concurrency:
+  group: sync-startup
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    # Defaults are minimal; we explicitly elevate where needed.
+    permissions:
+      contents: write  # needed to push the `startup-sync-state` tag on this repo
+
+    env:
+      # Branch on the target repo to base every sync branch off of.
+      TARGET_BASE_BRANCH: main
+      # Tag (on THIS repo) that records the last successfully synced source SHA.
+      STATE_TAG: startup-sync-state
+      # Source repo branch we replay commits from.
+      SOURCE_BRANCH: main
+
+    steps:
+      - name: Checkout source repo (etime-payroll)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # need full history to walk arbitrary ranges
+          # Default GITHUB_TOKEN is fine for reading + pushing the state tag
+          # back to this same repo. We only need a cross-repo token for the
+          # target push (see STARTUP_SYNC_TOKEN below).
+
+      - name: Checkout target repo (thenb-in/startup)
+        uses: actions/checkout@v5
+        with:
+          repository: thenb-in/startup
+          ref: ${{ env.TARGET_BASE_BRANCH }}
+          path: target-startup
+          fetch-depth: 0
+          token: ${{ secrets.STARTUP_SYNC_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install sync-script dependencies
+        # The script only needs `cli-table3`, which is already declared
+        # in this repo's root package.json. `--ignore-scripts` keeps
+        # husky's prepare step from running on the CI runner.
+        run: npm install --no-audit --no-fund --ignore-scripts cli-table3
+
+      - name: Determine starting SHA
+        id: start
+        env:
+          INPUT_START: ${{ inputs.start_from_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${INPUT_START}" ]; then
+            echo "source=input"           >> "$GITHUB_OUTPUT"
+            echo "sha=${INPUT_START}"     >> "$GITHUB_OUTPUT"
+            echo "[start] using workflow_dispatch input: ${INPUT_START}"
+            exit 0
+          fi
+
+          # Look for the state tag on the remote. We don't trust local
+          # state — fetching avoids stale data when the runner reuses
+          # a checkout cache.
+          git fetch --tags --force origin "refs/tags/${STATE_TAG}:refs/tags/${STATE_TAG}" || true
+          if git rev-parse --verify --quiet "refs/tags/${STATE_TAG}"; then
+            SHA=$(git rev-parse "refs/tags/${STATE_TAG}^{commit}")
+            echo "source=tag"  >> "$GITHUB_OUTPUT"
+            echo "sha=${SHA}"  >> "$GITHUB_OUTPUT"
+            echo "[start] using ${STATE_TAG} tag: ${SHA}"
+            exit 0
+          fi
+
+          # First run, no input: script's default (commits in the last 24h)
+          # will be used. Emit an empty SHA to signal that.
+          echo "source=none" >> "$GITHUB_OUTPUT"
+          echo "sha="        >> "$GITHUB_OUTPUT"
+          echo "[start] no state tag found; script will anchor at HEAD~24h"
+
+      - name: Compute target branch name
+        id: branch
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y-%m-%d)
+          # Suffix with run_attempt so re-runs from the UI produce a
+          # distinct branch instead of failing the push with non-ff.
+          BRANCH="sync/etime-payroll/${DATE}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+          echo "name=${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "[branch] ${BRANCH}"
+
+      - name: Configure git identity in target repo
+        working-directory: target-startup
+        run: |
+          git config user.name  'startup-sync-bot'
+          git config user.email 'startup-sync-bot@users.noreply.github.com'
+
+      - name: Run sync script
+        id: sync
+        env:
+          START_FROM: ${{ steps.start.outputs.sha }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --source-repo="${GITHUB_WORKSPACE}"
+            --target-repo="${GITHUB_WORKSPACE}/target-startup"
+            --source-branch="${SOURCE_BRANCH}"
+            --target-base-branch="${TARGET_BASE_BRANCH}"
+            --target-branch="${{ steps.branch.outputs.name }}"
+            --log-dir="${GITHUB_WORKSPACE}/sync-logs"
+          )
+          if [ -n "${START_FROM}" ]; then
+            ARGS+=( --start-from="${START_FROM}" )
+          fi
+          node scripts/sync-startup.js "${ARGS[@]}"
+
+      - name: Upload sync logs (always, even on failure)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sync-startup-logs-${{ steps.branch.outputs.name }}
+          path: sync-logs/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Push sync branch + open PR
+        if: >-
+          success() &&
+          inputs.dry_run != true &&
+          steps.sync.outputs.has_changes == 'true'
+        working-directory: target-startup
+        env:
+          GH_TOKEN: ${{ secrets.STARTUP_SYNC_TOKEN }}
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          # Retry the push on transient network errors only — git itself
+          # is responsible for refusing non-ff, which we don't want to
+          # paper over.
+          ATTEMPT=1
+          DELAY=2
+          until git push -u origin "${BRANCH}"; do
+            if [ "${ATTEMPT}" -ge 5 ]; then
+              echo "[push] giving up after ${ATTEMPT} attempts"
+              exit 1
+            fi
+            echo "[push] attempt ${ATTEMPT} failed; retrying in ${DELAY}s"
+            sleep "${DELAY}"
+            ATTEMPT=$((ATTEMPT + 1))
+            DELAY=$((DELAY * 2))
+          done
+
+          # PR body: a quick run summary plus a link back to the run
+          # for the full log artifact.
+          {
+            echo "Automated sync from \`thenb-in/etime-payroll\` → \`thenb-in/startup\`."
+            echo ""
+            echo "**Source range:** \`${START_FROM:-(none)}\`..\`$(git -C ${GITHUB_WORKSPACE} rev-parse ${SOURCE_BRANCH})\`"
+            echo "**Commits applied:** ${{ steps.sync.outputs.commits_applied }}"
+            echo "**Commits skipped:** ${{ steps.sync.outputs.commits_skipped }}"
+            echo "**Commits examined:** ${{ steps.sync.outputs.commits_examined }}"
+            echo ""
+            echo "Full per-commit log is attached to the workflow run as an artifact:"
+            echo "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "Rules applied (from \`scripts/sync-startup.js\`):"
+            echo "- All changes inside \`startup/\` are applied; on conflict, the source version wins (force pick)."
+            echo "- Changes outside \`startup/\` are applied **only if the file already exists** in this repo (no new non-startup files created)."
+            echo "- Merge commits and commits with no \`startup/\` changes are skipped."
+          } > /tmp/pr-body.md
+
+          gh pr create \
+            --repo thenb-in/startup \
+            --base "${TARGET_BASE_BRANCH}" \
+            --head "${BRANCH}" \
+            --title "sync(startup): nightly batch ${BRANCH#sync/etime-payroll/}" \
+            --body-file /tmp/pr-body.md
+
+      - name: Advance state tag
+        if: >-
+          success() &&
+          inputs.dry_run != true &&
+          steps.sync.outputs.advance_tag_to != ''
+        env:
+          NEW_SHA: ${{ steps.sync.outputs.advance_tag_to }}
+        run: |
+          set -euo pipefail
+          # Lightweight tag pointing at the last source SHA we processed
+          # this run. `--force` because the tag moves forward every night.
+          git tag -f "${STATE_TAG}" "${NEW_SHA}"
+          ATTEMPT=1
+          DELAY=2
+          until git push --force origin "refs/tags/${STATE_TAG}"; do
+            if [ "${ATTEMPT}" -ge 5 ]; then
+              echo "[tag] giving up after ${ATTEMPT} attempts"
+              exit 1
+            fi
+            echo "[tag] attempt ${ATTEMPT} failed; retrying in ${DELAY}s"
+            sleep "${DELAY}"
+            ATTEMPT=$((ATTEMPT + 1))
+            DELAY=$((DELAY * 2))
+          done
+
+      - name: Summarize on the run page
+        if: always()
+        run: |
+          if [ -f sync-logs/sync-log.md ]; then
+            {
+              echo "## Sync run"
+              echo ""
+              echo "**Target branch:** \`${{ steps.branch.outputs.name }}\`"
+              echo ""
+              # Just the run-summary table from the log file — keeps the
+              # GitHub summary page short. Per-commit detail is in the
+              # uploaded artifact.
+              awk '/## Run summary/,/## Per-commit detail/' sync-logs/sync-log.md \
+                | sed '$d'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
