@@ -10,6 +10,7 @@ const BaseFilter = ({
   filtersConfig = [],
   isLoading = false,
   disabled = false,
+  showApplyButton = false,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -28,6 +29,7 @@ const BaseFilter = ({
         onFiltersApply={onFiltersApply}
         isLoading={isLoading}
         disabled={disabled}
+        showApplyButton={showApplyButton}
       />
     );
   }
@@ -62,6 +64,7 @@ const BaseFilter = ({
             isLoading={isLoading}
             disabled={disabled}
             hideToggle
+            showApplyButton={showApplyButton}
           />
         </div>
       </MasterModal>
@@ -74,6 +77,7 @@ BaseFilter.propTypes = {
   filtersConfig: PropTypes.array,
   isLoading: PropTypes.bool,
   disabled: PropTypes.bool,
+  showApplyButton: PropTypes.bool,
 };
 
 export { BaseFilter };

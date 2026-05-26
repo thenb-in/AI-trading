@@ -18,6 +18,7 @@ const Filter = ({
   disabled = false,
   isLoading = false,
   hideToggle = false,
+  showApplyButton = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const filterContainerRef = useRef(null);
@@ -154,6 +155,7 @@ const Filter = ({
             onApplyViaRunner={applyFiltersViaRunner}
             isApplyingFilters={isApplyingFilters}
             isApplyingViaRunner={isApplyingViaRunner}
+            showApplyButton={showApplyButton}
           />
         </div>
       </div>
@@ -185,6 +187,7 @@ Filter.propTypes = {
   disabled: PropTypes.bool,
   isLoading: PropTypes.bool,
   hideToggle: PropTypes.bool,
+  showApplyButton: PropTypes.bool,
 };
 
 export { Filter };

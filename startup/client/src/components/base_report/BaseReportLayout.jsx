@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { ReportHeader } from './ReportHeader';
 import { ReportTitleSection } from './ReportTitleSection';
@@ -17,28 +18,37 @@ const BaseReportLayout = ({
   isFilterLoading,
   onFiltersApply,
   children,
-}) => (
-  <div className="min-h-screen bg-gray-50">
-    <ReportHeader isFiltering={isFiltering} />
+}) => {
+  const [showApplyButton, setShowApplyButton] = useState(false);
 
-    <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
-      <div className="mb-4 sm:mb-6">
-        <ReportTitleSection report={report} />
-        <BaseFilter
-          onFiltersApply={onFiltersApply}
-          filtersConfig={filtersConfig}
-          isLoading={isFilterLoading}
-          disabled={isFiltering || isLoadingData}
-        />
-      </div>
+  const handleTitleClick = useCallback((e) => {
+    if (e.detail === 3) setShowApplyButton((v) => !v);
+  }, []);
 
-      <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-sm sm:shadow-lg border border-gray-200 overflow-hidden h-full w-full min-w-0">
-        <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
-        {children}
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <ReportHeader isFiltering={isFiltering} />
+
+      <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
+        <div className="mb-4 sm:mb-6">
+          <ReportTitleSection report={report} onTitleClick={handleTitleClick} />
+          <BaseFilter
+            onFiltersApply={onFiltersApply}
+            filtersConfig={filtersConfig}
+            isLoading={isFilterLoading}
+            disabled={isFiltering || isLoadingData}
+            showApplyButton={showApplyButton}
+          />
+        </div>
+
+        <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-sm sm:shadow-lg border border-gray-200 overflow-hidden h-full w-full min-w-0">
+          <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
+          {children}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 BaseReportLayout.propTypes = {
   report: PropTypes.object.isRequired,

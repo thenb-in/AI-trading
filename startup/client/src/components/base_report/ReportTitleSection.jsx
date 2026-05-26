@@ -7,7 +7,7 @@ import { formatLastActive } from "@utils/dateTimeUtils";
  * Generic ReportTitleSection component displaying report title, description, last updated time, and export button.
  * Can be customized by passing custom props or replaced entirely in BaseReport.
  */
-const ReportTitleSection = ({ report }) => {
+const ReportTitleSection = ({ report, onTitleClick }) => {
   const colorClasses = getColorClasses(report.color);
   const lastUpdated = formatLastActive(new Date());
 
@@ -20,7 +20,7 @@ const ReportTitleSection = ({ report }) => {
             className={`flex-shrink-0 w-2 sm:w-3 h-8 sm:h-10 rounded-full shadow-sm transition-transform transform hover:scale-105 ${colorClasses.accent}`}
             title="Report color"
           ></span>
-          <span className="break-words">{report.title}</span>
+          <span className="break-words select-none" onClick={onTitleClick}>{report.title}</span>
         </h1>
         {report.desc && (
           <p className="text-gray-500 text-xs sm:text-sm mt-1">{report.desc}</p>
@@ -45,6 +45,7 @@ ReportTitleSection.propTypes = {
     desc: PropTypes.string,
     color: PropTypes.string,
   }).isRequired,
+  onTitleClick: PropTypes.func,
 };
 
 export { ReportTitleSection };
