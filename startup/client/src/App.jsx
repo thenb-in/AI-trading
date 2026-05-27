@@ -12,6 +12,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/consoleLogBufferService';
 import { PWAInstallPrompt } from './seo/PWAInstallPrompt';
+import { RouteTitle } from './seo/RouteTitle';
 
 export function App() {
   useEffect(() => {
@@ -20,6 +21,11 @@ export function App() {
 
   return (
     <>
+     {/* Per-route <title>. Renders before the per-page <PageMeta> in
+         landing/auth pages so those still win on /, /signup, etc.; on
+         authed routes (which have no PageMeta of their own) this is the
+         only Helmet active, so the tab title reflects the current page. */}
+     <RouteTitle />
      <PWAInstallPrompt />
       <GlobalSearchPalette />
       <Routes>
