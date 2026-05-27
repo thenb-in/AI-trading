@@ -1,5 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from 'prop-types';
+import { CustomerDetailsFields } from "@startup/components/common/CustomerDetailsFields";
+import { EMPTY_CUSTOMER_FORM } from "@startup/components/common/customerFormConstants";
+import { customerApi, serviceOfferingApi } from "@app/services/api";
 
 const StatusBanner = ({ type, message }) => {
   const styles = type === 'error'
@@ -36,9 +39,11 @@ import {
   Smartphone,
   Monitor,
   Globe,
+  IdCard,
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
+import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
 
 function CompanySettings() {
@@ -50,12 +55,19 @@ function CompanySettings() {
     mobileApp: false,
     desktopWeb: true,
     mobileWeb: false,
+    emp_code_basis: "identity_card",
   });
+  const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
+  const [companyLogoFile, setCompanyLogoFile] = useState(null);
+  const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
+  const [serviceOfferings, setServiceOfferings] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const companyProfileRef = useRef(null);
+  const logoInputRef = useRef(null);
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -67,6 +79,7 @@ function CompanySettings() {
           mobileApp: response.data.mobileApp || false,
           desktopWeb: response.data.desktopWeb || true,
           mobileWeb: response.data.mobileWeb || false,
+          emp_code_basis: response.data.emp_code_basis || "identity_card",
         });
 
         setIsLoading(false);
@@ -77,6 +90,76 @@ function CompanySettings() {
     };
     fetchSettings();
   }, []);
+
+  // Load self-customer details and service offerings for the company-details section
+  useEffect(() => {
+    serviceOfferingApi.getAllServiceOfferings()
+      .then((res) => {
+        if (res?.data?.success) {
+          setServiceOfferings(res.data.data.offerings || []);
+        }
+      })
+      .catch(() => { /* dropdown can stay empty */ });
+
+    customerApi.getSelf()
+      .then((res) => {
+        if (res?.data?.success && res.data.data) {
+          const d = res.data.data;
+          setCompanyDetails({
+            ...EMPTY_CUSTOMER_FORM,
+            customer_code: d.customer_code || "",
+            customer_gstin: d.customer_gstin || "",
+            service_offering_id: d.service_offering_id || "",
+            pan_no: d.pan_no || "",
+            customer_email: d.customer_email || "",
+            bank_account_holder_name: d.bank_account_holder_name || "",
+            bank_account_number: d.bank_account_number || "",
+            bank_name: d.bank_name || "",
+            bank_ifsc_code: d.bank_ifsc_code || "",
+            bank_branch_name: d.bank_branch_name || "",
+            entity_type: d.entity_type || "",
+            entity_name: d.entity_name || "",
+            phone: d.phone || "",
+            alternate_phone: d.alternate_phone || "",
+            address: d.address || "",
+            district: d.district || "",
+            proprietor_name: d.proprietor_name || "",
+            description: d.description || "",
+            service_charge: d.service_charge ?? ""
+          });
+          setCompanyLogoPreview(d.company_logo || null);
+        }
+      })
+      .catch(() => { /* no self customer yet — keep empty form */ });
+  }, []);
+
+  const handleCompanyDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setCompanyDetails((prev) => ({ ...prev, [name]: value }));
+    setIsDirty(true);
+  };
+
+  const handleCompanyServiceOfferingChange = (selected) => {
+    const value = Array.isArray(selected) && selected.length > 0 ? selected[0] : "";
+    setCompanyDetails((prev) => ({ ...prev, service_offering_id: value }));
+    setIsDirty(true);
+  };
+
+  const handleCompanyLogoChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setCompanyLogoFile(file);
+    if (file) {
+      setCompanyLogoPreview(URL.createObjectURL(file));
+      setIsDirty(true);
+    }
+  };
+
+  const clearCompanyLogo = () => {
+    setCompanyLogoFile(null);
+    setCompanyLogoPreview(null);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+    setIsDirty(true);
+  };
 
   const requiredPermission = "view_company_settings";
   const canViewCompanySettings = hasPermission(requiredPermission, useDataContext());
@@ -115,9 +198,28 @@ function CompanySettings() {
         mobileApp: companySettings.mobileApp,
         desktopWeb: companySettings.desktopWeb,
         mobileWeb: companySettings.mobileWeb,
+        emp_code_basis: companySettings.emp_code_basis,
       };
 
       await ApiService.updateCompanySettings(companyData);
+
+      if (companyProfileRef.current?.save) {
+        await companyProfileRef.current.save();
+      }
+
+      // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
+      const selfFd = new FormData();
+      const selfPayload = {
+        ...companyDetails,
+        entity_name: companySettings.name
+      };
+      Object.entries(selfPayload).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== "") {
+          selfFd.append(key, value);
+        }
+      });
+      if (companyLogoFile) selfFd.append("company_logo", companyLogoFile);
+      await customerApi.upsertSelf(selfFd);
 
       setSuccess("Settings updated successfully");
       setIsDirty(false);
@@ -133,6 +235,12 @@ function CompanySettings() {
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProfileDirtyChange = (isProfileDirty) => {
+    if (isProfileDirty) {
+      setIsDirty(true);
     }
   };
 
@@ -154,6 +262,10 @@ function CompanySettings() {
 
   const handleMobileWebChange = (e) => {
     handleInputChange("mobileWeb", e.target.checked);
+  };
+
+  const handleEmpCodeBasisChange = (e) => {
+    handleInputChange("emp_code_basis", e.target.value);
   };
 
   return (
@@ -247,13 +359,81 @@ function CompanySettings() {
           />
         </div>
 
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="flex items-center text-gray-700 font-medium mb-2">
+            <IdCard className="w-4 h-4 text-gray-600 mr-2" /> Employee Code Basis
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Controls how deactivation behaves on biometric devices. Identity card frees the device slot; serial number keeps the slot reserved but strips card/password and removes biometric templates.
+          </p>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="emp_code_basis"
+                value="identity_card"
+                checked={companySettings.emp_code_basis === "identity_card"}
+                onChange={handleEmpCodeBasisChange}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium text-gray-700">Identity card</span>
+                <span className="block text-xs text-gray-500">
+                  emp_code is a person-bound ID; deactivation sends DATA DEL_USER and releases the device slot.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="emp_code_basis"
+                value="serial_number"
+                checked={companySettings.emp_code_basis === "serial_number"}
+                onChange={handleEmpCodeBasisChange}
+                className="mt-1"
+              />
+              <span>
+                <span className="font-medium text-gray-700">Serial number</span>
+                <span className="block text-xs text-gray-500">
+                  emp_code is a sequential slot number; deactivation deletes templates and clears card/password but keeps the PIN slot reserved.
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Company Profile - App-specific settings */}
+        <CompanyProfile
+          ref={companyProfileRef}
+          isLoading={isLoading}
+          onDirtyChange={handleProfileDirtyChange}
+        />
+
+        {/* Company Details — stored as the self-customer row (is_self=true).
+            entity_name is taken from the Company Name field above on save. */}
+        <div className="mt-6">
+          <CustomerDetailsFields
+            formData={companyDetails}
+            onChange={handleCompanyDetailsChange}
+            labelPrefix="Company"
+            omitFields={['customer_code', 'entity_name']}
+            logoFile={companyLogoFile}
+            logoPreview={companyLogoPreview}
+            fileInputRef={logoInputRef}
+            onLogoChange={handleCompanyLogoChange}
+            onClearLogo={clearCompanyLogo}
+            serviceOfferings={serviceOfferings}
+            onServiceOfferingChange={handleCompanyServiceOfferingChange}
+          />
+        </div>
+
         <motion.button
           onClick={handleSaveAll}
-          disabled={isLoading || !isDirty}
+          disabled={isLoading || (!isDirty && !(companyProfileRef.current?.isDirty?.() || false))}
           className={`w-full p-3 rounded-lg text-white font-semibold transition-all flex items-center justify-center ${
             isLoading
               ? "bg-indigo-300 cursor-not-allowed"
-              : !isDirty
+              : !isDirty && !(companyProfileRef.current?.isDirty?.() || false)
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700"
           }`}

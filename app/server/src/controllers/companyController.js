@@ -1,11 +1,13 @@
 // controllers/companyController.js
+const logger = require('@startup/logger');
 const env = require('@startup/src/config/env');
 const { MASTER_PERMISSION_CONSTANTS, MODULE_PERMISSION_CONSTANTS } = require('@startup/src/constants/base_permissions');
 const companyService = require('@startup/src/services/companyService');
 const userService = require('@startup/src/services/userService');
 const allowedPermissions = require('@startup/src/utils/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('@startup/src/utils/authUtils');
-
+const { getBiometricInterface } = require('../../interfaces/biometric');
+const { EMPLOYEE_SRC } = require('../constants/hr/employee');
 
 const companyController = {
   async getCompanySettings(req, res) {
@@ -33,7 +35,11 @@ const companyController = {
       }
 
       const id = req.user.company_id;
-      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb } = req.body;
+      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb, emp_code_basis } = req.body;
+
+      if (emp_code_basis !== undefined && !['identity_card', 'serial_number'].includes(emp_code_basis)) {
+        return res.status(400).json({ error: `Invalid emp_code_basis: ${emp_code_basis}. Must be 'identity_card' or 'serial_number'.` });
+      }
 
       const settings = await companyService.updateCompanySettings(id, {
         deleteOnSeen,
@@ -42,7 +48,8 @@ const companyController = {
         mobileApp,
         desktopWeb,
         mobileWeb,
-        name
+        name,
+        emp_code_basis
       });
 
       res.json(settings);
@@ -134,8 +141,36 @@ const companyController = {
     } catch (error) {
       return res.status(400).json({ error: error.message });
     }
-  }
+  },
 
+  /**
+   * GET /company/terminal-list-api
+   * Calls EasyWDMS GET /iclock/api/terminals/ and returns the same shape as terminal_list_action.get_terminal_list.
+   */
+  async getTerminalListApi(req, res) {
+    try {
+      const requiredPermission = MODULE_PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS.name;
+      const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
+      if (!hasPermission) {
+        return res.status(403).json({ error: `You are not authorized to access this resource (${requiredPermission})` });
+      }
+
+      const company_id = req.user.company_id;
+      if (!company_id) {
+        return res.status(400).json({ error: 'No company context' });
+      }
+
+      const iface = getBiometricInterface(EMPLOYEE_SRC.EASYWDMS);
+      const result = await iface.getTerminalList(company_id);
+
+      return res.json(result);
+    } catch (error) {
+      logger.error(`getTerminalListApi failed: ${error.message}`, error);
+      const status = error.response?.status;
+      const message = error.response?.data?.detail ?? error.message;
+      return res.status(status && status >= 400 ? status : 500).json({ error: message });
+    }
+  }
 };
 
 module.exports = companyController;
