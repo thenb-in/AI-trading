@@ -12,6 +12,46 @@ import {
   handleMultiSheetExport,
 } from "../../base_report/report_export";
 
+// Visible columns from the full column set (includes constant columns hidden in
+// the grid when hideConstantColumns is on). Respects visibility toggles + order.
+const resolveExportVisibleColumns = (
+  showInsightsAsHeader,
+  visibleColumns,
+  normalizedColumns,
+  columnVisibility,
+  columnOrder
+) => {
+  if (!showInsightsAsHeader) {
+    return visibleColumns.filter(
+      (c) => c.field !== "__actions__"
+    );
+  }
+
+  const visible = (normalizedColumns || [])
+    .filter((c) => columnVisibility[c.field] !== false)
+    .filter((c) => c.field !== "__actions__");
+
+  if (!columnOrder?.length) {
+    return visible;
+  }
+
+  const orderedSet = new Set(columnOrder);
+
+  const orderedColumns = columnOrder
+    .map((field) => visible.find((c) => c.field === field))
+    .filter(Boolean);
+
+  let orderedIndex = 0;
+
+  return visible.map((col) => {
+    if (orderedSet.has(col.field)) {
+      return orderedColumns[orderedIndex++];
+    }
+
+    return col;
+  });
+};
+
 // Resolve a tab's effective (rows, columns, summary). Mirrors useTabsState's
 // resolver but as a pure helper so export can iterate every tab, not just the
 // active one. Columns is filtered/ordered by `columnFields` when provided, or
@@ -37,13 +77,26 @@ const resolveTabTriple = (tab, rowsProp, columnsProp, summaryProp) => {
 const buildSheetFromRaw = (
   rawRows,
   rawColumns,
-  { filterModel, sortModel, hideConstantColumns, columnVisibility, showTotalRow }
+  {
+    filterModel,
+    sortModel,
+    hideConstantColumns,
+    columnVisibility,
+    showTotalRow,
+    showInsightsAsHeader,
+    showEmptyColumns,
+  }
 ) => {
   const normalized = normalizeColumns(rawColumns || []);
-  const { constantColumns, filteredColumns } = detectConstantColumns(rawRows || [], normalized);
+  const { constantColumns } = detectConstantColumns(rawRows || [], normalized);
 
-  const shouldHideConstants = hideConstantColumns && (rawRows?.length || 0) > 1;
-  const colsToUse = shouldHideConstants ? filteredColumns : normalized;
+  const shouldHideConstants =
+    !showInsightsAsHeader && hideConstantColumns && (rawRows?.length || 0) > 1;
+  // `detectConstantColumns` returns only the Map of constants; derive the
+  // visible-column subset here by dropping any field present in it.
+  const colsToUse = shouldHideConstants
+    ? normalized.filter((c) => !constantColumns.has(c.field))
+    : normalized;
 
   const indexed = indexRows(rawRows || []);
   const filtered = filterRows(indexed, filterModel || {}, colsToUse);
@@ -64,6 +117,8 @@ const buildSheetFromRaw = (
     columns: visibleCols,
     constantColumns,
     totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+    showInsightsAsHeader,
+    showEmptyColumns,
   };
 };
 
@@ -76,9 +131,13 @@ const useGridExport = ({
   groupedRows,
   sortedRows,
   visibleColumns,
+  normalizedColumns,
+  columnOrder,
   summary,
   constantColumns,
   showTotalRow,
+  showInsightsAsHeader = false,
+  showEmptyColumns = false,
   onExcelExport,
   exportReport,
   // Tabs-aware multi-sheet inputs
@@ -91,6 +150,14 @@ const useGridExport = ({
   columnVisibility,
   hideConstantColumns,
 }) => {
+  const exportColumns = resolveExportVisibleColumns(
+    showInsightsAsHeader,
+    visibleColumns,
+    normalizedColumns,
+    columnVisibility,
+    columnOrder
+  );
+
   const getExportPayload = useCallback(() => {
     const unwrappedRows = (groupedRows || sortedRows).map(
       (wrapped) => wrapped._row || wrapped
@@ -98,16 +165,27 @@ const useGridExport = ({
     const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
     const totalRow =
       showTotalRow && dataRowsOnly.length > 1
-        ? calculateTotals(dataRowsOnly, visibleColumns)
+        ? calculateTotals(dataRowsOnly, exportColumns)
         : null;
     return {
       rows: unwrappedRows,
-      columns: visibleColumns,
+      columns: exportColumns,
       summary: summary || {},
       constantColumns,
       totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+      showInsightsAsHeader,
+      showEmptyColumns,
     };
-  }, [groupedRows, sortedRows, visibleColumns, summary, constantColumns, showTotalRow]);
+  }, [
+    groupedRows,
+    sortedRows,
+    exportColumns,
+    summary,
+    constantColumns,
+    showTotalRow,
+    showInsightsAsHeader,
+    showEmptyColumns,
+  ]);
 
   useImperativeHandle(
     ref,
@@ -119,18 +197,29 @@ const useGridExport = ({
         const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
         const totalRow =
           showTotalRow && dataRowsOnly.length > 1
-            ? calculateTotals(dataRowsOnly, visibleColumns)
+            ? calculateTotals(dataRowsOnly, exportColumns)
             : null;
         return {
           rows: unwrappedRows,
-          columns: visibleColumns,
+          columns: exportColumns,
           summary,
           constantColumns,
           totalRow: totalRow && Object.keys(totalRow).length > 0 ? totalRow : null,
+          showInsightsAsHeader,
+          showEmptyColumns,
         };
       },
     }),
-    [groupedRows, sortedRows, visibleColumns, summary, constantColumns, showTotalRow]
+    [
+      groupedRows,
+      sortedRows,
+      exportColumns,
+      summary,
+      constantColumns,
+      showTotalRow,
+      showInsightsAsHeader,
+      showEmptyColumns,
+    ]
   );
 
   // Build one Excel-sheet payload per tab. For each tab we run the export
@@ -141,7 +230,15 @@ const useGridExport = ({
     const hasMultiTabs = Array.isArray(tabs) && tabs.length > 1;
     if (!hasMultiTabs) return null;
 
-    const pipeline = { filterModel, sortModel, hideConstantColumns, columnVisibility, showTotalRow };
+    const pipeline = {
+      filterModel,
+      sortModel,
+      hideConstantColumns,
+      columnVisibility,
+      showTotalRow,
+      showInsightsAsHeader,
+      showEmptyColumns,
+    };
 
     return tabs.map((tab) => {
       const { rows: tabRows, columns: tabColumns, summary: tabSummary } = resolveTabTriple(
@@ -158,6 +255,8 @@ const useGridExport = ({
         summary: tabSummary || {},
         constantColumns: sheetData.constantColumns,
         totalRow: sheetData.totalRow,
+        showInsightsAsHeader: sheetData.showInsightsAsHeader,
+        showEmptyColumns: sheetData.showEmptyColumns,
       };
     });
   }, [
@@ -170,6 +269,8 @@ const useGridExport = ({
     columnVisibility,
     hideConstantColumns,
     showTotalRow,
+    showInsightsAsHeader,
+    showEmptyColumns,
   ]);
 
   const [isExcelExporting, setIsExcelExporting] = useState(false);
@@ -183,7 +284,7 @@ const useGridExport = ({
       if (typeof onExcelExport === "function") {
         setIsExcelExporting(true);
         try {
-          await onExcelExport({ sheets: multiSheets });
+          await onExcelExport({ sheets: multiSheets, showInsightsAsHeader, showEmptyColumns });
         } finally {
           setIsExcelExporting(false);
         }
@@ -196,6 +297,8 @@ const useGridExport = ({
             report: exportReport,
             sheets: multiSheets,
             currentUrl: typeof window !== "undefined" ? window.location.href : "",
+            showInsightsAsHeader,
+            showEmptyColumns,
           });
         } finally {
           setIsExcelExporting(false);
@@ -227,7 +330,9 @@ const useGridExport = ({
           typeof window !== "undefined" ? window.location.href : "",
           payload.summary,
           payload.constantColumns,
-          payload.totalRow
+          payload.totalRow,
+          payload.showInsightsAsHeader,
+          payload.showEmptyColumns
         );
       } finally {
         setIsExcelExporting(false);
