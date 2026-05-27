@@ -38,6 +38,7 @@ const BaseReportLayout = ({
             isLoading={isFilterLoading}
             disabled={isFiltering || isLoadingData}
             showApplyButton={showApplyButton}
+            enableRunner
           />
         </div>
 

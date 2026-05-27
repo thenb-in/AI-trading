@@ -19,6 +19,7 @@ const Filter = ({
   isLoading = false,
   hideToggle = false,
   showApplyButton = false,
+  enableRunner = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const filterContainerRef = useRef(null);
@@ -152,7 +153,7 @@ const Filter = ({
             disabled={disabled || isDisabled}
             onReset={resetFilters}
             onApply={applyFilters}
-            onApplyViaRunner={applyFiltersViaRunner}
+            onApplyViaRunner={enableRunner ? applyFiltersViaRunner : undefined}
             isApplyingFilters={isApplyingFilters}
             isApplyingViaRunner={isApplyingViaRunner}
             showApplyButton={showApplyButton}
@@ -188,6 +189,7 @@ Filter.propTypes = {
   isLoading: PropTypes.bool,
   hideToggle: PropTypes.bool,
   showApplyButton: PropTypes.bool,
+  enableRunner: PropTypes.bool,
 };
 
 export { Filter };
