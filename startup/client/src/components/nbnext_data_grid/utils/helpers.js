@@ -268,6 +268,12 @@ const calculateTotals = (rows, columns) => {
   const excludedTypes = ['date', 'datetime', 'time', 'boolean', 'string', 'html', 'status'];
 
   const numericColumns = columns.filter(col => {
+    // Server-set opt-out: numeric-typed identifier columns (e.g. employee_code)
+    // that must never be summed in the footer.
+    if (col.skip_total === true || col.skip_total === 'true') {
+      return false;
+    }
+
     const formatType = getColumnFormatType(col);
     if (formatType && excludedTypes.includes(formatType)) {
       return false;
