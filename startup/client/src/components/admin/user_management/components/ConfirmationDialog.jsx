@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { AlertTriangle } from 'lucide-react';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 
-const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, roles = [] }) => {
+const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, roles = [], extraContent = null }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
 
@@ -110,6 +110,7 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
                 User must reset password on next login
               </span>
             </label>
+            {extraContent}
           </div>
         )}
         <div className="flex justify-end space-x-4">
@@ -156,6 +157,7 @@ ConfirmationDialog.propTypes = {
       description: PropTypes.string,
     })
   ),
+  extraContent: PropTypes.node,
 };
 
 export { ConfirmationDialog };

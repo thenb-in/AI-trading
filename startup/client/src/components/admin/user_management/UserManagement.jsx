@@ -3,7 +3,8 @@ import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode, Link as LinkI
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/useDataContext';
 import { UserTable } from './components/UserTable';
-import { getUserManagementExtraColumns } from '@/components/userManagementExtraColumns';
+import { getUserManagementExtraColumns } from '@app/components/userManagementExtraColumns';
+import { useApproveExtension } from '@app/components/user_management_extra_columns/useApproveExtension';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
@@ -50,9 +51,14 @@ function UserManagement() {
   const { setHamburgerMenu, hamburgerMenu, userData } = useDataContext();
   const isMobileView = window.innerWidth < 768;
   const companyId = userData?.companyId || userData?.company?.id;
-  const confirmAction = (requirePasswordReset = false, roleId = null) => {
+  const approveExtension = useApproveExtension({ confirmDialog });
+  const confirmAction = async (requirePasswordReset = false, roleId = null) => {
     const { action, userId } = confirmDialog;
-    if (action === 'approve') handleApprove(userId, requirePasswordReset, roleId);
+    if (action === 'approve') {
+      await handleApprove(userId, requirePasswordReset, roleId);
+      const user = filteredUsers.find((u) => u.id === userId);
+      if (user) await approveExtension.runAfterApprove(user);
+    }
     if (action === 'deactivate') handleDeactivate(userId);
     if (action === 'delete') handleDelete(userId);
   };
@@ -289,6 +295,7 @@ function UserManagement() {
         onCancel={handleCancelConfirmDialog}
         isSupportUser={userData?.isSupportUser || false}
         roles={roles}
+        extraContent={approveExtension.renderExtras}
       />
 
       <BulkDeleteConfirmationDialog
