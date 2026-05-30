@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
+import { CompanyLocationFields } from "./CompanyLocationFields";
 import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
 
@@ -56,6 +57,8 @@ function CompanySettings() {
     desktopWeb: true,
     mobileWeb: false,
     emp_code_basis: "identity_card",
+    latitude: "",
+    longitude: "",
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -80,6 +83,8 @@ function CompanySettings() {
           desktopWeb: response.data.desktopWeb || true,
           mobileWeb: response.data.mobileWeb || false,
           emp_code_basis: response.data.emp_code_basis || "identity_card",
+          latitude: response.data.latitude ?? "",
+          longitude: response.data.longitude ?? "",
         });
 
         setIsLoading(false);
@@ -199,6 +204,8 @@ function CompanySettings() {
         desktopWeb: companySettings.desktopWeb,
         mobileWeb: companySettings.mobileWeb,
         emp_code_basis: companySettings.emp_code_basis,
+        latitude: companySettings.latitude,
+        longitude: companySettings.longitude,
       };
 
       await ApiService.updateCompanySettings(companyData);
@@ -266,6 +273,21 @@ function CompanySettings() {
 
   const handleEmpCodeBasisChange = (e) => {
     handleInputChange("emp_code_basis", e.target.value);
+  };
+
+  const handleLatitudeChange = (e) => {
+    handleInputChange("latitude", e.target.value);
+  };
+
+  const handleLongitudeChange = (e) => {
+    handleInputChange("longitude", e.target.value);
+  };
+
+  const handleLocationAutoFill = (lat, lng) => {
+    setCompanySettings((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+    setIsDirty(true);
+    setError("");
+    setSuccess("");
   };
 
   return (
@@ -401,6 +423,14 @@ function CompanySettings() {
             </label>
           </div>
         </div>
+
+        <CompanyLocationFields
+          latitude={companySettings.latitude}
+          longitude={companySettings.longitude}
+          onLatitudeChange={handleLatitudeChange}
+          onLongitudeChange={handleLongitudeChange}
+          onAutoFill={handleLocationAutoFill}
+        />
 
         {/* Company Profile - App-specific settings */}
         <CompanyProfile

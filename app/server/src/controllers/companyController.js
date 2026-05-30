@@ -8,6 +8,7 @@ const allowedPermissions = require('@startup/src/utils/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('@startup/src/utils/authUtils');
 const { getBiometricInterface } = require('../../interfaces/biometric');
 const { EMPLOYEE_SRC } = require('../constants/hr/employee');
+const { normalizeCoordinate } = require('../utils/locationUtils');
 
 const companyController = {
   async getCompanySettings(req, res) {
@@ -35,10 +36,19 @@ const companyController = {
       }
 
       const id = req.user.company_id;
-      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb, emp_code_basis } = req.body;
+      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb, emp_code_basis, latitude, longitude } = req.body;
 
       if (emp_code_basis !== undefined && !['identity_card', 'serial_number'].includes(emp_code_basis)) {
         return res.status(400).json({ error: `Invalid emp_code_basis: ${emp_code_basis}. Must be 'identity_card' or 'serial_number'.` });
+      }
+
+      // Normalize lat/long: treat empty string as null (cleared), else validate range.
+      let latitudeValue, longitudeValue;
+      try {
+        latitudeValue = normalizeCoordinate(latitude, -90, 90, 'latitude');
+        longitudeValue = normalizeCoordinate(longitude, -180, 180, 'longitude');
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
       }
 
       const settings = await companyService.updateCompanySettings(id, {
@@ -49,7 +59,9 @@ const companyController = {
         desktopWeb,
         mobileWeb,
         name,
-        emp_code_basis
+        emp_code_basis,
+        latitude: latitudeValue,
+        longitude: longitudeValue
       });
 
       res.json(settings);

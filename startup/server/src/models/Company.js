@@ -61,6 +61,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('identity_card', 'serial_number'),
       allowNull: false,
       defaultValue: 'identity_card'
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Company location latitude (decimal degrees, -90..90)'
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Company location longitude (decimal degrees, -180..180)'
     }
   }, {
     tableName: 'nbnext_company',
