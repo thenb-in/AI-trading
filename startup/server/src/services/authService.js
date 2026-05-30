@@ -19,7 +19,7 @@ const signup = async (username, password, companyId, { phone, name, role }, emp_
   password = password?.trim();
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
 
-  const existingUser = await User.findOne({ where: { username } });
+  const existingUser = await User.findOne({ where: { username} });
   logger.info(`Checking if user already exists: ${username} - Found: ${!!existingUser}`);
 
   if (existingUser) {
@@ -142,8 +142,10 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken,profil
       mobileApp: userData.mobileApp,
       desktopWeb: userData.desktopWeb,
       mobileWeb: userData.mobileApp,
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
       default_screen_mode:profile.default_screen_mode,
-      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude} : null,
       isSupportUser: userData.isSupportUser,
       role: userData.role ? {
         id: userData.role.id,
@@ -237,7 +239,7 @@ const getCurrentUser = async (userId) => {
     const profile = await UserProfile.findOne({ where: { userId } });
     const activeCompanyId = profile?.currentCompany || user.company_id;
     const activeCompany = activeCompanyId
-      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] })
+      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude'] })
       : null;
 
     // Filter permissions based on subscription status
@@ -249,6 +251,8 @@ const getCurrentUser = async (userId) => {
       desktopWeb: userWithFilteredPermissions.desktopWeb,
       mobileWeb: userWithFilteredPermissions.mobileWeb,
       default_screen_mode: profile?.default_screen_mode || 'location_mode',
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
       username: userWithFilteredPermissions.username,
       phone: userWithFilteredPermissions.phone,
       name: userWithFilteredPermissions.name,
@@ -256,7 +260,7 @@ const getCurrentUser = async (userId) => {
       role_id: userWithFilteredPermissions.role_id,
       isActive: userWithFilteredPermissions.isActive,
       is_approved: userWithFilteredPermissions.is_approved,
-      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude} : null,
       isSupportUser: user.isSupportUser,
       role: user.role ? {
         id: user.role.id,

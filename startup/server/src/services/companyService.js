@@ -204,7 +204,7 @@ const companyService = {
     if (!activeCompanyId) {
       return null;
     }
-    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] });
+    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude'] });
   }
 
 };
