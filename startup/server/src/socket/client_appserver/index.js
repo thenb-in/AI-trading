@@ -7,11 +7,24 @@ const { registerRpcHandler } = require('../utils/rpc');
 // Handlers registered before init; each entry is { event, handler }.
 const _handlers = [];
 
+// The live socket.io server instance, set on init. Exposed via getAppServerIo()
+// so server-side code (e.g. ingestion) can broadcast events to browser clients
+// and connected agents.
+let _io = null;
+
 /**
  * Queue an RPC handler for the client→app-server channel
  */
 function registerSocketHandler(event, handler) {
   _handlers.push({ event, handler });
+}
+
+/**
+ * The live app-server socket.io instance, or null before init / outside a
+ * server context. Callers must null-check.
+ */
+function getAppServerIo() {
+  return _io;
 }
 
 /**
@@ -32,7 +45,8 @@ function initClientAppServerSocket(httpServer) {
   for (const { event, handler } of _handlers) {
     registerRpcHandler(io, event, handler, { label });
   }
+  _io = io;
   return io;
 }
 
-module.exports = { registerSocketHandler, initClientAppServerSocket };
+module.exports = { registerSocketHandler, initClientAppServerSocket, getAppServerIo };

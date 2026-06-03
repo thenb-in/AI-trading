@@ -10,10 +10,11 @@
 
 require('./init_setup');
 
-const { initClientAppServerSocket } = require('./client_appserver');
+const { initClientAppServerSocket, getAppServerIo } = require('./client_appserver');
 const { initAppServerRunnerClient } = require('./appserver_runner');
 
 module.exports = {
   initAppServerRunnerClient,
-  initClientAppServerSocket
+  initClientAppServerSocket,
+  getAppServerIo
 };

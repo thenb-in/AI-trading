@@ -5,9 +5,11 @@
 const { createSocketServer } = require('./createSocketServer');
 const { createSocketClient } = require('./createSocketClient');
 const { registerRpcHandler } = require('./rpc');
+const { companyRoom } = require('./rooms');
 
 module.exports = {
   createSocketServer,
   createSocketClient,
-  registerRpcHandler
+  registerRpcHandler,
+  companyRoom
 };

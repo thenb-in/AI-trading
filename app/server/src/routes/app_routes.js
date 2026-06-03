@@ -10,6 +10,7 @@ const FormulaRoutes = require('../routes/FormulaRoutes');
 const reportRoutes = require('../routes/reportRoutes');
 const reportActionRoutes = require('../routes/reportActionRoutes');
 const rawPunchRoutes = require('../routes/rawPunchRoutes');
+const canteenTokenRoutes = require('../routes/canteenTokenRoutes');
 const gatepassRoutes = require('../routes/gatepassRoutes');
 const departmentRoutes = require('../routes/departmentRoutes');
 const positionRoutes = require('../routes/positionRoutes');
@@ -148,6 +149,7 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/django`, djangoRoutes);
   app.use(`${prefix}/reports`, reportRoutes);
   app.use(`${prefix}/raw-punch`, rawPunchRoutes);
+  app.use(`${prefix}/canteen-token`, canteenTokenRoutes);
   app.use(`${prefix}/layouts`, layoutRoutes);
   app.use(`${prefix}/data-access`, dataAccessRoutes);
 

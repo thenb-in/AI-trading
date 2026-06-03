@@ -76,6 +76,20 @@ function parseDate(dateStr) {
     }
   }
 
+  // Short-month "d MMM yyyy" (e.g. "2 Jan 2025"). Guarded by a strict regex so
+  // this path only runs for clearly-matching strings — keeps unrelated formats
+  // out of date-fns' English-locale month parser.
+  if (/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(trimmed)) {
+    try {
+      const parsedDate = parse(trimmed, 'd MMM yyyy', new Date());
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+    } catch (e) {
+      logger.error(`Error parsing date with d MMM yyyy for ${dateStr}`, e);
+    }
+  }
+
   // Try parsing with default format (dd-MM-yyyy)
   try {
     const parsedDate = parse(dateStr, DEFAULT_DATE_FORMAT, new Date());
@@ -143,7 +157,7 @@ function parseDate(dateStr) {
     logger.error(`Error parsing date with fallback for ${dateStr}`, e);
   }
 
-  logger.error(`[parseDate] Invalid date format: ${dateStr}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd-M-yyyy, or d-MM-yyyy`);
+  logger.error(`[parseDate] Invalid date format: ${dateStr}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, d MMM yyyy, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd-M-yyyy, or d-MM-yyyy`);
   return null;
 }
 
@@ -270,9 +284,43 @@ const formatDateToString = (date, format = 'dd-mm-yyyy') => {
     return `${month}-${day}-${year}`;
   case 'yyyy-mm-dd':
     return `${year}-${month}-${day}`;
+  case 'dd/mm/yyyy':
+    return `${day}/${month}/${year}`;
   default:
     return `${day}-${month}-${year}`;
   }
+};
+
+/**
+ * DATEONLY-friendly yyyy-MM-dd from a Date. Returns null on invalid input
+ * (unlike formatDateToString, which throws).
+ * @param {Date} date
+ * @returns {string|null}
+ */
+const toDateOnly = (date) => {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return formatDateToString(date, 'yyyy-mm-dd');
+};
+
+/**
+ * Date-only (yyyy-MM-dd) from a wall-clock value, never via UTC conversion.
+ * Use when the input already represents local wall-clock time and the calendar
+ * day must be taken as-written (e.g. device punch timestamps).
+ *   - string: the leading 'yyyy-MM-dd' is sliced as-is (no re-parsing), so a
+ *     trailing time/zone can never shift the day. Returns null if the string is
+ *     too short to contain a date.
+ *   - Date: formatted from local components via toDateOnly.
+ * Returns null for any other input (or an invalid Date).
+ * @param {string|Date} value
+ * @returns {string|null}
+ */
+const toWallClockDateOnly = (value) => {
+  if (typeof value === 'string') {
+    return value.length >= 10 ? value.slice(0, 10) : null;
+  }
+  return toDateOnly(value);
 };
 
 /**
@@ -458,6 +506,8 @@ module.exports = {
   getAllDaysInArray,
   extract_time_only_to_integer,
   formatDateToString,
+  toDateOnly,
+  toWallClockDateOnly,
   convert_time_to_str,
   format_duration_hours_minutes,
   format_duration_time,

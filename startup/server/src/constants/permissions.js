@@ -66,6 +66,7 @@ const MASTER_PERMISSION_CONSTANTS = {
   WHATSAPP_TEMPLATE: basePermissions.create_master_permission('whatsapp_template'),
   TERMINAL: basePermissions.create_master_permission('terminal_master'),
   TERMINAL_COMMANDS: basePermissions.create_master_permission('terminal_commands_master'),
+  CANTEEN_TOKEN_PRINT: basePermissions.create_master_permission('canteen_token_print'),
   // Feature-flag permissions for terminal command generation. Each is a
   // single `manage` entry so the subscription module can toggle them
   // per-company without exposing CRUD shape. requirePermission on the
