@@ -6,7 +6,7 @@ const companyService = require('@startup/src/services/companyService');
 const userService = require('@startup/src/services/userService');
 const allowedPermissions = require('@startup/src/utils/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('@startup/src/utils/authUtils');
-const { getBiometricInterface } = require('../../interfaces/biometric');
+const { getBiometricInterface } = require('@biometric');
 const { EMPLOYEE_SRC } = require('../constants/hr/employee');
 const { normalizeCoordinate } = require('../utils/locationUtils');
 

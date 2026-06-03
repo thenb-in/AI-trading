@@ -1,4 +1,4 @@
-// Step 3: Insert transactions into nbnext_iclock_transaction using dblink
+// Step 3: Insert transactions into nbnext_common_transaction using dblink
 const logger = require('../../logger');
 const { rowsFromQueryResult, buildInListParams } = require('./utils');
 const { sequelize } = require('../../src/services/databaseService');
@@ -42,15 +42,15 @@ async function insertTransactions(rows, t) {
       // Extract unique terminal_sn values from rows
       const uniqueTerminalSns = [...new Set(rows.map(r => r.terminal_sn).filter(Boolean))];
       const uniqueSnCount = uniqueTerminalSns.length;
-      logger.info(`sync_transaction: [STEP3] Found ${uniqueSnCount} unique terminal_sn values - terminal_id will be resolved via JOIN with nbnext_iclock_terminal`);
+      logger.info(`sync_transaction: [STEP3] Found ${uniqueSnCount} unique terminal_sn values - terminal_id will be resolved via JOIN with nbnext_common_device`);
 
       if (uniqueSnCount > 0) {
-        // Query nbnext_iclock_terminal to verify terminals exist (for logging)
+        // Query nbnext_common_device to verify terminals exist (for logging)
         const terminalParams = buildInListParams(uniqueTerminalSns, 'sn');
         const terminalListSql = terminalParams.listSql;
         const terminalReplacements = terminalParams.replacements;
 
-        const terminalQuerySql = `SELECT id, sn FROM nbnext_iclock_terminal WHERE sn IN (${terminalListSql});`;
+        const terminalQuerySql = `SELECT id, sn FROM nbnext_common_device WHERE sn IN (${terminalListSql});`;
         const terminalQueryResult = await sequelize.query(terminalQuerySql, {
           transaction: t,
           replacements: terminalReplacements,
@@ -59,11 +59,11 @@ async function insertTransactions(rows, t) {
 
         const terminalMappingDuration = Date.now() - terminalMappingStartTime;
         const mappedCount = Array.isArray(terminalQueryResult) ? terminalQueryResult.length : 0;
-        logger.debug(`sync_transaction: [STEP3] Terminal validation complete - ${mappedCount}/${uniqueSnCount} terminals found in nbnext_iclock_terminal, duration=${terminalMappingDuration}ms`);
+        logger.debug(`sync_transaction: [STEP3] Terminal validation complete - ${mappedCount}/${uniqueSnCount} terminals found in nbnext_common_device, duration=${terminalMappingDuration}ms`);
 
         if (mappedCount < uniqueSnCount) {
           const missingCount = uniqueSnCount - mappedCount;
-          logger.warn(`sync_transaction: [STEP3] ${missingCount} terminal_sn values not found in nbnext_iclock_terminal - terminal_id will be NULL for those transactions`);
+          logger.warn(`sync_transaction: [STEP3] ${missingCount} terminal_sn values not found in nbnext_common_device - terminal_id will be NULL for those transactions`);
         }
       } else {
         const terminalMappingDuration = Date.now() - terminalMappingStartTime;
@@ -93,7 +93,7 @@ async function insertTransactions(rows, t) {
     }
 
     const transactionsCount = ids.length;
-    logger.info(`sync_transaction: [STEP3] Inserting ${transactionsCount} transactions into nbnext_iclock_transaction (ON CONFLICT DO NOTHING, filtered by valid employees)...`);
+    logger.info(`sync_transaction: [STEP3] Inserting ${transactionsCount} transactions into nbnext_common_transaction (ON CONFLICT DO NOTHING, filtered by valid employees)...`);
 
     // Build sanitized IDs for dblink query
     const sanitizedIds = ids
@@ -105,10 +105,10 @@ async function insertTransactions(rows, t) {
       .join(', ');
 
     // Insert new transactions using dblink with INNER JOIN to nbnext_personnel_employee
-    // and INNER JOIN to nbnext_iclock_terminal so we only insert when both employee and terminal exist.
+    // and INNER JOIN to nbnext_common_device so we only insert when both employee and terminal exist.
     // terminal_id is mapped by terminal serial number (rt.terminal_sn = nt.sn).
     const insertSql = `
-    INSERT INTO nbnext_iclock_transaction (
+    INSERT INTO nbnext_common_transaction (
       id, emp_code, punch_time, punch_state, verify_type, terminal_sn,
       terminal_alias, area_alias, area_name, source, is_attendance, upload_time,
       emp_id, company_id, is_manual, terminal_id
@@ -143,7 +143,7 @@ async function insertTransactions(rows, t) {
       is_manual BOOLEAN
     )
     INNER JOIN nbnext_personnel_employee e ON rt.emp_code::text = e.emp_code::text AND rt.company_id = e.company_id
-    INNER JOIN nbnext_iclock_terminal nt ON rt.terminal_sn = nt.sn
+    INNER JOIN nbnext_common_device nt ON rt.terminal_sn = nt.sn
     ON CONFLICT (id) DO NOTHING
     RETURNING id;
   `;
@@ -189,7 +189,7 @@ async function insertTransactions(rows, t) {
     // Fetch all ids that now exist in target
     const existingStartTime = Date.now();
     logger.debug(`sync_transaction: [STEP3] Fetching existing transaction IDs at ${existingStartTime}...`);
-    const existingSql = `SELECT id FROM nbnext_iclock_transaction WHERE id::text IN (${listSql});`;
+    const existingSql = `SELECT id FROM nbnext_common_transaction WHERE id::text IN (${listSql});`;
     let existingResult;
     try {
       existingResult = await sequelize.query(existingSql, {

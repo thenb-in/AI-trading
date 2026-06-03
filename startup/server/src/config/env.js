@@ -158,8 +158,13 @@ module.exports = {
   // Django OAuth introspection
   DJANGO_AUTH_URL: process.env.DJANGO_AUTH_URL,
 
-  // ADMS coalesce windows. See app/server/src/constants/adms.js for the
-  // rationale behind each window. Env-overridable for tests.
+  // Shared secret guarding the internal service-to-service API
+  // (/api/v1/internal). The standalone biometric gateways send it in the
+  // `x-internal-secret` header; when unset (local/dev) the check is skipped.
+  MAIN_APP_INTERNAL_SECRET: process.env.MAIN_APP_INTERNAL_SECRET,
+
+  // ADMS coalesce windows. See biometric_gateway/adms_server/src/constants/adms.js
+  // for the rationale behind each window. Env-overridable for tests.
   ADMS_REFRESH_QUERY_COALESCE_MS:
     Number(process.env.ADMS_REFRESH_QUERY_COALESCE_MS) || 30 * 1000,
   ADMS_FANOUT_COALESCE_MS:

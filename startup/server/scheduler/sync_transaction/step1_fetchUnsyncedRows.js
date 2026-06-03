@@ -29,12 +29,12 @@ async function fetchUnsyncedRows(batchSize, t) {
     let terminalSns = [];
     try {
       const terminalResult = await sequelize.query(
-        'SELECT sn FROM nbnext_iclock_terminal WHERE sn IS NOT NULL AND sn != \'\'',
+        'SELECT sn FROM nbnext_common_device WHERE sn IS NOT NULL AND sn != \'\'',
         { transaction: t, type: sequelize.QueryTypes.SELECT }
       );
       terminalSns = (terminalResult || []).map((row) => row.sn).filter(Boolean);
       const terminalSnDuration = Date.now() - terminalSnStartTime;
-      logger.debug(`sync_transaction: [STEP1] Loaded ${terminalSns.length} terminal serial numbers from nbnext_iclock_terminal, duration=${terminalSnDuration}ms`);
+      logger.debug(`sync_transaction: [STEP1] Loaded ${terminalSns.length} terminal serial numbers from nbnext_common_device, duration=${terminalSnDuration}ms`);
     } catch (terminalSnError) {
       const terminalSnErrorDuration = Date.now() - terminalSnStartTime;
       logger.error(`sync_transaction: [STEP1] Error loading terminal serial numbers after ${terminalSnErrorDuration}ms`, terminalSnError);
@@ -42,7 +42,7 @@ async function fetchUnsyncedRows(batchSize, t) {
     }
 
     if (terminalSns.length === 0) {
-      logger.info(`sync_transaction: [STEP1] No terminals in nbnext_iclock_terminal - skipping fetch (0 rows) ${terminalSns.join(', ')}`);
+      logger.info(`sync_transaction: [STEP1] No terminals in nbnext_common_device - skipping fetch (0 rows) ${terminalSns.join(', ')}`);
       return [];
     }
 

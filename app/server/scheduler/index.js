@@ -1,7 +1,7 @@
 // In-process scheduled jobs for this app. Lifecycle (start/stop, logging,
 // register-and-start) is handled by the framework — see
-// startup/server/scheduler/index.js. This file exists purely to declare
-// which jobs the registry should run.
+// startup/server/scheduler/index.js. This file declares which jobs the
+// registry should run.
 //
 // Adding a new in-process job:
 //   1. Write its business-logic function under app/server/scheduler/<feature>/
@@ -10,17 +10,57 @@
 //   3. That's it — buildApp().startServer() picks the change up via the
 //      registerSchedulerJobs option wired from app/server/index.js.
 
-// const { registerJob } = require('../../../startup/server/scheduler');
+const { registerJob } = require('@startup/scheduler');
+
+const { calculateWages } = require('./field_sales/wageScheduler');
+const { calculateCallDurations } = require('./field_sales/callLogScheduler');
+const { processRecentWindow } = require('./field_sales/addressScheduler');
+const { archiveAndCleanupTracking } = require('./field_sales/archiveTrackingScheduler');
+const { runOnce: runApprovedManualAttendanceSnapshotBackfillOnce } = require('./approved_manual_attendance_snapshot/run_backfill_once');
+
+const {
+  FIELD_SALES_WAGE_CRON,
+  FIELD_SALES_CALL_LOG_CRON,
+  FIELD_SALES_ADDRESS_CRON,
+  FIELD_SALES_ARCHIVE_CRON,
+  APPROVED_MANUAL_ATTENDANCE_SNAPSHOT_BACKFILL_CRON
+} = require('../src/constants');
 
 function registerAllJobs() {
-  // Example (uncomment + adjust when you add your first job):
-  //
-  //   const { runDailyReport } = require('./reports/dailyReport');
-  //   registerJob({
-  //     name: 'reports.daily',
-  //     cronTime: '0 2 * * *',          // every day at 02:00
-  //     run: () => runDailyReport(),
-  //   });
+  registerJob({
+    name: 'fieldSales.wage',
+    cronTime: FIELD_SALES_WAGE_CRON,
+    run: () => calculateWages()
+  });
+
+  registerJob({
+    name: 'fieldSales.callLog',
+    cronTime: FIELD_SALES_CALL_LOG_CRON,
+    run: () => calculateCallDurations()
+  });
+
+  registerJob({
+    name: 'fieldSales.address',
+    cronTime: FIELD_SALES_ADDRESS_CRON,
+    run: () => processRecentWindow()
+  });
+
+  registerJob({
+    name: 'fieldSales.archiveTracking',
+    cronTime: FIELD_SALES_ARCHIVE_CRON,
+    run: () => archiveAndCleanupTracking()
+  });
+
+
+  // Heals approved manual attendance rows whose att_data snapshot is null
+  // (fire-and-forget population at approval time failed, or pre-existing
+  // approvals from before the column was added). Read path falls through to
+  // live compute for null rows so this is purely a perf-recovery pass.
+  registerJob({
+    name: 'manualAttendance.snapshotBackfill',
+    cronTime: APPROVED_MANUAL_ATTENDANCE_SNAPSHOT_BACKFILL_CRON,
+    run: () => runApprovedManualAttendanceSnapshotBackfillOnce()
+  });
 }
 
 module.exports = { registerAllJobs };

@@ -55,6 +55,12 @@ export default ({ mode }) => {
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
   const localServerUrl = 'http://localhost:3000';
+  // Standalone biometric gateway servers (one process per interface, own port).
+  // Device protocol paths proxy to these; operator/admin /api + /uploads stay on
+  // the app. ZK TCP-pull has no inbound HTTP, so no proxy entry. Override via env
+  // if a gateway runs on a different host/port.
+  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:4002';
+  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:4003';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -94,6 +100,17 @@ export default ({ mode }) => {
     },
     server: {
       proxy: {
+        // Biometric DEVICE protocol paths → standalone gateway servers. Devices
+        // use the bare paths; the operator API /api/v1/iclock-terminal stays on
+        // the app via the '/api' rule below. ZK TCP-pull has no inbound HTTP.
+        '/iclock': {
+          target: admsGatewayUrl, // adms_server gateway (ZK iClock push/pull + device file)
+          changeOrigin: true,
+        },
+        '/hdata': {
+          target: biomaxGatewayUrl, // biomax_server gateway (/hdata + /hdata.aspx)
+          changeOrigin: true,
+        },
         '/uploads': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL

@@ -1,41 +1,4 @@
-// API response message constants
-const API_MESSAGE_SUCCESS = 'Operation completed successfully';
-const API_MESSAGE_ERROR = 'An error occurred';
-const API_MESSAGE_UNAUTHORIZED = 'Unauthorized access';
-const API_MESSAGE_FORBIDDEN = 'Access forbidden';
-const API_MESSAGE_NOT_FOUND = 'Resource not found';
-const API_MESSAGE_VALIDATION_ERROR = 'Validation failed';
-const API_MESSAGE_INTERNAL_ERROR = 'Internal server error';
-
-// HTTP status code constants
-const HTTP_STATUS_OK = 200;
-const HTTP_STATUS_CREATED = 201;
-const HTTP_STATUS_BAD_REQUEST = 400;
-const HTTP_STATUS_UNAUTHORIZED = 401;
-const HTTP_STATUS_FORBIDDEN = 403;
-const HTTP_STATUS_NOT_FOUND = 404;
-const HTTP_STATUS_CONFLICT = 409;
-const HTTP_STATUS_INTERNAL_ERROR = 500;
-
-// Generic placeholder when a response body cannot be safely stringified
-const UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER = '[unstringifiable response body]';
-
-module.exports = {
-  API_MESSAGE_SUCCESS,
-  API_MESSAGE_ERROR,
-  API_MESSAGE_UNAUTHORIZED,
-  API_MESSAGE_FORBIDDEN,
-  API_MESSAGE_NOT_FOUND,
-  API_MESSAGE_VALIDATION_ERROR,
-  API_MESSAGE_INTERNAL_ERROR,
-  HTTP_STATUS_OK,
-  HTTP_STATUS_CREATED,
-  HTTP_STATUS_BAD_REQUEST,
-  HTTP_STATUS_UNAUTHORIZED,
-  HTTP_STATUS_FORBIDDEN,
-  HTTP_STATUS_NOT_FOUND,
-  HTTP_STATUS_CONFLICT,
-  HTTP_STATUS_INTERNAL_ERROR,
-  UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER
-};
-
+// Re-export shim: implementation moved to the foundational `nucleus` package so it
+// can be shared by startup, app/server AND the standalone biometric gateways.
+// This thin shim keeps the original @startup path working unchanged.
+module.exports = require('../../../../nucleus/constants/http');

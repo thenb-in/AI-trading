@@ -1,4 +1,4 @@
-// Step 0: Update terminal data from remote iclock_terminal to local nbnext_iclock_terminal
+// Step 0: Update terminal data from remote iclock_terminal to local nbnext_common_device
 const logger = require('../../logger');
 const { rowsFromQueryResult } = require('./utils');
 const { sequelize } = require('../../src/services/databaseService');
@@ -18,7 +18,7 @@ async function updateTerminalData(t) {
     logger.debug(`sync_transaction: [STEP0] Preparing update SQL to sync terminal data at ${updateStartTime}...`);
 
     const updateSql = `
-      UPDATE nbnext_iclock_terminal AS local
+      UPDATE nbnext_common_device AS local
       SET
         create_time = remote.create_time,
         create_user = remote.create_user,

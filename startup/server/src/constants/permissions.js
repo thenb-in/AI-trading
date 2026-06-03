@@ -70,7 +70,7 @@ const MASTER_PERMISSION_CONSTANTS = {
   // single `manage` entry so the subscription module can toggle them
   // per-company without exposing CRUD shape. requirePermission on the
   // routes + assertCompanyPermission inside the biometric interface read
-  // these names; see app/server/interfaces/biometric/adms/index.js.
+  // these names; see biometric_gateway/adms_server/interfaces/adms/index.js.
   TERMINAL_EMPLOYEE_SYNC: {
     manage: {
       name: 'manage_terminal_employee_sync',
