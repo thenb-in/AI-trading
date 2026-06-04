@@ -61,6 +61,11 @@ export default ({ mode }) => {
   // if a gateway runs on a different host/port.
   const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:4002';
   const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:4003';
+  // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
+  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy
+  // here; every other /api/* call stays on the app. Override via env if it runs
+  // on a different host/port.
+  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:4005';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -116,6 +121,14 @@ export default ({ mode }) => {
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/uploads/, ''), // Optional, remove '/uploads' prefix if needed
         },
+        // wagemaster ingest sub-paths — MUST come before the generic '/api' rule
+        // below, since Vite matches proxy keys in declaration order (first match
+        // wins). Everything else under /api falls through to the app server.
+        '/api/v1/location/tracking/update': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/sendCallLog': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/syncPaymentReminder': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/report-app-version': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/report-unsynced-count': { target: wagemasterUrl, changeOrigin: true },
         '/api': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
