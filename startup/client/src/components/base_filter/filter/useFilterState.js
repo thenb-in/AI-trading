@@ -101,11 +101,6 @@ const useFilterState = ({
     onFilterChange?.(name, value);
   }, [onFilterChange]);
 
-  const handleSelectChange = useCallback((name, value) => {
-    if (isDisabled) return;
-    updateFilter(name, value);
-  }, [isDisabled, updateFilter]);
-
   const handleSearchableChange = useCallback((config, newValues) => {
     if (isDisabled) return;
     if (!config.multiselect) {
@@ -250,7 +245,6 @@ const useFilterState = ({
     isBusy,
     hasDateFilters,
     quickDateActions,
-    handleSelectChange,
     handleSearchableChange,
     handleDateChange,
     handleCheckboxChange,

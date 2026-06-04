@@ -11,6 +11,7 @@ function SearchableDropdown({
   placeholder = 'Select...',
   disabled = false,
   multiple = true,
+  searchable = true,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +67,8 @@ function SearchableDropdown({
   };
 
   const handleSelect = (value) => {
+    const option = options.find((opt) => opt.value === value);
+    if (option?.disabled) return;
     if (multiple) {
       const newValues = selectedValues.includes(value)
         ? selectedValues.filter((v) => v !== value)
@@ -179,19 +182,21 @@ function SearchableDropdown({
           className="bg-white border border-gray-300 rounded shadow-lg max-h-80 overflow-hidden"
         >
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="Search..."
-                className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                autoFocus
-              />
+          {searchable && (
+            <div className="p-2 border-b border-gray-200">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  placeholder="Search..."
+                  className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  autoFocus
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Options List */}
           <div className="overflow-y-auto max-h-64">
@@ -202,13 +207,17 @@ function SearchableDropdown({
             ) : (
               filteredOptions.map((option) => {
                 const isSelected = selectedValues.includes(option.value);
+                const isOptionDisabled = !!option.disabled;
                 const handleOptionClick = () => handleSelect(option.value);
                 return (
                   <div
                     key={option.value}
                     onClick={handleOptionClick}
-                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
-                      isSelected ? 'bg-blue-100 font-medium' : ''
+                    title={option.title || undefined}
+                    className={`px-3 py-2 text-sm ${
+                      isOptionDisabled
+                        ? 'cursor-not-allowed text-gray-400 bg-gray-50'
+                        : `cursor-pointer hover:bg-blue-50 ${isSelected ? 'bg-blue-100 font-medium' : ''}`
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -216,6 +225,7 @@ function SearchableDropdown({
                         type={multiple ? 'checkbox' : 'radio'}
                         checked={isSelected}
                         onChange={handleInputChangeNoOp}
+                        disabled={isOptionDisabled}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
                       <span>{option.label}</span>
@@ -237,6 +247,8 @@ SearchableDropdown.propTypes = {
     PropTypes.shape({
       value: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      disabled: PropTypes.bool,
+      title: PropTypes.string,
     })
   ).isRequired,
   selectedValues: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -244,6 +256,7 @@ SearchableDropdown.propTypes = {
   placeholder: PropTypes.string,
   disabled: PropTypes.bool,
   multiple: PropTypes.bool,
+  searchable: PropTypes.bool,
 };
 
 export { SearchableDropdown };

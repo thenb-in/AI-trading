@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { parse } from 'date-fns';
 import PropTypes from 'prop-types';
-import { ChevronDown } from 'lucide-react';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -40,7 +39,6 @@ const FilterField = ({
   config,
   value,
   isDisabled,
-  onSelectChange,
   onSearchableChange,
   onDateChange,
   onCheckboxChange,
@@ -71,60 +69,23 @@ const FilterField = ({
 
     case 'select': {
       const options = Array.isArray(config.options) ? config.options : [];
-      const useSearchable = config.searchable === true || config.multiselect === true;
-
-      if (useSearchable) {
-        const isMulti = !!config.multiselect;
-        // For both single and multi: surface 'all' as a chip so the user
-        // sees the active default ("All Employees") instead of placeholder.
-        const selected = isMulti
-          ? (Array.isArray(value) ? value : [String(value || 'all')])
-          : [String(value || 'all')];
-        return (
-          <SearchableDropdown
-            options={options}
-            selectedValues={selected}
-            onChange={(newValues) => onSearchableChange(config, newValues)}
-            placeholder={config.placeholder || `Select ${config.label || ''}`.trim()}
-            disabled={isDisabled}
-            multiple={isMulti}
-          />
-        );
-      }
-
+      const isMulti = !!config.multiselect;
+      const showSearch = config.searchable === true || config.multiselect === true;
+      // For both single and multi: surface 'all' as a chip so the user
+      // sees the active default ("All Employees") instead of placeholder.
+      const selected = isMulti
+        ? (Array.isArray(value) ? value : [String(value || 'all')])
+        : [String(value || 'all')];
       return (
-        <div className={`relative ${isDisabled ? 'pointer-events-none opacity-60' : ''}`}>
-          <select
-            name={config.name}
-            value={value || 'all'}
-            onChange={(e) => onSelectChange(config.name, e.target.value)}
-            disabled={isDisabled}
-            className={`
-              w-full min-w-[150px] h-9 px-3 pr-8 text-sm border rounded-md appearance-none transition-colors
-              focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
-              ${isDisabled
-                ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-white border-gray-300 text-gray-900 hover:border-gray-400 cursor-pointer'
-              }
-            `}
-          >
-            {options.length > 0 ? (
-              options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))
-            ) : (
-              <option value="all">{config.placeholder || 'Select'}</option>
-            )}
-          </select>
-          <ChevronDown
-            size={16}
-            className={`absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none ${
-              isDisabled ? 'text-gray-300' : 'text-gray-500'
-            }`}
-          />
-        </div>
+        <SearchableDropdown
+          options={options}
+          selectedValues={selected}
+          onChange={(newValues) => onSearchableChange(config, newValues)}
+          placeholder={config.placeholder || `Select ${config.label || ''}`.trim()}
+          disabled={isDisabled}
+          multiple={isMulti}
+          searchable={showSearch}
+        />
       );
     }
 
@@ -166,7 +127,6 @@ FilterField.propTypes = {
   }).isRequired,
   value: PropTypes.any,
   isDisabled: PropTypes.bool,
-  onSelectChange: PropTypes.func,
   onSearchableChange: PropTypes.func,
   onDateChange: PropTypes.func,
   onCheckboxChange: PropTypes.func,

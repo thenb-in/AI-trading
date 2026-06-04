@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { toggleDebugMode } from '@services/debugModeService';
 import { useFilterState } from './useFilterState';
 import { useFilterShortcuts } from './useFilterShortcuts';
+import { useFilterOptionResolver } from './useFilterOptionResolver';
 import { FilterHeader } from './FilterHeader';
 import { FilterActions } from './FilterActions';
 import { QuickDateBar } from './QuickDateBar';
@@ -33,7 +34,6 @@ const Filter = ({
     isBusy,
     hasDateFilters,
     quickDateActions,
-    handleSelectChange,
     handleSearchableChange,
     handleDateChange,
     handleCheckboxChange,
@@ -82,16 +82,18 @@ const Filter = ({
   );
 
   const fieldHandlers = {
-    onSelectChange: handleSelectChange,
     onSearchableChange: handleSearchableChange,
     onDateChange: handleDateChange,
     onCheckboxChange: handleCheckboxChange,
   };
 
+
+  const resolveConfig = useFilterOptionResolver(filters);
+
   const renderCell = (config, withLabel) => (
     <FilterCell
       key={config.name}
-      config={config}
+      config={resolveConfig(config)}
       value={filters[config.name]}
       isDisabled={isDisabled}
       withLabel={withLabel}
