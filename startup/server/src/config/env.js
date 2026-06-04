@@ -45,8 +45,8 @@ const isSecureCookie = process.env.SECURE_COOKIE ? process.env.SECURE_COOKIE ===
 const isDevelopment = !isProduction;
 
 // Calculate default uploads directory relative to server root
-// env.js is at server/src/config/env.js, so we go up 3 levels to base root
-const defaultUploadsDir = path.resolve(__dirname, '../../../uploads');
+// env.js is at startup/server/src/config/env.js, so we go up 4 levels to base root
+const defaultUploadsDir = path.resolve(__dirname, '../../../../uploads');
 
 // Handle UPLOADS_DIR: if set, use it (resolve if relative), otherwise use default
 let uploadsDir = process.env.UPLOADS_DIR;
