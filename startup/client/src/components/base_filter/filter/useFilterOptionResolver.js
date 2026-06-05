@@ -1,16 +1,14 @@
 import { useCallback } from 'react';
 
 /**
- * Returns a config transformer that disables options which are incompatible
- * with the current `is_active` filter, so the user can't make a selection that
- * would silently return no data.
+ * Returns a config transformer for activity-aware option lists (whose entries
+ * carry a boolean `is_active` flag, e.g. the employee filter), matching what
+ * the "Is Active" filter is showing:
+ *   - is_active ON  → show active employees only (inactive entries dropped)
+ *   - is_active OFF → show active + inactive; inactive entries get `highlight`
  *
- * Activity-aware option lists tag each entry with a boolean `inactive` flag:
- *   - is_active ON  → backend returns active records   → inactive options disabled
- *   - is_active OFF → backend returns inactive records → active options disabled
- *
- * Lists without a boolean `inactive` flag, and the 'all' entry, are returned
- * untouched.
+ * Lists without an `is_active` flag, and the 'all' entry (which has none), are
+ * returned untouched.
  */
 const useFilterOptionResolver = (filters) => {
   const isActiveOff = filters.is_active === false;
@@ -18,21 +16,13 @@ const useFilterOptionResolver = (filters) => {
   return useCallback(
     (config) => {
       if (config.type !== 'select' || !Array.isArray(config.options)) return config;
-      if (!config.options.some((o) => typeof o.inactive === 'boolean')) return config;
+      if (!config.options.some((o) => typeof o.is_active === 'boolean')) return config;
 
-      const options = config.options.map((o) => {
-        if (typeof o.inactive !== 'boolean') return o;
-        const shouldDisable = isActiveOff ? o.inactive === false : o.inactive === true;
-        return {
-          ...o,
-          disabled: shouldDisable,
-          title: shouldDisable
-            ? (isActiveOff
-                ? 'Enable the "Is Active" filter to select an active employee'
-                : 'Disable the "Is Active" filter to select an inactive employee')
-            : undefined,
-        };
-      });
+      const options = isActiveOff
+        ? config.options.map((o) =>
+            o.is_active === false ? { ...o, highlight: true } : o
+          )
+        : config.options.filter((o) => o.is_active !== false);
 
       return { ...config, options };
     },

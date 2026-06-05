@@ -6,7 +6,7 @@ const buildEmployeeOptions = (employees) => [
   ...employees.map((emp) => ({
     value: emp.id.toString(),
     label: `${emp.first_name || ''} ${emp.last_name || ''} (${emp.emp_code})`,
-    inactive: emp.is_active === false,
+    is_active: emp.is_active,
   })),
 ];
 

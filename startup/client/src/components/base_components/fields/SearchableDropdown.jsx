@@ -67,8 +67,6 @@ function SearchableDropdown({
   };
 
   const handleSelect = (value) => {
-    const option = options.find((opt) => opt.value === value);
-    if (option?.disabled) return;
     if (multiple) {
       const newValues = selectedValues.includes(value)
         ? selectedValues.filter((v) => v !== value)
@@ -207,17 +205,15 @@ function SearchableDropdown({
             ) : (
               filteredOptions.map((option) => {
                 const isSelected = selectedValues.includes(option.value);
-                const isOptionDisabled = !!option.disabled;
+                const isHighlight = !!option.highlight;
                 const handleOptionClick = () => handleSelect(option.value);
                 return (
                   <div
                     key={option.value}
                     onClick={handleOptionClick}
-                    title={option.title || undefined}
-                    className={`px-3 py-2 text-sm ${
-                      isOptionDisabled
-                        ? 'cursor-not-allowed text-gray-400 bg-gray-50'
-                        : `cursor-pointer hover:bg-blue-50 ${isSelected ? 'bg-blue-100 font-medium' : ''}`
+                    title={isHighlight ? 'Inactive' : undefined}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
+                      isSelected ? 'bg-blue-100 font-medium' : isHighlight ? 'bg-red-50' : ''
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -225,7 +221,6 @@ function SearchableDropdown({
                         type={multiple ? 'checkbox' : 'radio'}
                         checked={isSelected}
                         onChange={handleInputChangeNoOp}
-                        disabled={isOptionDisabled}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
                       <span>{option.label}</span>
@@ -247,8 +242,8 @@ SearchableDropdown.propTypes = {
     PropTypes.shape({
       value: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
-      disabled: PropTypes.bool,
-      title: PropTypes.string,
+      highlight: PropTypes.bool,
+      is_active: PropTypes.bool,
     })
   ).isRequired,
   selectedValues: PropTypes.arrayOf(PropTypes.string).isRequired,
