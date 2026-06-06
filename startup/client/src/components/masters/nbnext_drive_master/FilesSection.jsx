@@ -15,6 +15,7 @@ const FilesSection = ({
   onFileChange,
   accept = '*/*',
   hint = 'Any file type supported (max 100MB)',
+  label = 'File',
   showCamera = true,
   disabled = false,
   multiple = false
@@ -251,7 +252,7 @@ const FilesSection = ({
         aria-hidden
       />
       <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={fileInputId}>
-        File
+        {label}
       </label>
       <div
         role="button"
@@ -415,6 +416,7 @@ FilesSection.propTypes = {
   onFileChange: PropTypes.func.isRequired,
   accept: PropTypes.string,
   hint: PropTypes.string,
+  label: PropTypes.string,
   showCamera: PropTypes.bool,
   disabled: PropTypes.bool,
   multiple: PropTypes.bool

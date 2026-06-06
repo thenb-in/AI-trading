@@ -1,6 +1,7 @@
 // Generic import function for master components
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
+import { isExportFooterRow } from '@startup/utils/excelImportFooter';
 
 /**
  * Common per-cell normalization shared by the Excel and CSV branches: date strings parse to
@@ -36,6 +37,12 @@ const createImportFunction = ({
   dateFields = [], // Fields that should be treated as dates
   booleanFields = [], // Fields that should be treated as booleans
   skipExisting = false, // If true: when a row matches an existing record, skip it (no update/create)
+  // Optional bespoke parser: async (file) => Array<payload> | { rows } | { error }.
+  // When provided, the built-in header-mapped Excel/CSV parsing is bypassed and this
+  // function owns turning the file into flat payload rows; everything downstream
+  // (fieldTransform, dedup, create/update, result reporting) is reused unchanged.
+  // Use this for non-tabular layouts such as the wide Monthly Attendance Report export.
+  customParser = null,
 }) => {
   // Match a header label to its column definition by id / label / name / headerName.
   const findColumnByHeader = (headerText) => columns.find(c =>
@@ -64,6 +71,18 @@ const createImportFunction = ({
         return { status: 400, data: { error: 'No file provided' } };
       }
 
+      let rows = [];
+      let headerToField = {};
+
+      // Bespoke parser path: caller fully owns turning the file into flat rows.
+      if (typeof customParser === 'function') {
+        const parsed = await customParser(file);
+        if (parsed && parsed.error) {
+          return { status: 400, data: { error: parsed.error } };
+        }
+        rows = Array.isArray(parsed) ? parsed : (parsed?.rows || []);
+      } else {
+
       const fileExtension = `.${file.name.split('.').pop().toLowerCase()}`;
       const isExcel = ['.xlsx', '.xls'].includes(fileExtension);
       const isCSV = fileExtension === '.csv';
@@ -71,9 +90,6 @@ const createImportFunction = ({
       if (!isExcel && !isCSV) {
         return { status: 400, data: { error: 'Invalid file type. Supported: .xlsx, .xls, .csv' } };
       }
-
-      let rows = [];
-      let headerToField = {};
 
       if (isExcel) {
         // Parse Excel file
@@ -118,6 +134,11 @@ const createImportFunction = ({
         for (let r = dataStartRow; r <= sheet.rowCount; r++) {
           const row = sheet.getRow(r);
           if (!row || row.cellCount === 0) continue;
+
+          // Stop at the footer row written by excelRenderer.addFooterInfo
+          // ("Report:" / "Date:" / "Filters:" in cols A–C). Everything below
+          // is metadata, not data.
+          if (isExportFooterRow(row)) break;
 
           const payload = {};
           row.eachCell((cell, colNumber) => {
@@ -184,6 +205,7 @@ const createImportFunction = ({
           return Object.values(payload).some(v => v !== null && v !== '');
         });
       }
+      } // end built-in parser path
 
       // Apply field transformation if provided
       if (fieldTransform && typeof fieldTransform === 'function') {

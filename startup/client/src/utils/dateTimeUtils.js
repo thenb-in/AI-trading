@@ -344,6 +344,66 @@ const SHORT_MONTH_NAMES = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// Lowercased 3-letter month -> 0-based month index, derived from SHORT_MONTH_NAMES.
+const SHORT_MONTH_INDEX = SHORT_MONTH_NAMES.reduce((acc, name, idx) => {
+  acc[name.toLowerCase()] = idx;
+  return acc;
+}, {});
+
+// Assemble a YYYY-MM-DD string, or null if any part is out of range.
+const buildYmd = (yearNum, monthIndex, day) => {
+  if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+  if (monthIndex === undefined || monthIndex < 0 || monthIndex > 11) return null;
+  if (!Number.isFinite(yearNum)) return null;
+  return `${yearNum}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+/**
+ * Convert an attendance date-column header to a YYYY-MM-DD string. Accepts (day-first):
+ *   • "01MayFri" / "01May" / "01 May"       → month-name; year comes from the `year` arg
+ *   • "01 May 2026" / "1 January 2026"       → month-name + explicit year (arg ignored)
+ *   • "01/06/2026" / "01-06-2026" / "1/6/26" → numeric DD/MM/YYYY (day first, 2- or 4-digit year)
+ * Returns null for anything that isn't a recognizable date (so it doubles as a "is this a date
+ * column?" test and won't match plain headers like "Code" / "Position").
+ *
+ * @param {string} label
+ * @param {number|string} year fallback year when the label has no year (e.g. "01MayFri")
+ * @returns {string|null} e.g. "2026-05-01"
+ */
+const attendanceColumnLabelToDate = (label, year) => {
+  if (label === null || label === undefined) return null;
+  const str = String(label).trim();
+  if (!str) return null;
+
+  // Day + month-name (+ optional weekday text) (+ optional explicit year): "01MayFri", "01 May 2026".
+  const nameMatch = str.match(/^(\d{1,2})\s*([A-Za-z]{3})[A-Za-z]*\.?\s*(\d{4})?$/);
+  if (nameMatch) {
+    const day = parseInt(nameMatch[1], 10);
+    const monthIndex = SHORT_MONTH_INDEX[nameMatch[2].toLowerCase()];
+    const yearNum = nameMatch[3] ? parseInt(nameMatch[3], 10) : parseInt(year, 10);
+    return buildYmd(yearNum, monthIndex, day);
+  }
+
+  // Numeric day-first date: "01/06/2026", "01-06-2026", "1/6/26".
+  const numMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
+  if (numMatch) {
+    const day = parseInt(numMatch[1], 10);
+    const monthIndex = parseInt(numMatch[2], 10) - 1;
+    let yearNum = parseInt(numMatch[3], 10);
+    if (numMatch[3].length === 2) yearNum += 2000; // "26" → 2026
+    return buildYmd(yearNum, monthIndex, day);
+  }
+
+  return null;
+};
+
+
+const buildYearOptions = (centerYear = new Date().getFullYear(), { before = 4, after = 1 } = {}) => {
+  const years = [];
+  for (let y = centerYear + after; y >= centerYear - before; y--) years.push(y);
+  return years;
+};
+
 /** "2 Jan 2025" — short-month date. Returns "-" for falsy/unparseable input. */
 const formatDateForDisplay = (dateValue) => {
   if (!dateValue) return "-";
@@ -417,6 +477,7 @@ const getPrevMonthStartYesterdayRange = () => {
 };
 
 
+
 export {
   getLocalDateStringYmd,
   getYesterday,
@@ -447,6 +508,8 @@ export {
   formatDateTime,
   formatLastActive,
   parseDateValue,
+  attendanceColumnLabelToDate,
+  buildYearOptions,
   formatDateForDisplay,
   formatTimeForDisplay,
   formatDateTimeForDisplay,
