@@ -185,6 +185,7 @@ const REPORT_PERMISSION_CONSTANTS = {
   TRANSACTION_REPORT: basePermissions.create_report_permission('transaction-report'),
   DIRECTION_CONFLICTS_REPORT: basePermissions.create_report_permission('direction-conflicts-report'),
   SALARY_REGISTER_REPORT: basePermissions.create_report_permission('salary-register-report'),
+  SALARY_CHANGE_REPORT: basePermissions.create_report_permission('salary-change-report'),
   SALARY_WITH_ATTENDANCE_REPORT: basePermissions.create_report_permission('salary-with-attendance-report'),
   DEACTIVATION_USER_REPORT: basePermissions.create_report_permission('deactivation-user-report'),
   SHIFT_SUMMARY_REPORT: basePermissions.create_report_permission('shift-summary-report'),

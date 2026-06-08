@@ -64,6 +64,30 @@ const activityService = {
     });
   },
 
+  async getActivitiesByHeadAndType(head, type, companyId = null, options = {}) {
+    const { dateWhere = {}, attributes = ACTIVITY_SUMMARY_ATTRIBUTES, order = [['timestamp', 'DESC']] } = options;
+    try {
+      const where = {
+        head,
+        type,
+        ...dateWhere
+      };
+      if (companyId) {
+        where.companyId = companyId;
+      }
+
+      return await Activity.findAll({
+        where,
+        attributes,
+        order,
+        include: [ACTIVITY_INCLUDE_CREATED_BY_USER]
+      });
+    } catch (error) {
+      logger.error(`Error fetching activities by head/type: head=${head} type=${type}`, error);
+      throw new Error(`Failed to fetch activities: ${error.message}`);
+    }
+  },
+
   async createActivity(head, log, objectName = null, objectId = null, createdBy = null, companyId = null, type = null, transaction = null) {
     try {
       const options = transaction ? { transaction } : {};
