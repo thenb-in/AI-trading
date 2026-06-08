@@ -21,6 +21,7 @@ import { useInsightsCollapse } from "./hooks/useInsightsCollapse.js";
 import { useInfiniteScroll } from "./hooks/useInfiniteScroll.js";
 import { useGridTheme } from "./hooks/useGridTheme.js";
 import { useGridViewMode } from "./hooks/useGridViewMode.js";
+import { useArrowKeyScroll } from "./hooks/useArrowKeyScroll.js";
 
 // Components
 import { EmptyState } from "./components/EmptyState.jsx";
@@ -407,6 +408,11 @@ const NbNextDataGrid = forwardRef(({
     scrollAreaRef.current,
     10
   );
+
+  // In fullscreen, arrow keys drive the grid's scroll area (Left/Right scroll
+  // horizontally across columns, Up/Down vertically). Disabled otherwise so the
+  // page scrolls normally.
+  useArrowKeyScroll(fullScreen, scrollAreaRef, rowHeight);
 
   const displayRows = fullScreen
     ? virtualScrollingResult.visibleRows
