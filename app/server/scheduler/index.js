@@ -15,6 +15,7 @@ const { registerJob } = require('@startup/scheduler');
 const { calculateWages } = require('./field_sales/wageScheduler');
 const { calculateCallDurations } = require('./field_sales/callLogScheduler');
 const { processRecentWindow } = require('./field_sales/addressScheduler');
+const { runLongLeaveDeactivationOnce } = require('./leave_deactivation/leaveDeactivationScheduler');
 // NOTE: fieldSales.archiveTracking (raw tracking archive/cleanup) runs in the
 // standalone wagemaster server now — it owns the high-volume tracking ingest +
 // its data lifecycle. It MUST run in exactly one process, so it is intentionally
@@ -25,6 +26,7 @@ const {
   FIELD_SALES_WAGE_CRON,
   FIELD_SALES_CALL_LOG_CRON,
   FIELD_SALES_ADDRESS_CRON,
+  LONG_LEAVE_DEACTIVATION_CRON,
   APPROVED_MANUAL_ATTENDANCE_SNAPSHOT_BACKFILL_CRON
 } = require('../src/constants');
 
@@ -45,6 +47,12 @@ function registerAllJobs() {
     name: 'fieldSales.address',
     cronTime: FIELD_SALES_ADDRESS_CRON,
     run: () => processRecentWindow()
+  });
+
+  registerJob({
+    name: 'employee.longLeaveDeactivation',
+    cronTime: LONG_LEAVE_DEACTIVATION_CRON,
+    run: () => runLongLeaveDeactivationOnce()
   });
 
   // Heals approved manual attendance rows whose att_data snapshot is null

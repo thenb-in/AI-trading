@@ -7,8 +7,25 @@ const userService = require('@startup/src/services/userService');
 const allowedPermissions = require('@startup/src/utils/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('@startup/src/utils/authUtils');
 const { getBiometricInterface } = require('@biometric');
-const { EMPLOYEE_SRC } = require('../constants/hr/employee');
+const {
+  EMPLOYEE_SRC,
+  CONSECUTIVE_LEAVE_DEACTIVATION_DAYS_INVALID
+} = require('../constants/hr/employee');
 const { normalizeCoordinate } = require('../utils/locationUtils');
+
+function normalizeConsecutiveLeaveDeactivationDays(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null || String(value).trim() === '') {
+    return null;
+  }
+  const normalized = Number(value);
+  if (!Number.isInteger(normalized) || normalized <= 7) {
+    throw new Error(CONSECUTIVE_LEAVE_DEACTIVATION_DAYS_INVALID);
+  }
+  return normalized;
+}
 
 const companyController = {
   async getCompanySettings(req, res) {
@@ -36,7 +53,7 @@ const companyController = {
       }
 
       const id = req.user.company_id;
-      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb, emp_code_basis, latitude, longitude } = req.body;
+      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb, emp_code_basis, latitude, longitude, consecutive_leave_deactivation_days } = req.body;
 
       if (emp_code_basis !== undefined && !['identity_card', 'serial_number'].includes(emp_code_basis)) {
         return res.status(400).json({ error: `Invalid emp_code_basis: ${emp_code_basis}. Must be 'identity_card' or 'serial_number'.` });
@@ -51,6 +68,13 @@ const companyController = {
         return res.status(400).json({ error: validationError.message });
       }
 
+      let leaveDeactivationDaysValue;
+      try {
+        leaveDeactivationDaysValue = normalizeConsecutiveLeaveDeactivationDays(consecutive_leave_deactivation_days);
+      } catch (validationError) {
+        return res.status(400).json({ error: validationError.message });
+      }
+
       const settings = await companyService.updateCompanySettings(id, {
         deleteOnSeen,
         messageTimer,
@@ -61,7 +85,8 @@ const companyController = {
         name,
         emp_code_basis,
         latitude: latitudeValue,
-        longitude: longitudeValue
+        longitude: longitudeValue,
+        consecutive_leave_deactivation_days: leaveDeactivationDaysValue
       });
 
       res.json(settings);

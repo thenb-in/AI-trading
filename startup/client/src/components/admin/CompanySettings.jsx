@@ -40,6 +40,7 @@ import {
   Monitor,
   Globe,
   IdCard,
+  CalendarDays,
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
@@ -59,6 +60,7 @@ function CompanySettings() {
     emp_code_basis: "identity_card",
     latitude: "",
     longitude: "",
+    consecutive_leave_deactivation_days: "",
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -85,6 +87,7 @@ function CompanySettings() {
           emp_code_basis: response.data.emp_code_basis || "identity_card",
           latitude: response.data.latitude ?? "",
           longitude: response.data.longitude ?? "",
+          consecutive_leave_deactivation_days: response.data.consecutive_leave_deactivation_days ?? "",
         });
 
         setIsLoading(false);
@@ -206,6 +209,7 @@ function CompanySettings() {
         emp_code_basis: companySettings.emp_code_basis,
         latitude: companySettings.latitude,
         longitude: companySettings.longitude,
+        consecutive_leave_deactivation_days: companySettings.consecutive_leave_deactivation_days,
       };
 
       await ApiService.updateCompanySettings(companyData);
@@ -281,6 +285,10 @@ function CompanySettings() {
 
   const handleLongitudeChange = (e) => {
     handleInputChange("longitude", e.target.value);
+  };
+
+  const handleConsecutiveLeaveDeactivationDaysChange = (e) => {
+    handleInputChange("consecutive_leave_deactivation_days", e.target.value);
   };
 
   const handleLocationAutoFill = (lat, lng) => {
@@ -431,6 +439,24 @@ function CompanySettings() {
           onLongitudeChange={handleLongitudeChange}
           onAutoFill={handleLocationAutoFill}
         />
+
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="flex items-center text-gray-700 font-medium mb-2">
+            <CalendarDays className="w-4 h-4 text-gray-600 mr-2" /> Leave Auto-Deactivation
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Runs nightly and deactivates active employees whose current leave streak is greater than this many consecutive days. Leave blank to disable.
+          </p>
+          <input
+            type="number"
+            min="8"
+            step="1"
+            value={companySettings.consecutive_leave_deactivation_days}
+            onChange={handleConsecutiveLeaveDeactivationDaysChange}
+            placeholder="Disabled"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+          />
+        </div>
 
         {/* Company Profile - App-specific settings */}
         <CompanyProfile

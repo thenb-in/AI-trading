@@ -71,6 +71,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 7),
       allowNull: true,
       comment: 'Company location longitude (decimal degrees, -180..180)'
+    },
+    consecutive_leave_deactivation_days: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Auto-deactivate active employees after more than this many consecutive leave days; null disables the scheduler rule'
     }
   }, {
     tableName: 'nbnext_company',
