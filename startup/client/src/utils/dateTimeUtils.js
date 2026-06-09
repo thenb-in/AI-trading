@@ -309,26 +309,26 @@ const parseDateValue = (dateValue) => {
       const dateStr = dateValue.trim();
       if (!dateStr) return null;
 
-      // Try parsing as ISO date first
-      const isoDate = new Date(dateStr);
-      if (!isNaN(isoDate.getTime())) {
-        return isoDate;
-      }
-
       // Try YYYY-MM-DD format
       if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
         const parsed = new Date(dateStr);
         return isNaN(parsed.getTime()) ? null : parsed;
       }
 
-      // Try DD-MM-YYYY or DD/MM/YYYY format
-      const parts = dateStr.split(/[-/]/);
+      // Try DD-MM-YYYY, DD/MM/YYYY, or DD.MM.YYYY format
+      const parts = dateStr.split(/[-/.]/);
       if (parts.length === 3) {
         const day = parts[0].padStart(2, "0");
         const month = parts[1].padStart(2, "0");
         const year = parts[2];
         const parsed = new Date(`${year}-${month}-${day}`);
         return isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      // Fallback for other parseable date strings (ISO datetime, etc.)
+      const isoDate = new Date(dateStr);
+      if (!isNaN(isoDate.getTime())) {
+        return isoDate;
       }
     }
   } catch (error) {

@@ -76,6 +76,16 @@ function parseDate(dateStr) {
     }
   }
 
+  // Day-first dashed dates: dd-MM-yyyy / d-M-yyyy (e.g. 30-01-1998, 1-6-2004)
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmed)) {
+    for (const fmt of ['dd-MM-yyyy', 'd-M-yyyy']) {
+      const parsed = tryParseToLocalDay(trimmed, (s) => parse(s, fmt, new Date()), fmt);
+      if (parsed) {
+        return parsed;
+      }
+    }
+  }
+
   // Short-month "d MMM yyyy" (e.g. "2 Jan 2025"). Guarded by a strict regex so
   // this path only runs for clearly-matching strings — keeps unrelated formats
   // out of date-fns' English-locale month parser.
@@ -86,58 +96,48 @@ function parseDate(dateStr) {
         return parsedDate;
       }
     } catch (e) {
-      logger.error(`Error parsing date with d MMM yyyy for ${dateStr}`, e);
+      logger.error(`Error parsing date with d MMM yyyy for ${trimmed}`, e);
     }
-  }
-
-  // Try parsing with default format (dd-MM-yyyy)
-  try {
-    const parsedDate = parse(dateStr, DEFAULT_DATE_FORMAT, new Date());
-    if (!isNaN(parsedDate.getTime())) {
-      return parsedDate;
-    }
-  } catch (e) {
-    logger.error(`Error parsing date with default format for ${dateStr}`, e);
   }
 
   // Try parsing with dd/MM/yyyy format (2-digit day and month)
   try {
-    const parsedDate = parse(dateStr, 'dd/MM/yyyy', new Date());
+    const parsedDate = parse(trimmed, 'dd/MM/yyyy', new Date());
     if (!isNaN(parsedDate.getTime())) {
       return parsedDate;
     }
   } catch (e) {
-    logger.error(`Error parsing date with dd/MM/yyyy for ${dateStr}`, e);
+    logger.error(`Error parsing date with dd/MM/yyyy for ${trimmed}`, e);
   }
 
   // Try parsing with d/M/yyyy format (single or double digit day and month)
   try {
-    const parsedDate = parse(dateStr, 'd/M/yyyy', new Date());
+    const parsedDate = parse(trimmed, 'd/M/yyyy', new Date());
     if (!isNaN(parsedDate.getTime())) {
       return parsedDate;
     }
   } catch (e) {
-    logger.error(`Error parsing date with d/M/yyyy for ${dateStr}`, e);
+    logger.error(`Error parsing date with d/M/yyyy for ${trimmed}`, e);
   }
 
-  // Try parsing with dd-M-yyyy format (2-digit day, single or double digit month)
+  // Try parsing with dd.MM.yyyy format (2-digit day and month, dot separator)
   try {
-    const parsedDate = parse(dateStr, 'dd-M-yyyy', new Date());
+    const parsedDate = parse(trimmed, 'dd.MM.yyyy', new Date());
     if (!isNaN(parsedDate.getTime())) {
       return parsedDate;
     }
   } catch (e) {
-    logger.error(`Error parsing date with dd-M-yyyy for ${dateStr}`, e);
+    logger.error(`Error parsing date with dd.MM.yyyy for ${trimmed}`, e);
   }
 
-  // Try parsing with d-MM-yyyy format (single or double digit day, 2-digit month)
+  // Try parsing with d.M.yyyy format (single or double digit day and month, dot separator)
   try {
-    const parsedDate = parse(dateStr, 'd-MM-yyyy', new Date());
+    const parsedDate = parse(trimmed, 'd.M.yyyy', new Date());
     if (!isNaN(parsedDate.getTime())) {
       return parsedDate;
     }
   } catch (e) {
-    logger.error(`Error parsing date with d-MM-yyyy for ${dateStr}`, e);
+    logger.error(`Error parsing date with d.M.yyyy for ${trimmed}`, e);
   }
 
   // handle epoch timestamp
@@ -157,7 +157,7 @@ function parseDate(dateStr) {
     logger.error(`Error parsing date with fallback for ${dateStr}`, e);
   }
 
-  logger.error(`[parseDate] Invalid date format: ${dateStr}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, d MMM yyyy, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd-M-yyyy, or d-MM-yyyy`);
+  logger.error(`[parseDate] Invalid date format: ${trimmed}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, d MMM yyyy, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd.MM.yyyy, or d.M.yyyy`);
   return null;
 }
 
