@@ -27,6 +27,11 @@ function formatDate(date, format_str) {
   return `${day}-${month}-${year}`;
 }
 
+function buildParseDateErrorMessage(dateStr) {
+  const trimmed = String(dateStr).trim();
+  return `[parseDate] Invalid date format: ${trimmed}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, d MMM yyyy, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd.MM.yyyy, or d.M.yyyy`;
+}
+
 // Run `parseFn(input)` and, if it returns a valid Date, snap it to the
 // local calendar day (so UTC-shifted inputs don't bleed across midnight).
 // Failures are logged and return null so the next strategy can run.
@@ -157,7 +162,7 @@ function parseDate(dateStr) {
     logger.error(`Error parsing date with fallback for ${dateStr}`, e);
   }
 
-  logger.error(`[parseDate] Invalid date format: ${trimmed}. Expected yyyy-MM-dd, yyyy-M-d, ISO datetime, d MMM yyyy, dd-MM-yyyy, dd/MM/yyyy, d/M/yyyy, dd.MM.yyyy, or d.M.yyyy`);
+  logger.error(buildParseDateErrorMessage(trimmed));
   return null;
 }
 
@@ -497,6 +502,7 @@ module.exports = {
   formatDuration,
   getDateRange,
   parseDate,
+  buildParseDateErrorMessage,
   getAllDays,
   getDaysBetween,
   calculateWorkDays,
