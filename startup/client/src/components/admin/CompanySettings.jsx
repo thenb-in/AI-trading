@@ -41,12 +41,40 @@ import {
   Globe,
   IdCard,
   CalendarDays,
+  Tags,
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { CompanyLocationFields } from "./CompanyLocationFields";
 import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
+
+const ATTENDANCE_ALIAS_OPTIONS = [
+  { code: "P", label: "Present" },
+  { code: "A", label: "Absent" },
+  { code: "HD", label: "Half Day" },
+  { code: "P,HD", label: "Present + Half Day" },
+  { code: "P,P", label: "Double Present" },
+  { code: "WO", label: "Weekly Off" },
+  { code: "NJ", label: "Not Joined" },
+  { code: "LT", label: "Late" },
+  { code: "E", label: "Early" },
+  { code: "MI", label: "Missing In" },
+  { code: "MO", label: "Missing Out" },
+  { code: "MI/MO", label: "Missing In/Out" },
+];
+
+const normalizeAttendanceAliases = (aliases) => {
+  if (!aliases || typeof aliases !== "object" || Array.isArray(aliases)) {
+    return {};
+  }
+  return Object.entries(aliases).reduce((acc, [code, alias]) => {
+    if (typeof alias === "string" && alias.trim()) {
+      acc[code] = alias.trim();
+    }
+    return acc;
+  }, {});
+};
 
 function CompanySettings() {
 
@@ -61,6 +89,7 @@ function CompanySettings() {
     latitude: "",
     longitude: "",
     consecutive_leave_deactivation_days: "",
+    attendanceAliases: {},
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -88,7 +117,18 @@ function CompanySettings() {
           latitude: response.data.latitude ?? "",
           longitude: response.data.longitude ?? "",
           consecutive_leave_deactivation_days: response.data.consecutive_leave_deactivation_days ?? "",
+          attendanceAliases: {},
         });
+
+        try {
+          const profileResponse = await ApiService.getCompanyProfile();
+          setCompanySettings((prev) => ({
+            ...prev,
+            attendanceAliases: normalizeAttendanceAliases(profileResponse?.data?.attendance_aliases),
+          }));
+        } catch (profileErr) {
+          console.error("Failed to load attendance aliases", profileErr);
+        }
 
         setIsLoading(false);
       } catch (err) {
@@ -217,6 +257,9 @@ function CompanySettings() {
       if (companyProfileRef.current?.save) {
         await companyProfileRef.current.save();
       }
+      await ApiService.updateCompanyProfile({
+        attendance_aliases: normalizeAttendanceAliases(companySettings.attendanceAliases),
+      });
 
       // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
       const selfFd = new FormData();
@@ -289,6 +332,20 @@ function CompanySettings() {
 
   const handleConsecutiveLeaveDeactivationDaysChange = (e) => {
     handleInputChange("consecutive_leave_deactivation_days", e.target.value);
+  };
+
+  const handleAttendanceAliasChange = (code, value) => {
+    const sanitized = value.replace(/[<>&]/g, "").slice(0, 20);
+    setCompanySettings((prev) => ({
+      ...prev,
+      attendanceAliases: {
+        ...prev.attendanceAliases,
+        [code]: sanitized,
+      },
+    }));
+    setIsDirty(true);
+    setError("");
+    setSuccess("");
   };
 
   const handleLocationAutoFill = (lat, lng) => {
@@ -456,6 +513,28 @@ function CompanySettings() {
             placeholder="Disabled"
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
+        </div>
+
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="flex items-center text-gray-700 font-medium mb-3">
+            <Tags className="w-4 h-4 text-gray-600 mr-2" /> Attendance Aliases
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ATTENDANCE_ALIAS_OPTIONS.map(({ code, label }) => (
+              <label key={code} className="flex items-center gap-3">
+                <span className="w-16 text-sm font-semibold text-gray-700">{code}</span>
+                <input
+                  type="text"
+                  value={companySettings.attendanceAliases[code] || ""}
+                  onChange={(e) => handleAttendanceAliasChange(code, e.target.value)}
+                  placeholder={label}
+                  disabled={isLoading}
+                  className="min-w-0 flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+              </label>
+            ))}
+          </div>
         </div>
 
         {/* Company Profile - App-specific settings */}
