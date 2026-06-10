@@ -12,6 +12,49 @@ const cellToText = (value) => {
   return String(text).replace(/<[^>]*>/g, '').trim();
 };
 
+// Footer row written by report exporters (Report / Date / Filters in cols A–C). Used as the
+// default stop-row for parseImportedExcelFile so the metadata footer isn't read as data.
+const isExportFooterCells = (cells = []) =>
+  (cells[0] || '').includes('Report:') &&
+  (cells[1] || '').includes('Date:') &&
+  (cells[2] || '').includes('Filters:');
+
+// ExcelJS sheet.rowCount can reflect the full worksheet dimension (100k+ empty rows).
+// Only visit rows that actually contain data, then stop at the report footer.
+const MAX_EXCEL_ROWS = 100000;
+
+const readExcelSheetGrid = (sheet) => {
+  const rowsMap = new Map();
+  let maxCol = 0;
+  let maxRowNum = 0;
+
+  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber > MAX_EXCEL_ROWS) return;
+    maxRowNum = Math.max(maxRowNum, rowNumber);
+    const cells = [];
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      maxCol = Math.max(maxCol, colNumber);
+      while (cells.length < colNumber - 1) cells.push(null);
+      cells[colNumber - 1] = cell.value;
+    });
+    rowsMap.set(rowNumber, cells);
+  });
+
+  if (maxRowNum === 0) return [];
+
+  const grid = [];
+  for (let r = 1; r <= maxRowNum; r++) {
+    const rowCells = rowsMap.get(r);
+    const cells = rowCells ? [...rowCells] : [];
+    while (cells.length < maxCol) cells.push(null);
+
+    if (r > 1 && isExportFooterCells(cells.map(cellToText))) break;
+
+    grid.push(cells);
+  }
+  return grid;
+};
+
 // Read an uploaded file into a 0-indexed 2D grid of RAW cell values. Excel cells keep their
 // native type (string / number / Date / rich-text object); CSV cells are raw strings.
 // Returns: grid (array of rows) | null (empty/no sheet) | undefined (unsupported type).
@@ -25,15 +68,7 @@ const importParsingEngine = async (file) => {
     await workbook.xlsx.load(buffer);
     const sheet = workbook.worksheets[0];
     if (!sheet) return null;
-    const colCount = sheet.columnCount || 0;
-    const grid = [];
-    for (let r = 1; r <= sheet.rowCount; r++) {
-      const row = sheet.getRow(r);
-      const cells = [];
-      for (let c = 1; c <= colCount; c++) cells.push(row.getCell(c).value);
-      grid.push(cells);
-    }
-    return grid;
+    return readExcelSheetGrid(sheet);
   }
 
   if (ext === '.csv') {
@@ -46,7 +81,6 @@ const importParsingEngine = async (file) => {
   return undefined;
 };
 
-
 const findHeaderRow = (grid, detect, limit = 15) => {
   const scanLimit = Math.min(grid.length, limit);
   for (let r = 0; r < scanLimit; r++) {
@@ -54,14 +88,6 @@ const findHeaderRow = (grid, detect, limit = 15) => {
   }
   return null;
 };
-
-// Footer row written by report exporters (Report / Date / Filters in cols A–C). Used as the
-// default stop-row for parseImportedExcelFile so the metadata footer isn't read as data.
-const isExportFooterCells = (cells = []) =>
-  (cells[0] || '').includes('Report:') &&
-  (cells[1] || '').includes('Date:') &&
-  (cells[2] || '').includes('Filters:');
-
 
 const parseImportedExcelFile = async (file, detect, { stopAt = isExportFooterCells, limit = 15 } = {}) => {
   const rawGrid = await importParsingEngine(file);

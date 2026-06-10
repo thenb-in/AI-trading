@@ -3,6 +3,24 @@
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
 
+const getApiErrorMessage = (error, fallback = 'Unknown error') => {
+  if (!error) return fallback;
+  if (typeof error === 'string') return error;
+  return error.message || error?.response?.data?.message || fallback;
+};
+
+const buildImportRowError = (rowNumber, payload, uniqueFields, codeField, key, errorMessage) => {
+  const entry = { row: rowNumber, error: errorMessage };
+  if (uniqueFields?.length) {
+    uniqueFields.forEach((field) => {
+      entry[field] = payload[field] ?? 'N/A';
+    });
+  } else {
+    entry[codeField] = key;
+  }
+  return entry;
+};
+
 /**
  * Common per-cell normalization shared by the Excel and CSV branches: date strings parse to
  * YYYY-MM-DD; boolean fields fold yes/no/1/0 to true/false. Returns the original value untouched
@@ -37,6 +55,7 @@ const createImportFunction = ({
   dateFields = [], // Fields that should be treated as dates
   booleanFields = [], // Fields that should be treated as booleans
   skipExisting = false, // If true: when a row matches an existing record, skip it (no update/create)
+  skipRowKeys = null, // Set<string> — composite keys to skip silently (no create/update)
   // Optional bespoke parser: async (file) => Array<payload> | { rows } | { error }.
   // When provided, the built-in header-mapped Excel/CSV parsing is bypassed and this
   // function owns turning the file into flat payload rows; everything downstream
@@ -309,6 +328,19 @@ const createImportFunction = ({
         }
         seenInFile.add(key);
 
+        if (skipRowKeys?.has?.(key)) {
+          errors.push(buildImportRowError(
+            rowNumber,
+            payload,
+            uniqueFields,
+            codeField,
+            key,
+            'Skipped: rejected record exists for this employee and date',
+          ));
+          skipped += 1;
+          continue;
+        }
+
         try {
           const existing = existingByKey.get(key);
 
@@ -332,13 +364,14 @@ const createImportFunction = ({
             created += 1;
           }
         } catch (error) {
-          const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
-          const keyField = uniqueFields && uniqueFields.length > 0 ? uniqueFields[0] : codeField;
-          errors.push({
-            row: rowNumber,
-            [keyField]: uniqueFields && uniqueFields.length > 0 ? payload[uniqueFields[0]] || 'N/A' : key,
-            error: errorMessage
-          });
+          errors.push(buildImportRowError(
+            rowNumber,
+            payload,
+            uniqueFields,
+            codeField,
+            key,
+            getApiErrorMessage(error),
+          ));
           skipped += 1;
         }
       }
