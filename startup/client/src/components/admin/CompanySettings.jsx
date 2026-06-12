@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import PropTypes from 'prop-types';
 import { CustomerDetailsFields } from "@startup/components/common/CustomerDetailsFields";
 import { EMPTY_CUSTOMER_FORM } from "@startup/components/common/customerFormConstants";
+import { INDIAN_STATES } from "@startup/constants/indianStates";
 import { customerApi, serviceOfferingApi } from "@app/services/api";
 
 const StatusBanner = ({ type, message }) => {
@@ -90,6 +91,9 @@ function CompanySettings() {
     longitude: "",
     consecutive_leave_deactivation_days: "",
     attendanceAliases: {},
+    default_state: "",
+    establishment_employee_count: "",
+    tds_regime: "new",
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -125,6 +129,9 @@ function CompanySettings() {
           setCompanySettings((prev) => ({
             ...prev,
             attendanceAliases: normalizeAttendanceAliases(profileResponse?.data?.attendance_aliases),
+            default_state: profileResponse?.data?.default_state ?? "",
+            establishment_employee_count: profileResponse?.data?.establishment_employee_count ?? "",
+            tds_regime: profileResponse?.data?.tds_regime || "new",
           }));
         } catch (profileErr) {
           console.error("Failed to load attendance aliases", profileErr);
@@ -259,6 +266,12 @@ function CompanySettings() {
       }
       await ApiService.updateCompanyProfile({
         attendance_aliases: normalizeAttendanceAliases(companySettings.attendanceAliases),
+        default_state: companySettings.default_state || null,
+        establishment_employee_count:
+          companySettings.establishment_employee_count === "" || companySettings.establishment_employee_count === null
+            ? null
+            : Number(companySettings.establishment_employee_count),
+        tds_regime: companySettings.tds_regime || "new",
       });
 
       // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
@@ -534,6 +547,66 @@ function CompanySettings() {
                 />
               </label>
             ))}
+          </div>
+        </div>
+
+        {/* Statutory compliance defaults */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <label className="flex items-center text-gray-700 font-medium mb-3">
+            <Building className="w-4 h-4 text-gray-600 mr-2" /> Statutory Compliance Defaults
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Default State</label>
+              <select
+                value={companySettings.default_state || ""}
+                onChange={(e) => handleInputChange("default_state", e.target.value)}
+                disabled={isLoading}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              >
+                <option value="">-- Select State --</option>
+                {INDIAN_STATES.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Used for Professional Tax &amp; LWF when an employee has no state set.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Establishment Employee Count</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={companySettings.establishment_employee_count}
+                onChange={(e) => handleInputChange("establishment_employee_count", e.target.value)}
+                disabled={isLoading}
+                placeholder="e.g. 25"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Drives PF (20+) &amp; ESIC (10+) applicability. Leave blank to always deduct.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Income Tax Regime (TDS)</label>
+              <select
+                value={companySettings.tds_regime || "new"}
+                onChange={(e) => handleInputChange("tds_regime", e.target.value)}
+                disabled={isLoading}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              >
+                <option value="new">New Regime (115BAC)</option>
+                <option value="old">Old Regime</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Default regime for the monthly TDS estimate.
+              </p>
+            </div>
           </div>
         </div>
 

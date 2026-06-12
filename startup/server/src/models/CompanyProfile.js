@@ -51,6 +51,28 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: {},
       comment: 'Company-specific display aliases for attendance status abbreviations'
+    },
+    // --- Statutory compliance defaults ---
+    // Default state used for state-specific statutory compliance (Professional Tax,
+    // Labour Welfare Fund) when an employee has no `state` of their own.
+    default_state: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'Default state for statutory compliance when employee.state is null (PT, LWF)'
+    },
+    // Establishment headcount, used to determine PF/ESIC applicability
+    // (PF: mandatory at 20+, ESIC: mandatory at 10+). Null = treat as applicable.
+    establishment_employee_count: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Total employees in the establishment; drives PF/ESIC applicability thresholds'
+    },
+    // Income-tax regime used for the TDS estimate. 'new' (115BAC) is the default regime.
+    tds_regime: {
+      type: DataTypes.STRING(10),
+      allowNull: false,
+      defaultValue: 'new',
+      comment: 'Income-tax regime for TDS estimation: \'new\' (115BAC default) or \'old\''
     }
   }, {
     tableName: 'company_profiles',
