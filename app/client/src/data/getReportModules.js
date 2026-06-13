@@ -6,11 +6,15 @@ import {
     IndianRupee,
     UserX,
     UserMinus,
+    UserPlus,
     Shield,
     Building2,
     CalendarDays,
     ScanFace,
     Fingerprint,
+    Landmark,
+    HeartHandshake,
+    ReceiptIndianRupee,
   } from 'lucide-react';
 import { format } from 'date-fns';
 import { getDefaultReportDateRange, getPrevMonthStartYesterdayRange } from '@utils/dateTimeUtils';
@@ -23,9 +27,13 @@ import { getDefaultReportDateRange, getPrevMonthStartYesterdayRange } from '@uti
   import { SalaryChangeReport } from '../components/report/reports/salary_change/SalaryChangeReport';
   import { DeactivationUserReport } from '../components/report/reports/deactivation_user/DeactivationUserReport';
   import { DeactivatedEmployeesReport } from '../components/report/reports/deactivated_employees/DeactivatedEmployeesReport';
+  import { NewEmployeesReport } from '../components/report/reports/new_employees/NewEmployeesReport';
   import { ShiftSummaryReport } from '../components/report/reports/shift_summary/ShiftSummaryReport';
 import { PFReport } from '../components/report/reports/pf_report/PFReport';
 import { ESICReport } from '../components/report/reports/esic_report/ESICReport';
+import { ProfessionalTaxReport } from '../components/report/reports/professional_tax_report/ProfessionalTaxReport';
+import { LwfReport } from '../components/report/reports/lwf_report/LwfReport';
+import { TdsReport } from '../components/report/reports/tds_report/TdsReport';
 import { LeaveBankReport } from '../components/report/reports/leave_bank/LeaveBankReport';
 import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeavesReport';
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
@@ -233,6 +241,18 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
     },
     {
+      id: 'new-employees-report',
+      title: 'New Employees Report',
+      slug: 'new-employees-report',
+      permissionName: 'read_new-employees-report', // Maps to server permission name
+      desc: 'Employees who joined within a date range, with their joining date, department and current status',
+      category: 'administration',
+      color: 'purple',
+      icon: UserPlus,
+      component: NewEmployeesReport,
+      defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
+    },
+    {
       id: 'shift-summary-report',
       title: 'Shift Summary Report',
       slug: 'shift-summary-report',
@@ -246,10 +266,10 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
     },
     {
       id: 'pf-report',
-      title: 'PF Report',
+      title: 'PF Report (EPFO ECR)',
       slug: 'pf-report',
       permissionName: 'read_pf-report', // Maps to server permission name
-      desc: 'Provident Fund (PF) contribution report with employee and employer contributions, UAN, and breakdown',
+      desc: 'EPFO ECR v2.0 member-line report (UAN, EPF/EPS/EDLI wages, contributions, NCP days). Download the portal-ready ECR (.txt) for direct upload on the EPFO Unified Portal.',
       category: 'india-compliance',
       color: 'blue',
       icon: Shield,
@@ -258,14 +278,50 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
     },
     {
       id: 'esic-report',
-      title: 'ESIC Report',
+      title: 'ESIC Report (Monthly Contribution)',
       slug: 'esic-report',
       permissionName: 'read_esic-report', // Maps to server permission name
-      desc: 'Employee State Insurance Corporation (ESIC) contribution report with employee and employer contributions',
+      desc: 'ESIC Monthly Contribution (MC) sheet in the exact portal upload format (IP Number, IP Name, No. of Days, Total Monthly Wages, Reason Code, Last Working Day), plus contribution breakdown. Excel export is portal-ready.',
       category: 'india-compliance',
       color: 'green',
       icon: Building2,
       component: ESICReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'professional-tax-report',
+      title: 'Professional Tax Report',
+      slug: 'professional-tax-report',
+      permissionName: 'read_professional-tax-report', // Maps to server permission name
+      desc: 'State-wise Professional Tax (PT) deduction sheet with per-state slabs and women-exemption handling. Excel export is the PT remittance sheet.',
+      category: 'india-compliance',
+      color: 'purple',
+      icon: Landmark,
+      component: ProfessionalTaxReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'lwf-report',
+      title: 'LWF Report',
+      slug: 'lwf-report',
+      permissionName: 'read_lwf-report', // Maps to server permission name
+      desc: 'State-wise Labour Welfare Fund (LWF) deduction sheet (employee + employer share) computed for the state contribution period. Excel export is the LWF remittance sheet.',
+      category: 'india-compliance',
+      color: 'teal',
+      icon: HeartHandshake,
+      component: LwfReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'tds-report',
+      title: 'TDS Report (Form 24Q / TRACES)',
+      slug: 'tds-report',
+      permissionName: 'read_tds-report', // Maps to server permission name
+      desc: 'Deductee-wise TDS-on-salary sheet (PAN, name, section 92B, amount paid, TDS deducted, dates) matching the NSDL RPU / TRACES Form 24Q import. Excel export is the RPU import sheet.',
+      category: 'india-compliance',
+      color: 'indigo',
+      icon: ReceiptIndianRupee,
+      component: TdsReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
