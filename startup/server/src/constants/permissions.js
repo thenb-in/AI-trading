@@ -189,6 +189,7 @@ const REPORT_PERMISSION_CONSTANTS = {
   SALARY_WITH_ATTENDANCE_REPORT: basePermissions.create_report_permission('salary-with-attendance-report'),
   DEACTIVATION_USER_REPORT: basePermissions.create_report_permission('deactivation-user-report'),
   DEACTIVATED_EMPLOYEES_REPORT: basePermissions.create_report_permission('deactivated-employees-report'),
+  NEW_EMPLOYEES_REPORT: basePermissions.create_report_permission('new-employees-report'),
   SHIFT_SUMMARY_REPORT: basePermissions.create_report_permission('shift-summary-report'),
   MONTHLY_ATTENDANCE_REPORT: basePermissions.create_report_permission('monthly-attendance-report'),
   MONTHLY_WORK_HOURS_REPORT: basePermissions.create_report_permission('monthly-work-hours-report'),
