@@ -38,6 +38,7 @@ import { PfForm5Report } from '../components/report/reports/pf_form5_report/PfFo
 import { PfForm10Report } from '../components/report/reports/pf_form10_report/PfForm10Report';
 import { PfForm6aReport } from '../components/report/reports/pf_form6a_report/PfForm6aReport';
 import { EsicForm5Report } from '../components/report/reports/esic_form5_report/EsicForm5Report';
+import { Form16Report } from '../components/report/reports/form16_report/Form16Report';
 import { LeaveBankReport } from '../components/report/reports/leave_bank/LeaveBankReport';
 import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeavesReport';
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
@@ -374,6 +375,18 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       color: 'green',
       icon: Building2,
       component: EsicForm5Report,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'form16-report',
+      title: 'Form 16 (Part B)',
+      slug: 'form16-report',
+      permissionName: 'read_form16-report',
+      desc: 'TDS-on-salary certificate (Form 16 Part B): annual salary, standard deduction, taxable income, tax, 87A rebate, cess, TDS. Computed month-by-month; "Download Form 16 (PDF)" renders one certificate page per employee. Run Apr–Mar for the full year.',
+      category: 'india-compliance',
+      color: 'indigo',
+      icon: ReceiptIndianRupee,
+      component: Form16Report,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
