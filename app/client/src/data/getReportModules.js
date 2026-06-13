@@ -39,6 +39,8 @@ import { PfForm10Report } from '../components/report/reports/pf_form10_report/Pf
 import { PfForm6aReport } from '../components/report/reports/pf_form6a_report/PfForm6aReport';
 import { EsicForm5Report } from '../components/report/reports/esic_form5_report/EsicForm5Report';
 import { Form16Report } from '../components/report/reports/form16_report/Form16Report';
+import { PtReturnReport } from '../components/report/reports/pt_return_report/PtReturnReport';
+import { LwfReturnReport } from '../components/report/reports/lwf_return_report/LwfReturnReport';
 import { LeaveBankReport } from '../components/report/reports/leave_bank/LeaveBankReport';
 import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeavesReport';
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
@@ -387,6 +389,30 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       color: 'indigo',
       icon: ReceiptIndianRupee,
       component: Form16Report,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'pt-return-report',
+      title: 'Professional Tax Return',
+      slug: 'pt-return-report',
+      permissionName: 'read_pt-return-report',
+      desc: 'State-wise consolidated Professional Tax return summary (employees count and total PT), computed month-by-month. The employer filing working behind the per-employee PT register.',
+      category: 'india-compliance',
+      color: 'purple',
+      icon: Landmark,
+      component: PtReturnReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'lwf-return-report',
+      title: 'LWF Return',
+      slug: 'lwf-return-report',
+      permissionName: 'read_lwf-return-report',
+      desc: 'State-wise consolidated Labour Welfare Fund return summary (employees count, employee + employer share, total) for the contribution period.',
+      category: 'india-compliance',
+      color: 'teal',
+      icon: HeartHandshake,
+      component: LwfReturnReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
