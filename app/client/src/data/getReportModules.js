@@ -36,6 +36,8 @@ import { LwfReport } from '../components/report/reports/lwf_report/LwfReport';
 import { TdsReport } from '../components/report/reports/tds_report/TdsReport';
 import { PfForm5Report } from '../components/report/reports/pf_form5_report/PfForm5Report';
 import { PfForm10Report } from '../components/report/reports/pf_form10_report/PfForm10Report';
+import { PfForm6aReport } from '../components/report/reports/pf_form6a_report/PfForm6aReport';
+import { EsicForm5Report } from '../components/report/reports/esic_form5_report/EsicForm5Report';
 import { LeaveBankReport } from '../components/report/reports/leave_bank/LeaveBankReport';
 import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeavesReport';
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
@@ -349,6 +351,30 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       icon: UserMinus,
       component: PfForm10Report,
       defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
+    },
+    {
+      id: 'pf-form6a-report',
+      title: 'PF Form 6A (Annual)',
+      slug: 'pf-form6a-report',
+      permissionName: 'read_pf-form6a-report',
+      desc: 'EPFO Form 6A — annual consolidated statement of contributions per member (EPF wages, EE 12%, employer EPF 3.67%, EPS 8.33%, NCP days). Computed month-by-month; select Apr–Mar for the full financial year.',
+      category: 'india-compliance',
+      color: 'blue',
+      icon: Shield,
+      component: PfForm6aReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'esic-form5-report',
+      title: 'ESIC Form 5 (Return of Contributions)',
+      slug: 'esic-form5-report',
+      permissionName: 'read_esic-form5-report',
+      desc: 'ESIC Return of Contributions — consolidated per-IP statement for the contribution period (total days, wages, employee + employer contributions). Computed month-by-month; select a half-year (Apr–Sep / Oct–Mar).',
+      category: 'india-compliance',
+      color: 'green',
+      icon: Building2,
+      component: EsicForm5Report,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
       id: 'leave-bank-report',

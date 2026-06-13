@@ -201,6 +201,8 @@ const REPORT_PERMISSION_CONSTANTS = {
   TDS_REPORT: basePermissions.create_report_permission('tds-report'),
   PF_FORM5_REPORT: basePermissions.create_report_permission('pf-form5-report'),
   PF_FORM10_REPORT: basePermissions.create_report_permission('pf-form10-report'),
+  PF_FORM6A_REPORT: basePermissions.create_report_permission('pf-form6a-report'),
+  ESIC_FORM5_REPORT: basePermissions.create_report_permission('esic-form5-report'),
   ALL_LEAVES_REPORT: basePermissions.create_report_permission('all-leaves-report'),
   LEAVE_BANK_REPORT: basePermissions.create_report_permission('leave-bank-report'),
   UNREGISTERED_FACES_REPORT: basePermissions.create_report_permission('unregistered-faces-report'),
