@@ -34,6 +34,8 @@ import { ESICReport } from '../components/report/reports/esic_report/ESICReport'
 import { ProfessionalTaxReport } from '../components/report/reports/professional_tax_report/ProfessionalTaxReport';
 import { LwfReport } from '../components/report/reports/lwf_report/LwfReport';
 import { TdsReport } from '../components/report/reports/tds_report/TdsReport';
+import { PfForm5Report } from '../components/report/reports/pf_form5_report/PfForm5Report';
+import { PfForm10Report } from '../components/report/reports/pf_form10_report/PfForm10Report';
 import { LeaveBankReport } from '../components/report/reports/leave_bank/LeaveBankReport';
 import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeavesReport';
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
@@ -323,6 +325,30 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       icon: ReceiptIndianRupee,
       component: TdsReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'pf-form5-report',
+      title: 'PF Form 5 (Joiners)',
+      slug: 'pf-form5-report',
+      permissionName: 'read_pf-form5-report',
+      desc: 'EPFO Form 5 — members who became EPF/EPS eligible (joined) during the period: UAN, PF account, name, father/husband, DOB, sex, date of joining, Aadhaar.',
+      category: 'india-compliance',
+      color: 'blue',
+      icon: UserPlus,
+      component: PfForm5Report,
+      defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
+    },
+    {
+      id: 'pf-form10-report',
+      title: 'PF Form 10 (Leavers)',
+      slug: 'pf-form10-report',
+      permissionName: 'read_pf-form10-report',
+      desc: 'EPFO Form 10 — members who left service during the period (from employee deactivation audit trail): UAN, PF account, name, father/husband, date of leaving, reason.',
+      category: 'india-compliance',
+      color: 'blue',
+      icon: UserMinus,
+      component: PfForm10Report,
+      defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
     },
     {
       id: 'leave-bank-report',
