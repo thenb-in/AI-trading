@@ -5,6 +5,7 @@ import {
     BarChart3,
     IndianRupee,
     UserX,
+    UserMinus,
     Shield,
     Building2,
     CalendarDays,
@@ -21,6 +22,7 @@ import { getDefaultReportDateRange, getPrevMonthStartYesterdayRange } from '@uti
   import { SalaryRegisterReport } from '../components/report/reports/salary_register/SalaryRegisterReport';
   import { SalaryChangeReport } from '../components/report/reports/salary_change/SalaryChangeReport';
   import { DeactivationUserReport } from '../components/report/reports/deactivation_user/DeactivationUserReport';
+  import { DeactivatedEmployeesReport } from '../components/report/reports/deactivated_employees/DeactivatedEmployeesReport';
   import { ShiftSummaryReport } from '../components/report/reports/shift_summary/ShiftSummaryReport';
 import { PFReport } from '../components/report/reports/pf_report/PFReport';
 import { ESICReport } from '../components/report/reports/esic_report/ESICReport';
@@ -216,6 +218,18 @@ const DETAILED_HORIZONTAL_DEFAULT_FILTERS = {
       color: 'purple',
       icon: UserX,
       component: DeactivationUserReport,
+      defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
+    },
+    {
+      id: 'deactivated-employees-report',
+      title: 'Deactivated Employees Report',
+      slug: 'deactivated-employees-report',
+      permissionName: 'read_deactivated-employees-report', // Maps to server permission name
+      desc: 'Employees deactivated within a date range, with who deactivated them and when, sourced from the audit trail',
+      category: 'administration',
+      color: 'purple',
+      icon: UserMinus,
+      component: DeactivatedEmployeesReport,
       defaultFilters: PREV_MONTH_START_YESTERDAY_RANGE,
     },
     {

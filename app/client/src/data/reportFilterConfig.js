@@ -4,6 +4,10 @@ const standardReportFilters = [...dateFiltersYesterday, ...commonFilters];
 const userBasedReportFilters = [...dateFiltersYesterday, ...userBasedFilters];
 
 const DefaultReportFilters = standardReportFilters;
+const SalaryChangeReportFilters = [
+  ...standardReportFilters,
+  { name: 'is_debug_mode', label: 'Debug Mode', type: 'checkbox', default: true, is_standard: false, order: 1, debug: true },
+];
 
 // Reports scoped by system user (field sales, call buddy) — drop Employee /
 // Department / Cost Center, surface a single User picker instead.
@@ -61,6 +65,12 @@ const deactivationUserReportFilters = [
   { name: 'check_face_errors', label: 'Check Face Errors', type: 'checkbox', default: false, is_standard: false, order: 2 },
 ];
 
+// Deactivated Employees Report: date range + standard employee/department/cost
+// center filters. The date range is interpreted against the deactivation event
+// time (audit log). The "Is Active" toggle is dropped because the report is, by
+// definition, about employees that were deactivated.
+const DeactivatedEmployeesReportFilters = standardReportFilters.filter((f) => f.name !== 'is_active');
+
 const RawPunchFilters = [
   ...standardReportFilters,
   { name: 'is_manual', label: 'Manual Punches', type: 'checkbox', default: true, is_standard: false, order: 1 },
@@ -99,10 +109,12 @@ const SalesActivityReportFilters = [
 
 export {
   DefaultReportFilters,
+  SalaryChangeReportFilters,
   CheckInOutReportFilters,
   DetailedAttendanceReportFilters,
   SalaryRegisterReportFilters,
   deactivationUserReportFilters,
+  DeactivatedEmployeesReportFilters,
   RawPunchFilters,
   CanteenTokenFilters,
   TransactionReportFilters,
