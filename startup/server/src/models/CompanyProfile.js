@@ -73,6 +73,33 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'new',
       comment: 'Income-tax regime for TDS estimation: \'new\' (115BAC default) or \'old\''
+    },
+    // --- Employer statutory identifiers (printed on generated statutory forms,
+    // e.g. Form 16 Part B). All optional; left blank on forms when not set. ---
+    tan_no: {
+      type: DataTypes.STRING(15),
+      allowNull: true,
+      comment: 'Employer TAN (Tax Deduction & Collection Account Number) for TDS / Form 16'
+    },
+    company_pan_no: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+      comment: 'Company PAN (deductor PAN) for TDS / Form 16'
+    },
+    esic_employer_code: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'ESIC employer registration code for the establishment'
+    },
+    lin_no: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+      comment: 'Labour Identification Number (LIN) for the establishment (PT/LWF/Shram Suvidha)'
+    },
+    employer_address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Employer (deductor) address printed on generated statutory forms'
     }
   }, {
     tableName: 'company_profiles',

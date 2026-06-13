@@ -94,6 +94,11 @@ function CompanySettings() {
     default_state: "",
     establishment_employee_count: "",
     tds_regime: "new",
+    tan_no: "",
+    company_pan_no: "",
+    esic_employer_code: "",
+    lin_no: "",
+    employer_address: "",
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -132,6 +137,11 @@ function CompanySettings() {
             default_state: profileResponse?.data?.default_state ?? "",
             establishment_employee_count: profileResponse?.data?.establishment_employee_count ?? "",
             tds_regime: profileResponse?.data?.tds_regime || "new",
+            tan_no: profileResponse?.data?.tan_no ?? "",
+            company_pan_no: profileResponse?.data?.company_pan_no ?? "",
+            esic_employer_code: profileResponse?.data?.esic_employer_code ?? "",
+            lin_no: profileResponse?.data?.lin_no ?? "",
+            employer_address: profileResponse?.data?.employer_address ?? "",
           }));
         } catch (profileErr) {
           console.error("Failed to load attendance aliases", profileErr);
@@ -272,6 +282,11 @@ function CompanySettings() {
             ? null
             : Number(companySettings.establishment_employee_count),
         tds_regime: companySettings.tds_regime || "new",
+        tan_no: companySettings.tan_no?.trim() || null,
+        company_pan_no: companySettings.company_pan_no?.trim() || null,
+        esic_employer_code: companySettings.esic_employer_code?.trim() || null,
+        lin_no: companySettings.lin_no?.trim() || null,
+        employer_address: companySettings.employer_address?.trim() || null,
       });
 
       // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
@@ -606,6 +621,75 @@ function CompanySettings() {
               <p className="mt-1 text-xs text-gray-500">
                 Default regime for the monthly TDS estimate.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">TAN</label>
+              <input
+                type="text"
+                value={companySettings.tan_no || ""}
+                onChange={(e) => handleInputChange("tan_no", e.target.value.toUpperCase())}
+                disabled={isLoading}
+                placeholder="e.g. MUMA12345B"
+                maxLength={15}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">Employer TAN — printed on Form 16.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company PAN</label>
+              <input
+                type="text"
+                value={companySettings.company_pan_no || ""}
+                onChange={(e) => handleInputChange("company_pan_no", e.target.value.toUpperCase())}
+                disabled={isLoading}
+                placeholder="e.g. AAACX1234C"
+                maxLength={10}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">Deductor PAN — printed on Form 16.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ESIC Employer Code</label>
+              <input
+                type="text"
+                value={companySettings.esic_employer_code || ""}
+                onChange={(e) => handleInputChange("esic_employer_code", e.target.value)}
+                disabled={isLoading}
+                placeholder="e.g. 31000000000000000"
+                maxLength={20}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">ESIC establishment registration code.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">LIN</label>
+              <input
+                type="text"
+                value={companySettings.lin_no || ""}
+                onChange={(e) => handleInputChange("lin_no", e.target.value)}
+                disabled={isLoading}
+                placeholder="Labour Identification Number"
+                maxLength={20}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">Labour Identification Number (PT/LWF/Shram Suvidha).</p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Employer Address</label>
+              <textarea
+                value={companySettings.employer_address || ""}
+                onChange={(e) => handleInputChange("employer_address", e.target.value)}
+                disabled={isLoading}
+                rows={2}
+                placeholder="Registered address printed on statutory forms"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">Printed as the deductor address on Form 16.</p>
             </div>
           </div>
         </div>
