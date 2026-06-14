@@ -161,7 +161,7 @@ async function createDefaultSubscription(company, permissions, transaction) {
     where: { name: DEFAULT_SUBSCRIPTION_NAME, companyId: null },
     defaults: {
       name: DEFAULT_SUBSCRIPTION_NAME,
-      description: 'Grants every permission. Seeded for first-run setup.',
+      description: 'Grants every permission.',
       companyId: null
     },
     transaction
