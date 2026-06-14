@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run prerender",
-     "prerender": "node ./scripts/prerender.js --dist ./dist",
+    "prerender": "node ../../startup/client/scripts/prerender.js --dist ./dist",
     "build_prod": "(rm -rf dist || echo 'Failed to remove dist') && npm run build",
     "preview": "vite preview",
     "kill": "kill -9 $(lsof -t -i:5173) 2>/dev/null || true"
