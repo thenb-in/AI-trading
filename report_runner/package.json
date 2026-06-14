@@ -1,0 +1,23 @@
+{
+  "name": "report-runner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone socket-RPC server that runs reports on behalf of the app server. Shares the same DB and report code as app/server.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "_moduleAliases": {
+    "@startup": "../startup/server",
+    "@appServer": "../app/server"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "module-alias": "^2.3.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

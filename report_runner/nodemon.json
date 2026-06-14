@@ -1,0 +1,17 @@
+{
+  "watch": [
+    ".",
+    "../app/server/src/reports",
+    "../app/server/src/views/reports",
+    "../app/server/src/controllers/reports",
+    "../startup/server/src/socket"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules",
+    "../app/server/node_modules",
+    "../startup/server/node_modules",
+    "*.log"
+  ],
+  "delay": 500
+}

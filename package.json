@@ -21,6 +21,8 @@
     "build": "cd app && npm run build",
     "start": "cd app && npm run start",
     "kill": "cd app && npm run kill",
+    "report-runner": "cd report_runner && npm start",
+    "report-runner:dev": "cd report_runner && npm run dev",
     "test": "cd tests && npm run test",
     "commit": "git-cz",
     "clean": "node scripts/clean.js all",

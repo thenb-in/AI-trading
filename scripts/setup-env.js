@@ -11,6 +11,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const TARGETS = [
   { dir: 'app/client', label: 'app/client' },
   { dir: 'app/server', label: 'app/server' },
+  { dir: 'report_runner', label: 'report_runner' },
   { dir: 'tests/integration-tests', label: 'tests/integration-tests' },
   { dir: 'tests/e2e-tests', label: 'tests/e2e-tests' }
 ];

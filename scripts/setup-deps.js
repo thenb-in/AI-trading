@@ -17,7 +17,7 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 // depends on. Standalone services (biometric_gateway, canteen_print_agent,
 // report-scheduler, ...) are intentionally excluded — they are installed and
 // run independently, not as part of the app.
-const PACKAGES = ['nucleus'];
+const PACKAGES = ['nucleus', 'report_runner'];
 
 for (const pkg of PACKAGES) {
   const dir = path.join(REPO_ROOT, pkg);
