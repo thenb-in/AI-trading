@@ -41,12 +41,16 @@ const tokenFormat = require('./tokenFormat');
 let currentState = null;
 
 function licenseEnforcementEnabled() {
-  // Allow opting out in dev / CI where wallet isn't available. In
-  // production this MUST be true; deploy scripts should fail if it
-  // isn't. We don't enforce that here — env handling is the operator's
-  // responsibility — but log loudly so misconfigurations are obvious.
-  const v = env.LICENSE_ENFORCEMENT.toLowerCase();
-  return v === 'true' || v === '1' || v === 'on' || v === 'yes';
+  // Fail-secure: enforcement is ON unless EXPLICITLY disabled. A missing,
+  // empty, or unrecognized value (including typos like "ture") keeps the
+  // gate enabled, so a misconfiguration can never silently unlock a
+  // production install. Only an explicit off-switch turns it off — set
+  // LICENSE_ENFORCEMENT=false in dev/CI to bypass.
+  const raw = (env.LICENSE_ENFORCEMENT == null ? '' : String(env.LICENSE_ENFORCEMENT))
+    .trim()
+    .toLowerCase();
+  const DISABLED = new Set(['false', '0', 'off', 'no']);
+  return !DISABLED.has(raw);
 }
 
 function getAppName() {
