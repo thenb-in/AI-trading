@@ -13,7 +13,13 @@ export default defineConfig({
     // Test file patterns
     include: ['tests/**/*.spec.ts', 'tests/**/*.test.ts'],
     exclude: ['node_modules', 'dist', 'logs', 'coverage'],
-    
+
+    // The integration suite ships helpers/actions but its first specs are
+    // still being written. Exit 0 when no spec matches so `npm run test`
+    // (integration → e2e) doesn't abort before e2e — mirrors CI, which
+    // guards this phase with hashFiles().
+    passWithNoTests: true,
+
     // Setup files
     setupFiles: ['./vitest.setup.ts'],
     
