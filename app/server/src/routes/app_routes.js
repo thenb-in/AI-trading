@@ -64,6 +64,7 @@ const personnelAreaRoutes = require('../routes/personnelAreaRoutes');
 // Internal service-to-service API (shared-secret, not user-JWT). The standalone
 // biometric gateways POST here to resolve/create HR Employee shells.
 const internalRoutes = require('../routes/internalRoutes');
+const wagemasterIngestRoutes = require('../routes/wagemaster/ingestRoutes');
 
 // export a function that takes in app and returns the app with the routes
 const appRoutes = (app, prefix) => {
@@ -177,6 +178,9 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/adms-queue`, admsQueueRoutes);
   app.use(`${prefix}/personnel-areas`, personnelAreaRoutes);
   app.use(`${prefix}/internal`, internalRoutes);
+
+
+  wagemasterIngestRoutes(app, prefix);
 
   logger.info(`App routes loaded at ${Date.now()}`);
 };

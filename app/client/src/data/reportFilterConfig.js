@@ -71,6 +71,12 @@ const deactivationUserReportFilters = [
 // definition, about employees that were deactivated.
 const DeactivatedEmployeesReportFilters = standardReportFilters.filter((f) => f.name !== 'is_active');
 
+// New Employees Report: date range + standard employee/department/cost center
+// filters. The date range is interpreted against the joining date (hire_date).
+// The "Is Active" toggle is dropped so newly-joined employees are listed
+// regardless of their current status (a Current Status column shows it instead).
+const NewEmployeesReportFilters = standardReportFilters.filter((f) => f.name !== 'is_active');
+
 const RawPunchFilters = [
   ...standardReportFilters,
   { name: 'is_manual', label: 'Manual Punches', type: 'checkbox', default: true, is_standard: false, order: 1 },
@@ -115,6 +121,7 @@ export {
   SalaryRegisterReportFilters,
   deactivationUserReportFilters,
   DeactivatedEmployeesReportFilters,
+  NewEmployeesReportFilters,
   RawPunchFilters,
   CanteenTokenFilters,
   TransactionReportFilters,

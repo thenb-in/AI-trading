@@ -97,6 +97,7 @@ const employeeApi = {
     const body = { emp_code };
     if (options.software_only) body.software_only = true;
     if (options.resignation_date) body.resignation_date = options.resignation_date;
+    if (options.compute_fnf) body.compute_fnf = true;
     return api.post('/employees/deactivate', body);
   },
   stopEmployeePunches: (empCode, options = {}) => {
@@ -781,6 +782,7 @@ const reportActionApi = {
   toggleAttendance: (emp_code, punch_time) => api.post('/report-actions/toggle-attendance', { emp_code, punch_time }),
   updateDirection: (emp_code, punch_time, direction) =>
     api.post('/report-actions/update-direction', { emp_code, punch_time, direction }),
+  updatePunchMetadata: (data) => api.post('/report-actions/update-punch-metadata', data),
   lockSalaryRegister: (data) => api.post('/report-actions/salary-register/lock', data),
   checkLockedStatus: (data) => api.post('/report-actions/salary-register/check-locked', data),
 };
