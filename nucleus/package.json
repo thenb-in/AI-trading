@@ -1,0 +1,15 @@
+{
+  "name": "nucleus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Foundational, framework-agnostic infrastructure shared across startup, app/server and the biometric gateway: logger, env/config, generic constants and utils, sequelize bootstrap. Has NO dependency on startup or app — those depend on it (via the @nucleus alias).",
+  "main": "logger.js",
+  "type": "commonjs",
+  "scripts": {
+    "build": "node ../startup/server/scripts/build-bytecode.js --src . --out-dir ./dist"
+  },
+  "dependencies": {
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}

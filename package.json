@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "i": "npm install && cd lints && npm install && cd ../app && npm run i && cd ../tests && npm run i && cd .. && npm run setup",
-    "setup": "husky && npm run setup-hooks && npm run setup-env",
+    "setup": "husky && node scripts/setup-deps.js && npm run setup-hooks && npm run setup-env",
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "node scripts/setup-env.js",
     "create-new-app": "node scripts/create-app.js",
