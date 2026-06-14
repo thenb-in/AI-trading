@@ -46,9 +46,10 @@ function licenseEnforcementEnabled() {
   // gate enabled, so a misconfiguration can never silently unlock a
   // production install. Only an explicit off-switch turns it off — set
   // LICENSE_ENFORCEMENT=false in dev/CI to bypass.
-  const raw = (env.LICENSE_ENFORCEMENT == null ? '' : String(env.LICENSE_ENFORCEMENT))
-    .trim()
-    .toLowerCase();
+  // env.js centralises the default (process.env.LICENSE_ENFORCEMENT || 'true'),
+  // so a missing/blank flag already arrives here as 'true'. We must NOT apply a
+  // default again here (custom/no-env-outside-env-js).
+  const raw = String(env.LICENSE_ENFORCEMENT).trim().toLowerCase();
   const DISABLED = new Set(['false', '0', 'off', 'no']);
   return !DISABLED.has(raw);
 }
