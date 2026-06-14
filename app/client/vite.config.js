@@ -55,17 +55,6 @@ export default ({ mode }) => {
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
   const localServerUrl = 'http://localhost:3000';
-  // Standalone biometric gateway servers (one process per interface, own port).
-  // Device protocol paths proxy to these; operator/admin /api + /uploads stay on
-  // the app. ZK TCP-pull has no inbound HTTP, so no proxy entry. Override via env
-  // if a gateway runs on a different host/port.
-  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:4002';
-  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:4003';
-  // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
-  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy
-  // here; every other /api/* call stays on the app. Override via env if it runs
-  // on a different host/port.
-  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:4005';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -105,41 +94,15 @@ export default ({ mode }) => {
     },
     server: {
       proxy: {
-        // Biometric DEVICE protocol paths → standalone gateway servers. Devices
-        // use the bare paths; the operator API /api/v1/iclock-terminal stays on
-        // the app via the '/api' rule below. ZK TCP-pull has no inbound HTTP.
-        '/iclock': {
-          target: admsGatewayUrl, // adms_server gateway (ZK iClock push/pull + device file)
-          changeOrigin: true,
-        },
-        '/hdata': {
-          target: biomaxGatewayUrl, // biomax_server gateway (/hdata + /hdata.aspx)
-          changeOrigin: true,
-        },
         '/uploads': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/uploads/, ''), // Optional, remove '/uploads' prefix if needed
         },
-        // wagemaster ingest sub-paths — MUST come before the generic '/api' rule
-        // below, since Vite matches proxy keys in declaration order (first match
-        // wins). Everything else under /api falls through to the app server.
-        '/api/v1/location/tracking/update': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/sendCallLog': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/syncPaymentReminder': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/report-app-version': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/report-unsynced-count': { target: wagemasterUrl, changeOrigin: true },
         '/api': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/api/, ''), // Optional, remove '/api' prefix if needed
-        },
-        // socket.io upgrades to websocket on /socket.io — ws:true is
-        // required or the upgrade handshake hits the dev server's HTML 404.
-        '/socket.io': {
-          target: localServerUrl,
-          ws: true,
-          changeOrigin: true,
         }
       },
     },
@@ -150,7 +113,7 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'SalaryMitra'}</title>`
+            `<title>${clientName || 'NB Next'}</title>`
           );
         },
       },

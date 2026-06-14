@@ -20,24 +20,18 @@ const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyRoutes = require('./src/routes/companyRoutes');
-const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
-const { piscinaPool } = require('./src/config/piscinaPool');
-const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
 
-const { server, startServer } = buildApp({
+const { startServer } = buildApp({
   // 5MB body limit — header/footer image uploads, base64 face photos.
   bodyParserLimit: '5mb',
 
-  // Device-facing paths (/iclock, /hdata) are served only by the standalone
-  // biometric gateway servers now; the edge (nginx/vite) routes device traffic
-  // straight to them, so the HR app no longer reverse-proxies device protocols.
+
 
   // App-owned routes that depend on app-specific things (biometric, hr/employee
   // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
   // namespace.
   extraRoutes: [
-    { prefix: '/api/v1/company', router: companyRoutes },
-    { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
+    { prefix: '/api/v1/company', router: companyRoutes }
   ],
 
   // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
@@ -48,32 +42,34 @@ const { server, startServer } = buildApp({
 
   // Static files — more specific paths first so they win over /uploads
   // (which is mounted by the framework). path is absolute to this server.
+
   additionalStaticDirs: [
-    { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
-    { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
+    // { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
+    // { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
   ],
 
   // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
   // client bundle from this Express server. Path defaults to ../client (the
   // deployed layout where app/client/ holds the built bundle); override via
   // CLIENT_STATIC_DIR for local testing (e.g. CLIENT_STATIC_DIR=../client/dist).
-  clientStaticDir: path.resolve(process.cwd(), env.CLIENT_STATIC_DIR),
+  // /iclock is app-owned ADMS — keep it strictly server-handled.
+  clientStaticDir: path.resolve(
+    process.cwd(),
+    env.CLIENT_STATIC_DIR
+  ),
+
 
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
-  // The ADMS auto-sync loop (employee push to online terminals) was here;
-  // it now runs in adms_server's process — see adms_server/index.js.
   onAfterListen: () => {
-    piscinaPool.initialize();
-    initAppServerRunnerClient();
-    initClientAppServerSocket(server);
+
   },
 
   // Drain app-level resources before the framework stops schedulers.
   onBeforeShutdown: async () => {
+
     try {
-      await piscinaPool.shutdown();
     } catch (err) {
       logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
     }
