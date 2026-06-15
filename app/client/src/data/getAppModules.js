@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Layers,
-  LayoutDashboard,
   Navigation,
   User,
   Shield,
@@ -29,18 +28,6 @@ const getAppModuleDefinitions = () => [
     navigatePath: "/admin/navigator",
     icon: Navigation,
     order: 1,
-  },
-  {
-    id: "dashboards",
-    title: "Dashboards",
-    description: "View dashboards and analytics summaries.",
-    category: "Analytics",
-    tags: ["Dashboard", "Analytics", "Charts"],
-    keywords: "dashboard dashboards analytics charts kpi module",
-    permissionName: "view_dashboard_module",
-    navigatePath: "/admin/dashboard",
-    icon: LayoutDashboard,
-    order: 4,
   },
   {
     id: "reportsListing",
