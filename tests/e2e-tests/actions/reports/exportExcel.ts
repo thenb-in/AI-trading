@@ -26,7 +26,7 @@ export async function exportReportToExcel(
     page.waitForEvent('download'),
     exportExcelButton.click(),
   ]);
-  logger.logStep('Clicked Export Excel for Daily Attendance Report and captured download', 'completed');
+  logger.logStep('Clicked Export Excel and captured download', 'completed');
 
   const downloadPath = await download.path();
   const downloadedFileName = download.suggestedFilename();

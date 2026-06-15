@@ -2,12 +2,12 @@ import { Locator, Page } from '@playwright/test';
 import { SignupTestLogger } from './logger';
 
 /**
- * Helper function to expand sidebar if collapsed, navigate to Masters, click Common Masters, and optionally search for employee
+ * Helper function to expand sidebar if collapsed, navigate to Masters, click Common Masters, and optionally search for a module
  */
-export async function navigateMastersAndSearchEmployee(
+export async function navigateMastersAndSearch(
   page: Page,
   logger: SignupTestLogger,
-  searchForEmployee: boolean = true
+  searchModule: boolean = true
 ): Promise<void> {
   try {
     // Wait for page to be ready
@@ -178,8 +178,8 @@ export async function navigateMastersAndSearchEmployee(
     // Wait for masters page and category to load
     await page.waitForTimeout(2000);
 
-    // ========== STEP 4: Search for "employee" in search module (optional) ==========
-    if (searchForEmployee) {
+    // ========== STEP 4: Search for "user" in search module (optional) ==========
+    if (searchModule) {
       try {
         // Search for the search input field
         const searchSelectors = [
@@ -195,12 +195,12 @@ export async function navigateMastersAndSearchEmployee(
             const searchInput = page.locator(selector).first();
             const isVisible = await searchInput.isVisible({ timeout: 3000 }).catch(() => false);
             if (isVisible) {
-              // Clear any existing text and type "employee"
+              // Clear any existing text and type "user"
               await searchInput.clear();
-              await searchInput.fill('employee');
+              await searchInput.fill('user');
               await page.waitForTimeout(500);
               searchInputFound = true;
-              logger.logStep('Search for "employee" in search module', 'completed');
+              logger.logStep('Search for "user" in search module', 'completed');
               break;
             }
           } catch {
@@ -213,7 +213,7 @@ export async function navigateMastersAndSearchEmployee(
         }
       } catch (error: any) {
         const errorDetails = `Error: ${error.message}`;
-        logger.logStep('Search for "employee" in search module', 'error', errorDetails);
+        logger.logStep('Search for "user" in search module', 'error', errorDetails);
         throw error;
       }
 

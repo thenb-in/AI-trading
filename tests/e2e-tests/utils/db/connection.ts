@@ -15,19 +15,6 @@ const pool = new pg.Pool({
 });
 
 console.log('Database connection pool created');
-export async function getEmployeeById(id: number) {
-  const result = await pool.query(
-    'SELECT * FROM nbnext_personnel_employee WHERE id = $1',
-    [id]
-  );
-  return result.rows[0];
-}
-
-export async function getAllEmployees() {
-  const result = await pool.query('SELECT * FROM nbnext_personnel_employee ORDER BY id');
-  return result.rows;
-}
-
 
 export async function closeConnection() {
   await pool.end();

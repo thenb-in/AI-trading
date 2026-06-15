@@ -27,11 +27,9 @@ export default defineConfig({
     testTimeout: 30000,
 
     // Run spec files SEQUENTIALLY. We hit a single backend server with
-    // shared global state (ADMS command queue, terminal rows, employee
-    // table). Parallel spec execution causes order-dependent flakes when
-    // one spec's auto-sync activity bloats another spec's queue past the
-    // drain helper's iteration budget. Sequential is ~30s slower for the
-    // full sweep but stable.
+    // shared global state. Parallel spec execution causes order-dependent
+    // flakes when one spec's activity interferes with another spec's state.
+    // Sequential is ~30s slower for the full sweep but stable.
     fileParallelism: false,
     
     // Reporters - default console + HTML report

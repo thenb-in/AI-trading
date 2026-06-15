@@ -94,7 +94,7 @@ export const config = {
     return name || undefined;
   },
 
-  /** If true, teardown steps (delete timetable, deactivate employee) run; otherwise those steps are skipped. */
+  /** If true, teardown steps that clean up created test data run; otherwise those steps are skipped. */
   get cleanupTestData(): boolean {
     const v = process.env.CLEANUP_TEST_DATA?.trim().toLowerCase();
     return v === 'true' || v === '1';

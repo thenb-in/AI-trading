@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { navigateMastersAndSearchEmployee } from '../../helpers/navigateMastersAndSearch';
+import { navigateMastersAndSearch } from '../../helpers/navigateMastersAndSearch';
 import { setupTest } from '../../helpers/setup';
 import { getAdminCredentials } from '../../helpers/testContext';
 import { loginWithCredentials } from '../../actions/auth/user';
@@ -16,8 +16,8 @@ test.describe('Master Operations - Navigate Masters', () => {
       const { username: adminUsername, password: adminPassword } = getAdminCredentials();
       await loginWithCredentials(page, logger, adminUsername, adminPassword);
 
-      // Navigate to Masters and click Common Masters (without searching for employee)
-      await navigateMastersAndSearchEmployee(page, logger, false);
+      // Navigate to Masters and click Common Masters (without searching for a module)
+      await navigateMastersAndSearch(page, logger, false);
     });
   });
 });
