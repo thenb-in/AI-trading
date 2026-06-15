@@ -12,12 +12,11 @@ const getAppModuleColorByNature = (module) => {
   const title = (module?.title || "").toLowerCase();
 
   if (category.includes("navigation") || title.includes("navigator")) return "indigo";
-  if (category.includes("attendance") || title.includes("biometric")) return "teal";
   if (category.includes("analytics") || title.includes("dashboard")) return "purple";
   if (category.includes("reports") || title.includes("report")) return "orange";
   if (category.includes("masters") || title.includes("master")) return "blue";
   if (category.includes("administration") || title.includes("permission") || title.includes("user")) return "red";
-  if (category.includes("wagemaster") || title.includes("activity")) return "warning";
+  if (title.includes("activity")) return "warning";
   if (category.includes("superadmin") || title.includes("subscription")) return "secondary";
   if (category.includes("help") || title.includes("guide")) return "green";
 

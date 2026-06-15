@@ -52,8 +52,6 @@ const STATIC_TITLES = {
   '/forgot-password': 'Forgot password',
   '/admin': 'Navigator',
   '/admin/navigator': 'Navigator',
-  '/admin/dashboards': 'Dashboards',
-  '/admin/dashboard': 'Dashboards',
   '/admin/reports': 'Reports',
   '/admin/report': 'Reports',
   '/admin/report/past-report': 'Past Reports',
@@ -69,14 +67,6 @@ const STATIC_TITLES = {
   '/admin/subscription': 'Subscription',
   '/admin/app-guide': 'App Guide',
   '/admin/help-support': 'Help & Support',
-  '/admin/hr-dashboard': 'HR Dashboard',
-  '/admin/wagemaster/dashboard': 'WageMaster Dashboard',
-  '/admin/wagemaster/activities': 'Activities',
-  '/admin/identify-officer': 'Identify Officer',
-  '/admin/quick-check-in': 'Quick Check-In',
-  '/admin/salarymitra/biometric': 'Biometric Check-In',
-  '/admin/wagemaster/log-history': 'Log History',
-  '/admin/wagemaster/feedback': 'Feedback',
 };
 
 function resolveTitle(rawPath) {
@@ -96,15 +86,12 @@ function resolveTitle(rawPath) {
     return MASTER_TITLE_BY_KEY[masterMatch[1]] || 'Masters';
   }
 
-  if (/^\/admin\/wagemaster\/dashboard\/[^/]+$/.test(path)) return 'WageMaster User Dashboard';
-  if (path.startsWith('/admin/dashboard/')) return 'Dashboards';
-  if (path.startsWith('/admin/wagemaster/')) return 'WageMaster';
   if (path.startsWith('/admin/')) return 'Admin';
 
   return null;
 }
 
-const PRIVATE_PATH_PREFIXES = ['/admin', '/salarymitra', '/wagemaster'];
+const PRIVATE_PATH_PREFIXES = ['/admin'];
 
 function RouteTitle() {
   const { pathname } = useLocation();

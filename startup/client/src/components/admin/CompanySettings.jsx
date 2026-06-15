@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import PropTypes from 'prop-types';
-import { CustomerDetailsFields } from "@startup/components/common/CustomerDetailsFields";
-import { EMPTY_CUSTOMER_FORM } from "@startup/components/common/customerFormConstants";
-import { INDIAN_STATES } from "@startup/constants/indianStates";
-import { customerApi, serviceOfferingApi } from "@app/services/api";
 
 const StatusBanner = ({ type, message }) => {
   const styles = type === 'error'
@@ -40,42 +36,11 @@ import {
   Smartphone,
   Monitor,
   Globe,
-  IdCard,
-  CalendarDays,
-  Tags,
 } from "lucide-react";
 import { AccessDenied } from "../AccessDenied";
 import { ToggleSwitch } from "./ToggleSwitch";
-import { CompanyLocationFields } from "./CompanyLocationFields";
 import { CompanyProfile } from "../CompanyProfile";
 import { toast } from "react-toastify";
-
-const ATTENDANCE_ALIAS_OPTIONS = [
-  { code: "P", label: "Present" },
-  { code: "A", label: "Absent" },
-  { code: "HD", label: "Half Day" },
-  { code: "P,HD", label: "Present + Half Day" },
-  { code: "P,P", label: "Double Present" },
-  { code: "WO", label: "Weekly Off" },
-  { code: "NJ", label: "Not Joined" },
-  { code: "LT", label: "Late" },
-  { code: "E", label: "Early" },
-  { code: "MI", label: "Missing In" },
-  { code: "MO", label: "Missing Out" },
-  { code: "MI/MO", label: "Missing In/Out" },
-];
-
-const normalizeAttendanceAliases = (aliases) => {
-  if (!aliases || typeof aliases !== "object" || Array.isArray(aliases)) {
-    return {};
-  }
-  return Object.entries(aliases).reduce((acc, [code, alias]) => {
-    if (typeof alias === "string" && alias.trim()) {
-      acc[code] = alias.trim();
-    }
-    return acc;
-  }, {});
-};
 
 function CompanySettings() {
 
@@ -86,31 +51,13 @@ function CompanySettings() {
     mobileApp: false,
     desktopWeb: true,
     mobileWeb: false,
-    emp_code_basis: "identity_card",
-    latitude: "",
-    longitude: "",
-    consecutive_leave_deactivation_days: "",
-    attendanceAliases: {},
-    default_state: "",
-    establishment_employee_count: "",
-    tds_regime: "new",
-    tan_no: "",
-    company_pan_no: "",
-    esic_employer_code: "",
-    lin_no: "",
-    employer_address: "",
   });
-  const [companyDetails, setCompanyDetails] = useState(EMPTY_CUSTOMER_FORM);
-  const [companyLogoFile, setCompanyLogoFile] = useState(null);
-  const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
-  const [serviceOfferings, setServiceOfferings] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const companyProfileRef = useRef(null);
-  const logoInputRef = useRef(null);
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -122,30 +69,7 @@ function CompanySettings() {
           mobileApp: response.data.mobileApp || false,
           desktopWeb: response.data.desktopWeb || true,
           mobileWeb: response.data.mobileWeb || false,
-          emp_code_basis: response.data.emp_code_basis || "identity_card",
-          latitude: response.data.latitude ?? "",
-          longitude: response.data.longitude ?? "",
-          consecutive_leave_deactivation_days: response.data.consecutive_leave_deactivation_days ?? "",
-          attendanceAliases: {},
         });
-
-        try {
-          const profileResponse = await ApiService.getCompanyProfile();
-          setCompanySettings((prev) => ({
-            ...prev,
-            attendanceAliases: normalizeAttendanceAliases(profileResponse?.data?.attendance_aliases),
-            default_state: profileResponse?.data?.default_state ?? "",
-            establishment_employee_count: profileResponse?.data?.establishment_employee_count ?? "",
-            tds_regime: profileResponse?.data?.tds_regime || "new",
-            tan_no: profileResponse?.data?.tan_no ?? "",
-            company_pan_no: profileResponse?.data?.company_pan_no ?? "",
-            esic_employer_code: profileResponse?.data?.esic_employer_code ?? "",
-            lin_no: profileResponse?.data?.lin_no ?? "",
-            employer_address: profileResponse?.data?.employer_address ?? "",
-          }));
-        } catch (profileErr) {
-          console.error("Failed to load attendance aliases", profileErr);
-        }
 
         setIsLoading(false);
       } catch (err) {
@@ -155,76 +79,6 @@ function CompanySettings() {
     };
     fetchSettings();
   }, []);
-
-  // Load self-customer details and service offerings for the company-details section
-  useEffect(() => {
-    serviceOfferingApi.getAllServiceOfferings()
-      .then((res) => {
-        if (res?.data?.success) {
-          setServiceOfferings(res.data.data.offerings || []);
-        }
-      })
-      .catch(() => { /* dropdown can stay empty */ });
-
-    customerApi.getSelf()
-      .then((res) => {
-        if (res?.data?.success && res.data.data) {
-          const d = res.data.data;
-          setCompanyDetails({
-            ...EMPTY_CUSTOMER_FORM,
-            customer_code: d.customer_code || "",
-            customer_gstin: d.customer_gstin || "",
-            service_offering_id: d.service_offering_id || "",
-            pan_no: d.pan_no || "",
-            customer_email: d.customer_email || "",
-            bank_account_holder_name: d.bank_account_holder_name || "",
-            bank_account_number: d.bank_account_number || "",
-            bank_name: d.bank_name || "",
-            bank_ifsc_code: d.bank_ifsc_code || "",
-            bank_branch_name: d.bank_branch_name || "",
-            entity_type: d.entity_type || "",
-            entity_name: d.entity_name || "",
-            phone: d.phone || "",
-            alternate_phone: d.alternate_phone || "",
-            address: d.address || "",
-            district: d.district || "",
-            proprietor_name: d.proprietor_name || "",
-            description: d.description || "",
-            service_charge: d.service_charge ?? ""
-          });
-          setCompanyLogoPreview(d.company_logo || null);
-        }
-      })
-      .catch(() => { /* no self customer yet — keep empty form */ });
-  }, []);
-
-  const handleCompanyDetailsChange = (e) => {
-    const { name, value } = e.target;
-    setCompanyDetails((prev) => ({ ...prev, [name]: value }));
-    setIsDirty(true);
-  };
-
-  const handleCompanyServiceOfferingChange = (selected) => {
-    const value = Array.isArray(selected) && selected.length > 0 ? selected[0] : "";
-    setCompanyDetails((prev) => ({ ...prev, service_offering_id: value }));
-    setIsDirty(true);
-  };
-
-  const handleCompanyLogoChange = (e) => {
-    const file = e.target.files?.[0] || null;
-    setCompanyLogoFile(file);
-    if (file) {
-      setCompanyLogoPreview(URL.createObjectURL(file));
-      setIsDirty(true);
-    }
-  };
-
-  const clearCompanyLogo = () => {
-    setCompanyLogoFile(null);
-    setCompanyLogoPreview(null);
-    if (logoInputRef.current) logoInputRef.current.value = "";
-    setIsDirty(true);
-  };
 
   const requiredPermission = "view_company_settings";
   const canViewCompanySettings = hasPermission(requiredPermission, useDataContext());
@@ -263,10 +117,6 @@ function CompanySettings() {
         mobileApp: companySettings.mobileApp,
         desktopWeb: companySettings.desktopWeb,
         mobileWeb: companySettings.mobileWeb,
-        emp_code_basis: companySettings.emp_code_basis,
-        latitude: companySettings.latitude,
-        longitude: companySettings.longitude,
-        consecutive_leave_deactivation_days: companySettings.consecutive_leave_deactivation_days,
       };
 
       await ApiService.updateCompanySettings(companyData);
@@ -274,34 +124,6 @@ function CompanySettings() {
       if (companyProfileRef.current?.save) {
         await companyProfileRef.current.save();
       }
-      await ApiService.updateCompanyProfile({
-        attendance_aliases: normalizeAttendanceAliases(companySettings.attendanceAliases),
-        default_state: companySettings.default_state || null,
-        establishment_employee_count:
-          companySettings.establishment_employee_count === "" || companySettings.establishment_employee_count === null
-            ? null
-            : Number(companySettings.establishment_employee_count),
-        tds_regime: companySettings.tds_regime || "new",
-        tan_no: companySettings.tan_no?.trim() || null,
-        company_pan_no: companySettings.company_pan_no?.trim() || null,
-        esic_employer_code: companySettings.esic_employer_code?.trim() || null,
-        lin_no: companySettings.lin_no?.trim() || null,
-        employer_address: companySettings.employer_address?.trim() || null,
-      });
-
-      // Persist the company-as-self customer record (entity_name pulled from companySettings.name)
-      const selfFd = new FormData();
-      const selfPayload = {
-        ...companyDetails,
-        entity_name: companySettings.name
-      };
-      Object.entries(selfPayload).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== "") {
-          selfFd.append(key, value);
-        }
-      });
-      if (companyLogoFile) selfFd.append("company_logo", companyLogoFile);
-      await customerApi.upsertSelf(selfFd);
 
       setSuccess("Settings updated successfully");
       setIsDirty(false);
@@ -344,43 +166,6 @@ function CompanySettings() {
 
   const handleMobileWebChange = (e) => {
     handleInputChange("mobileWeb", e.target.checked);
-  };
-
-  const handleEmpCodeBasisChange = (e) => {
-    handleInputChange("emp_code_basis", e.target.value);
-  };
-
-  const handleLatitudeChange = (e) => {
-    handleInputChange("latitude", e.target.value);
-  };
-
-  const handleLongitudeChange = (e) => {
-    handleInputChange("longitude", e.target.value);
-  };
-
-  const handleConsecutiveLeaveDeactivationDaysChange = (e) => {
-    handleInputChange("consecutive_leave_deactivation_days", e.target.value);
-  };
-
-  const handleAttendanceAliasChange = (code, value) => {
-    const sanitized = value.replace(/[<>&]/g, "").slice(0, 20);
-    setCompanySettings((prev) => ({
-      ...prev,
-      attendanceAliases: {
-        ...prev.attendanceAliases,
-        [code]: sanitized,
-      },
-    }));
-    setIsDirty(true);
-    setError("");
-    setSuccess("");
-  };
-
-  const handleLocationAutoFill = (lat, lng) => {
-    setCompanySettings((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-    setIsDirty(true);
-    setError("");
-    setSuccess("");
   };
 
   return (
@@ -474,250 +259,12 @@ function CompanySettings() {
           />
         </div>
 
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="flex items-center text-gray-700 font-medium mb-2">
-            <IdCard className="w-4 h-4 text-gray-600 mr-2" /> Employee Code Basis
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Controls how deactivation behaves on biometric devices. Identity card frees the device slot; serial number keeps the slot reserved but strips card/password and removes biometric templates.
-          </p>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="emp_code_basis"
-                value="identity_card"
-                checked={companySettings.emp_code_basis === "identity_card"}
-                onChange={handleEmpCodeBasisChange}
-                className="mt-1"
-              />
-              <span>
-                <span className="font-medium text-gray-700">Identity card</span>
-                <span className="block text-xs text-gray-500">
-                  emp_code is a person-bound ID; deactivation sends DATA DEL_USER and releases the device slot.
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="emp_code_basis"
-                value="serial_number"
-                checked={companySettings.emp_code_basis === "serial_number"}
-                onChange={handleEmpCodeBasisChange}
-                className="mt-1"
-              />
-              <span>
-                <span className="font-medium text-gray-700">Serial number</span>
-                <span className="block text-xs text-gray-500">
-                  emp_code is a sequential slot number; deactivation deletes templates and clears card/password but keeps the PIN slot reserved.
-                </span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <CompanyLocationFields
-          latitude={companySettings.latitude}
-          longitude={companySettings.longitude}
-          onLatitudeChange={handleLatitudeChange}
-          onLongitudeChange={handleLongitudeChange}
-          onAutoFill={handleLocationAutoFill}
-        />
-
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="flex items-center text-gray-700 font-medium mb-2">
-            <CalendarDays className="w-4 h-4 text-gray-600 mr-2" /> Leave Auto-Deactivation
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Runs nightly and deactivates active employees whose current leave streak is greater than this many consecutive days. Leave blank to disable.
-          </p>
-          <input
-            type="number"
-            min="8"
-            step="1"
-            value={companySettings.consecutive_leave_deactivation_days}
-            onChange={handleConsecutiveLeaveDeactivationDaysChange}
-            placeholder="Disabled"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-          />
-        </div>
-
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="flex items-center text-gray-700 font-medium mb-3">
-            <Tags className="w-4 h-4 text-gray-600 mr-2" /> Attendance Aliases
-          </label>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {ATTENDANCE_ALIAS_OPTIONS.map(({ code, label }) => (
-              <label key={code} className="flex items-center gap-3">
-                <span className="w-16 text-sm font-semibold text-gray-700">{code}</span>
-                <input
-                  type="text"
-                  value={companySettings.attendanceAliases[code] || ""}
-                  onChange={(e) => handleAttendanceAliasChange(code, e.target.value)}
-                  placeholder={label}
-                  disabled={isLoading}
-                  className="min-w-0 flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Statutory compliance defaults */}
-        <div className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <label className="flex items-center text-gray-700 font-medium mb-3">
-            <Building className="w-4 h-4 text-gray-600 mr-2" /> Statutory Compliance Defaults
-          </label>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Default State</label>
-              <select
-                value={companySettings.default_state || ""}
-                onChange={(e) => handleInputChange("default_state", e.target.value)}
-                disabled={isLoading}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              >
-                <option value="">-- Select State --</option>
-                {INDIAN_STATES.map((state) => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Used for Professional Tax &amp; LWF when an employee has no state set.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Establishment Employee Count</label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={companySettings.establishment_employee_count}
-                onChange={(e) => handleInputChange("establishment_employee_count", e.target.value)}
-                disabled={isLoading}
-                placeholder="e.g. 25"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Drives PF (20+) &amp; ESIC (10+) applicability. Leave blank to always deduct.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Income Tax Regime (TDS)</label>
-              <select
-                value={companySettings.tds_regime || "new"}
-                onChange={(e) => handleInputChange("tds_regime", e.target.value)}
-                disabled={isLoading}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              >
-                <option value="new">New Regime (115BAC)</option>
-                <option value="old">Old Regime</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Default regime for the monthly TDS estimate.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">TAN</label>
-              <input
-                type="text"
-                value={companySettings.tan_no || ""}
-                onChange={(e) => handleInputChange("tan_no", e.target.value.toUpperCase())}
-                disabled={isLoading}
-                placeholder="e.g. MUMA12345B"
-                maxLength={15}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">Employer TAN — printed on Form 16.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Company PAN</label>
-              <input
-                type="text"
-                value={companySettings.company_pan_no || ""}
-                onChange={(e) => handleInputChange("company_pan_no", e.target.value.toUpperCase())}
-                disabled={isLoading}
-                placeholder="e.g. AAACX1234C"
-                maxLength={10}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">Deductor PAN — printed on Form 16.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ESIC Employer Code</label>
-              <input
-                type="text"
-                value={companySettings.esic_employer_code || ""}
-                onChange={(e) => handleInputChange("esic_employer_code", e.target.value)}
-                disabled={isLoading}
-                placeholder="e.g. 31000000000000000"
-                maxLength={20}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">ESIC establishment registration code.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">LIN</label>
-              <input
-                type="text"
-                value={companySettings.lin_no || ""}
-                onChange={(e) => handleInputChange("lin_no", e.target.value)}
-                disabled={isLoading}
-                placeholder="Labour Identification Number"
-                maxLength={20}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">Labour Identification Number (PT/LWF/Shram Suvidha).</p>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Employer Address</label>
-              <textarea
-                value={companySettings.employer_address || ""}
-                onChange={(e) => handleInputChange("employer_address", e.target.value)}
-                disabled={isLoading}
-                rows={2}
-                placeholder="Registered address printed on statutory forms"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
-              />
-              <p className="mt-1 text-xs text-gray-500">Printed as the deductor address on Form 16.</p>
-            </div>
-          </div>
-        </div>
-
         {/* Company Profile - App-specific settings */}
         <CompanyProfile
           ref={companyProfileRef}
           isLoading={isLoading}
           onDirtyChange={handleProfileDirtyChange}
         />
-
-        {/* Company Details — stored as the self-customer row (is_self=true).
-            entity_name is taken from the Company Name field above on save. */}
-        <div className="mt-6">
-          <CustomerDetailsFields
-            formData={companyDetails}
-            onChange={handleCompanyDetailsChange}
-            labelPrefix="Company"
-            omitFields={['customer_code', 'entity_name']}
-            logoFile={companyLogoFile}
-            logoPreview={companyLogoPreview}
-            fileInputRef={logoInputRef}
-            onLogoChange={handleCompanyLogoChange}
-            onClearLogo={clearCompanyLogo}
-            serviceOfferings={serviceOfferings}
-            onServiceOfferingChange={handleCompanyServiceOfferingChange}
-          />
-        </div>
 
         <motion.button
           onClick={handleSaveAll}

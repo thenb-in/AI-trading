@@ -58,9 +58,9 @@ function mountFrameworkMiddleware(app, opts = {}) {
 
   app.set('trust proxy', ['loopback', '172.31.0.0/16']);  // trust first proxy (nginx) for correct client IP logging and secure cookies
 
-  // Hook for routes that must see the raw body (e.g. ADMS /iclock, where
-  // ZK devices POST tab-delimited ATTLOG as application/x-www-form-urlencoded
-  // and json/urlencoded parsers would clobber it into "[object Object]").
+  // Hook for routes that must see the raw body (e.g. webhook endpoints that
+  // POST a non-JSON payload the json/urlencoded parsers would clobber into
+  // "[object Object]").
   if (typeof mountBeforeBodyParser === 'function') {
     mountBeforeBodyParser(app);
   }
@@ -108,13 +108,13 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   // fronting the UI itself, no separate nginx/dev-server origin), serve the
   // built client bundle for everything that isn't a server route or static
   // mount. Anything under /api/* (incl. /api/v1, /api/healthz, /api/trackingImage),
-  // /iclock-style ADMS paths, /uploads*, and /static stays strictly server-handled
-  // and 404s on miss — only true SPA routes fall back to index.html.
+  // caller-supplied server-only paths, /uploads*, and /static stays strictly
+  // server-handled and 404s on miss — only true SPA routes fall back to index.html.
   if (!env.isSecureCookie && clientStaticDir) {
     const indexFile = path.join(clientStaticDir, 'index.html');
     if (fs.existsSync(indexFile)) {
-      // Server-owned prefixes: API + any caller-supplied server-only paths
-      // (e.g. /iclock). Static-mount prefixes: framework's /static + /uploads,
+      // Server-owned prefixes: API + any caller-supplied server-only paths.
+      // Static-mount prefixes: framework's /static + /uploads,
       // plus every urlPrefix the caller registered in additionalStaticDirs.
       // The SPA fallback skips any path under these — so they 404 on miss
       // instead of being shadowed by index.html.

@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
  * @param {boolean} [opts.enabled=true]    Skip the initial load until true (e.g. permission gate).
  * @param {number}  [opts.pageLimit=200]   Rows per page.
  * @param {string}  [opts.rowsKey='rows']  Key under `data` that holds the row array
- *                                          (pass the endpoint's own key, e.g. 'punches').
+ *                                          (pass the endpoint's own key, e.g. 'items').
  *
  * Returns the list state plus `setRows` (for live socket prepends),
  * `applyFilters` (BaseFilter's onFiltersApply) and `loadMore` (infinite scroll).

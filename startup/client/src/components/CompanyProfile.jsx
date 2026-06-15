@@ -1,26 +1,17 @@
 import { forwardRef, useState, useEffect, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
-import { Key, User, FileBadge } from 'lucide-react';
-import { ToggleSwitch } from './admin/ToggleSwitch';
+import { Key, User } from 'lucide-react';
 
 const CompanyProfile = forwardRef((props, ref) => {
   const { isLoading: parentLoading, onDirtyChange } = props;
   const [profileData, setProfileData] = useState({
     username: '',
-    password: '',
-    manualAttendanceCommentCompulsory: false,
-    enable_cof: null,
-    epf_no: '',
-    sac_code: ''
+    password: ''
   });
   const [originalData, setOriginalData] = useState({
     username: '',
-    password: '',
-    manualAttendanceCommentCompulsory: false,
-    enable_cof: null,
-    epf_no: '',
-    sac_code: ''
+    password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -34,11 +25,7 @@ const CompanyProfile = forwardRef((props, ref) => {
         const response = await ApiService.getCompanyProfile();
         const data = {
           username: response.data.username || '',
-          password: response.data.password || '',
-          manualAttendanceCommentCompulsory: response.data.manualAttendanceCommentCompulsory || false,
-          enable_cof: response.data.enable_cof ?? null,
-          epf_no: response.data.epf_no || '',
-          sac_code: response.data.sac_code || ''
+          password: response.data.password || ''
         };
         setProfileData(data);
         setOriginalData(data);
@@ -47,7 +34,7 @@ const CompanyProfile = forwardRef((props, ref) => {
         const errorMessage = err.error || err.message || 'Failed to load company profile';
         setError(errorMessage);
         // Set empty defaults if profile doesn't exist yet
-        const emptyData = { username: '', password: '', manualAttendanceCommentCompulsory: false, enable_cof: null, epf_no: '', sac_code: '' };
+        const emptyData = { username: '', password: '' };
         setProfileData(emptyData);
         setOriginalData(emptyData);
       } finally {
@@ -60,12 +47,8 @@ const CompanyProfile = forwardRef((props, ref) => {
   useEffect(() => {
     const hasChanges =
       profileData.username !== originalData.username ||
-      profileData.password !== originalData.password ||
-      profileData.manualAttendanceCommentCompulsory !== originalData.manualAttendanceCommentCompulsory ||
-      profileData.enable_cof !== originalData.enable_cof ||
-      profileData.epf_no !== originalData.epf_no ||
-      profileData.sac_code !== originalData.sac_code;
-    
+      profileData.password !== originalData.password;
+
     setIsDirty(hasChanges);
     if (onDirtyChange) {
       onDirtyChange(hasChanges);
@@ -79,11 +62,7 @@ const CompanyProfile = forwardRef((props, ref) => {
         setError('');
         await ApiService.updateCompanyProfile({
           username: profileData.username,
-          password: profileData.password,
-          manualAttendanceCommentCompulsory: profileData.manualAttendanceCommentCompulsory,
-          enable_cof: profileData.enable_cof,
-          epf_no: profileData.epf_no,
-          sac_code: profileData.sac_code
+          password: profileData.password
         });
         setOriginalData({ ...profileData });
         setIsDirty(false);
@@ -115,22 +94,6 @@ const CompanyProfile = forwardRef((props, ref) => {
 
   const handlePasswordChange = (e) => {
     handleInputChange('password', e.target.value);
-  };
-
-  const handleManualAttendanceCommentCompulsoryChange = (e) => {
-    handleInputChange('manualAttendanceCommentCompulsory', e.target.checked);
-  };
-
-  const handleEnableCofChange = (e) => {
-    handleInputChange('enable_cof', e.target.checked ? true : null);
-  };
-
-  const handleEpfNoChange = (e) => {
-    handleInputChange('epf_no', e.target.value);
-  };
-
-  const handleSacCodeChange = (e) => {
-    handleInputChange('sac_code', e.target.value);
   };
 
   return (
@@ -186,59 +149,7 @@ const CompanyProfile = forwardRef((props, ref) => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
           </div>
-
         </div>
-
-        <div className="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <ToggleSwitch
-            label={
-              <span className="flex items-center gap-2">
-                Manual attendance comment compulsory
-              </span>
-            }
-            checked={profileData.manualAttendanceCommentCompulsory}
-            onChange={handleManualAttendanceCommentCompulsoryChange}
-          />
-          <ToggleSwitch
-            label="Compensatory Off (COF)"
-            checked={profileData.enable_cof === true}
-            onChange={handleEnableCofChange}
-            description="Allow compensatory off credits when employees work on weekly offs or holidays"
-          />
-        </div>
-
-
-          <div>
-            <label className="flex items-center text-gray-700 font-medium mb-2 mt-2">
-              <FileBadge className="w-4 h-4 text-gray-600 mr-2" />
-              EPF Number
-            </label>
-            <input
-              type="text"
-              value={profileData.epf_no}
-              onChange={handleEpfNoChange}
-              placeholder="e.g. GNGGNXXXXXXXX"
-              maxLength={50}
-              disabled={isLoading || parentLoading}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center text-gray-700 font-medium mb-2 mt-2">
-              <FileBadge className="w-4 h-4 text-gray-600 mr-2" />
-              SAC Code
-            </label>
-            <input
-              type="text"
-              value={profileData.sac_code}
-              onChange={handleSacCodeChange}
-              placeholder="e.g. 998513"
-              maxLength={20}
-              disabled={isLoading || parentLoading}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
-          </div>
       </div>
     </>
   );

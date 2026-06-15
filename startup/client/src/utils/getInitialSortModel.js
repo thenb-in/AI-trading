@@ -6,8 +6,7 @@
  * or `{ field, sort }` entries. Fields missing from `columns` are dropped, so
  * callers can include optional keys without checking for presence.
  *
- * If `fields` is omitted, falls back to the first matching identifier from
- * `employee_name` → `emp_code` → `employee_code`.
+ * If `fields` is omitted, returns an empty sort model.
  *
  * @param {Array} columns - column definitions, each with a `field`
  * @param {Array<string | {field: string, sort?: 'asc' | 'desc'}>} [fields]
@@ -17,10 +16,7 @@ const getInitialSortModel = (columns, fields) => {
   if (!columns || columns.length === 0) return [];
   const fieldExists = (f) => columns.some((col) => col.field === f);
 
-  if (fields === undefined) {
-    const fallback = ["employee_name", "emp_code", "employee_code"].find(fieldExists);
-    return fallback ? [{ field: fallback, sort: "asc" }] : [];
-  }
+  if (fields === undefined) return [];
 
   return fields
     .map((f) => (typeof f === "string" ? { field: f, sort: "asc" } : f))

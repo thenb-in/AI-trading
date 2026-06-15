@@ -13,5 +13,4 @@ export {
   updateSearchParams,
   convertCellToText,
   filterRelevantData,
-  getEmployeeDetails,
 } from './ReportUtils';

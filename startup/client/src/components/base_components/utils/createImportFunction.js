@@ -60,7 +60,7 @@ const createImportFunction = ({
   // When provided, the built-in header-mapped Excel/CSV parsing is bypassed and this
   // function owns turning the file into flat payload rows; everything downstream
   // (fieldTransform, dedup, create/update, result reporting) is reused unchanged.
-  // Use this for non-tabular layouts such as the wide Monthly Attendance Report export.
+  // Use this for non-tabular layouts such as a wide multi-column matrix export.
   customParser = null,
 }) => {
   // Match a header label to its column definition by id / label / name / headerName.

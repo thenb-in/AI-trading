@@ -1,6 +1,5 @@
-// Canonical list of Indian States and Union Territories, shared by the employee
-// master form (work state) and company settings (default state). Drives
-// state-specific statutory compliance such as Professional Tax and LWF.
+// Canonical list of Indian States and Union Territories for address/location
+// fields and state-selection dropdowns.
 
 const INDIAN_STATES = [
   // States

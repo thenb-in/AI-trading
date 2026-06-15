@@ -11,10 +11,7 @@ const ACTIVITY_TYPE = {
   ACTIVATE: 4,
   DEACTIVATE: 5,
   APPROVE: 6,
-  REJECT: 7,
-  REGISTER_IMAGE: 8,
-  VERIFY_IMAGE: 9,
-  STOP_PUNCHES: 10
+  REJECT: 7
 };
 
 /** Decode numeric type to action label for client display */
@@ -27,10 +24,7 @@ const ACTIVITY_TYPE_TO_ACTION = {
   [ACTIVITY_TYPE.ACTIVATE]: 'ACTIVATE',
   [ACTIVITY_TYPE.DEACTIVATE]: 'DEACTIVATE',
   [ACTIVITY_TYPE.APPROVE]: 'APPROVE',
-  [ACTIVITY_TYPE.REJECT]: 'REJECT',
-  [ACTIVITY_TYPE.REGISTER_IMAGE]: 'REGISTER_IMAGE',
-  [ACTIVITY_TYPE.VERIFY_IMAGE]: 'VERIFY_IMAGE',
-  [ACTIVITY_TYPE.STOP_PUNCHES]: 'STOP_PUNCHES'
+  [ACTIVITY_TYPE.REJECT]: 'REJECT'
 };
 
 /** Action string -> numeric type (for encoding) */
@@ -43,10 +37,7 @@ const ACTION_TO_ACTIVITY_TYPE = {
   ACTIVATE: ACTIVITY_TYPE.ACTIVATE,
   DEACTIVATE: ACTIVITY_TYPE.DEACTIVATE,
   APPROVE: ACTIVITY_TYPE.APPROVE,
-  REJECT: ACTIVITY_TYPE.REJECT,
-  REGISTER_IMAGE: ACTIVITY_TYPE.REGISTER_IMAGE,
-  VERIFY_IMAGE: ACTIVITY_TYPE.VERIFY_IMAGE,
-  STOP_PUNCHES: ACTIVITY_TYPE.STOP_PUNCHES
+  REJECT: ACTIVITY_TYPE.REJECT
 };
 
 /** Professional message label per action (e.g. "Employee was updated"). */
@@ -59,10 +50,7 @@ const ACTION_TO_MESSAGE_LABEL = {
   ACTIVATE: 'was activated',
   DEACTIVATE: 'was deactivated',
   APPROVE: 'was approved',
-  REJECT: 'was rejected',
-  REGISTER_IMAGE: 'image was registered',
-  VERIFY_IMAGE: 'image was verified',
-  STOP_PUNCHES: 'punches were stopped'
+  REJECT: 'was rejected'
 };
 
 module.exports = {

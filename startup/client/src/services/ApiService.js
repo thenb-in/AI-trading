@@ -40,10 +40,6 @@ const ApiService = {
     return this.request('GET', '/company/settings');
   },
 
-  getTerminalListApi() {
-    return this.request('GET', '/company/terminal-list-api');
-  },
-
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
   },

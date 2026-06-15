@@ -165,18 +165,7 @@ const getSummaryDisplayName = (key, columns = []) => {
     return column.display_name || column.headerName;
   }
 
-  const displayNameMap = {
-    'emp_code': 'Employee Code',
-    'employee_code': 'Employee Code',
-    'first_name': 'Name',
-    'employee_name': 'Name',
-    'department_name': 'Department',
-    'employee_department': 'Department',
-    'position_name': 'Position',
-    'emp_type': 'Employee Type'
-  };
-
-  return displayNameMap[key] || key;
+  return key;
 };
 
 /**

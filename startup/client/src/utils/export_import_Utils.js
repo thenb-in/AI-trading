@@ -72,9 +72,8 @@ const handleImport = async ({
         
         // Show each error separately for better visibility
         errors.forEach(err => {
-          const empCode = err.emp_code && err.emp_code !== 'N/A' ? err.emp_code : 'N/A';
           toast.error(
-            `Row ${err.row} (Employee: ${empCode}): ${err.error}`,
+            `Row ${err.row}: ${err.error}`,
             { autoClose: 10000 }
           );
         });
@@ -101,20 +100,20 @@ const handleImport = async ({
           message: message || error || "Import failed",
           created: created || [],
           updated: updated || [],
-          errors: errors || (error ? [{ row: 0, emp_code: 'N/A', error }] : []),
+          errors: errors || (error ? [{ row: 0, error }] : []),
         };
       }
       
       if (errors && Array.isArray(errors) && errors.length > 0) {
         // Show first error in the main toast, then show others separately
         const firstError = errors[0];
-        errorMessage = `Row ${firstError.row} (Employee: ${firstError.emp_code || 'N/A'}): ${firstError.error}`;
-        
+        errorMessage = `Row ${firstError.row}: ${firstError.error}`;
+
         // Show remaining errors as separate toasts only if not using modal
         if (!onResults) {
           errors.slice(1).forEach(err => {
             toast.error(
-              `Row ${err.row} (Employee: ${err.emp_code || 'N/A'}): ${err.error}`,
+              `Row ${err.row}: ${err.error}`,
               { autoClose: 10000 }
             );
           });
@@ -131,7 +130,7 @@ const handleImport = async ({
           message: errorMessage,
           created: [],
           updated: [],
-          errors: [{ row: 0, emp_code: 'N/A', error: errorMessage }],
+          errors: [{ row: 0, error: errorMessage }],
         };
       }
     }

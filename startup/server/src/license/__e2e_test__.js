@@ -17,7 +17,7 @@ const path = require('path');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lic-e2e-'));
 process.env.SECRETS_PATH = tmp;
 process.env.NODE_ENV = 'development';
-process.env.APP_NAME = 'etime-payroll';
+process.env.APP_NAME = 'startup-app';
 
 // Generate wallet keypair, pin pub in env.
 const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
@@ -88,10 +88,10 @@ const issuedPayload = {
   license_id: '11111111-1111-1111-1111-111111111111',
   serial: 1,
   customer_id: '22222222-2222-2222-2222-222222222222',
-  app_name: 'etime-payroll',
+  app_name: 'startup-app',
   machine_fingerprint: fp.fingerprint,
   subscription_id: 1,
-  permissions: ['Payroll.run', 'User.read'],
+  permissions: ['Report.run', 'User.read'],
   permission_caps: { max_users: 50 },
   issued_at: new Date().toISOString(),
   not_before: new Date(Date.now() - 1000).toISOString(),
@@ -111,13 +111,13 @@ const token = issuerFmt.signPayload(issuedPayload, privatePem);
   check('payload roundtrip matches', installed.payload?.license_id === issuedPayload.license_id);
 
   // Permission gate
-  check('whitelist allows Payroll.run', licenseService.hasLicensedPermission('Payroll.run'));
+  check('whitelist allows Report.run', licenseService.hasLicensedPermission('Report.run'));
   check('whitelist allows User.read', licenseService.hasLicensedPermission('User.read'));
   check('whitelist denies User.write', !licenseService.hasLicensedPermission('User.write'));
 
   // Status
   const snap = licenseService.getStatusSnapshot();
-  check('status snapshot ok', snap.ok && snap.app_name === 'etime-payroll');
+  check('status snapshot ok', snap.ok && snap.app_name === 'startup-app');
   check('status snapshot serial', snap.serial === 1);
 
   // App-name mismatch is refused

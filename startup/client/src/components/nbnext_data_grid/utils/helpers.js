@@ -337,8 +337,8 @@ const calculateTotals = (rows, columns) => {
  * so the caller can fall back to a different strategy.
  *
  * `is_summary` is a server-provided curation hint — it says "these specific
- * columns are the ones worth aggregating", e.g. PF/ESIC statutory totals.
- * The grid only renders what callers (or this helper) build; it has no
+ * columns are the ones worth aggregating". The grid only renders what callers
+ * (or this helper) build; it has no
  * domain knowledge of which columns are summable on its own.
  */
 const calculateIsSummaryTotals = (rows, columns) => {

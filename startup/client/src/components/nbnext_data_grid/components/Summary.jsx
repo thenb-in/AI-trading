@@ -1,29 +1,20 @@
 import PropTypes from 'prop-types';
 import { formatCellValueForInsight } from "../utils/helpers.js";
 
-// Known employee field keys that should be displayed as employee info
-const EMPLOYEE_FIELDS = ['emp_code', 'employee_code', 'first_name', 'employee_name', 'department_name', 'employee_department', 'position_name', 'emp_type'];
-
 const Summary = ({ summary = {}, columns = [], compact = false }) => {
-  // Extract employee data and summary totals from unified summary prop
-  const employeeData = {};
+  // Collect numeric summary totals from the unified summary prop
   const summaryTotals = {};
 
   // When `columns` is the effective per-tab column set (via useTabsState),
   // build a field-name lookup so we can drop summary totals that don't belong
-  // to the currently-active tab. Without this, salary-side rollups would leak
-  // into the Attendance tab's insights and vice versa.
+  // to the currently-active tab. Without this, rollups from one tab would leak
+  // into another tab's insights and vice versa.
   const columnKeySet =
     columns && columns.length > 0
       ? new Set(columns.map((c) => c.key || c.field).filter(Boolean))
       : null;
 
-  // Separate employee fields from summary totals
   Object.keys(summary).forEach(key => {
-    if (EMPLOYEE_FIELDS.includes(key)) {
-      employeeData[key] = summary[key];
-      return;
-    }
     // Only keep numeric values. If we have a column set for the active view,
     // also drop anything not present in that set.
     const value = summary[key];
@@ -35,15 +26,12 @@ const Summary = ({ summary = {}, columns = [], compact = false }) => {
     if (columnKeySet && !columnKeySet.has(key)) return;
     summaryTotals[key] = value;
   });
-  
-  // Check if we have employee data
-  const hasEmployeeData = employeeData.emp_code || employeeData.employee_code;
-  
+
   // Check if we have summary totals
   const hasSummaryTotals = Object.keys(summaryTotals).length > 0;
-  
-  // Don't render if no employee data and no summary totals
-  if (!hasEmployeeData && !hasSummaryTotals) {
+
+  // Don't render if no summary totals
+  if (!hasSummaryTotals) {
     return null;
   }
 
@@ -84,57 +72,8 @@ const Summary = ({ summary = {}, columns = [], compact = false }) => {
       {/* Content */}
       <div className={compact ? 'p-4' : 'p-6'}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Employee fields - only show if employee data exists */}
-          {hasEmployeeData && (
-            <>
-              {/* Employee Code */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Employee Code</p>
-                <p className="text-sm font-semibold text-gray-900">{employeeData.emp_code || employeeData.employee_code || ''}</p>
-              </div>
-
-              {/* Employee Name */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Name</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {employeeData.first_name || employeeData.employee_name || ''}
-                </p>
-              </div>
-
-              {/* Department */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Department</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {employeeData.department_name || employeeData.employee_department || ''}
-                </p>
-              </div>
-
-              {/* Position */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Position</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {employeeData.position_name || ''}
-                </p>
-              </div>
-
-              {/* Employee Type */}
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Employee Type</p>
-                <p className="text-sm font-semibold text-gray-900">
-                  {employeeData.emp_type || ''}
-                </p>
-              </div>
-
-              {/* Records Count */}
-              {/* <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Records</p>
-                <p className="text-sm font-semibold text-gray-900">{recordCount}</p>
-              </div> */}
-            </>
-          )}
-
-          {/* Summary totals - always show if they exist */}
-          {hasSummaryTotals && Object.entries(summaryTotals).map(([key, value]) => (
+          {/* Summary totals */}
+          {Object.entries(summaryTotals).map(([key, value]) => (
             <div key={key}>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 {getSummaryDisplayName(key)}

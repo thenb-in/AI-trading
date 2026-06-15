@@ -29,7 +29,7 @@ const defaultMessage = (mode, succeeded, failed) => {
  * by the consumer's effect on filter / data refresh.
  *
  * Why not own the confirmation step here: some masters need a remarks modal
- * before kicking off (e.g. Manual Attendance). The caller controls the trigger
+ * before kicking off (e.g. a remarks-required action). The caller controls the trigger
  * and just calls `process(mode, ctx)` once preconditions are satisfied.
  */
 const useBulkActions = ({

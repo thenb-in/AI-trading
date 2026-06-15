@@ -98,15 +98,6 @@ module.exports = {
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,
   DB_DIALECT: process.env.DB_DIALECT,
-  // Connection string for Postgres dblink to the source HRMS DB
-  DBLINK_CONNECTION: process.env.DBLINK_CONNECTION,
-
-  // Sync configuration
-  SYNC_TRANSACTION_BATCH_SIZE: parseInt(process.env.SYNC_TRANSACTION_BATCH_SIZE, PARSE_INT_RADIX) || 1000,
-  SYNC_TRANSACTION_CRON: process.env.SYNC_TRANSACTION_CRON || '0 * * * * *',  // every hour at 0 min by default
-
-  SYNC_TERMINAL_COMMANDS_BATCH_SIZE: parseInt(process.env.SYNC_TERMINAL_COMMANDS_BATCH_SIZE, PARSE_INT_RADIX) || 500,
-  SYNC_TERMINAL_COMMANDS_CRON: process.env.SYNC_TERMINAL_COMMANDS_CRON || '*/10 * * * *', // Every 10 minutes by default
 
   // JWT configuration
   JWT_SECRET: process.env.JWT_SECRET,
@@ -140,39 +131,14 @@ module.exports = {
   // Secret directory configuration
   SECRET_DIR: secretDir,
 
-  // Django API configuration
-  EASYWDMS_INTERNAL_API_URL: process.env.INTERNAL_EASYWDMS_URL,
-  EASYWDMS_EXTERNAL_API_URL: process.env.EXTERNAL_EASYWDMS_URL,
-
   //OPENROUTESERVICE_API_KEY
   OPENROUTESERVICE_API_KEY: process.env.OPENROUTESERVICE_API_KEY,
 
-  // Face Detection API configuration
-  FACE_API: process.env.FACE_API,
-
-  // Terminal configuration
-  TERMINAL_NAME: process.env.TERMINAL_NAME,
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
 
   // Django OAuth introspection
   DJANGO_AUTH_URL: process.env.DJANGO_AUTH_URL,
-
-  // Shared secret guarding the internal service-to-service API
-  // (/api/v1/internal). The standalone biometric gateways send it in the
-  // `x-internal-secret` header; when unset (local/dev) the check is skipped.
-  MAIN_APP_INTERNAL_SECRET: process.env.MAIN_APP_INTERNAL_SECRET,
-
-  // ADMS coalesce windows. See biometric_gateway/adms_server/src/constants/adms.js
-  // for the rationale behind each window. Env-overridable for tests.
-  ADMS_REFRESH_QUERY_COALESCE_MS:
-    Number(process.env.ADMS_REFRESH_QUERY_COALESCE_MS) || 30 * 1000,
-  ADMS_FANOUT_COALESCE_MS:
-    Number(process.env.ADMS_FANOUT_COALESCE_MS) || 30 * 1000,
-
-  // checkin/checkout aggregator batch size. No default — the consumer
-  // treats undefined as "no batching" and falls back to its own limit.
-  EMPLOYEE_BATCH_SIZE: process.env.EMPLOYEE_BATCH_SIZE,
 
   // Piscina worker pool configuration
   // CPU-based defaults: leave 1 core for main thread; keep at least half of cores warm
