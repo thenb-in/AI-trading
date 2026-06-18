@@ -43,8 +43,8 @@ async function companyHasPermission(companyId, permissionName) {
 
 /**
  * Throw a 403-tagged error if the company is not subscribed to the given
- * permission. Used at the entry points of biometric command generation so
- * an unsubscribed company never reaches the enqueue path.
+ * permission. Used at the entry points of permission-gated operations so
+ * an unsubscribed company never reaches the protected path.
  */
 async function assertCompanyPermission(companyId, permissionName) {
   const allowed = await companyHasPermission(companyId, permissionName);

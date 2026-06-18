@@ -10,8 +10,7 @@ require('module-alias').addPath(require('path').join(__dirname, 'node_modules'))
 //
 // The framework (auth, users, admin, layouts, activity, nbnext-drive,
 // help-support) is composed by buildApp() under /api/v1/*. Everything
-// SalaryMitra-specific (HR, payroll, attendance, ADMS biometric, field sales,
-// reports) is wired here.
+// app-specific (your own routes, schedulers and resources) is wired here.
 
 const path = require('path');
 const logger = require('@startup/logger');
@@ -22,20 +21,17 @@ const appRoutes = require('./src/routes/app_routes');
 const companyRoutes = require('./src/routes/companyRoutes');
 
 const { startServer } = buildApp({
-  // 5MB body limit — header/footer image uploads, base64 face photos.
+  // 5MB body limit — adjust to suit your app's upload needs.
   bodyParserLimit: '5mb',
 
 
 
-  // App-owned routes that depend on app-specific things (biometric, hr/employee
-  // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
-  // namespace.
+  // App-owned routes that live under the framework's /api/v1/* namespace.
   extraRoutes: [
     { prefix: '/api/v1/company', router: companyRoutes }
   ],
 
-  // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
-  // formulas, gatepass, reports, masters, etc.). See src/routes/app_routes.js.
+  // App-specific routes. See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
@@ -52,7 +48,6 @@ const { startServer } = buildApp({
   // client bundle from this Express server. Path defaults to ../client (the
   // deployed layout where app/client/ holds the built bundle); override via
   // CLIENT_STATIC_DIR for local testing (e.g. CLIENT_STATIC_DIR=../client/dist).
-  // /iclock is app-owned ADMS — keep it strictly server-handled.
   clientStaticDir: path.resolve(
     process.cwd(),
     env.CLIENT_STATIC_DIR

@@ -32,10 +32,10 @@ const getAppModuleDefinitions = () => [
   {
     id: "reportsListing",
     title: "Reports",
-    description: "Open the reports library to run payroll and HR reports.",
+    description: "Open the reports library to run and export reports.",
     category: "Reports",
     tags: ["Reports", "Library", "Analytics"],
-    keywords: "reports listing library payroll hr module report hub",
+    keywords: "reports listing library module report hub",
     permissionName: "view_report_module",
     navigatePath: "/admin/report",
     icon: BarChart3,

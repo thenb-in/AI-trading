@@ -182,7 +182,7 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
  *   Additional path prefixes that should stay strictly server-handled
  *   (i.e. NOT fall back to index.html). /api, /static, /uploads, and every
  *   urlPrefix from additionalStaticDirs are already excluded by default;
- *   use this for app-specific server-only prefixes like /iclock.
+ *   use this for app-specific server-only prefixes (e.g. /webhooks).
  * @param {() => void | Promise<void>} [options.onAfterListen]
  *   Invoked once the HTTP server is listening (after schedulers start).
  *   Use for app-level startup work like piscina pool init or auto-sync timers.

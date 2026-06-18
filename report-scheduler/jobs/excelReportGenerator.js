@@ -11,7 +11,7 @@ require('dotenv').config();
 const config = {
   reports_base_path:
     process.env.REPORTS_PATH ||
-    path.join(__dirname, '..', 'uploads', 'detailed-attendance-reports'),
+    path.join(__dirname, '..', 'uploads', 'reports'),
   temp_base_path: process.env.TEMP_PATH || path.join(__dirname, '..')
 };
 

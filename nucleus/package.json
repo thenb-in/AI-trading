@@ -2,7 +2,7 @@
   "name": "nucleus",
   "version": "0.1.0",
   "private": true,
-  "description": "Foundational, framework-agnostic infrastructure shared across startup, app/server and the biometric gateway: logger, env/config, generic constants and utils, sequelize bootstrap. Has NO dependency on startup or app — those depend on it (via the @nucleus alias).",
+  "description": "Foundational, framework-agnostic infrastructure shared across startup, app/server and any standalone services: logger, env/config, generic constants and utils, sequelize bootstrap. Has NO dependency on startup or app — those depend on it (via the @nucleus alias).",
   "main": "logger.js",
   "type": "commonjs",
   "scripts": {

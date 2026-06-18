@@ -133,8 +133,8 @@ function sanitizeAppNameForPath(name, separator) {
 
 /**
  * Pick a separator consistent with any folder already present at the destination.
- * Lets new configs match existing naming conventions ("etime-payroll" stays dashed,
- * "etime_payroll" stays underscored) instead of being overridden by the caller's default.
+ * Lets new configs match existing naming conventions ("my-app" stays dashed,
+ * "my_app" stays underscored) instead of being overridden by the caller's default.
  * Falls back to defaultSeparator only when the hint has no detectable separator.
  */
 function resolveSeparator(folderHint, defaultSeparator) {

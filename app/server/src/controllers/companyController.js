@@ -33,12 +33,9 @@ const companyController = {
       }
 
       const id = req.user.company_id;
-      const { deleteOnSeen , messageTimer, name, hideChat,  mobileApp, desktopWeb, mobileWeb } = req.body;
+      const { name, mobileApp, desktopWeb, mobileWeb } = req.body;
 
       const settings = await companyService.updateCompanySettings(id, {
-        deleteOnSeen,
-        messageTimer,
-        hideChat,
         mobileApp,
         desktopWeb,
         mobileWeb,

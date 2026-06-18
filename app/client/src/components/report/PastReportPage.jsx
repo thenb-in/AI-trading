@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 import { 
   Eye, 
@@ -52,34 +52,26 @@ console.log("Rendering PastReportPage");
     fetchReports();
   }, [fetchReports]);
 
-  const filterMap = useMemo(() => ({
-    employee: { prefix: "Employee", value: (filters) => filters.employee },
-    start_date: { prefix: "Start", value: (filters) => filters.start_date },
-    end_date: { prefix: "End", value: (filters) => filters.end_date },
-    department: { prefix: "Dept", value: (filters) => filters.department },
-    employment_type: { prefix: "Type", value: (filters) => filters.employment_type },
-    terminal: { prefix: "Terminal", value: (filters) => filters.terminal },
-    show_ot_short: { prefix: "OT/Short", value: (filters) => filters.show_ot_short ? "True" : null },
-    show_attendance: { prefix: "Attendance", value: (filters) => filters.show_attendance ? "True" : null },
-    show_summary_view: { prefix: "Summary", value: (filters) => filters.show_summary_view ? "True" : null },
-    show_shift_details: { prefix: "Shift Details", value: (filters) => filters.show_shift_details ? "True" : null },
-    show_working_hours: { prefix: "Working Hours", value: (filters) => filters.show_working_hours ? "True" : null },
-    show_attendance_timings: { prefix: "Timings", value: (filters) => filters.show_attendance_timings ? "True" : null },
-    is_horizontal: { prefix: "Horizontal", value: (filters) => filters.is_horizontal ? "True" : null },
-    is_print_view: { prefix: "Print View", value: (filters) => filters.is_print_view ? "True" : null },
-    show_late_early: { prefix: "Late/Early", value: (filters) => filters.show_late_early ? "True" : null }
-  }), []);
+  // Turn a snake_case filter key into a human-readable label, e.g.
+  // "start_date" -> "Start Date".
+  const humanizeKey = useCallback((key) => key
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase()), []);
 
+  // Render whatever filters a report was saved with, generically — no
+  // app-specific field list. Booleans show only when truthy; empty values
+  // are skipped.
   const formatFilters = useCallback((filters) => {
-    if (!filters) return [];
-    
-    return Object.entries(filterMap)
-      .map(([, { prefix, value }]) => {
-        const filterValue = value(filters);
-        return filterValue ? `${prefix}: ${filterValue}` : null;
+    if (!filters || typeof filters !== 'object') return [];
+
+    return Object.entries(filters)
+      .map(([key, value]) => {
+        if (value === null || value === undefined || value === '' || value === false) return null;
+        const label = humanizeKey(key);
+        return value === true ? label : `${label}: ${value}`;
       })
       .filter(Boolean);
-  }, [filterMap]);
+  }, [humanizeKey]);
 
   const handleViewClick = useCallback(async (id) => {
     // const toastId = toast.loading('Loading report data...');

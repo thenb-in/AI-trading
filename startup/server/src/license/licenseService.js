@@ -76,8 +76,8 @@ async function acceptToken({ token, payload, opts = {} }) {
   const skipSealCheck = opts.skipSealCheck === true;
 
   // App name guard. Each app installs only the licenses minted for its
-  // app_name. A token issued for "etime-payroll" can't be moved to a
-  // "nbnext-startup" install. Comparison is case-insensitive because
+  // app_name. A token issued for one app can't be moved to a
+  // different app's install. Comparison is case-insensitive because
   // package.json names and env values drift.
   if (payload.app_name && payload.app_name.toLowerCase() !== getAppName().toLowerCase()) {
     return { ok: false, reason: VERIFY_REASONS.APP_NAME_MISMATCH, expected: getAppName(), got: payload.app_name };

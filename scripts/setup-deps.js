@@ -14,8 +14,8 @@ const { execSync } = require('child_process');
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 // Shared infra packages with their own package.json that the dev/app runtime
-// depends on. Standalone services (biometric_gateway, canteen_print_agent,
-// report-scheduler, ...) are intentionally excluded — they are installed and
+// depends on. Standalone services (report-scheduler, and any app-specific
+// services, ...) are intentionally excluded — they are installed and
 // run independently, not as part of the app.
 const PACKAGES = ['nucleus', 'report_runner'];
 
