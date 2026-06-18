@@ -36,30 +36,30 @@ function updateStarterApp() {
       process.exit(1);
     }
 
-    // Check if starter remote already exists
+    // Check if startup remote already exists
     try {
-      const starterUrl = execSync('git remote get-url starter', { encoding: 'utf8', stdio: 'pipe' }).trim();
-      console.log(`📍 Starter remote already exists: ${starterUrl}`);
+      const startupUrl = execSync('git remote get-url startup', { encoding: 'utf8', stdio: 'pipe' }).trim();
+      console.log(`📍 Startup remote already exists: ${startupUrl}`);
     } catch (error) {
-      // Starter remote doesn't exist, add it
-      console.log('➕ Adding starter remote...');
-      // Note: You'll need to update this URL to your actual starter repository
-      const starterUrl = 'https://github.com/thenb-in/startup.git';
-      runCommand(`git remote add starter ${starterUrl}`);
-      console.log('✅ Starter remote added');
+      // Startup remote doesn't exist, add it
+      console.log('➕ Adding startup remote...');
+      // Note: You'll need to update this URL to your actual startup repository
+      const startupUrl = 'https://github.com/thenb-in/startup.git';
+      runCommand(`git remote add startup ${startupUrl}`);
+      console.log('✅ Startup remote added');
     }
 
-    // Fetch latest changes from starter
-    console.log('📥 Fetching latest changes from starter...');
-    runCommand('git fetch starter');
+    // Fetch latest changes from startup
+    console.log('📥 Fetching latest changes from startup...');
+    runCommand('git fetch startup');
     console.log('✅ Latest changes fetched');
 
     // Check if there are any conflicts before merging
     console.log('🔍 Checking for potential conflicts...');
     try {
-      const mergeCheck = execSync('git merge-tree $(git merge-base HEAD starter/main) HEAD starter/main', { 
-        encoding: 'utf8', 
-        stdio: 'pipe' 
+      const mergeCheck = execSync('git merge-tree $(git merge-base HEAD startup/main) HEAD startup/main', {
+        encoding: 'utf8',
+        stdio: 'pipe'
       });
       
       if (mergeCheck.includes('<<<<<<<')) {
@@ -71,9 +71,9 @@ function updateStarterApp() {
       console.log('ℹ️  Merge conflict check skipped');
     }
 
-    // Merge changes from starter
-    console.log('🔀 Merging changes from starter...');
-    runCommand('git merge starter/main --allow-unrelated-histories');
+    // Merge changes from startup
+    console.log('🔀 Merging changes from startup...');
+    runCommand('git merge startup/main --allow-unrelated-histories');
     console.log('✅ Changes merged successfully');
 
     console.log('');
@@ -94,7 +94,7 @@ function updateStarterApp() {
     console.error('❌ Failed to update from starter template:', error.message);
     console.error('');
     console.error('💡 If you encounter issues:');
-    console.error('   1. Check that the starter remote URL is correct');
+    console.error('   1. Check that the startup remote URL is correct');
     console.error('   2. Ensure you have the latest changes committed');
     console.error('   3. Resolve any merge conflicts manually');
     process.exit(1);

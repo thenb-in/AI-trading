@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 const {
   askNamingChoice,
   sanitizeAppNameForPath,
@@ -127,6 +128,60 @@ function updateViteConfigWithPort(filePath, port) {
   }
 }
 
+function gitRemoteUrl(name) {
+  try {
+    return execSync(`git remote get-url ${name}`, {
+      cwd: ROOT_DIR,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
+/**
+ * Point `origin` at the newly-created app's repo while preserving the link back
+ * to the startup template: the template repo is currently `origin`, so before we
+ * repoint it we stash that URL as the `startup` remote (the same remote
+ * update-starter-app.js pulls from). This is what lets a generated app keep
+ * receiving framework updates after it has its own origin.
+ */
+function setupGitRemotes(newAppUrl) {
+  try {
+    execSync('git rev-parse --is-inside-work-tree', {
+      cwd: ROOT_DIR,
+      stdio: 'ignore',
+    });
+  } catch (error) {
+    console.log('⚠️  Not a git repository — skipping remote setup');
+    return;
+  }
+
+  const currentOrigin = gitRemoteUrl('origin');
+
+  // Preserve the startup template as `startup` so update-starter-app keeps
+  // working. Only seed it from the current origin and never clobber an existing
+  // startup remote (it may already point at the canonical template).
+  const existingStartup = gitRemoteUrl('startup');
+  if (existingStartup) {
+    console.log(`📍 Startup remote already configured: ${existingStartup}`);
+  } else if (currentOrigin && currentOrigin !== newAppUrl) {
+    execSync(`git remote add startup ${currentOrigin}`, { cwd: ROOT_DIR, stdio: 'inherit' });
+    console.log(`✅ Preserved startup template as 'startup' remote: ${currentOrigin}`);
+  } else {
+    console.log('ℹ️  No distinct startup origin to preserve as startup remote');
+  }
+
+  // Repoint origin at the new app's repo (add it if origin is missing).
+  if (currentOrigin) {
+    execSync(`git remote set-url origin ${newAppUrl}`, { cwd: ROOT_DIR, stdio: 'inherit' });
+  } else {
+    execSync(`git remote add origin ${newAppUrl}`, { cwd: ROOT_DIR, stdio: 'inherit' });
+  }
+  console.log(`✅ origin → ${newAppUrl}`);
+}
+
 function updatePortInConfigs(port) {
   updateEnvFileWithPort(SERVER_ENV_EXAMPLE, port, 'server');
   if (fs.existsSync(SERVER_ENV)) {
@@ -175,6 +230,12 @@ async function createApp() {
     updatePackageJsonFiles(appName, serverPort);
     console.log('✅ package.json updated');
 
+    // Repoint origin at the new app's repo, preserving the startup template as
+    // the `startup` remote so the generated app can still pull framework updates.
+    console.log('');
+    console.log('📝 Configuring git remotes...');
+    setupGitRemotes(newAppUrl);
+
     console.log('');
     console.log('🎉 New app configuration completed successfully!');
     console.log('');
@@ -186,6 +247,10 @@ async function createApp() {
     console.log('  - tests/integration-tests/.env.example (API_BASE_URL)');
     console.log('  - tests/e2e-tests/.env.example (BACKEND_URL)');
     console.log('  - deploy/base.conf (nginx upstream port)');
+    console.log('');
+    console.log('🔗 Git remotes:');
+    console.log('  - origin  → new app repo (the provided URL)');
+    console.log("  - startup → startup template (preserved for 'npm run update-starter-app')");
     console.log('');
     console.log('💡 Next steps:');
     console.log('  1. Review the changes in the files above');
