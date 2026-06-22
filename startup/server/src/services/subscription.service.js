@@ -204,6 +204,38 @@ const exportSubscription = async (subscriptionId) => {
   };
 };
 
+/**
+ * Global (public) plans with the permissions each one marks, for the self-serve
+ * signup catalogue. Returns raw Subscription instances; callers shape them.
+ */
+const getGlobalPlansWithPermissions = async () => {
+  return Subscription.findAll({
+    where: { companyId: null },
+    include: [
+      {
+        model: Permission,
+        as: 'permissions',
+        through: { attributes: ['status'], as: 'subscriptionPermission' },
+        attributes: ['id', 'name', 'display_name', 'description', 'type']
+      }
+    ],
+    order: [['name', 'ASC']]
+  });
+};
+
+/**
+ * Fetch a single global/public plan by id, or throw if it doesn't exist or is a
+ * company-specific subscription. `options` is forwarded to the query (e.g. a
+ * transaction) so callers can run it inside their own transaction.
+ */
+const getGlobalPlanById = async (subscriptionId, options = {}) => {
+  const subscription = await Subscription.findByPk(subscriptionId, options);
+  if (!subscription || subscription.companyId !== null) {
+    throw { status: 404, message: 'Selected plan is not available' };
+  }
+  return subscription;
+};
+
 module.exports = {
   createSubscription,
   getSubscriptionsAndPermissions,
@@ -211,6 +243,8 @@ module.exports = {
   updateSubscriptionPermissionStatus,
   updateMultipleSubscriptionPermissionStatuses,
   exportSubscription,
-  importSubscription
+  importSubscription,
+  getGlobalPlansWithPermissions,
+  getGlobalPlanById
 };
 

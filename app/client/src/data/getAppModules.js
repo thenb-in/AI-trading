@@ -1,25 +1,69 @@
 import {
+  BarChart3,
+  Layers,
   Fingerprint,
   LayoutDashboard,
+  Navigation,
   ScanFace,
   MapPinCheckInside,
   Activity as ActivityIcon,
-  Gauge,
+  User,
+  Shield,
+  CopySlash,
+  Crown,
+  BookOpen,
+  Building,
+  Gauge
 } from "lucide-react";
-import { getGenericAppModuleDefinitions } from "@startup/data/getAppModules";
+
 
 /**
- * etime-specific app modules (sidebar / top nav): searchable alongside
- * masters and reports. These are the modules whose pages live in the app
- * layer (quick check-in, HR dashboard, dashboards, WageMaster). They are
- * merged with the framework's generic modules to form the full list.
- *
- * Sidebar order: `order` field; visibility: `isAppModuleVisible` (used by
- * `useAppMenuItems`). `color` is the ModuleCard accent (kept on the
- * definition itself so the navigator and the signup plan preview both read
- * it straight from here).
+ * App-level modules (sidebar / top nav): searchable alongside masters and reports.
+ * Sidebar order: `order` field; visibility: `isAppModuleVisible` (used by `useAppMenuItems`).
+ * `color` is the ModuleCard accent (kept on the definition itself so the navigator
+ * and the signup plan preview both read it straight from here).
  */
-const getEtimeAppModuleDefinitions = () => [
+const getAppModuleDefinitions = () => [
+  {
+    id: "navigator",
+    title: "Navigator",
+    description:
+      "Open the navigator to browse masters, app modules, and reports in one place.",
+    category: "Navigation",
+    color: "indigo",
+    tags: ["Navigator", "Browse", "Home"],
+    keywords: "navigator browse home menu app module modules search hub",
+    skipPermissionCheck: true,
+    navigatePath: "/admin/navigator",
+    icon: Navigation,
+    order: 1,
+  },
+  {
+    id: "biometricPunch",
+    title: "Biometric Punch",
+    description: "Quick biometric punch and attendance capture.",
+    category: "Attendance",
+    color: "teal",
+    tags: ["Biometric", "Punch", "Attendance"],
+    keywords: "biometric punch scan face attendance quick check in module",
+    permissionName: "view_biometric_punch_module",
+    navigatePath: "/admin/quick-check-in",
+    icon: ScanFace,
+    order: 2,
+  },
+    {
+    id: "hrDashboard",
+    title: "HR Dashboard",
+    description: "HR analytics, attendance trends, and pending approvals.",
+    category: "Analytics",
+    color: "purple",
+    tags: ["HR", "Dashboard", "Analytics", "Attendance"],
+    keywords: "hr dashboard analytics attendance trends heatmap approvals module",
+    permissionName: "view_hr_dashboard_module",
+    navigatePath: "/admin/hr-dashboard",
+    icon: Gauge,
+    order: 3,
+  },
   {
     id: "dashboards",
     title: "Dashboards",
@@ -32,16 +76,150 @@ const getEtimeAppModuleDefinitions = () => [
     navigatePath: "/admin/dashboard",
     icon: LayoutDashboard,
     order: 4,
-  }
+  },
+  {
+    id: "reportsListing",
+    title: "Reports",
+    description: "Open the reports library to run payroll and HR reports.",
+    category: "Reports",
+    color: "orange",
+    tags: ["Reports", "Library", "Analytics"],
+    keywords: "reports listing library payroll hr module report hub",
+    permissionName: "view_report_module",
+    navigatePath: "/admin/report",
+    icon: BarChart3,
+    order: 5,
+  },
+  {
+    id: "mastersListing",
+    title: "Masters",
+    description: "Open the masters area to manage reference and configuration data.",
+    category: "Masters",
+    color: "blue",
+    tags: ["Masters", "Setup", "Configuration"],
+    keywords: "masters master setup configuration reference data module",
+    permissionName: "view_master_module",
+    navigatePath: "/admin/master",
+    icon: Layers,
+    order: 6,
+  },
+  {
+    id: "userManagement",
+    title: "User Management",
+    description: "Manage users, roles assignment, and access.",
+    category: "Administration",
+    color: "red",
+    tags: ["Users", "Accounts", "Access"],
+    keywords: "users user management accounts administration module",
+    permissionName: "view_user_module",
+    navigatePath: "/admin/users",
+    icon: User,
+    order: 7,
+  },
+  {
+    id: "companySettings",
+    title: "Company Settings",
+    description: "Configure company profile and application settings.",
+    category: "Administration",
+    color: "red",
+    tags: ["Company", "Settings", "Profile"],
+    keywords: "company settings profile configuration administration module",
+    permissionName: "view_company_settings",
+    navigatePath: "/admin/company",
+    icon: Building,
+    order: 8,
+  },
+  {
+    id: "locationCallBuddy",
+    title: "Location & CallBuddy",
+    description: "WageMaster location and CallBuddy user views.",
+    category: "WageMaster",
+    color: "warning",
+    tags: ["Location", "CallBuddy", "Map"],
+    keywords: "location callbuddy wagemaster map module",
+    permissionName: "view_wagemaster_module",
+    navigatePath: "/admin/wagemaster/dashboard",
+    icon: MapPinCheckInside,
+    order: 9,
+  },
+  {
+    id: "activitiesLogs",
+    title: "Activities Logs",
+    description: "Review activity and audit logs.",
+    category: "WageMaster",
+    color: "warning",
+    tags: ["Activities", "Logs", "Audit"],
+    keywords: "activities logs audit trail module wagemaster",
+    permissionName: "view_activities_module",
+    navigatePath: "/admin/wagemaster/activities",
+    icon: ActivityIcon,
+    order: 10,
+  },
+  {
+    id: "identifyOfficer",
+    title: "Identify Officer",
+    description: "Identify and verify officer records.",
+    category: "WageMaster",
+    color: "warning",
+    tags: ["Officer", "Identify", "Fingerprint"],
+    keywords: "identify officer fingerprint verification module",
+    permissionName: "view_identify_officer_module",
+    navigatePath: "/admin/identify-officer",
+    icon: Fingerprint,
+    order: 11,
+  },
+  {
+    id: "rolesPermissions",
+    title: "Roles & Permissions",
+    description: "Configure roles and fine-grained permissions.",
+    category: "Administration",
+    color: "red",
+    tags: ["Roles", "Permissions", "Security"],
+    keywords: "roles permissions rbac security access control module",
+    permissionName: "view_role_permission_module",
+    navigatePath: "/admin/role-permissions",
+    icon: Shield,
+    order: 12,
+  },
+  {
+    id: "multiCompanySetup",
+    title: "Multi-Company Setup",
+    description: "Superadmin tools for multi-company configuration.",
+    category: "Superadmin",
+    color: "secondary",
+    tags: ["Multi-Company", "Setup"],
+    keywords: "multi company setup superadmin module",
+    requireSupportUser: true,
+    navigatePath: "/admin/multi-company-setup",
+    icon: CopySlash,
+    order: 13,
+  },
+  {
+    id: "subscription",
+    title: "Subscription",
+    description: "Manage subscription and billing (superadmin).",
+    category: "Superadmin",
+    color: "secondary",
+    tags: ["Subscription", "Billing"],
+    keywords: "subscription billing plans superadmin module",
+    requireSupportUser: true,
+    navigatePath: "/admin/subscription",
+    icon: Crown,
+    order: 14,
+  },
+  {
+    id: "appGuide",
+    title: "App Guide",
+    description: "In-app guide and documentation.",
+    category: "Help",
+    color: "green",
+    tags: ["Guide", "Documentation", "Help"],
+    keywords: "app guide documentation help tutorial module",
+    skipPermissionCheck: true,
+    navigatePath: "/admin/app-guide",
+    icon: BookOpen,
+    order: 15,
+  },
 ];
 
-/**
- * Full app module list: framework generics + etime-specific modules.
- * Consumers (sidebar, navigator, search, route titles) read this.
- */
-const getAppModuleDefinitions = () => [
-  ...getGenericAppModuleDefinitions(),
-  ...getEtimeAppModuleDefinitions(),
-];
-
-export { getAppModuleDefinitions, getEtimeAppModuleDefinitions };
+export { getAppModuleDefinitions };

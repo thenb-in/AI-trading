@@ -3,25 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { getAppModuleDefinitions } from "@data/getAppModules";
 import { reports as reportModules, categories as reportCategories } from "@data/getReportModules";
+import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { ApiService } from "@services/ApiService";
 import { getPermissionSubscriptionStatus } from "@startup/components/admin/role_permissions/utils/permissionUtils";
-
-const getAppModuleColorByNature = (module) => {
-  const category = (module?.category || "").toLowerCase();
-  const title = (module?.title || "").toLowerCase();
-
-  if (category.includes("navigation") || title.includes("navigator")) return "indigo";
-  if (category.includes("analytics") || title.includes("dashboard")) return "purple";
-  if (category.includes("reports") || title.includes("report")) return "orange";
-  if (category.includes("masters") || title.includes("master")) return "blue";
-  if (category.includes("administration") || title.includes("permission") || title.includes("user")) return "red";
-  if (title.includes("activity")) return "warning";
-  if (category.includes("superadmin") || title.includes("subscription")) return "secondary";
-  if (category.includes("help") || title.includes("guide")) return "green";
-
-  return "primary";
-};
 
 const isSuperadminCategory = (module) =>
   (module?.category || "").toLowerCase() === "superadmin";
@@ -146,12 +131,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
   const allMasters = useMemo(() => {
     return masterModules
       .map((module) => {
-        let permission = module.permissionName;
-        if (!permission) {
-          permission = module.id
-            ? `read_${module.id}`
-            : `read_${module.title.toLowerCase().replace(/ /g, "_")}`;
-        }
+        const permission = getModulePermissionName(module);
 
         const hasPermissionAccess = module.skipPermissionCheck || hasPermission(permission, dataContext);
 
@@ -207,7 +187,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
           return null;
         }
 
-        const permissionName = module.permissionName || `read_${module.id}`;
+        const permissionName = getModulePermissionName(module);
         const hasPermissionAccess = module.requireSupportUser
           ? Boolean(userData?.isSupportUser)
           : (module.skipPermissionCheck || hasPermission(permissionName, dataContext));
@@ -230,7 +210,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
 
         const enrichedModule = {
           ...module,
-          color: module.color || getAppModuleColorByNature(module),
+          color: module.color,
           hasAccess: hasPermissionAccess && isSubscribed,
           hasPermissionAccess,
           permissionName,
@@ -259,7 +239,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
   const allReports = useMemo(() => {
     return reportModules
       .map((report) => {
-        const permissionName = report.permissionName || `read_${report.id}`;
+        const permissionName = getModulePermissionName(report);
         const hasPermissionAccess = hasPermission(permissionName, dataContext);
 
         const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];

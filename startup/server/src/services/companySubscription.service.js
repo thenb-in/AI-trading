@@ -129,9 +129,18 @@ const setCompanySubscriptions = async (companyId, subscriptionIds, userId) => {
   };
 };
 
+
+const addCompanySubscription = async (companyId, subscriptionId, transaction) => {
+  return CompanySubscription.create(
+    { company_id: companyId, subscription_id: subscriptionId },
+    { transaction }
+  );
+};
+
 module.exports = {
   getCompanySubscriptions,
   getAvailableSubscriptions,
-  setCompanySubscriptions
+  setCompanySubscriptions,
+  addCompanySubscription
 };
 

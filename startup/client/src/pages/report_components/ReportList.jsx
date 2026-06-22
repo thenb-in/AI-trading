@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
 import { hasPermission, useDataContext } from '@context/useDataContext';
+import { getModulePermissionName } from '@data/getModulePermissionName';
 import { SearchTypeField } from '@startup/components/base_components/fields/SearchTypeField';
 
 const ReportList = ({ reports, categories }) => {
@@ -15,7 +16,7 @@ const ReportList = ({ reports, categories }) => {
     return reports.filter(report => {
       const matchesFilter = activeFilter === 'all' || report.category === activeFilter;
       const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const permissionName = report.permissionName || ("read_" + report.id);
+      const permissionName = getModulePermissionName(report);
       const isPermissionGranted = hasPermission(permissionName, dataContext);
       if (!isPermissionGranted) {
         // console.log(`No permission for ${permissionName}`, report);

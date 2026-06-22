@@ -1,7 +1,9 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const authValidator = require('../validators/authValidator');
-const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout } = require('../views/authView');
+const { signup, login, resetPassword, approveUser, getAllUsers, getAllRoles, logout, checkAvailability } = require('../views/authView');
+const { getPlans, onboard, razorpayWebhook } = require('../onboarding/onboarding.view');
+const { createOrder } = require('../razorpay/razorpay.view');
 
 const router = express.Router();
 
@@ -9,6 +11,15 @@ const router = express.Router();
 router.post('/signup', authValidator.signupValidation, signup);
 router.post('/login', authValidator.loginValidation, login);
 router.post('/reset-password', authValidator.resetPasswordValidation, resetPassword);
+// Public field availability check (company name / username) — used while typing
+router.get('/availability', checkAvailability);
+// Public self-serve onboarding (plan catalogue + Razorpay order + create company/admin/plan)
+router.get('/plans', getPlans);
+router.post('/payment/order', createOrder);
+router.post('/onboard', onboard);
+// Razorpay server-to-server webhook (payment.captured / order.paid). Public:
+// authenticated by HMAC signature over the raw body, not a session.
+router.post('/razorpay/webhook', razorpayWebhook);
 router.post('/logout', authMiddleware.protect, logout);
 // Protected routes (admin only)
 router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUserValidation, approveUser);

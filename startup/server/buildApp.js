@@ -10,6 +10,7 @@ const { startAllSchedulers, stopAllSchedulers } = require('./scheduler');
 const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
 const { registerLicenseJobs } = require('./src/license/licenseScheduler');
+const { registerOnboardingJobs } = require('./src/onboarding/onboardingScheduler');
 const licenseSeal = require('./src/license/licenseSeal'); // eslint-disable-line no-unused-vars
 const licenseService = require('./src/license/licenseService');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
@@ -58,14 +59,24 @@ function mountFrameworkMiddleware(app, opts = {}) {
 
   app.set('trust proxy', ['loopback', '172.31.0.0/16']);  // trust first proxy (nginx) for correct client IP logging and secure cookies
 
-  // Hook for routes that must see the raw body (e.g. webhook endpoints that
-  // POST a non-JSON payload the json/urlencoded parsers would clobber into
-  // "[object Object]").
+  // Hook for routes that must see the raw body (e.g. ADMS /iclock, where
+  // ZK devices POST tab-delimited ATTLOG as application/x-www-form-urlencoded
+  // and json/urlencoded parsers would clobber it into "[object Object]").
   if (typeof mountBeforeBodyParser === 'function') {
     mountBeforeBodyParser(app);
   }
 
-  const jsonOpts = bodyParserLimit ? { limit: bodyParserLimit } : {};
+  // Stash the raw request body so webhook handlers (e.g. Razorpay) can verify
+  // signatures computed over the exact bytes — express.json() otherwise discards
+  // the buffer after parsing. Cheap: just keeps a reference, no extra copy.
+  const captureRawBody = (req, res, buf) => {
+    if (buf && buf.length) {
+      req.rawBody = buf;
+    }
+  };
+  const jsonOpts = bodyParserLimit
+    ? { limit: bodyParserLimit, verify: captureRawBody }
+    : { verify: captureRawBody };
   const urlencodedOpts = bodyParserLimit
     ? { extended: false, limit: bodyParserLimit }
     : { extended: false };
@@ -108,13 +119,13 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   // fronting the UI itself, no separate nginx/dev-server origin), serve the
   // built client bundle for everything that isn't a server route or static
   // mount. Anything under /api/* (incl. /api/v1, /api/healthz, /api/trackingImage),
-  // caller-supplied server-only paths, /uploads*, and /static stays strictly
-  // server-handled and 404s on miss — only true SPA routes fall back to index.html.
+  // /iclock-style ADMS paths, /uploads*, and /static stays strictly server-handled
+  // and 404s on miss — only true SPA routes fall back to index.html.
   if (!env.isSecureCookie && clientStaticDir) {
     const indexFile = path.join(clientStaticDir, 'index.html');
     if (fs.existsSync(indexFile)) {
-      // Server-owned prefixes: API + any caller-supplied server-only paths.
-      // Static-mount prefixes: framework's /static + /uploads,
+      // Server-owned prefixes: API + any caller-supplied server-only paths
+      // (e.g. /iclock). Static-mount prefixes: framework's /static + /uploads,
       // plus every urlPrefix the caller registered in additionalStaticDirs.
       // The SPA fallback skips any path under these — so they 404 on miss
       // instead of being shadowed by index.html.
@@ -182,7 +193,7 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
  *   Additional path prefixes that should stay strictly server-handled
  *   (i.e. NOT fall back to index.html). /api, /static, /uploads, and every
  *   urlPrefix from additionalStaticDirs are already excluded by default;
- *   use this for app-specific server-only prefixes (e.g. /webhooks).
+ *   use this for app-specific server-only prefixes like /iclock.
  * @param {() => void | Promise<void>} [options.onAfterListen]
  *   Invoked once the HTTP server is listening (after schedulers start).
  *   Use for app-level startup work like piscina pool init or auto-sync timers.
@@ -299,6 +310,8 @@ function buildApp(options = {}) {
         // registration callback.
         startAllSchedulers(() => {
           registerLicenseJobs();
+          // Framework-level: refunds onboarding payments that never provisioned.
+          registerOnboardingJobs();
           if (typeof registerSchedulerJobs === 'function') {
             registerSchedulerJobs();
           }

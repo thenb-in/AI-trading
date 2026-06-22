@@ -52,6 +52,16 @@ const authController = {
   },
 
   /**
+   * Check if a field value (company name / username) is still available
+   * @param {string} type - Field type ('company' | 'username')
+   * @param {string} value - Value to check
+   * @returns {Promise<object>} { type, value, available }
+   */
+  async checkAvailability(type, value) {
+    return await authService.checkAvailability({ type, value });
+  },
+
+  /**
    * Get all users for a company
    * @param {string} companyId - Company ID
    * @returns {Promise<object>} Users and roles

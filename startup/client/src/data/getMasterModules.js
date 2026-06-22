@@ -1,4 +1,5 @@
 import { getMasterModules, masterCategoryOrder } from '@app/data/getMasterModules';
+import { getModulePermissionName } from './getModulePermissionName';
 
 /**
  * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
@@ -40,9 +41,7 @@ const getMasterCategoriesForUser = (hasPermissionFn, dataContext) => {
   if (!hasPermissionFn || !dataContext) return [];
   return buildCategoryList((module) => {
     if (module.skipPermissionCheck) return true;
-    const permission = module.permissionName
-      || (module.id ? `read_${module.id}` : `read_${module.title.toLowerCase().replace(/ /g, "_")}`);
-    return hasPermissionFn(permission, dataContext);
+    return hasPermissionFn(getModulePermissionName(module), dataContext);
   });
 };
 

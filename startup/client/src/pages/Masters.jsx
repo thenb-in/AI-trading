@@ -12,6 +12,7 @@ import {
 import { MasterCard } from "./master_components/MasterCard";
 import { SearchFilter } from "./master_components/SearchFilter";
 import { getMasterModules, getMasterCategoriesForUser } from "../data/getMasterModules";
+import { getModulePermissionName } from "../data/getModulePermissionName";
 import { spacing } from "@startup/constants/theme";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 
@@ -191,17 +192,7 @@ const MasterContent = () => {
               }}
             >
               {filteredMasterModules.map((master, index) => {
-                // if permissionName is used, use it
-                // else if master id is present in the permission name, then use it,
-                //  otherwise use the title to generate the permission name
-                let permission = master.permissionName;
-                if (!permission) {
-                  if (master.id) {
-                    permission = `read_${master.id}`;
-                  } else {
-                    permission = `read_${master.title.toLowerCase().replace(/ /g, "_")}`;
-                  }
-                }
+                const permission = getModulePermissionName(master);
                 // Skip permission check if skipPermissionCheck is true
                 const hasMasterPermission = master.skipPermissionCheck || hasPermission(permission, dataContext);
                 if (!hasMasterPermission && !master.skipPermissionCheck) {

@@ -37,6 +37,10 @@ const companyProfileService = {
     }
   },
 
+  async createCompanyProfile(companyId, data = {}, transaction) {
+    return CompanyProfile.create({ companyId, ...data }, { transaction });
+  },
+
   async updateCompanyProfile(companyId, data) {
     try {
       let companyProfile = await CompanyProfile.findOne({

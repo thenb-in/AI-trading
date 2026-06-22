@@ -6,6 +6,7 @@ import './App.css';
 import { Home } from './pages/Home';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { SignupPage } from './pages/SignupPage';
+import { GetStartedPage } from './pages/GetStartedPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -31,6 +32,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/get-started" element={<GetStartedPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route 
           path="/user-routes"

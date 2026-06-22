@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { getMasterModules } from "@data/getMasterModules";
 import { reports, categories as reportCategories } from "@data/getReportModules";
+import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { MasterModal, MasterSearchInput } from "../base_components";
 import { SearchResultItem } from "./SearchResultItem";
@@ -18,15 +19,6 @@ const MASTER = "Master";
 const REPORT = "Report";
 const MAX_RESULTS = 20;
 const PALETTE_Z_INDEX = 20000;
-
-function getMasterPermissionName(module) {
-  if (module.permissionName) return module.permissionName;
-  if (module.id) return `read_${module.id}`;
-  return `read_${String(module.title || "")
-    .toLowerCase()
-    .trim()
-    .replace(/ /g, "_")}`;
-}
 
 function getReportCategoryLabel(categoryId) {
   return reportCategories.find((c) => c.id === categoryId)?.name || categoryId || "Uncategorized";
@@ -79,7 +71,7 @@ function GlobalSearchPalette({
     const masters = masterModules
       .filter((module) => {
         if (module.skipPermissionCheck) return true;
-        const permissionName = getMasterPermissionName(module);
+        const permissionName = getModulePermissionName(module);
         return hasPermission(permissionName, dataContext);
       })
       .map((module) => ({
@@ -94,7 +86,7 @@ function GlobalSearchPalette({
 
     const reportItems = reports
       .filter((report) => {
-        const permissionName = report.permissionName || `read_${report.id}`;
+        const permissionName = getModulePermissionName(report);
         return hasPermission(permissionName, dataContext);
       })
       .map((report) => {

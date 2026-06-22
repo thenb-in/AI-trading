@@ -58,6 +58,24 @@ async function signup(req, res) {
 }
 
 /**
+ * Availability check view — GET /auth/availability?type=company|username&value=...
+ * Public; lets a UI tell the user a name is taken while typing.
+ */
+async function checkAvailability(req, res) {
+  try {
+    const { type, value } = req.query;
+    const result = await authController.checkAvailability(type, value);
+    res.status(200).json(result);
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    logger.error('Availability check error', error);
+    res.status(500).json({ error: `Could not check availability: ${error.message}` });
+  }
+}
+
+/**
  * Login view
  * @param {object} req - Express request object
  * @param {object} res - Express response object
@@ -225,5 +243,6 @@ module.exports = {
   approveUser,
   getAllUsers,
   getAllRoles,
-  logout
+  logout,
+  checkAvailability
 };

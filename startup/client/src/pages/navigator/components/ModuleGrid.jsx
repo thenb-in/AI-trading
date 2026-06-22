@@ -7,18 +7,22 @@ const ModuleGrid = ({
   appModules,
   masters,
   reports,
+  other = [],
   appModuleStats,
   masterStats,
   reportStats,
   onAppModuleClick,
   onMasterClick,
   onReportClick,
+  onOtherClick = () => {},
   searchTerm,
+  gridColsClassName = "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6",
 }) => {
   const hasAppModules = appModules.length > 0;
   const hasMasters = masters.length > 0;
   const hasReports = reports.length > 0;
-  const hasAnyContent = hasAppModules || hasMasters || hasReports;
+  const hasOther = other.length > 0;
+  const hasAnyContent = hasAppModules || hasMasters || hasReports || hasOther;
 
 
   if (!hasAnyContent) {
@@ -60,7 +64,7 @@ const ModuleGrid = ({
               {appModules.length}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1.5">
+          <div className={`grid ${gridColsClassName} gap-1.5`}>
             {appModules.map((module) => (
               <div key={module.id || module.title} className="h-20">
                 <ModuleCard
@@ -84,7 +88,7 @@ const ModuleGrid = ({
               {reports.length}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1.5">
+          <div className={`grid ${gridColsClassName} gap-1.5`}>
             {reports.map((report) => (
               <div key={report.id || report.title} className="h-20">
                 <ModuleCard
@@ -108,13 +112,37 @@ const ModuleGrid = ({
               {masters.length}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-1.5">
+          <div className={`grid ${gridColsClassName} gap-1.5`}>
             {masters.map((module) => (
               <div key={module.id || module.title} className="h-20">
                 <ModuleCard
                   module={module}
                   type="master"
                   onClick={() => onMasterClick(module)}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Other Section — permissions with no module/report/master definition */}
+      {hasOther && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-2">
+            <div className="w-1 h-4 bg-gray-400 rounded"></div>
+            <h3 className="text-sm font-semibold text-gray-700">Other</h3>
+            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+              {other.length}
+            </span>
+          </div>
+          <div className={`grid ${gridColsClassName} gap-1.5`}>
+            {other.map((module) => (
+              <div key={module.id || module.title} className="h-20">
+                <ModuleCard
+                  module={module}
+                  type="other"
+                  onClick={() => onOtherClick(module)}
                 />
               </div>
             ))}
@@ -130,6 +158,8 @@ ModuleGrid.propTypes = {
   appModules: PropTypes.arrayOf(PropTypes.object).isRequired,
   masters: PropTypes.arrayOf(PropTypes.object).isRequired,
   reports: PropTypes.arrayOf(PropTypes.object).isRequired,
+  other: PropTypes.arrayOf(PropTypes.object),
+  onOtherClick: PropTypes.func,
   appModuleStats: PropTypes.shape({
     total: PropTypes.number.isRequired,
     accessible: PropTypes.number.isRequired,
@@ -149,6 +179,7 @@ ModuleGrid.propTypes = {
   onMasterClick: PropTypes.func.isRequired,
   onReportClick: PropTypes.func.isRequired,
   searchTerm: PropTypes.string.isRequired,
+  gridColsClassName: PropTypes.string,
 };
 
 const MemoizedModuleGrid = memo(ModuleGrid);

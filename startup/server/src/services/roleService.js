@@ -14,6 +14,11 @@ async function getAllRoles(companyId) {
   return roles;
 }
 
+async function getRoleByName(name, transaction) {
+  return Role.findOne({ where: { name }, transaction });
+}
+
 module.exports = {
-  getAllRoles
+  getAllRoles,
+  getRoleByName
 };
