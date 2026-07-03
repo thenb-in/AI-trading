@@ -1,7 +1,6 @@
 const logger = require('../../logger');
 // MultiCompanyModule is the primary model for this service
-const { MultiCompanyModule } = require('../models');
-const companyProfileService = require('./companyProfileService');
+const { MultiCompanyModule, CompanyProfile } = require('../models');
 const companyService = require('./companyService');
 const rolePermissionService = require('./rolePermissionService');
 const userService = require('./userService');
@@ -291,7 +290,7 @@ async function createCompanyAndLink(data, userId) {
     // Otherwise, let Sequelize auto-generate UUID via defaultValue: DataTypes.UUIDV4
 
     const company = await companyService.createCompany(companyData, transaction);
-    await companyProfileService.createCompanyProfile(company.id, {}, transaction);
+    await CompanyProfile.create({ companyId: company.id }, { transaction });
 
     // Link user to company
     await assignUserToCompany(userId, company.id, transaction);

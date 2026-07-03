@@ -71,7 +71,9 @@ api.interceptors.response.use(
     // Handle 400 Bad Request - validation errors
     if (error.response?.status === 400 && error.response?.data?.errors) {
       error.response.data.errors.forEach((e) => {
-        toast.error(e.msg || e.message || 'Validation error');
+        // errors entries may be plain strings (custom validators) or
+        // objects { msg } / { message } (express-validator style).
+        toast.error(typeof e === 'string' ? e : (e.msg || e.message || 'Validation error'));
       });
     }
 

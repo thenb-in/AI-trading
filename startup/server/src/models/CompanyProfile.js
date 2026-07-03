@@ -1,3 +1,5 @@
+const { companyProfileFields } = require('@appServer/src/models/mixins/companyProfileFields');
+
 module.exports = (sequelize, DataTypes) => {
   const CompanyProfile = sequelize.define('CompanyProfile', {
     id: {
@@ -10,16 +12,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    username: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      comment: 'Django/external system username for company credentials'
-    },
-    password: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: 'Django/external system password for company credentials'
-    }
+    ...companyProfileFields(DataTypes)
   }, {
     tableName: 'company_profiles',
     timestamps: true,

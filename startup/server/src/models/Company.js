@@ -26,6 +26,22 @@ module.exports = (sequelize, DataTypes) => {
     role_id: {
       type: DataTypes.INTEGER,
       allowNull: true
+    },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Company location latitude (decimal degrees, -90..90)'
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+      comment: 'Company location longitude (decimal degrees, -180..180)'
+    },
+    geofence_radius_meters: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 500,
+      comment: 'Punch geofence radius (meters) around the company coordinates'
     }
   }, {
     tableName: 'nbnext_company',
