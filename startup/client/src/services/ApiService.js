@@ -19,6 +19,24 @@ const ApiService = {
     return this.request('POST', '/auth/login', data);
   },
 
+  // Self-serve onboarding (public)
+  getPublicPlans() {
+    return this.request('GET', '/auth/plans');
+  },
+
+  // Live availability check while typing (type: 'company' | 'username').
+  checkAvailability(type, value) {
+    return this.request('GET', '/auth/availability', null, { params: { type, value } });
+  },
+
+  createPaymentOrder(subscriptionId) {
+    return this.request('POST', '/auth/payment/order', { subscriptionId });
+  },
+
+  onboard(data) {
+    return this.request('POST', '/auth/onboard', data);
+  },
+
   getUser() {
     return this.request('GET', '/users/me');
   },
@@ -40,16 +58,23 @@ const ApiService = {
     return this.request('GET', '/company/settings');
   },
 
+  getTerminalListApi() {
+    return this.request('GET', '/iclock-terminal/terminal-list-api');
+  },
+
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
   },
 
-  getCompanyProfile() {
-    return this.request('GET', '/company-profile');
+  // Company Profile (attendance aliases, compliance defaults, credentials,
+  // emp_code_basis) is owned by app now — see @app/services/api companyProfileApi.
+
+  getCompanyDetails() {
+    return this.request('GET', '/company-details');
   },
 
-  updateCompanyProfile(profile) {
-    return this.request('PUT', '/company-profile', profile);
+  updateCompanyDetails(formData) {
+    return this.request('PUT', '/company-details', formData);
   },
 
   getUserCompanies() {
@@ -91,6 +116,9 @@ const ApiService = {
   
   updateUserDevice(userId, deviceAccess) {
     return this.request('PUT', `/users/${userId}/deviceAccess`, { deviceAccess });
+  },
+  updateUser(userId, fields) {
+    return this.request('PUT', `/users/${userId}`, fields);
   },
   updateUserDisappearingSettings(userId, data){
     return this.request("PATCH", `/users/${userId}/updateDisappearing`, data)

@@ -8,6 +8,8 @@ import { cleanFormData } from '@utils/authformvalidation';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { PhoneTypeField } from '@startup/components/base_components/fields/PhoneTypeField';
 import { PasswordTypeField } from '@startup/components/base_components/fields/PasswordTypeField';
+import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
+import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 
 
 function Signup({ showRoleDropdown }) {
@@ -24,6 +26,8 @@ function Signup({ showRoleDropdown }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const usernameAvailability = useAvailabilityCheck('username', formData.username);
 
   // Honor company_id from URL (e.g. /signup?company_id=uuid) for invite/signup links
   useEffect(() => {
@@ -75,6 +79,11 @@ function Signup({ showRoleDropdown }) {
 
     if (cleanedData.password !== cleanedData.confirmPassword) {
       setError('Passwords do not match.');
+      return;
+    }
+
+    if (usernameAvailability.status === 'taken') {
+      setError('That username is already taken. Please choose another.');
       return;
     }
 
@@ -160,6 +169,7 @@ function Signup({ showRoleDropdown }) {
               onChange={handleChange}
               required
             />
+            <AvailabilityHint status={usernameAvailability.status} takenLabel="That username is already taken." />
           </div>
 
           {/* Phone */}
@@ -236,7 +246,8 @@ function Signup({ showRoleDropdown }) {
           <div className="mb-6">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg"
+              disabled={usernameAvailability.status === 'taken' || usernameAvailability.status === 'checking'}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               Create Account
             </button>

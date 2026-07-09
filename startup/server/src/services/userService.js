@@ -85,6 +85,10 @@ const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
+const getUserByUsername = async (username, transaction) => {
+  return User.findOne({ where: { username }, transaction });
+};
+
 const updateUserProfile = async (userId, userProfile) => {
   const user = await findModelByIdOrThrow(User, userId, {
     include: [
@@ -125,6 +129,37 @@ const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
   );
 
   return updated > 0;
+};
+
+
+const ALLOWED_BASIC_FIELDS = ['name', 'phone', 'username'];
+
+const updateUserBasic = async (userId, fields = {}) => {
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
+
+  const updates = {};
+  for (const key of ALLOWED_BASIC_FIELDS) {
+    if (fields[key] !== undefined) {
+      updates[key] = typeof fields[key] === 'string' ? fields[key].trim() : fields[key];
+    }
+  }
+
+  if (updates.username !== undefined) {
+    const normalized = updates.username.toLowerCase();
+    if (!normalized) {
+      throw new Error(`Username cannot be empty get ${normalized}`);
+    }
+    const clash = await User.findOne({ where: { username: normalized, id: { [Op.ne]: userId } } });
+    if (clash) {
+      throw new Error(`Username "${normalized}" already exists`);
+    }
+    updates.username = normalized;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await user.update(updates);
+  }
+  return user;
 };
 
 const checkUserActive = async (userId) => {
@@ -211,10 +246,12 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getUserById,
+  getUserByUsername,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,
   updateUserProfile,
+  updateUserBasic,
   updateUserRefreshTokenAndLastActive,
   checkUserActive,
   getUserByPkWithLock,

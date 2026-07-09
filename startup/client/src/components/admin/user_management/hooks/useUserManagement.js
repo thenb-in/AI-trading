@@ -158,6 +158,15 @@ const useUserManagement = () => {
     }
   };
 
+  const updateUser = async (userId, fields) => {
+    const res = await ApiService.updateUser(userId, fields);
+    const updated = res?.data?.user || fields;
+    setUsers((prevUsers) =>
+      prevUsers.map((user) => (user.id === userId ? { ...user, ...updated } : user))
+    );
+    setError('');
+  };
+
   const updateUserProfileInState = (userId, userProfileData) => {
     setUsers((prevUsers) =>
       prevUsers.map((user) => {
@@ -254,6 +263,7 @@ const useUserManagement = () => {
     showConfirmation,
     showBulkDeleteConfirmation,
     handleDeviceOptionUpdate,
+    updateUser,
     updateUserProfileInState,
   };
 };

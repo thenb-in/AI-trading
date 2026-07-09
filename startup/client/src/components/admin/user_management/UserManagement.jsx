@@ -42,6 +42,7 @@ function UserManagement() {
     roles,
     // deviceAccessOptions ,
     handleDeviceOptionUpdate,
+    updateUser,
     updateUserProfileInState,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
@@ -134,6 +135,7 @@ function UserManagement() {
     deselectAllUsersFromTable,
     handleRoleChange,
     handleDeviceOptionUpdate,
+    updateUser,
   };
 
   if (loading) {

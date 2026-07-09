@@ -1,31 +1,47 @@
 import { memo, useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
+import { EditFieldModal } from './EditFieldModal';
 import { hasPermission, useDataContext } from '@context/useDataContext';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 
-const UserTableRow = ({ 
-  user, 
+const UserTableRow = ({
+  user,
   roles,
-  selectedUsers, 
-  bulkDeleteMode, 
-  toggleUserSelection, 
-  showConfirmation, 
+  selectedUsers,
+  bulkDeleteMode,
+  toggleUserSelection,
+  showConfirmation,
   formatLastActive,
   handleRoleChange,
   handleDeviceOptionUpdate,
+  updateUser,
   extraColumns = []
 }) => {
   const dataContext = useDataContext();
+  const canUpdateUser = hasPermission('update_user', dataContext);
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
+  // Which identity field (name | phone | username) is being edited in the modal, or null.
+  const [editField, setEditField] = useState(null);
+
+
+  const openFieldEdit = (field) => (e) => {
+    e.stopPropagation();
+    if (!canUpdateUser) return;
+    setEditField(field);
+  };
 
   const roleSelectRef = useRef(null);
   const deviceRef = useRef(null);
 
   const isSelected = selectedUsers?.includes(user.id);
   const canUpdateRole = hasPermission('update_role', dataContext);
+  const fieldEditClass = canUpdateUser
+    ? 'cursor-pointer hover:text-blue-600 hover:underline'
+    : 'cursor-default';
 
   const handleRowClick = () => {
     if (bulkDeleteMode) {
@@ -142,10 +158,37 @@ const UserTableRow = ({
         </td>
       )}
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+        <button
+          type="button"
+          onClick={openFieldEdit('name')}
+          disabled={!canUpdateUser}
+          title={canUpdateUser ? 'Click to edit name' : 'You do not have permission to update users'}
+          className={`text-left text-sm font-medium text-gray-900 ${fieldEditClass}`}
+        >
+          {user.name || '—'}
+        </button>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-500">{user.username}</div>
+        <button
+          type="button"
+          onClick={openFieldEdit('username')}
+          disabled={!canUpdateUser}
+          title={canUpdateUser ? 'Click to edit username' : 'You do not have permission to update users'}
+          className={`text-left text-sm text-gray-500 ${fieldEditClass}`}
+        >
+          {user.username || '—'}
+        </button>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <button
+          type="button"
+          onClick={openFieldEdit('phone')}
+          disabled={!canUpdateUser}
+          title={canUpdateUser ? 'Click to edit phone' : 'You do not have permission to update users'}
+          className={`text-left text-sm text-gray-500 ${fieldEditClass}`}
+        >
+          {user.phone || '—'}
+        </button>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {editingRole ? (
@@ -300,6 +343,16 @@ const UserTableRow = ({
           )}
         </div>
       </td>
+
+      {editField && createPortal(
+        <EditFieldModal
+          field={editField}
+          initialValue={user[editField] ?? ''}
+          onSave={(val) => updateUser(user.id, { [editField]: val })}
+          onClose={() => setEditField(null)}
+        />,
+        document.body
+      )}
     </tr>
   );
 };
@@ -314,6 +367,7 @@ UserTableRow.propTypes = {
   formatLastActive: PropTypes.func.isRequired,
   handleRoleChange: PropTypes.func.isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
+  updateUser: PropTypes.func.isRequired,
   extraColumns: PropTypes.array
 };
 
