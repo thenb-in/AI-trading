@@ -1,4 +1,5 @@
 'use strict';
+require(require.resolve('module-alias', { paths: [process.cwd()] }))(process.cwd());
 const readline = require('readline');
 const logger = require('./logger');
 const { createStartingAppData } = require('./scripts/default_data/app');
