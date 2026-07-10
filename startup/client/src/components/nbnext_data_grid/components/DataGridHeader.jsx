@@ -224,9 +224,9 @@ function DataGridHeader({
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => handleHeaderClick(col)}
+            onClick={(e) => handleHeaderClick(col, e)}
             className="bg-transparent border-none p-0 m-0 font-inherit text-inherit cursor-pointer inline-flex items-center gap-2"
-            title={col.headerName}
+            title={`${col.headerName} — click to sort, Shift+click to add to multi-sort`}
             aria-label={`Sort by ${col.headerName}`}
           >
             <span>{col.headerName}</span>

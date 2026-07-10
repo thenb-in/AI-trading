@@ -2,6 +2,7 @@ import React from "react";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
 import { sanitizeHTML } from "../../base_report/reportFormatter.js";
 import { toValidNumber } from "@utils/toValidNumber.js";
+import { parseDateValue } from "@utils/dateTimeUtils.js";
 import { DEFAULT_COLUMN_WIDTH } from "./constants.js";
 
 /**
@@ -138,6 +139,100 @@ const filterRows = (indexedRows, filterModel, columns) => {
   });
 };
 
+
+const durationToSeconds = (value) => {
+  if (value == null || value === "") return NaN;
+  if (typeof value === "number") return value;
+  if (typeof value === "object") {
+    const days = Number(value.days) || 0;
+    const hours = Number(value.hours) || 0;
+    const minutes = Number(value.minutes) || 0;
+    const seconds = Number(value.seconds) || 0;
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return NaN;
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+    if (/^P/i.test(trimmed)) {
+      const timePart = trimmed.split(/T/i)[1] || "";
+      const h = timePart.match(/(\d+)H/i);
+      const m = timePart.match(/(\d+)M/i);
+      const sec = timePart.match(/(\d+)S/i);
+      return (h ? Number(h[1]) : 0) * 3600 + (m ? Number(m[1]) : 0) * 60 + (sec ? Number(sec[1]) : 0);
+    }
+    const parts = trimmed.split(":");
+    if (parts.length >= 2 && parts.every((p) => /^\d+$/.test(p))) {
+      const hh = Number(parts[0]);
+      const mm = Number(parts[1]);
+      const ss = parts.length > 2 ? Number(parts[2]) : 0;
+      return hh * 3600 + mm * 60 + ss;
+    }
+  }
+  return NaN;
+};
+
+/** Strip currency symbols / thousands separators, then parse. NaN if empty. */
+const currencyToNumber = (value) => {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return NaN;
+  const cleaned = value.replace(/[^0-9.-]/g, "");
+  if (!cleaned || cleaned === "-" || cleaned === ".") return NaN;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+};
+
+
+const getSortKind = (formatType) => {
+  switch (formatType) {
+    case "duration":
+      return "duration";
+    case "currency":
+      return "currency";
+    case "number":
+    case "numeric":
+      return "number";
+    case "date":
+    case "datetime":
+      return "date";
+    case "time":
+      return "time";
+    default:
+      return "string";
+  }
+};
+
+
+const getNumericComparable = (value, kind) => {
+  switch (kind) {
+    case "duration":
+      return durationToSeconds(value);
+    case "currency":
+      return currencyToNumber(value);
+    case "number": {
+      const n = toValidNumber(value);
+      return typeof n === "number" && !Number.isNaN(n) ? n : NaN;
+    }
+    case "date": {
+      if (value instanceof Date) return value.getTime();
+      const d = parseDateValue(value);
+      return d ? d.getTime() : NaN;
+    }
+    case "time": {
+      if (value instanceof Date) return value.getTime();
+      const d = parseDateValue(value);
+      if (d) return d.getTime();
+      return durationToSeconds(value);
+    }
+    default:
+      return NaN;
+  }
+};
+
+
+const compareStrings = (va, vb) =>
+  String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: "base" });
+
 /**
  * Sort rows based on the canonical array sort model `[{ field, sort }, ...]`
  * (priority by index). Returns indexedRows unchanged if no valid sorts.
@@ -150,9 +245,7 @@ const sortRows = (indexedRows, sortModel, columns) => {
     .map((s) => {
       const col = columns.find((c) => c.field === s.field);
       if (!col) return null;
-      const formatType = getColumnFormatType(col);
-      const sortAsNumber = formatType === "number" || formatType === "numeric";
-      const sortAsDate = formatType === "date" || formatType === "datetime";
+      const kind = getSortKind(getColumnFormatType(col));
       const dir = s.sort === "asc" ? 1 : -1;
       const getter = (row) => {
         if (typeof col.valueGetter === "function") {
@@ -168,45 +261,35 @@ const sortRows = (indexedRows, sortModel, columns) => {
         if (va == null) return -1 * dir;
         if (vb == null) return 1 * dir;
 
-        if (sortAsNumber) {
-          const na = toValidNumber(va);
-          const nb = toValidNumber(vb);
 
-          const isNa = typeof na === "number" && !Number.isNaN(na);
-          const isNb = typeof nb === "number" && !Number.isNaN(nb);
+        if (kind !== "string") {
+          const na = getNumericComparable(va, kind);
+          const nb = getNumericComparable(vb, kind);
+          const okA = !Number.isNaN(na);
+          const okB = !Number.isNaN(nb);
 
-          if (!isNa && !isNb) {
-            return String(na).localeCompare(String(nb)) * dir;
+          if (okA && okB) {
+            if (na < nb) return -1 * dir;
+            if (na > nb) return 1 * dir;
+            return 0;
           }
-          if (!isNa) return 1 * dir;
-          if (!isNb) return -1 * dir;
-
-          if (na < nb) return -1 * dir;
-          if (na > nb) return 1 * dir;
-          return 0;
+          if (!okA && !okB) return compareStrings(va, vb) * dir;
+          return (okA ? -1 : 1) * dir;
         }
 
-        // Sort dates chronologically. Triggers on declared date columns OR
-        // when the cell value is a Date instance — without this, `String(date)`
-        // produces "Mon Apr 13 2026 ..." and lex-sorts by weekday name.
-        if (sortAsDate || va instanceof Date || vb instanceof Date) {
-          const ta = va instanceof Date ? va.getTime() : Date.parse(va);
-          const tb = vb instanceof Date ? vb.getTime() : Date.parse(vb);
-          const isTa = !Number.isNaN(ta);
-          const isTb = !Number.isNaN(tb);
-
-          if (!isTa && !isTb) {
-            return String(va).localeCompare(String(vb)) * dir;
-          }
-          if (!isTa) return 1 * dir;
-          if (!isTb) return -1 * dir;
-
-          if (ta < tb) return -1 * dir;
-          if (ta > tb) return 1 * dir;
-          return 0;
+        // Text columns: still order any stray Date instances chronologically —
+        // without this, `String(date)` lex-sorts by weekday name ("Mon"…).
+        if (va instanceof Date || vb instanceof Date) {
+          const ta = va instanceof Date ? va.getTime() : parseDateValue(va)?.getTime();
+          const tb = vb instanceof Date ? vb.getTime() : parseDateValue(vb)?.getTime();
+          const okA = typeof ta === "number" && !Number.isNaN(ta);
+          const okB = typeof tb === "number" && !Number.isNaN(tb);
+          if (okA && okB) return (ta < tb ? -1 : ta > tb ? 1 : 0) * dir;
+          if (!okA && !okB) return compareStrings(va, vb) * dir;
+          return (okA ? -1 : 1) * dir;
         }
 
-        return String(va).localeCompare(String(vb)) * dir;
+        return compareStrings(va, vb) * dir;
       };
     })
     .filter(Boolean);
@@ -337,8 +420,8 @@ const calculateTotals = (rows, columns) => {
  * so the caller can fall back to a different strategy.
  *
  * `is_summary` is a server-provided curation hint — it says "these specific
- * columns are the ones worth aggregating". The grid only renders what callers
- * (or this helper) build; it has no
+ * columns are the ones worth aggregating", e.g. PF/ESIC statutory totals.
+ * The grid only renders what callers (or this helper) build; it has no
  * domain knowledge of which columns are summable on its own.
  */
 const calculateIsSummaryTotals = (rows, columns) => {

@@ -131,13 +131,29 @@ const useLayoutState = ({
   }, [l2]);
 
   // ─── Sort ───────────────────────────────────────────────────────────────
-  const handleHeaderClick = useCallback((col) => {
+
+  const handleHeaderClick = useCallback((col, event) => {
     if (!col?.sortable) return;
+    const multiSort = Boolean(event?.shiftKey);
     setL3((prev) => {
       const currentMerge = mergeLayout(l1Ref.current, l2, prev, fallbackSortRef.current);
       const current = prev.sortModel ?? currentMerge.sortModel;
       const idx = current.findIndex((s) => s.field === col.field);
       let next;
+
+      if (!multiSort) {
+        // Single-column sort: cycle asc → desc → none for this column only.
+        const isSoleSort = current.length === 1 && idx === 0;
+        if (!isSoleSort) {
+          next = [{ field: col.field, sort: SORT_DIRECTIONS.ASC }];
+        } else if (current[0].sort === SORT_DIRECTIONS.ASC) {
+          next = [{ field: col.field, sort: SORT_DIRECTIONS.DESC }];
+        } else {
+          next = [];
+        }
+        return { ...prev, sortModel: next };
+      }
+
       if (idx === -1) {
         next = [...current, { field: col.field, sort: SORT_DIRECTIONS.ASC }];
       } else if (current[idx].sort === SORT_DIRECTIONS.ASC) {
