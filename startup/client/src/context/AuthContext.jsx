@@ -124,6 +124,12 @@ const DataProvider = ({ children }) => {
           <h2 className="text-xl font-semibold text-red-600 mb-2">Unauthorized Access</h2>
           <p className="text-gray-600">You are not authorized to access this app on your current device.</p>
           <p className="mt-2 text-gray-500 text-sm">
+            Company: <b>{userData?.company?.name || "-"}</b>
+          </p>
+          <p className="text-gray-500 text-sm">
+            Username: <b>{userData?.name || "-"}</b>
+          </p>
+          <p className="mt-2 text-gray-500 text-sm">
             Allowed devices:{" "}
             <b>
               {userData?.mobileApp ? "Mobile App " : ""}
