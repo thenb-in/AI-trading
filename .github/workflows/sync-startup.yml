@@ -118,6 +118,9 @@ jobs:
           # distinct branch instead of failing the push with non-ff.
           BRANCH="sync/etime-payroll/${DATE}-r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
           echo "name=${BRANCH}" >> "$GITHUB_OUTPUT"
+          # Slash-free variant for use as an artifact name (upload-artifact
+          # rejects '/', ':', etc. in names).
+          echo "slug=${BRANCH//\//-}" >> "$GITHUB_OUTPUT"
           echo "[branch] ${BRANCH}"
 
       - name: Configure git identity in target repo
@@ -149,7 +152,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: sync-startup-logs-${{ steps.branch.outputs.name }}
+          name: sync-startup-logs-${{ steps.branch.outputs.slug }}
           path: sync-logs/
           if-no-files-found: warn
           retention-days: 30
