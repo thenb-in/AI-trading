@@ -23,10 +23,29 @@ const companyService = {
     }
   },
 
+  async getCompanyByName(name, transaction) {
+    return Company.findOne({ where: { name }, transaction });
+  },
+
+
+  async createCompany(data, transaction) {
+    return Company.create(
+      {
+        id: data.id && data.id.trim() ? data.id.trim() : uuidv4(),
+        name: data.name,
+        mobileApp: !!data.mobileApp,
+        desktopWeb: data.desktopWeb === undefined ? true : !!data.desktopWeb,
+        mobileWeb: !!data.mobileWeb,
+        role_id: data.role_id ?? null
+      },
+      { transaction }
+    );
+  },
+
   async getCompanySettings(id) {
     try {
       return await findModelByIdOrThrow(Company, id, {
-        attributes: ['id', 'name', 'mobileApp', 'desktopWeb', 'mobileWeb']
+        attributes: ['id', 'name', 'mobileApp', 'desktopWeb', 'mobileWeb', 'latitude', 'longitude', 'geofence_radius_meters']
       }, 'Company');
     } catch (error) {
       throw new Error(`Failed to fetch company settings: ${error.message}`);
@@ -44,6 +63,15 @@ const companyService = {
         desktopWeb: data.desktopWeb,
         mobileWeb: data.mobileWeb
       };
+      if (data.latitude !== undefined) {
+        updates.latitude = data.latitude;
+      }
+      if (data.longitude !== undefined) {
+        updates.longitude = data.longitude;
+      }
+      if (data.geofence_radius_meters !== undefined) {
+        updates.geofence_radius_meters = data.geofence_radius_meters;
+      }
       await company.update(updates);
       return company;
     } catch (error) {
@@ -137,10 +165,14 @@ const companyService = {
     user.desktopWeb = company.desktopWeb;
     user.mobileWeb = company.mobileWeb;
     // await user.save();
-    await UserProfile.update(
-      { currentCompany: companyId },
-      { where: { userId } }
-    );
+    const [profile, created] = await UserProfile.findOrCreate({
+      where: { userId },
+      defaults: { userId, currentCompany: companyId }
+    });
+    if (!created) {
+      profile.currentCompany = companyId;
+      await profile.save();
+    }
     return {
       ...user.toJSON(),
       company: {
@@ -157,7 +189,7 @@ const companyService = {
     if (!activeCompanyId) {
       return null;
     }
-    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] });
+    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude','geofence_radius_meters'] });
   }
 
 };
