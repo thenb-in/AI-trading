@@ -1,13 +1,14 @@
 import { Routes, Route } from "react-router-dom";
 import { AdminLayout } from "../components/admin/AdminLayout";
 import { UserManagement } from "../components/admin/user_management/UserManagement";
-import { CompanySettings } from "../components/admin/CompanySettings";
+import { CompanySettings } from "../components/admin/company_setting/CompanySettings";
 import { RolePermissionsManagement } from "../components/admin/role_permissions";
 import { MultiCompanyModule } from "../components/admin/multi_company_module/MultiCompanyModule";
 // Import extra App routes
 import { appRoutes } from "./AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
+import { DashboardContent } from "@app/pages/Dashboards";
 import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
@@ -24,6 +25,8 @@ const AdminDashboard = () => {
         {/* TODO: Show first route based on user permission */}
         <Route index element={<Navigator />} />
         <Route path="navigator" element={<Navigator />} />
+        <Route path="dashboards" element={<DashboardContent />} />
+        <Route path="dashboard/*" element={<DashboardContent />} />
         <Route path="reports" element={<ReportContent />} />
         <Route path="report/*" element={<ReportContent />} />
 
