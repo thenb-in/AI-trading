@@ -16,6 +16,7 @@ import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBn
 import { AppGuide } from "./AppGuide";
 import { appRoutesWithoutSidebar } from "./AppDashboardWithoutSidebar";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
+import { NotificationsPage } from "../notifications/NotificationsPage";
 
 const AdminDashboard = () => {
   return (
@@ -43,6 +44,7 @@ const AdminDashboard = () => {
         <Route path="subscription" element={<SubscriptionPage/>}/>
         <Route path="app-guide" element={<AppGuide />} />
         <Route path="help-support" element={<HelpSupportPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
 
         {/* Add APP extra routes */}
         {appRoutes.map((route) => (

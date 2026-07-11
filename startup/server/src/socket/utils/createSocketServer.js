@@ -3,7 +3,7 @@
 const { Server } = require('socket.io');
 const logger = require('../../../logger');
 const { buildSocketAuthMiddleware } = require('../../middleware/socketAuthMiddleware');
-const { companyRoom } = require('./rooms');
+const { companyRoom, userRoom } = require('./rooms');
 
 
 function createSocketServer({ httpServer, corsOrigin = '*', onReady, label = 'socket', allowAnonymous = false }) {
@@ -18,6 +18,10 @@ function createSocketServer({ httpServer, corsOrigin = '*', onReady, label = 'so
     // Join the tenant room so server-side broadcasts can target one company.
     if (socket.user?.company_id) {
       socket.join(companyRoom(socket.user.company_id));
+    }
+    // Join a per-user room so we can target a single user (e.g. notifications).
+    if (socket.user?.id) {
+      socket.join(userRoom(socket.user.id));
     }
     logger.info(`[${label}] socket connected id=${socket.id} ${who}`);
     socket.on('disconnect', (reason) => {

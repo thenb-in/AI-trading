@@ -11,6 +11,7 @@ const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../utils/model
 const companyService = require('./companyService');
 const userService = require('./userService');
 const { verifyValidSubscribedPermission } = require('../utils/subscriptionPermissionUtils');
+const { notifyCompanyAdminsOfLogin } = require('../notifications/dispatchers');
 const normalize = (val) => val?.trim().toLowerCase();
 
 
@@ -172,6 +173,11 @@ const loginUser = async (credentials) => {
   logger.info(`User login successful: ${user.id}`);
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);
   const activeCompany = await companyService.getActiveCompanyForUser(user);
+
+  await notifyCompanyAdminsOfLogin({
+    companyId: user.company_id,
+    actor: { id: user.id, name: user.name }
+  });
   // Filter permissions based on subscription status
   const userWithFilteredPermissions = await verifyValidSubscribedPermission(user, activeCompany.id);
   const profile = await UserProfile.findOne({ where: { userId:user.id } });
@@ -241,7 +247,7 @@ const getCurrentUser = async (userId) => {
     const profile = await UserProfile.findOne({ where: { userId } });
     const activeCompanyId = profile?.currentCompany || user.company_id;
     const activeCompany = activeCompanyId
-      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude'] })
+      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude','geofence_radius_meters'] })
       : null;
 
     // Filter permissions based on subscription status
@@ -262,7 +268,7 @@ const getCurrentUser = async (userId) => {
       role_id: userWithFilteredPermissions.role_id,
       isActive: userWithFilteredPermissions.isActive,
       is_approved: userWithFilteredPermissions.is_approved,
-      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude} : null,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude, geofence_radius_meters: activeCompany.geofence_radius_meters} : null,
       isSupportUser: user.isSupportUser,
       role: user.role ? {
         id: user.role.id,

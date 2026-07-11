@@ -9,10 +9,10 @@ import { useDataContext } from "@context/useDataContext";
 import { LogoutButton } from "../LogoutButton";
 import { HelpSupportButton } from "../HelpSupportButton";
 import { SearchButton } from "../SearchButton";
+import { NotificationButton } from "../NotificationButton";
 import { DebugModeIndicator } from "../DebugModeIndicator";
 import { isDebugMode, subscribeToDebugMode } from "@services/debugModeService";
 import PropTypes from "prop-types";
-import { STORAGE_KEYS } from "@/constants/index";
 import { useEffect, useMemo, useState } from "react";
 
 function AdminSidebar({
@@ -198,11 +198,7 @@ function AdminSidebar({
               </div>
               <div className="truncate">
                 <strong>Company:</strong>{" "}
-                {typeof window !== "undefined"
-                  ? localStorage.getItem(STORAGE_KEYS.ACTIVE_COMPANY_NAME) ||
-                    userData?.company?.name ||
-                    "-"
-                  : userData?.company?.name || "-"}
+                {userData?.company?.name || "-"}
               </div>
               <div className="truncate">
                 <strong>Role:</strong> {userData?.role?.name}
@@ -210,8 +206,9 @@ function AdminSidebar({
             </div>
           )}
           {showDebugIndicator && <DebugModeIndicator collapsed={collapsed} />}
-          <HelpSupportButton collapsed={collapsed} />
+          <NotificationButton collapsed={collapsed} />
           <SearchButton collapsed={collapsed} />
+          <HelpSupportButton collapsed={collapsed} />
           <LogoutButton collapsed={collapsed} />
         </div>
       </div>

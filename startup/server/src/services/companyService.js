@@ -27,6 +27,13 @@ const companyService = {
     return Company.findOne({ where: { name }, transaction });
   },
 
+  async getAllCompanies() {
+    return Company.findAll({
+      attributes: ['id', 'name'],
+      order: [['name', 'ASC']]
+    });
+  },
+
 
   async createCompany(data, transaction) {
     return Company.create(
@@ -45,48 +52,10 @@ const companyService = {
   async getCompanySettings(id) {
     try {
       return await findModelByIdOrThrow(Company, id, {
-        attributes: ['id', 'name','mobileApp','desktopWeb','mobileWeb', 'job_offer_header_image', 'job_offer_footer_image', 'job_offer_header_height_cm', 'job_offer_footer_height_cm', 'emp_code_basis', 'latitude', 'longitude', 'consecutive_leave_deactivation_days']
+        attributes: ['id', 'name', 'mobileApp', 'desktopWeb', 'mobileWeb', 'latitude', 'longitude', 'geofence_radius_meters']
       }, 'Company');
     } catch (error) {
       throw new Error(`Failed to fetch company settings: ${error.message}`);
-    }
-  },
-
-  async getJobOfferSettings(id) {
-    try {
-      const company = await Company.findByPk(id, {
-        attributes: ['id', 'job_offer_header_image', 'job_offer_footer_image', 'job_offer_header_height_cm', 'job_offer_footer_height_cm']
-      });
-      if (!company) {
-        throw new Error(`Company not found ${id}.`);
-      }
-      return {
-        job_offer_header_image: company.job_offer_header_image || null,
-        job_offer_footer_image: company.job_offer_footer_image || null,
-        job_offer_header_height_cm: company.job_offer_header_height_cm || 3.0,
-        job_offer_footer_height_cm: company.job_offer_footer_height_cm || 3.0
-      };
-    } catch (error) {
-      throw new Error(`Failed to fetch job offer settings: ${error.message}`);
-    }
-  },
-
-  async updateJobOfferSettings(id, data) {
-    logger.info(`Updating job offer settings for company ID: ${id}`);
-    try {
-      const company = await Company.findByPk(id);
-      if (!company) {
-        throw new Error(`Company with id ${id} not found.`);
-      }
-      await company.update({
-        job_offer_header_image: data.job_offer_header_image,
-        job_offer_footer_image: data.job_offer_footer_image,
-        job_offer_header_height_cm: data.job_offer_header_height_cm,
-        job_offer_footer_height_cm: data.job_offer_footer_height_cm
-      });
-      return company;
-    } catch (error) {
-      throw new Error(`Failed to update job offer settings: ${error.message}`);
     }
   },
 
@@ -101,17 +70,14 @@ const companyService = {
         desktopWeb: data.desktopWeb,
         mobileWeb: data.mobileWeb
       };
-      if (data.emp_code_basis !== undefined) {
-        updates.emp_code_basis = data.emp_code_basis;
-      }
       if (data.latitude !== undefined) {
         updates.latitude = data.latitude;
       }
       if (data.longitude !== undefined) {
         updates.longitude = data.longitude;
       }
-      if (data.consecutive_leave_deactivation_days !== undefined) {
-        updates.consecutive_leave_deactivation_days = data.consecutive_leave_deactivation_days;
+      if (data.geofence_radius_meters !== undefined) {
+        updates.geofence_radius_meters = data.geofence_radius_meters;
       }
       await company.update(updates);
       return company;
@@ -206,10 +172,14 @@ const companyService = {
     user.desktopWeb = company.desktopWeb;
     user.mobileWeb = company.mobileWeb;
     // await user.save();
-    await UserProfile.update(
-      { currentCompany: companyId },
-      { where: { userId } }
-    );
+    const [profile, created] = await UserProfile.findOrCreate({
+      where: { userId },
+      defaults: { userId, currentCompany: companyId }
+    });
+    if (!created) {
+      profile.currentCompany = companyId;
+      await profile.save();
+    }
     return {
       ...user.toJSON(),
       company: {
@@ -226,7 +196,7 @@ const companyService = {
     if (!activeCompanyId) {
       return null;
     }
-    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude'] });
+    return await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude','geofence_radius_meters'] });
   }
 
 };

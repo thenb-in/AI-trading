@@ -20,10 +20,13 @@ const db = require('./src/models');
 const activityRoutes = require('./src/routes/activityRoutes');
 const adminRoutes = require('./src/routes/admin.route');
 const authRoutes = require('./src/routes/authRoutes');
+const companyRoutes = require('./src/routes/companyRoutes');
+const companyDetailsRoutes = require('./src/routes/companyDetailsRoutes');
 const helpSupportRoutes = require('./src/routes/helpSupport.route');
 const layoutRoutes = require('./src/routes/layoutRoutes');
 const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
+const notificationRoutes = require('./src/notifications/notificationRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 
 function mountFrameworkMiddleware(app, opts = {}) {
@@ -102,7 +105,10 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/admin`, adminRoutes);
   app.use(`${API_PREFIX}/layouts`, layoutRoutes);
   app.use(`${API_PREFIX}/activity`, activityRoutes);
+  app.use(`${API_PREFIX}/company`, companyRoutes);
+  app.use(`${API_PREFIX}/company-details`, companyDetailsRoutes);
   app.use(`${API_PREFIX}/nbnext-drive`, nbnextDriveRoutes);
+  app.use(`${API_PREFIX}/notifications`, notificationRoutes);
   app.use(`${API_PREFIX}/help-support`, helpSupportRoutes);
 }
 

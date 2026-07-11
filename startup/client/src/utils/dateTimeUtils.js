@@ -44,28 +44,6 @@ const formatDateForInput = (dateString) => {
   }
 };
 
-
-const formatTimeForInput = (timeValue) => {
-  if (!timeValue) return '';
-  try {
-    const raw = String(timeValue).trim();
-    if (!raw) return '';
-
-    const timeMatch = raw.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
-    if (timeMatch) {
-      return `${timeMatch[1]}:${timeMatch[2]}`;
-    }
-
-    const date = parseDateValue(timeValue);
-    if (!date || isNaN(date.getTime())) return '';
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-  } catch {
-    return '';
-  }
-};
-
 // Convert local datetime to ISO string (no timezone conversion needed)
 const convertToISOString = (localDateTime) => {
   if (!localDateTime) return null;
@@ -602,7 +580,6 @@ export {
   getCurrentDateTime,
   formatDate,
   formatDateForInput,
-  formatTimeForInput,
   getThisMonthFullRange,
   getNextMonthFullRange,
   getOneYearFromTodayRange,

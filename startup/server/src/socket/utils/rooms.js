@@ -10,4 +10,9 @@ function companyRoom(companyId) {
   return `company:${companyId}`;
 }
 
-module.exports = { companyRoom };
+
+function userRoom(userId) {
+  return `user:${userId}`;
+}
+
+module.exports = { companyRoom, userRoom };

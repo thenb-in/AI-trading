@@ -14,8 +14,8 @@ const Z_INDEX = {
   // sidebar on mobile where the sidebar can overlay the page.
   MODAL: 100010,
   MATERIAL_UI_DIALOG: 100010,
-  // Toast notifications
-  TOAST: 10000,
+  // Toast cards anchored near the notification bell (above sidebar).
+  TOAST: 100020,
 };
 
 /**

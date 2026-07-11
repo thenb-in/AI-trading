@@ -1,27 +1,7 @@
 const { Notification } = require('../models');
-const allowedPermissions = require('../utils/allowedPermissions');
-const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
-const logger = require('../../logger');
-const { NOTIFICATION_LOG_PREFIX } = require('../constants/notifications');
 
 const notificationService = {
   async create(row) {
-    const { userId } = row || {};
-    if (!userId) {
-      return null;
-    }
-
-    const canViewNotifications = await allowedPermissions(
-      userId,
-      [MODULE_PERMISSION_CONSTANTS.VIEW_NOTIFICATION.name]
-    );
-    if (!canViewNotifications) {
-      logger.debug(
-        `${NOTIFICATION_LOG_PREFIX} skipped create for user ${userId}: missing view_notification permission`
-      );
-      return null;
-    }
-
     return Notification.create(row);
   },
 

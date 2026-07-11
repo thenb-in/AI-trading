@@ -4,6 +4,8 @@ import { Outlet } from "react-router-dom";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { useHelpSupportShortcut } from "@/hooks/useHelpSupportShortcut";
 import { AppLayout } from "@app/components/app_layout/AppLayout";
+import { NotificationProvider } from "../../notifications/NotificationProvider";
+import { ToastProvider } from "../toast";
 
 
 function AdminLayout() {
@@ -39,19 +41,23 @@ function AdminLayout() {
   );
 
   return (
-    <div className="flex overflow-x-hidden">
-      {renderSidebar()}
-      <div
-        className={`flex-1 transition-all duration-300 overflow-x-auto ${
-          collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
-        } min-h-screen bg-gray-50`}
-      >
-        <div className="max-w-full">
-          <Outlet />
+    <ToastProvider>
+      <NotificationProvider>
+        <div className="flex overflow-x-hidden">
+          {renderSidebar()}
+          <div
+            className={`flex-1 transition-all duration-300 overflow-x-auto ${
+              collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
+            } min-h-screen bg-gray-50`}
+          >
+            <div className="max-w-full">
+              <Outlet />
+            </div>
+          </div>
+          <AppLayout />
         </div>
-      </div>
-      <AppLayout />
-    </div>
+      </NotificationProvider>
+    </ToastProvider>
   );
 }
 

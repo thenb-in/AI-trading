@@ -2,8 +2,9 @@ const { Op } = require('sequelize');
 // User is the primary model for this service
 // UserProfile is tightly coupled with User (one-to-one relationship)
 const db = require('../models');
-const { User, UserProfile, Company, Role } = db;
+const { User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
+const { runOnUserUpdate } = require('../hooks/onUserUpdate');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -85,6 +86,60 @@ const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
+const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId = null } = {}) => {
+  const users = await User.findAll({
+    where: { company_id: companyId, isActive: true },
+    include: [{ model: Role, as: 'role', where: { name: roleName }, attributes: [] }],
+    attributes: ['id']
+  });
+
+  return users
+    .map((user) => user.id)
+    .filter((id) => id !== excludeUserId);
+};
+
+const getActiveUserIdsByPermissionName = async (companyId, permissionName, { excludeUserId = null } = {}) => {
+  if (!companyId || !permissionName) {
+    return [];
+  }
+
+  const linkedUserIds = await MultiCompanyModule.findAll({
+    where: { companyId },
+    attributes: ['userId']
+  }).then((links) => links.map((link) => link.userId));
+
+  const companyScope = [{ company_id: companyId }];
+  if (linkedUserIds.length > 0) {
+    companyScope.push({ id: { [Op.in]: linkedUserIds } });
+  }
+
+  const users = await User.findAll({
+    where: {
+      isActive: true,
+      is_approved: true,
+      [Op.or]: companyScope
+    },
+    include: [{
+      model: Role,
+      as: 'role',
+      required: true,
+      include: [{
+        model: Permission,
+        as: 'permissions',
+        where: { name: permissionName },
+        attributes: [],
+        through: { attributes: [] },
+        required: true
+      }]
+    }],
+    attributes: ['id']
+  });
+
+  return users
+    .map((user) => user.id)
+    .filter((id) => id !== excludeUserId);
+};
+
 const getUserByUsername = async (username, transaction) => {
   return User.findOne({ where: { username }, transaction });
 };
@@ -129,6 +184,42 @@ const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
   );
 
   return updated > 0;
+};
+
+
+const ALLOWED_BASIC_FIELDS = ['name', 'phone', 'username'];
+
+const updateUserBasic = async (userId, fields = {}) => {
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
+  const previousUsername = user.username;
+
+  const updates = {};
+  for (const key of ALLOWED_BASIC_FIELDS) {
+    if (fields[key] !== undefined) {
+      updates[key] = typeof fields[key] === 'string' ? fields[key].trim() : fields[key];
+    }
+  }
+
+  if (updates.username !== undefined) {
+    const normalized = updates.username.toLowerCase();
+    if (!normalized) {
+      throw new Error(`Username cannot be empty get ${normalized}`);
+    }
+    const clash = await User.findOne({ where: { username: normalized, id: { [Op.ne]: userId } } });
+    if (clash) {
+      throw new Error(`Username "${normalized}" already exists`);
+    }
+    updates.username = normalized;
+  }
+
+  if (Object.keys(updates).length > 0) {
+    await user.update(updates);
+    await user.reload();
+  }
+
+  await runOnUserUpdate({ user, previousUsername, fields });
+
+  return user;
 };
 
 const checkUserActive = async (userId) => {
@@ -215,11 +306,14 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getUserById,
+  getActiveUserIdsByRoleName,
+  getActiveUserIdsByPermissionName,
   getUserByUsername,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,
   updateUserProfile,
+  updateUserBasic,
   updateUserRefreshTokenAndLastActive,
   checkUserActive,
   getUserByPkWithLock,

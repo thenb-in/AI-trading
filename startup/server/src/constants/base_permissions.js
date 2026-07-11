@@ -21,11 +21,18 @@ const MODULE_PERMISSION_CONSTANTS = {
     description: 'Permission to view company settings'
   },
   VIEW_MASTER_MODULE: create_module_permission('master', 'Masters'),
+  VIEW_DASHBOARD_MODULE: create_module_permission('dashboard', 'Dashboards'),
+  VIEW_HR_DASHBOARD_MODULE: create_module_permission('hr_dashboard', 'HR Dashboard'),
   VIEW_ROLE_PERMISSION_MODULE: create_module_permission('role_permission', 'Role Permission'),
   VIEW_HELP_AND_SUPPORT: {
     name: 'view_help_and_support',
     display_name: 'View Help & Support',
     description: 'Permission to view help and support'
+  },
+  VIEW_NOTIFICATION: {
+    name: 'view_notification',
+    display_name: 'View Notifications',
+    description: 'Permission to view in-app notifications'
   }
   // IS_ADMIN: {
   //   name: 'is_admin',

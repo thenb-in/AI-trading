@@ -26,9 +26,6 @@ async function notifyCompanyAdminsOfLogin({ companyId, actor }) {
 
     for (const userId of approverIds) {
       const row = await notificationService.create({ userId, companyId, ...payload });
-      if (!row) {
-        continue;
-      }
       emitToUsers([userId], NOTIFICATION_NEW, formatNotification(row));
     }
 
