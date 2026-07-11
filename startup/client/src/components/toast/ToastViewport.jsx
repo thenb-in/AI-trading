@@ -3,13 +3,22 @@ import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { ToastCard } from "./ToastCard";
 
+function resolveAnchorElement(anchorRef) {
+  const stored = anchorRef?.current;
+  if (!stored) return null;
+  if (typeof stored.getBoundingClientRect === "function") return stored;
+  const nested = stored.current;
+  if (nested && typeof nested.getBoundingClientRect === "function") return nested;
+  return null;
+}
+
 function ToastViewport({ toasts, anchorRef, onDismiss }) {
   const viewportRef = useRef(null);
   const [position, setPosition] = useState(null);
 
   useEffect(() => {
     const updatePosition = () => {
-      const anchor = anchorRef?.current?.current ?? anchorRef?.current;
+      const anchor = resolveAnchorElement(anchorRef);
       if (!anchor) {
         setPosition(null);
         return;
