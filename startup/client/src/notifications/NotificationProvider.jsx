@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
-import { useDataContext } from "@context/useDataContext";
+import { useDataContext, hasPermission } from "@context/useDataContext";
+import { VIEW_NOTIFICATION_PERMISSION } from "../constants/notifications";
 import { useToast } from "../components/toast";
 import { NotificationContext } from "./NotificationContext";
 import { notificationApi } from "./notificationApi";
@@ -12,7 +13,9 @@ const PAGE_SIZE = 20;
 
 
 function NotificationProvider({ children }) {
-  const { userData } = useDataContext();
+  const dataContext = useDataContext();
+  const canViewNotifications = hasPermission(VIEW_NOTIFICATION_PERMISSION, dataContext);
+  const { userData } = dataContext;
   const { showToast } = useToast();
   const activeCompanyId = userData?.companyId || userData?.company?.id || null;
   const [items, setItems] = useState([]);
@@ -24,7 +27,7 @@ function NotificationProvider({ children }) {
 
   // Initial history load for the active company.
   useEffect(() => {
-    if (!activeCompanyId) {
+    if (!activeCompanyId || !canViewNotifications) {
       setItems([]);
       setLoading(false);
       setHasMore(false);
@@ -55,10 +58,14 @@ function NotificationProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [activeCompanyId]);
+  }, [activeCompanyId, canViewNotifications]);
 
   // Live socket subscription — prepend new notifications as they arrive.
   useEffect(() => {
+    if (!canViewNotifications) {
+      return undefined;
+    }
+
     let cancelled = false;
     let unsubscribe = null;
 
@@ -94,11 +101,11 @@ function NotificationProvider({ children }) {
       cancelled = true;
       if (unsubscribe) unsubscribe();
     };
-  }, [activeCompanyId, showToast]);
+  }, [activeCompanyId, canViewNotifications, showToast]);
 
   // Fetch the next page for the "View all" screen.
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    if (!canViewNotifications || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
       const list = await notificationApi.list({
@@ -117,9 +124,10 @@ function NotificationProvider({ children }) {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore]);
+  }, [canViewNotifications, loadingMore, hasMore]);
 
   const markRead = useCallback(async (id) => {
+    if (!canViewNotifications) return;
     setItems((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -128,16 +136,17 @@ function NotificationProvider({ children }) {
     } catch {
       // Keep the optimistic update; next reload reconciles.
     }
-  }, []);
+  }, [canViewNotifications]);
 
   const markAllRead = useCallback(async () => {
+    if (!canViewNotifications) return;
     setItems((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
       await notificationApi.markAllRead();
     } catch {
       // Keep the optimistic update; next reload reconciles.
     }
-  }, []);
+  }, [canViewNotifications]);
 
   const value = useMemo(
     () => ({
