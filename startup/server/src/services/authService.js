@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const { User, Company, Role, MultiCompanyModule, UserProfile } = require('../models');
 const logger = require('../../logger');
-const { where: _where, fn, col, where } = require('sequelize');
+const { fn, col, where } = require('sequelize');
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -11,10 +11,11 @@ const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../utils/model
 const companyService = require('./companyService');
 const userService = require('./userService');
 const { verifyValidSubscribedPermission } = require('../utils/subscriptionPermissionUtils');
+const { notifyCompanyAdminsOfLogin } = require('../notifications/dispatchers');
 const normalize = (val) => val?.trim().toLowerCase();
 
 
-const signup = async (username, password, companyId, { phone, name, role }, transaction) => {
+const signup = async (username, password, companyId, { phone, name, role, is_approved = false, last_active = null }, emp_code, transaction) => {
   username = normalize(username);
   password = password?.trim();
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);
@@ -34,7 +35,8 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     throw new Error(`Username "${username}" already exists`);
   }
 
-  const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
+
+  const company = await findModelByIdOrThrow(Company, companyId, { transaction }, 'Company');
   logger.info(`Looking up company by ID: ${companyId} - Found: true`);
 
   let roleInstance = null;
@@ -64,12 +66,13 @@ const signup = async (username, password, companyId, { phone, name, role }, tran
     role_id: roleInstance ? roleInstance.id : null,
     isActive: true,
     refresh_token: null,
-    is_approved: false,
+    is_approved,
+    last_active,
     mobileApp: company.mobileApp,      // inherits from company
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb      // inherits from company
   }, { transaction });
-  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId }, { transaction });
+  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId, emp_code }, { transaction });
   await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId }, { transaction });
 
   return user;
@@ -124,7 +127,7 @@ const issueTokensAndPersist = async (user) => {
   return { accessToken, refreshToken };
 };
 
-const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
+const buildLoginPayload = (user, activeCompany, accessToken, refreshToken,profile) => {
   // Use get({ plain: true }) but then override with filtered permissions
   const userData = user.get({ plain: true });
   delete userData.password;
@@ -142,7 +145,10 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
       mobileApp: userData.mobileApp,
       desktopWeb: userData.desktopWeb,
       mobileWeb: userData.mobileApp,
-      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
+      default_screen_mode: profile?.default_screen_mode,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude} : null,
       isSupportUser: userData.isSupportUser,
       role: userData.role ? {
         id: userData.role.id,
@@ -167,9 +173,15 @@ const loginUser = async (credentials) => {
   logger.info(`User login successful: ${user.id}`);
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);
   const activeCompany = await companyService.getActiveCompanyForUser(user);
+
+  await notifyCompanyAdminsOfLogin({
+    companyId: user.company_id,
+    actor: { id: user.id, name: user.name }
+  });
   // Filter permissions based on subscription status
   const userWithFilteredPermissions = await verifyValidSubscribedPermission(user, activeCompany.id);
-  return buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken);
+  const profile = await UserProfile.findOne({ where: { userId:user.id } });
+  return buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken,profile);
 };
 
 
@@ -235,7 +247,7 @@ const getCurrentUser = async (userId) => {
     const profile = await UserProfile.findOne({ where: { userId } });
     const activeCompanyId = profile?.currentCompany || user.company_id;
     const activeCompany = activeCompanyId
-      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name'] })
+      ? await Company.findByPk(activeCompanyId, { attributes: ['id', 'name','latitude','longitude','geofence_radius_meters'] })
       : null;
 
     // Filter permissions based on subscription status
@@ -246,6 +258,9 @@ const getCurrentUser = async (userId) => {
       mobileApp: userWithFilteredPermissions.mobileApp,
       desktopWeb: userWithFilteredPermissions.desktopWeb,
       mobileWeb: userWithFilteredPermissions.mobileWeb,
+      default_screen_mode: profile?.default_screen_mode || 'location_mode',
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
       username: userWithFilteredPermissions.username,
       phone: userWithFilteredPermissions.phone,
       name: userWithFilteredPermissions.name,
@@ -253,7 +268,7 @@ const getCurrentUser = async (userId) => {
       role_id: userWithFilteredPermissions.role_id,
       isActive: userWithFilteredPermissions.isActive,
       is_approved: userWithFilteredPermissions.is_approved,
-      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name } : null,
+      company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude, geofence_radius_meters: activeCompany.geofence_radius_meters} : null,
       isSupportUser: user.isSupportUser,
       role: user.role ? {
         id: user.role.id,
@@ -276,6 +291,31 @@ const getAllRoles = async () => {
   });
   return roles;
 };
+
+/**
+ * Live uniqueness check for a field, so a UI can tell the user a company name /
+ * username is taken WHILE typing — before any create/onboard call. Uses the same
+ * normalisation as persistence (username lower-cased, both trimmed) so the
+ * answer matches what creation will actually see.
+ */
+const checkAvailability = async ({ type, value }) => {
+  const raw = (value || '').trim();
+  if (!raw) {
+    throw { status: 400, message: 'Nothing to check' };
+  }
+
+  if (type === 'username') {
+    const username = normalize(raw);
+    const existing = await User.findOne({ where: { username }, attributes: ['id'] });
+    return { type, value: username, available: !existing };
+  }
+  if (type === 'company') {
+    const existing = await Company.findOne({ where: { name: raw }, attributes: ['id'] });
+    return { type, value: raw, available: !existing };
+  }
+
+  throw { status: 400, message: 'Unknown field to check' };
+};
 //  todo : remove the use rservices from here and add them in use servuce.
 module.exports = {
   signup,
@@ -283,5 +323,6 @@ module.exports = {
   resetPassword,
   approveUser,
   getCurrentUser,
-  getAllRoles
+  getAllRoles,
+  checkAvailability
 };

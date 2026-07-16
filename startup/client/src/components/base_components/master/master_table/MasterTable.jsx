@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Eye } from 'lucide-react';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import { formatDateForDisplay, formatDateTimeForDisplay } from '@utils/dateTimeUtils';
+import { formatTime } from '@utils/formattingUtils';
 import { NbNextDataGrid } from '@/components/nbnext_data_grid';
 import PropTypes from 'prop-types';
 
@@ -24,6 +25,11 @@ const MasterTable = ({
   enableRowSelection = false,
   selectedRowIds,
   onSelectionChange,
+
+  showGridExport = true,
+  exportReport = { title: 'Export', slug: 'export' },
+  showInsightsAsHeader = true,
+  showEmptyColumns = true,
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
 
@@ -48,19 +54,29 @@ const MasterTable = ({
         : column.type;
 
       if (typeof column.render === 'function') {
-        return {
+        const gridCol = {
           field: fieldKey,
           headerName,
-          type: sortType,
+          type: sortType || 'string',
           renderCell: ({ row }) => {
             try {
-              return column.render(row);
+              const rendered = column.render(row);
+              if (rendered == null || rendered === '') return '-';
+              return rendered;
             } catch (error) {
               console.error('Error in custom render function for column:', fieldKey, error);
               return <span className="text-red-500">Render Error</span>;
             }
           },
         };
+        if (typeof column.getExportValue === 'function') {
+          gridCol.getExportValue = column.getExportValue;
+          gridCol.valueGetter = ({ row }) => {
+            const v = column.getExportValue({ row });
+            return v == null || v === '' ? '-' : v;
+          };
+        }
+        return gridCol;
       }
 
       if (column.type === 'file') {
@@ -116,6 +132,15 @@ const MasterTable = ({
         };
       }
 
+      if (column.type === 'time') {
+        return {
+          field: fieldKey,
+          headerName,
+          type: 'time',
+          renderCell: ({ row }) => (row[fieldKey] ? formatTime(row[fieldKey]) : '-'),
+        };
+      }
+
       if (column.type === 'select' && Array.isArray(column.options)) {
         const lookup = new Map(column.options.map((o) => [o.value, o.label]));
         return {
@@ -125,6 +150,11 @@ const MasterTable = ({
           renderCell: ({ row }) => {
             const v = row[fieldKey];
             if (v == null) return '-';
+            return lookup.get(v) ?? v;
+          },
+          getExportValue: ({ row }) => {
+            const v = row[fieldKey];
+            if (v == null) return '';
             return lookup.get(v) ?? v;
           },
         };
@@ -152,6 +182,17 @@ const MasterTable = ({
           return v == null || v === '' ? '-' : v;
         },
       };
+    });
+
+    // Carry `skip_insight` through the column transform above. Each branch
+    // builds a fresh gridCol object, so this metadata would otherwise be
+    // dropped and NbNextDataGrid's constant-column detection would wrongly
+    // promote the column to the insights panel. cols is 1:1 with the source
+    // columns here (actions column is appended below).
+    (columns || []).forEach((column, i) => {
+      if (!cols[i]) return;
+      if (column.skip_insight === true) cols[i].skip_insight = true;
+      if (column.is_export === false) cols[i].is_export = false;
     });
 
     if (actions && actions.length > 0) {
@@ -242,6 +283,11 @@ const MasterTable = ({
         enableRowSelection={enableRowSelection}
         selectedRowIds={selectedRowIds}
         onSelectionChange={onSelectionChange}
+
+        showExcelExport={showGridExport}
+        exportReport={exportReport}
+        showInsightsAsHeader={showInsightsAsHeader}
+        showEmptyColumns={showEmptyColumns}
       />
       <FileViewerModal
         isOpen={viewerState.open}
@@ -261,9 +307,10 @@ MasterTable.propTypes = {
       id: PropTypes.string,
       label: PropTypes.string,
       display_name: PropTypes.string,
-      type: PropTypes.oneOf(['text', 'number', 'select', 'datetime', 'date', 'boolean', 'file']),
+      type: PropTypes.oneOf(['text', 'number', 'select', 'datetime', 'date', 'time', 'boolean', 'file', 'array']),
       options: PropTypes.array,
       render: PropTypes.func,
+      getExportValue: PropTypes.func,
     })
   ).isRequired,
   data: PropTypes.array.isRequired,
@@ -292,6 +339,10 @@ MasterTable.propTypes = {
   enableRowSelection: PropTypes.bool,
   selectedRowIds: PropTypes.oneOfType([PropTypes.array, PropTypes.instanceOf(Set)]),
   onSelectionChange: PropTypes.func,
+  showGridExport: PropTypes.bool,
+  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
+  showInsightsAsHeader: PropTypes.bool,
+  showEmptyColumns: PropTypes.bool,
 };
 
 export { MasterTable };

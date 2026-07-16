@@ -1,4 +1,4 @@
-import { parseDateValue } from '@utils/dateTimeUtils';
+import { parseDateValue, formatTimeForInput } from '@utils/dateTimeUtils';
 
 const formatDateTime = (dateTimeString) => {
   if (!dateTimeString) return '';
@@ -40,13 +40,17 @@ const formatTime = (timeString) => {
     const minutes = Math.floor((timeString % 3600) / 60);
     return `${hours}.${minutes.toString().padStart(2, '0')}`;
   }
-  // try to convert to date
+
+  const asTimeInput = formatTimeForInput(timeString);
+  if (asTimeInput) return asTimeInput;
+
   const date = parseDateValue(timeString);
   if (!date || isNaN(date.getTime())) {
-    return timeString.substring(11, 19);
+    const raw = String(timeString);
+    return raw.length >= 19 ? raw.substring(11, 19) : raw;
   }
-  return date.toLocaleTimeString('en-US', 
-    { 
+  return date.toLocaleTimeString('en-US',
+    {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false

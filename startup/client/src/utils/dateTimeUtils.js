@@ -44,6 +44,28 @@ const formatDateForInput = (dateString) => {
   }
 };
 
+
+const formatTimeForInput = (timeValue) => {
+  if (!timeValue) return '';
+  try {
+    const raw = String(timeValue).trim();
+    if (!raw) return '';
+
+    const timeMatch = raw.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+    if (timeMatch) {
+      return `${timeMatch[1]}:${timeMatch[2]}`;
+    }
+
+    const date = parseDateValue(timeValue);
+    if (!date || isNaN(date.getTime())) return '';
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  } catch {
+    return '';
+  }
+};
+
 // Convert local datetime to ISO string (no timezone conversion needed)
 const convertToISOString = (localDateTime) => {
   if (!localDateTime) return null;
@@ -229,10 +251,18 @@ const extendDateRange = (startDate, endDate, daysBefore = 0, daysAfter = 0) => {
 const getThisMonthRange = () => {
   const now = new Date();
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const firstDayYmd = getLocalDateStringYmd(firstDay);
+  const yesterdayYmd = getYesterdayYmd();
   return {
-    start_date: getLocalDateStringYmd(firstDay),
-    end_date: getYesterdayYmd(),
+    start_date: firstDayYmd,
+    end_date: yesterdayYmd < firstDayYmd ? firstDayYmd : yesterdayYmd,
   };
+};
+
+/** Single-day range for today (as YYYY-MM-DD). */
+const getTodayRange = () => {
+  const ymd = getLocalDateStringYmd();
+  return { start_date: ymd, end_date: ymd };
 };
 
 /** Single-day range for yesterday (as YYYY-MM-DD). */
@@ -339,11 +369,88 @@ const parseDateValue = (dateValue) => {
   return null;
 };
 
+/**
+ * Return a NEW array sorted by ascending date (earliest first). `getDate` maps an
+ * item to its date value (defaults to `item.date`); items with unparseable dates
+ * sort as epoch 0. Replaces the `[...x].sort((a,b) => parseDateValue(...))` block
+ * duplicated across schedule/repayment screens.
+ */
+const sortByDateAscending = (items, getDate = (item) => item?.date) =>
+  [...(items || [])].sort((a, b) => {
+    const da = parseDateValue(getDate(a));
+    const db = parseDateValue(getDate(b));
+    return (da?.getTime() ?? 0) - (db?.getTime() ?? 0);
+  });
+
 const SHORT_MONTH_NAMES = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+// Lowercased 3-letter month -> 0-based month index, derived from SHORT_MONTH_NAMES.
+const SHORT_MONTH_INDEX = SHORT_MONTH_NAMES.reduce((acc, name, idx) => {
+  acc[name.toLowerCase()] = idx;
+  return acc;
+}, {});
+
+/** Last calendar day (28–31) of the given month. `monthIndex` is 0-based. */
+const getLastDayOfMonth = (year, monthIndex) =>
+  new Date(year, monthIndex + 1, 0).getDate();
+
+/** True when the date falls on the last calendar day of its month. Accepts any
+ * value `parseDateValue` understands; false for falsy/unparseable input. */
+const isMonthEnd = (dateValue) => {
+  const d = parseDateValue(dateValue);
+  if (!d) return false;
+  return d.getDate() === getLastDayOfMonth(d.getFullYear(), d.getMonth());
+};
+
+// Assemble a YYYY-MM-DD string, or null if any part is out of range.
+const buildYmd = (yearNum, monthIndex, day) => {
+  if (!Number.isFinite(day) || day < 1 || day > 31) return null;
+  if (monthIndex === undefined || monthIndex < 0 || monthIndex > 11) return null;
+  if (!Number.isFinite(yearNum)) return null;
+  return `${yearNum}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+};
+
+/**
+ * Convert an attendance date-column header to a YYYY-MM-DD string. Accepts (day-first):
+ *   • "01MayFri" / "01May" / "01 May"       → month-name; year comes from the `year` arg
+ *   • "01 May 2026" / "1 January 2026"       → month-name + explicit year (arg ignored)
+ *   • "01/06/2026" / "01-06-2026" / "1/6/26" → numeric DD/MM/YYYY (day first, 2- or 4-digit year)
+ * Returns null for anything that isn't a recognizable date (so it doubles as a "is this a date
+ * column?" test and won't match plain headers like "Code" / "Position").
+ *
+ * @param {string} label
+ * @param {number|string} year fallback year when the label has no year (e.g. "01MayFri")
+ * @returns {string|null} e.g. "2026-05-01"
+ */
+const attendanceColumnLabelToDate = (label, year) => {
+  if (label === null || label === undefined) return null;
+  const str = String(label).trim();
+  if (!str) return null;
+
+  // Day + month-name (+ optional weekday text) (+ optional explicit year): "01MayFri", "01 May 2026".
+  const nameMatch = str.match(/^(\d{1,2})\s*([A-Za-z]{3})[A-Za-z]*\.?\s*(\d{4})?$/);
+  if (nameMatch) {
+    const day = parseInt(nameMatch[1], 10);
+    const monthIndex = SHORT_MONTH_INDEX[nameMatch[2].toLowerCase()];
+    const yearNum = nameMatch[3] ? parseInt(nameMatch[3], 10) : parseInt(year, 10);
+    return buildYmd(yearNum, monthIndex, day);
+  }
+
+  // Numeric day-first date: "01/06/2026", "01-06-2026", "1/6/26".
+  const numMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
+  if (numMatch) {
+    const day = parseInt(numMatch[1], 10);
+    const monthIndex = parseInt(numMatch[2], 10) - 1;
+    let yearNum = parseInt(numMatch[3], 10);
+    if (numMatch[3].length === 2) yearNum += 2000; // "26" → 2026
+    return buildYmd(yearNum, monthIndex, day);
+  }
+
+  return null;
+};
 
 
 const buildYearOptions = (centerYear = new Date().getFullYear(), { before = 4, after = 1 } = {}) => {
@@ -392,6 +499,50 @@ const formatDateTimeForDisplay = (dateValue) => {
   }
 };
 
+/**
+ * Human-friendly "time ago" label from any value `parseDateValue` understands.
+ * "Just now" (<1 min) → "5 min ago" → "3 hours ago" → "Yesterday" → "4 days ago",
+ * then falls back to a locale date string for anything older than a week.
+ * Returns '' for falsy/unparseable input.
+ */
+const formatRelativeTime = (dateValue) => {
+  const date = parseDateValue(dateValue);
+  if (!date) return "";
+
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return "Just now";
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days} days ago`;
+
+  return date.toLocaleDateString();
+};
+
+/**
+ * Calendar-relative bucket label for a date: "Today", "Yesterday", or `defaultLabel`
+ * for anything older or undated. Used to group timeline-style lists by day.
+ */
+const getDayGroupLabel = (dateValue, defaultLabel = "Earlier") => {
+  const date = parseDateValue(dateValue);
+  if (!date) return defaultLabel;
+
+  const now = new Date();
+  if (date.toDateString() === now.toDateString()) return "Today";
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+  return defaultLabel;
+};
+
 /** Default report range: before 10th use prev month full; otherwise this month start → yesterday. */
 const getDefaultReportDateRange = () => {
   const now = new Date();
@@ -426,7 +577,22 @@ const getPrevMonthStartYesterdayRange = () => {
 
 
 
+/**
+ * Month-to-date range for a date: from the first day of that date's month up to
+ * (and including) the date itself. Computed from the YYYY-MM-DD string (not Date)
+ * to avoid timezone drift. Generic — e.g. used for the FnF settlement period
+ * (start of resignation month → resignation date).
+ * @param {string} date - 'yyyy-mm-dd'
+ * @returns {{ startDate: string|null, endDate: string|null }}
+ */
+const getMonthToDateRange = (date) => {
+  const [year, month] = String(date || "").split("-");
+  if (!year || !month) return { startDate: null, endDate: null };
+  return { startDate: `${year}-${month}-01`, endDate: date };
+};
+
 export {
+  getMonthToDateRange,
   getLocalDateStringYmd,
   getYesterday,
   getYesterdayYmd,
@@ -436,11 +602,13 @@ export {
   getCurrentDateTime,
   formatDate,
   formatDateForInput,
+  formatTimeForInput,
   getThisMonthFullRange,
   getNextMonthFullRange,
   getOneYearFromTodayRange,
   getPreviousMonthRange,
   getThisMonthRange,
+  getTodayRange,
   getYesterdayRange,
   getDayBounds,
   dateFromExcelSerial,
@@ -456,8 +624,15 @@ export {
   formatDateTime,
   formatLastActive,
   parseDateValue,
+  sortByDateAscending,
+  getLastDayOfMonth,
+  isMonthEnd,
+  buildYmd,
+  attendanceColumnLabelToDate,
   buildYearOptions,
   formatDateForDisplay,
   formatTimeForDisplay,
   formatDateTimeForDisplay,
+  formatRelativeTime,
+  getDayGroupLabel,
 };
