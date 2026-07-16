@@ -1,4 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { isDebugMode, subscribeToDebugMode } from '@services/debugModeService';
+import { getFilterOptionResolvers } from './filterOptionResolverRegistry';
 
 /**
  * Returns a config transformer for activity-aware option lists (whose entries
@@ -7,26 +9,39 @@ import { useCallback } from 'react';
  *   - is_active ON  → show active employees only (inactive entries dropped)
  *   - is_active OFF → show active + inactive; inactive entries get `highlight`
  *
- * Lists without an `is_active` flag, and the 'all' entry (which has none), are
- * returned untouched.
+ * App-specific rules (e.g. weekly employees vs debug mode) register via
+ * `registerFilterOptionResolver` and run after the built-in transforms.
  */
 const useFilterOptionResolver = (filters) => {
   const isActiveOff = filters.is_active === false;
+  const [debugMode, setDebugMode] = useState(() => isDebugMode());
+
+  useEffect(() => subscribeToDebugMode(setDebugMode), []);
 
   return useCallback(
     (config) => {
       if (config.type !== 'select' || !Array.isArray(config.options)) return config;
-      if (!config.options.some((o) => typeof o.is_active === 'boolean')) return config;
 
-      const options = isActiveOff
-        ? config.options.map((o) =>
-            o.is_active === false ? { ...o, highlight: true } : o
-          )
-        : config.options.filter((o) => o.is_active !== false);
+      let options = config.options;
 
-      return { ...config, options };
+      if (options.some((o) => typeof o.is_active === 'boolean')) {
+        options = isActiveOff
+          ? options.map((o) =>
+              o.is_active === false ? { ...o, highlight: true } : o
+            )
+          : options.filter((o) => o.is_active !== false);
+      }
+
+      let resolved = { ...config, options };
+      const context = { filters, debugMode };
+
+      getFilterOptionResolvers().forEach((resolver) => {
+        resolved = resolver(resolved, context);
+      });
+
+      return resolved;
     },
-    [isActiveOff]
+    [filters, isActiveOff, debugMode]
   );
 };
 

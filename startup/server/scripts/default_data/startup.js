@@ -4,9 +4,11 @@ const {
   REPORT_PERMISSION_CONSTANTS,
   SYSTEM_ROLE_CONSTANTS
 } = require('../../src/constants/permissions');
+const { PRODUCTION_HIDDEN_PERMISSION_NAMES } = require('../../src/constants/productionHiddenSubscriptionPermissions');
 const db = require('../../src/models'); // Sequelize models index
 const { Op } = require('sequelize');
 const logger = require('../../logger');
+const env = require('../../src/config/env');
 
 
 /**
@@ -161,7 +163,7 @@ async function createDefaultSubscription(company, permissions, transaction) {
     where: { name: DEFAULT_SUBSCRIPTION_NAME, companyId: null },
     defaults: {
       name: DEFAULT_SUBSCRIPTION_NAME,
-      description: 'Grants every permission.',
+      description: 'Grants every permission. Seeded for first-run setup.',
       companyId: null
     },
     transaction
@@ -175,17 +177,20 @@ async function createDefaultSubscription(company, permissions, transaction) {
   const existingByPermissionId = new Map(existingLinks.map((l) => [l.permission_id, l]));
 
   const linksToCreate = [];
-  const linksToPromote = [];
+  const linksToUpdate = [];
   for (const permission of permissions) {
+    const desiredStatus = env.isProduction && PRODUCTION_HIDDEN_PERMISSION_NAMES.has(permission.name)
+      ? 'hidden'
+      : 'subscribed';
     const existing = existingByPermissionId.get(permission.id);
     if (!existing) {
       linksToCreate.push({
         subscription_id: subscription.id,
         permission_id: permission.id,
-        status: 'subscribed'
+        status: desiredStatus
       });
-    } else if (existing.status !== 'subscribed') {
-      linksToPromote.push(existing);
+    } else if (existing.status !== desiredStatus) {
+      linksToUpdate.push({ link: existing, status: desiredStatus });
     }
   }
 
@@ -193,15 +198,18 @@ async function createDefaultSubscription(company, permissions, transaction) {
     await db.SubscriptionPermission.bulkCreate(linksToCreate, { transaction });
     logger.info(`Linked ${linksToCreate.length} permissions to "${DEFAULT_SUBSCRIPTION_NAME}"`);
   }
-  for (const link of linksToPromote) {
-    link.status = 'subscribed';
+  for (const { link, status } of linksToUpdate) {
+    link.status = status;
     await link.save({ transaction });
   }
-  if (linksToPromote.length > 0) {
-    logger.info(`Promoted ${linksToPromote.length} permission links to 'subscribed' on "${DEFAULT_SUBSCRIPTION_NAME}"`);
+  if (linksToUpdate.length > 0) {
+    logger.info(`Updated ${linksToUpdate.length} permission link status(es) on "${DEFAULT_SUBSCRIPTION_NAME}"`);
   }
-  if (linksToCreate.length === 0 && linksToPromote.length === 0) {
+  if (linksToCreate.length === 0 && linksToUpdate.length === 0) {
     logger.info(`"${DEFAULT_SUBSCRIPTION_NAME}" already grants all ${permissions.length} permissions`);
+  }
+  if (env.isProduction && PRODUCTION_HIDDEN_PERMISSION_NAMES.size > 0) {
+    logger.info(`Production: ${PRODUCTION_HIDDEN_PERMISSION_NAMES.size} permission(s) seeded as hidden (${[...PRODUCTION_HIDDEN_PERMISSION_NAMES].join(', ')})`);
   }
 
   // TODO: only the Subscription + permission links belong in seed data. Auto-

@@ -188,7 +188,8 @@ function getDaysBetween(start_date, end_date, weekday) {
   let days = new Set();
   const currentDate = new Date(start_date);
   while (currentDate <= end_date) {
-    if (currentDate.getDay() === weekday) {
+    if (isNaN(weekday) || currentDate.getDay() === weekday) {
+      // if weekday is not provided, include all days; otherwise, include only matching weekdays
       const dateString = formatDate(currentDate);
       days.add(dateString);
     }
@@ -272,6 +273,35 @@ function normalizeToDate(value) {
   return new Date(NaN);
 }
 
+/**
+ * Coerces an arbitrary date input into a Date object.
+ * - empty (null/undefined/'') -> null
+ * - epoch milliseconds (number or numeric string) -> new Date(millis)
+ * - everything else (ISO, yyyy-MM-dd, dd-MM-yyyy, etc.) -> parseDate()
+ * @param {string|number|Date|null|undefined} value
+ * @returns {Date|null}
+ */
+function toDate(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  const asNumber = Number(value);
+  return Number.isNaN(asNumber) ? parseDate(value) : new Date(asNumber);
+}
+
+
+function isFutureDate(value) {
+  const parsed = toDate(value);
+  if (!parsed || Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+  const today = parseDate(new Date());
+  return parseDate(parsed) > today;
+}
+
 const formatDateToString = (date, format = 'dd-mm-yyyy') => {
   const normalizedDate = normalizeToDate(date);
 
@@ -309,6 +339,8 @@ const toDateOnly = (date) => {
   return formatDateToString(date, 'yyyy-mm-dd');
 };
 
+const parseToYmd = (value) => toDateOnly(parseDate(value));
+
 /**
  * Date-only (yyyy-MM-dd) from a wall-clock value, never via UTC conversion.
  * Use when the input already represents local wall-clock time and the calendar
@@ -326,6 +358,40 @@ const toWallClockDateOnly = (value) => {
     return value.length >= 10 ? value.slice(0, 10) : null;
   }
   return toDateOnly(value);
+};
+
+/**
+ * Resolve the start of the Indian financial year (1 April) for a given date.
+ * Months Jan–Mar belong to the financial year that started the previous April.
+ * @param {string|Date} dateStr
+ * @returns {string|null} 'yyyy-04-01', or null for an unparseable date.
+ */
+const getFinancialYearStart = (dateStr) => {
+  const date = parseDate(dateStr);
+  if (!date) {
+    return null;
+  }
+  const year = date.getFullYear();
+  const month = date.getMonth(); // 0-based; April === 3
+  const fyStartYear = month >= 3 ? year : year - 1;
+  return `${fyStartYear}-04-01`;
+};
+
+/**
+ * Month-to-date range for a date: first day of that date's month at 00:00:00 up
+ * to (and including) the given date at 23:59:59. Returns Date objects. Generic —
+ * e.g. used for the FnF settlement period (start of resignation month → date).
+ * @param {string|Date} date
+ * @returns {{ startDate: Date, endDate: Date }}
+ */
+const getMonthToDateRange = (date) => {
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) {
+    throw new Error(`Invalid date for month-to-date range: ${date}`);
+  }
+  const startDate = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+  const endDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 0);
+  return { startDate, endDate };
 };
 
 /**
@@ -450,6 +516,20 @@ function format_duration_time(seconds) {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
+/**
+ * Format duration in seconds to HH:MM, or '--' when missing/zero.
+ * Mirrors convert_time_to_str for duration values.
+ * @param {number} seconds - Duration in seconds
+ * @returns {string}
+ */
+function format_duration_time_or_dash(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n) || n <= 0) {
+    return '--';
+  }
+  return format_duration_time(n);
+}
+
 function getDayRange(start_date_str, end_date_str){
   const start_date = new Date(start_date_str);
   const end_date = new Date(end_date_str);
@@ -509,14 +589,20 @@ module.exports = {
   getMonthPercentage,
   getCompleteMonthsPercentage,
   normalizeToDate,
+  toDate,
+  isFutureDate,
+  getFinancialYearStart,
+  getMonthToDateRange,
   getAllDaysInArray,
   extract_time_only_to_integer,
   formatDateToString,
   toDateOnly,
+  parseToYmd,
   toWallClockDateOnly,
   convert_time_to_str,
   format_duration_hours_minutes,
   format_duration_time,
+  format_duration_time_or_dash,
   getDayRange,
   getDayBounds,
   getWeekStart,
