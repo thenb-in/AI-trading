@@ -1,67 +1,60 @@
+// Framework permission surface, plus the rule for composing it with an app's
+// permissions.
+//
+// startup never imports the app layer — the dependency only ever runs
+// app -> startup. So this file cannot reach out and collect the app's
+// permissions itself. Instead it exports `buildPermissionSets`: startup owns
+// the *rule* for how permission sets compose, and the app layer owns the
+// *data* and calls the rule (see app/server/src/constants/permissions.js).
+//
+// Imported without composition, this module is the bare framework surface
+// (user, company, role, permission, role_permission, notifications), which is
+// what startup's own routes and services consume.
+
 const basePermissions = require('./base_permissions');
 const baseRoles = require('./base_roles');
 
-
-
 const SYSTEM_ROLE_CONSTANTS = baseRoles.SYSTEM_ROLE_CONSTANTS;
 
-const MASTER_PERMISSION_CONSTANTS = {
-  ...basePermissions.MASTER_PERMISSION_CONSTANTS,
-  ACTIVITY: basePermissions.create_master_permission('activity'),
-  NBNEXT_DRIVE: {
-    create: {
-      name: 'create_nbnext_drive',
-      display_name: 'Create NBnext Drive',
-      description: 'Permission to create files in NBnext Drive'
-    },
-    read: {
-      name: 'read_nbnext_drive',
-      display_name: 'Read All NBnext Drive',
-      description: 'Permission to read all files in NBnext Drive'
-    },
-    readPersonal: {
-      name: 'read_personal_nbnext_drive',
-      display_name: 'Read Personal NBnext Drive',
-      description: 'Permission to read personal files in NBnext Drive'
-    },
-    delete: {
-      name: 'delete_nbnext_drive',
-      display_name: 'Delete NBnext Drive',
-      description: 'Permission to delete files from NBnext Drive'
-    },
-    download: {
-      name: 'download_nbnext_drive',
-      display_name: 'Download NBnext Drive',
-      description: 'Permission to download files from NBnext Drive'
-    }
-  }
-};
+/**
+ * Compose the framework permission sets with an app layer's contributions.
+ *
+ * @param {object} [appPermissions]
+ * @param {object} [appPermissions.masters] app master permissions (nested CRUD)
+ * @param {object} [appPermissions.modules] app module permissions (flat)
+ * @param {object} [appPermissions.reports] app report permissions (flat)
+ * @returns {object} the composed MODULE / MASTER / REPORT sets and roles
+ */
+const buildPermissionSets = ({ masters = {}, modules = {}, reports = {} } = {}) => {
+  const MASTER_PERMISSION_CONSTANTS = {
+    ...basePermissions.MASTER_PERMISSION_CONSTANTS,
+    ...masters
+  };
 
-const create_module_permission = (module, displayName) => {
-  const moduleKey = module.toLowerCase().replace(/-/g, '_');
-  const formattedDisplayName = displayName || module.split('-').map(word =>
-    word.charAt(0).toUpperCase() + word.slice(1)
-  ).join(' ');
+  // Masters are spread in so callers can reach a master's CRUD entries off the
+  // module set (e.g. MODULE_PERMISSION_CONSTANTS.USER.update). They carry no
+  // top-level `name`, so the seeder's flat module walk skips them and picks
+  // them up from MASTER_PERMISSION_CONSTANTS instead.
+  const MODULE_PERMISSION_CONSTANTS = {
+    ...basePermissions.MODULE_PERMISSION_CONSTANTS,
+    ...MASTER_PERMISSION_CONSTANTS,
+    ...modules
+  };
+
+  const REPORT_PERMISSION_CONSTANTS = {
+    ...basePermissions.REPORT_PERMISSION_CONSTANTS,
+    ...reports
+  };
+
   return {
-    name: `view_${moduleKey}_module`,
-    display_name: `View ${formattedDisplayName} Module`,
-    description: `Permission to view ${formattedDisplayName.toLowerCase()} module`
+    MODULE_PERMISSION_CONSTANTS,
+    MASTER_PERMISSION_CONSTANTS,
+    REPORT_PERMISSION_CONSTANTS,
+    SYSTEM_ROLE_CONSTANTS
   };
 };
 
-const MODULE_PERMISSION_CONSTANTS = {
-  ...basePermissions.MODULE_PERMISSION_CONSTANTS
-};
-
-const REPORT_PERMISSION_CONSTANTS = {
-  ...basePermissions.REPORT_PERMISSION_CONSTANTS
-};
-
-
 module.exports = {
-  MODULE_PERMISSION_CONSTANTS,
-  SYSTEM_ROLE_CONSTANTS,
-  MASTER_PERMISSION_CONSTANTS,
-  REPORT_PERMISSION_CONSTANTS,
-  create_module_permission
+  ...buildPermissionSets(),  // raw framework surface (no app contributions)
+  buildPermissionSets
 };

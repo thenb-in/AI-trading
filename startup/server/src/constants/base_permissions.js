@@ -1,3 +1,14 @@
+// Generic, framework-level permissions shared by every product built on
+// startup (user, company, role, permission, role_permission, reports, masters,
+// notifications), plus the factories used to declare permissions.
+//
+// Product-specific permissions (employee, salary, attendance, gatepass,
+// canteen, terminals, WageMaster, ...) live in the app layer, which composes
+// them with these via `buildPermissionSets` in `./permissions`. startup never
+// imports the app layer, so nothing here knows those permissions exist.
+//
+// Prefer `./permissions` over this file unless you specifically need only the
+// framework set or a factory.
 
 const create_module_permission = (module, displayName) => {
   const moduleKey = module.toLowerCase().replace(/-/g, '_');
@@ -21,8 +32,6 @@ const MODULE_PERMISSION_CONSTANTS = {
     description: 'Permission to view company settings'
   },
   VIEW_MASTER_MODULE: create_module_permission('master', 'Masters'),
-  VIEW_DASHBOARD_MODULE: create_module_permission('dashboard', 'Dashboards'),
-  VIEW_HR_DASHBOARD_MODULE: create_module_permission('hr_dashboard', 'HR Dashboard'),
   VIEW_ROLE_PERMISSION_MODULE: create_module_permission('role_permission', 'Role Permission'),
   VIEW_HELP_AND_SUPPORT: {
     name: 'view_help_and_support',
@@ -187,5 +196,6 @@ module.exports = {
   REPORT_PERMISSION_CONSTANTS,
   MASTER_PERMISSION_CONSTANTS,
   create_master_permission,
+  create_module_permission,
   create_report_permission
 };

@@ -2,10 +2,10 @@
 require(require.resolve('module-alias', { paths: [process.cwd()] }))(process.cwd());
 const readline = require('readline');
 const logger = require('./logger');
-const { createStartingAppData } = require('./scripts/default_data/app');
 const { createDefaultRoles, createDefaultPermissions, createDefaultSubscription } = require('./scripts/default_data/startup');
 const env = require('./src/config/env');
-const { SYSTEM_ROLE_CONSTANTS } = require('./src/constants/permissions');
+const frameworkPermissionSets = require('./src/constants/permissions');
+const { SYSTEM_ROLE_CONSTANTS } = frameworkPermissionSets;
 const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
 const { signup, approveUser } = require('./src/services/authService');
@@ -113,10 +113,28 @@ async function createUser(company, transaction) {
   return user;
 }
 
+// startup has no product data of its own to seed, so the default hook does
+// nothing. An app built on startup injects its own — see options.createStartingAppData.
+const noopStartingAppData = async () => {};
+
 /**
  * Main setup function
+ *
+ * Both app-specific inputs are injected rather than imported, because startup
+ * cannot reach into the app layer to find them.
+ *
+ * @param {object} [options]
+ * @param {object} [options.permissionSets] the permission sets to seed. Defaults
+ *   to startup's framework set — an app built on startup passes its own composed
+ *   set instead (see app/server/scripts/create_new_company.js).
+ * @param {(company: object) => Promise<void>} [options.createStartingAppData] hook
+ *   run after the company is committed, to seed product-specific starting data.
+ *   Defaults to a no-op.
  */
-async function main() {
+async function main({
+  permissionSets = frameworkPermissionSets,
+  createStartingAppData = noopStartingAppData
+} = {}) {
   const transaction = await db.sequelize.transaction();
   let transactionCommitted = false;
   try {
@@ -125,7 +143,7 @@ async function main() {
     const userRole = roles.find((r) => r.name === SYSTEM_ROLE_CONSTANTS.USER.name);
 
     const company = await createCompany(transaction, userRole);
-    const permissions = await createDefaultPermissions(transaction);
+    const permissions = await createDefaultPermissions(transaction, permissionSets);
 
     // Assign permissions to sadmin role without removing existing ones
     logger.info(
@@ -176,9 +194,21 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  // main() already logs inside its own catch; log once more for top-level
-  // visibility and exit non-zero so callers (npm, CI) see the failure.
-  logger.error('Setup failed', err);
-  process.exit(1);  // eslint-disable-line no-process-exit
-});
+const runToExit = (options) =>
+  main(options).catch((err) => {
+    // main() already logs inside its own catch; log once more for top-level
+    // visibility and exit non-zero so callers (npm, CI) see the failure.
+    logger.error('Setup failed', err);
+    process.exit(1);
+  });
+
+// Run directly (`node create_company_with_role_and_perms.js`) and only the
+// framework permissions get seeded, with no product starting data. An app built
+// on startup requires this module from its own entrypoint and injects both — see
+// app/server/scripts/create_new_company.js, which is what `npm run create-new-company`
+// invokes.
+if (require.main === module) {
+  runToExit();
+}
+
+module.exports = { runToExit };

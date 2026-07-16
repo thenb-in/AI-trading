@@ -1,9 +1,9 @@
-const {
-  MODULE_PERMISSION_CONSTANTS,
-  MASTER_PERMISSION_CONSTANTS,
-  REPORT_PERMISSION_CONSTANTS,
-  SYSTEM_ROLE_CONSTANTS
-} = require('../../src/constants/permissions');
+// Only the framework roles are imported here. The permission sets are passed
+// in by the caller instead: startup must not import the app layer, so it can't
+// reach the app's permissions itself. The app's entrypoint
+// (app/server/scripts/create_new_company.js) injects its composed set; running
+// startup's own entrypoint directly seeds just the framework permissions.
+const { SYSTEM_ROLE_CONSTANTS } = require('../../src/constants/permissions');
 const { PRODUCTION_HIDDEN_PERMISSION_NAMES } = require('../../src/constants/productionHiddenSubscriptionPermissions');
 const db = require('../../src/models'); // Sequelize models index
 const { Op } = require('sequelize');
@@ -43,8 +43,15 @@ async function createDefaultRoles(transaction) {
 /**
  * Collect all permissions from all constant sources
  * Handles nested structures and detects duplicates
+ *
+ * @param {object} permissionSets composed sets, as returned by
+ *   `buildPermissionSets` in src/constants/permissions.js
  */
-function collectAllPermissions() {
+function collectAllPermissions({
+  MODULE_PERMISSION_CONSTANTS,
+  MASTER_PERMISSION_CONSTANTS,
+  REPORT_PERMISSION_CONSTANTS
+}) {
   const allPermissions = [];
   const seenNames = new Map(); // Track duplicates: name -> [sources]
 
@@ -116,8 +123,8 @@ function collectAllPermissions() {
 /**
  * Create permissions
  */
-async function createDefaultPermissions(transaction) {
-  const permissionsArray = collectAllPermissions();
+async function createDefaultPermissions(transaction, permissionSets) {
+  const permissionsArray = collectAllPermissions(permissionSets);
   logger.info(`Collecting ${permissionsArray.length} unique permissions from all constants...`);
 
   // find permissions which are not already created
