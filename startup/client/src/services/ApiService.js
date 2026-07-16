@@ -59,19 +59,22 @@ const ApiService = {
   },
 
   getTerminalListApi() {
-    return this.request('GET', '/company/terminal-list-api');
+    return this.request('GET', '/iclock-terminal/terminal-list-api');
   },
 
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
   },
 
-  getCompanyProfile() {
-    return this.request('GET', '/company-profile');
+  // Company Profile (attendance aliases, compliance defaults, credentials,
+  // emp_code_basis) is owned by app now — see @app/services/api companyProfileApi.
+
+  getCompanyDetails() {
+    return this.request('GET', '/company-details');
   },
 
-  updateCompanyProfile(profile) {
-    return this.request('PUT', '/company-profile', profile);
+  updateCompanyDetails(formData) {
+    return this.request('PUT', '/company-details', formData);
   },
 
   getUserCompanies() {
@@ -113,6 +116,9 @@ const ApiService = {
   
   updateUserDevice(userId, deviceAccess) {
     return this.request('PUT', `/users/${userId}/deviceAccess`, { deviceAccess });
+  },
+  updateUser(userId, fields) {
+    return this.request('PUT', `/users/${userId}`, fields);
   },
   updateUserDisappearingSettings(userId, data){
     return this.request("PATCH", `/users/${userId}/updateDisappearing`, data)
