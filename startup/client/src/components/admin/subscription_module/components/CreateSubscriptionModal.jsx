@@ -1,38 +1,39 @@
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
-import { useEntityCreateForm } from '@/hooks/useEntityCreateForm';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
 import { useSubscriptionPermissionDraft } from '../hooks/useSubscriptionPermissionDraft';
 import { SubscriptionPermissionEditor } from './SubscriptionPermissionEditor';
 
+const NAME_MIN = 2;
+const NAME_MAX = 50;
+const DESCRIPTION_MAX = 500;
+
+
 function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [] }) {
   const { userData } = useDataContext();
   const canCreateGlobal = !!userData?.isSupportUser;
 
-  const {
-    name,
-    description,
-    isGlobal,
-    submitting,
-    errors,
-    setIsGlobal,
-    handleNameChange,
-    handleDescriptionChange,
-    reset: resetFields,
-    submit,
-  } = useEntityCreateForm('Subscription');
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isGlobal, setIsGlobal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const draft = useSubscriptionPermissionDraft();
 
   useEscapeKey(onClose, isOpen);
 
   const resetForm = useCallback(() => {
-    resetFields();
+    setName('');
+    setDescription('');
+    setIsGlobal(false);
+    setErrors({});
     draft.reset([]);
-  }, [resetFields, draft]);
+  }, [draft]);
 
   const handleClose = useCallback(() => {
     if (!submitting) {
@@ -47,22 +48,57 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [] 
     }
   }, [handleClose]);
 
+  const handleNameChange = useCallback((e) => {
+    setName(e.target.value);
+    setErrors((prev) => (prev.name ? { ...prev, name: null } : prev));
+  }, []);
+
+  const handleDescriptionChange = useCallback((e) => {
+    setDescription(e.target.value);
+    setErrors((prev) => (prev.description ? { ...prev, description: null } : prev));
+  }, []);
+
+  const validate = () => {
+    const newErrors = {};
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      newErrors.name = 'Subscription name is required';
+    } else if (trimmedName.length < NAME_MIN) {
+      newErrors.name = `Subscription name must be at least ${NAME_MIN} characters`;
+    } else if (trimmedName.length > NAME_MAX) {
+      newErrors.name = `Subscription name cannot exceed ${NAME_MAX} characters`;
+    }
+    if (description && description.trim().length > DESCRIPTION_MAX) {
+      newErrors.description = `Description cannot exceed ${DESCRIPTION_MAX} characters`;
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const ok = await submit(() =>
-      ApiService.createSubscription({
+    if (!validate()) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await ApiService.createSubscription({
         name: name.trim(),
         description: description.trim() || null,
         ...(canCreateGlobal && { isGlobal }),
         permissions: draft.changedRows, // base is empty → only the non-default picks
-      }),
-    );
-    if (ok) {
+      });
+      toast.success('Subscription created successfully!');
       resetForm();
       onClose();
       if (onSuccess) {
         onSuccess();
       }
+    } catch (error) {
+      toast.error(error?.message || 'Failed to create subscription');
+    } finally {
+      setSubmitting(false);
     }
   };
 

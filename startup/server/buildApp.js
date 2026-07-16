@@ -11,7 +11,7 @@ const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
 const { registerLicenseJobs } = require('./src/license/engine/core/licenseScheduler');
 const { registerOnboardingJobs } = require('./src/onboarding/onboardingScheduler');
-const licenseSeal = require('./src/license/engine/core/licenseSeal'); // eslint-disable-line no-unused-vars
+require('./src/license/engine/core/licenseSeal'); // imported for its side effects only
 const licenseService = require('./src/license/licenseService');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
 const httpLogger = require('./src/middleware/httpLogger');
@@ -27,6 +27,7 @@ const layoutRoutes = require('./src/routes/layoutRoutes');
 const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const notificationRoutes = require('./src/notifications/notificationRoutes');
+const reportRunRoutes = require('./src/routes/reportRunRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 
 function mountFrameworkMiddleware(app, opts = {}) {
@@ -109,6 +110,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/company-details`, companyDetailsRoutes);
   app.use(`${API_PREFIX}/nbnext-drive`, nbnextDriveRoutes);
   app.use(`${API_PREFIX}/notifications`, notificationRoutes);
+  app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/help-support`, helpSupportRoutes);
 }
 
@@ -135,7 +137,11 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
       // plus every urlPrefix the caller registered in additionalStaticDirs.
       // The SPA fallback skips any path under these — so they 404 on miss
       // instead of being shadowed by index.html.
-      const serverPrefixes = ['/api', ...serverOnlyPrefixes];
+      // '/internal' is server-owned like '/api': the service-to-service gateway
+      // routes sit outside the /api/v1 namespace, so without listing it here a
+      // mistyped /internal/* path would be shadowed by index.html and hand the
+      // calling gateway an HTML 200 instead of a JSON 404.
+      const serverPrefixes = ['/api', '/internal', ...serverOnlyPrefixes];
       const staticPrefixes = ['/static', '/uploads', ...additionalStaticDirs.map((d) => d.urlPrefix)];
       const serverToHandle = [...serverPrefixes, ...staticPrefixes];
       const isServerOnly = (urlPath) =>

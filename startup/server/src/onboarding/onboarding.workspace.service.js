@@ -1,9 +1,8 @@
 const logger = require('../../logger');
 const { sequelize } = require('../services/databaseService');
 const subscriptionService = require('../services/subscription');
-const auth = require('../services/auth');
+const authService = require('../services/authService');
 const companyService = require('../services/companyService');
-const companyProfileService = require('../services/companyProfileService');
 const companySubscriptionService = require('../services/companySubscription.service');
 const roleService = require('../services/roleService');
 const userService = require('../services/userService');
@@ -66,11 +65,11 @@ const createWorkspace = async ({
       { name: companyName, mobileApp: false, desktopWeb: true, mobileWeb: false, role_id: userRole?.id ?? null },
       transaction
     );
-    await companyProfileService.createCompanyProfile(
+    await companyService.createCompanyProfile(
       { companyId: company.id, default_state: defaultState, establishment_employee_count: establishmentCount },
       transaction
     );
-    const user = await auth.signup(
+    const user = await authService.signup(
       username,
       password,
       company.id,
@@ -81,6 +80,7 @@ const createWorkspace = async ({
         is_approved: true,
         last_active: new Date()
       },
+      null,
       transaction
     );
 

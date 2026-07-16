@@ -89,6 +89,12 @@ const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
 
+/** Whether the given user is a support (superadmin) user. */
+const isSupportUser = async (userId) => {
+  const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
+  return !!user.isSupportUser;
+};
+
 const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId = null } = {}) => {
   const users = await User.findAll({
     where: { company_id: companyId, isActive: true },
@@ -369,6 +375,7 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getUserById,
+  isSupportUser,
   getActiveUserIdsByRoleName,
   getActiveUserIdsByPermissionName,
   getUserByUsername,

@@ -33,8 +33,8 @@ const ApiService = {
     return this.request('POST', '/auth/forgot-password/identify', { username });
   },
 
-  createPaymentOrder(subscriptionId) {
-    return this.request('POST', '/auth/payment/order', { subscriptionId });
+  createPaymentOrder(subscriptionId, employeeCount) {
+    return this.request('POST', '/auth/payment/order', { subscriptionId, employeeCount });
   },
 
   onboard(data) {
@@ -231,12 +231,9 @@ const ApiService = {
     return this.request('POST', '/admin/subscriptions', data);
   },
 
-  updateSubscriptionPermissionStatus(data) {
-    return this.request('POST', '/admin/subscription-permissions/update', data);
-  },
-
-  updateMultipleSubscriptionPermissionStatuses(data) {
-    return this.request('POST', '/admin/subscription-permissions/update-multiple', data);
+  // Batch-save the changed permission rows for one subscription in a single call.
+  updateSubscriptionPermissions(subscriptionId, permissions, isGlobal) {
+    return this.request('PUT', `/admin/subscriptions/${subscriptionId}/permissions`, { permissions, isGlobal });
   },
 
   exportSubscription(subscriptionId) {
@@ -253,6 +250,10 @@ const ApiService = {
   // that predate activity logging are billed on what was actually there.
   buildHeadBase(months) {
     return this.request('POST', '/admin/head-base', { months });
+  },
+
+  pushSubscriptionToWallet(subscriptionId) {
+    return this.request('POST', `/admin/subscriptions/${subscriptionId}/push-to-wallet`);
   },
 
   // Company-Subscription methods

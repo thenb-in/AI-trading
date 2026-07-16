@@ -126,14 +126,15 @@ module.exports = {
   // the background so they queue; the synchronous path is not bounded by this.
   REPORT_RUNNER_CONCURRENCY: parseInt(process.env.REPORT_RUNNER_CONCURRENCY, PARSE_INT_RADIX) || 2,
 
-  // License configuration. Set LICENSE_ENFORCEMENT=false in dev to bypass
-  // the license gate entirely. LICENSE_AUTO_RENEW=false disables the
+  // License configuration
+  // License enforcement follows SECURE_COOKIE: a non-secure-cookie install is
+  // treated as local/dev and bypasses the gate; secure cookies enforce it.
+  // LICENSE_AUTO_RENEW=false disables the
   // hourly auto-renew cron job (use for airgap installs where you don't
   // want repeated phone-home attempts to the wallet logged as failures).
   // LICENSE_WALLET_PUBLIC_KEYS is a JSON array of PEM strings; if set,
   // it overrides the pinned public keys file under SECRET_DIR.
   // Defaults are 'true' so production fails closed if the env var is unset.
-  LICENSE_ENFORCEMENT: process.env.LICENSE_ENFORCEMENT || 'true',
   LICENSE_AUTO_RENEW: process.env.LICENSE_AUTO_RENEW || 'true',
   LICENSE_WALLET_PUBLIC_KEYS: process.env.LICENSE_WALLET_PUBLIC_KEYS,
 
@@ -178,7 +179,7 @@ module.exports = {
   TERMINAL_NAME: process.env.TERMINAL_NAME,
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
-  // Optional: used by migrate:sso-users CLI (eTime → Wallet accounts)
+  // Optional: used by migrate:sso-users CLI (eTime → Wallet accounts).
   WALLET_DATABASE_URL: process.env.WALLET_DATABASE_URL,
 
   // whatsapp-sender app. WHATSAPP_SENDER_URL
@@ -187,7 +188,8 @@ module.exports = {
 
   // OIDC RP / Wallet SSO (ADR 001)
   OIDC_ISSUER: process.env.OIDC_ISSUER,
-  // Wallet Application.app_key — sent as the OIDC client_id on the wire.
+  // Wallet Application.app_key. One value, two uses: the OIDC client_id on the
+  // wire, and the key identifying this app when pushing subscriptions to Wallet.
   APP_KEY: process.env.APP_KEY,
   OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET,
   OIDC_REDIRECT_URI: process.env.OIDC_REDIRECT_URI,
