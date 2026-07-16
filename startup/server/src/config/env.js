@@ -122,6 +122,9 @@ module.exports = {
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
   REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
   REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
+  // How many saved report runs the runner computes at once. Saved runs finish in
+  // the background so they queue; the synchronous path is not bounded by this.
+  REPORT_RUNNER_CONCURRENCY: parseInt(process.env.REPORT_RUNNER_CONCURRENCY, PARSE_INT_RADIX) || 2,
 
   // License configuration. Set LICENSE_ENFORCEMENT=false in dev to bypass
   // the license gate entirely. LICENSE_AUTO_RENEW=false disables the
@@ -140,7 +143,7 @@ module.exports = {
   // Secret directory configuration
   SECRET_DIR: secretDir,
 
-  // Django API configuration
+  // EasyWDMS API configuration
   EASYWDMS_INTERNAL_API_URL: process.env.INTERNAL_EASYWDMS_URL,
   EASYWDMS_EXTERNAL_API_URL: process.env.EXTERNAL_EASYWDMS_URL,
 
@@ -175,13 +178,21 @@ module.exports = {
   TERMINAL_NAME: process.env.TERMINAL_NAME,
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
+  // Optional: used by migrate:sso-users CLI (eTime → Wallet accounts)
+  WALLET_DATABASE_URL: process.env.WALLET_DATABASE_URL,
 
   // whatsapp-sender app. WHATSAPP_SENDER_URL
   WHATSAPP_SENDER_URL: (process.env.WHATSAPP_SENDER_URL || '').trim() || null,
   WHATSAPP_SENDER_APP_KEY: (process.env.WHATSAPP_SENDER_APP_KEY || '').trim() || null,
 
-  // Django OAuth introspection
-  DJANGO_AUTH_URL: process.env.DJANGO_AUTH_URL,
+  // OIDC RP / Wallet SSO (ADR 001)
+  OIDC_ISSUER: process.env.OIDC_ISSUER,
+  // Wallet Application.app_key — sent as the OIDC client_id on the wire.
+  APP_KEY: process.env.APP_KEY,
+  OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET,
+  OIDC_REDIRECT_URI: process.env.OIDC_REDIRECT_URI,
+  OIDC_SCOPES: process.env.OIDC_SCOPES || 'openid profile offline_access',
+  OIDC_POST_LOGOUT_REDIRECT_URI: process.env.OIDC_POST_LOGOUT_REDIRECT_URI || process.env.FRONTEND_URL,
 
   // Shared secret guarding the internal service-to-service API
   // (/internal). The standalone biometric gateways send it in the

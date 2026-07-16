@@ -5,8 +5,15 @@ const env = require('../../config/env');
 const { getOidcProviderMetadata } = require('./oidcProviderMetadata');
 const { verifyIdToken } = require('./tokenVerifier');
 
-
-async function buildAuthorizationUrl({ codeChallenge, state, nonce }) {
+async function buildAuthorizationUrl({
+  codeChallenge,
+  state,
+  nonce,
+  loginHint = null,
+  action = null,
+  customerId = null,
+  companyName = null
+}) {
   const metadata = await getOidcProviderMetadata();
   const params = new URLSearchParams({
     client_id: env.APP_KEY,
@@ -19,6 +26,21 @@ async function buildAuthorizationUrl({ codeChallenge, state, nonce }) {
     nonce
   });
 
+  if (loginHint) {
+    params.set('login_hint', loginHint);
+  }
+
+  if (action) {
+    params.set('nbnext_action', action);
+    params.set('prompt', 'login');
+  }
+
+  if (customerId) {
+    params.set('nbnext_customer_id', customerId);
+  }
+  if (companyName) {
+    params.set('nbnext_company_name', companyName);
+  }
   return `${metadata.authorization_endpoint}?${params.toString()}`;
 }
 

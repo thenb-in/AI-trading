@@ -25,26 +25,11 @@ const loginValidation = [
 
 const resetPasswordValidation = [
   body('username').notEmpty().withMessage((value) => `Username is required ${value}.`),
-  body('password').notEmpty().withMessage((value) => `Password is required ${value}.`),
-  body('otp')
-    .optional({ checkFalsy: true })
-    .isNumeric()
-    .withMessage((value) => `Authenticator code must be numeric ${value}.`)
-    .isLength({ min: 6, max: 6 })
-    .withMessage((value) => `Authenticator code must be 6 digits ${value}.`)
+  body('password').notEmpty().withMessage((value) => `Password is required ${value}.`)
 ];
 
-const generateTotpSecretValidation = [
+const forgotPasswordIdentifyValidation = [
   body('username').notEmpty().withMessage((value) => `Username is required ${value}.`)
-];
-
-const verifyTotpValidation = [
-  body('username').notEmpty().withMessage((value) => `Username is required ${value}.`),
-  body('totpCode')
-    .isNumeric()
-    .withMessage((value) => `Authenticator code must be numeric ${value}.`)
-    .isLength({ min: 6, max: 6 })
-    .withMessage((value) => `Authenticator code must be 6 digits ${value}.`)
 ];
 
 const approveUserValidation = [
@@ -57,8 +42,7 @@ module.exports = {
   signupValidation: [...signupValidation, handleValidationErrors],
   loginValidation: [...loginValidation, handleValidationErrors],
   resetPasswordValidation: [...resetPasswordValidation, handleValidationErrors],
-  generateTotpSecretValidation: [...generateTotpSecretValidation, handleValidationErrors],
-  verifyTotpValidation: [...verifyTotpValidation, handleValidationErrors],
+  forgotPasswordIdentifyValidation: [...forgotPasswordIdentifyValidation, handleValidationErrors],
   approveUserValidation: [...approveUserValidation, handleValidationErrors]
 };
 

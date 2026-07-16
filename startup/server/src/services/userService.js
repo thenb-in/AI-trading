@@ -5,6 +5,7 @@ const db = require('../models');
 const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
+const { linkWalletAccount } = require('./identityLinkService');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -55,20 +56,17 @@ const getAllUsers = async (companyId) => {
   if (!companyId) {
     throw new Error(`Company ID is required ${companyId}.`);
   }
-  const rows = await User.findAll({
+  const users = await User.findAll({
     where: { isActive: true, company_id: companyId },
-    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'wallet_user_id'],
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
-      { model: Role, as: 'role', attributes: ['id', 'name'] },
+      // description is what tells an admin what a role like `company_admin`
+      // actually grants — the screens that pick roles all want to show it.
+      { model: Role, as: 'role', attributes: ['id', 'name', 'description'] },
       { model: UserProfile, as: 'userProfile', required: false }
     ],
     order: [['last_active', 'DESC']]
-  });
-
-  const users = rows.map((row) => {
-    const { wallet_user_id: walletUserId, ...user } = row.toJSON();
-    return { ...user, isSso: Boolean(walletUserId) };
   });
 
   // Fetch all roles separately - get global roles (companyId is null) and company-specific roles
@@ -80,7 +78,7 @@ const getAllUsers = async (companyId) => {
         { company_id: companyId } // Company-specific roles
       ]
     },
-    attributes: ['id', 'name'],
+    attributes: ['id', 'name', 'description'],
     order: [['name', 'ASC']]
   });
 
@@ -89,12 +87,6 @@ const getAllUsers = async (companyId) => {
 
 const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
-};
-
-/** Whether the given user is a support (superadmin) user. */
-const isSupportUser = async (userId) => {
-  const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
-  return !!user.isSupportUser;
 };
 
 const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId = null } = {}) => {
@@ -153,14 +145,6 @@ const getActiveUserIdsByPermissionName = async (companyId, permissionName, { exc
 
 const getUserByUsername = async (username, transaction) => {
   return User.findOne({ where: { username }, transaction });
-};
-
-/** The local account for a Wallet user, by their OIDC `sub`. Null if none. */
-const getUserByWalletUserId = async (walletUserId) => {
-  if (!walletUserId) {
-    return null;
-  }
-  return User.findOne({ where: { wallet_user_id: walletUserId } });
 };
 
 const updateUserProfile = async (userId, userProfile) => {
@@ -256,19 +240,17 @@ const checkUserActive = async (userId) => {
 };
 
 
-const createSsoUser = async ({ username, name, phone = null, companyId, walletUserId }) => {
+const createSsoUser = async ({ username, name, companyId, walletAccountId }) => {
   const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
 
   return sequelize.transaction(async (transaction) => {
     const user = await User.create({
       username,
       name,
-      phone,
       password: null,
       company_id: companyId,
-      wallet_user_id: walletUserId,
       isActive: true,
-      is_approved: true,
+      is_approved: false,
       refresh_token: null,
       mobileApp: company.mobileApp,
       desktopWeb: company.desktopWeb,
@@ -284,6 +266,13 @@ const createSsoUser = async ({ username, name, phone = null, companyId, walletUs
       userId: user.id,
       companyId
     }, { transaction });
+
+    await linkWalletAccount({
+      walletAccountId,
+      userId: user.id,
+      companyId,
+      transaction
+    });
 
     return user;
   });
@@ -380,11 +369,9 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getUserById,
-  isSupportUser,
   getActiveUserIdsByRoleName,
   getActiveUserIdsByPermissionName,
   getUserByUsername,
-  getUserByWalletUserId,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,

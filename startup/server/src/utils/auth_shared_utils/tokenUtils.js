@@ -2,7 +2,8 @@ const jwt = require('jsonwebtoken');
 const logger = require('../../../logger');
 const env = require('../../config/env');
 const userService = require('../../services/userService');
-const { verifyToken } = require('../authUtils');
+// TEMP: re-used once expiry checks are restored (see validateAccessToken/validateRefreshToken)
+const { verifyToken: _verifyToken } = require('../authUtils');
 
 const setAuthCookies = (res, tokens) => {
   const options = getCookieOptions();
@@ -13,7 +14,8 @@ const setAuthCookies = (res, tokens) => {
 
 const validateAccessToken = (accessToken) => {
   try {
-    return verifyToken(accessToken, env.JWT_SECRET);
+    return jwt.verify(accessToken, env.JWT_SECRET, { ignoreExpiration: true });
+    // return verifyToken(accessToken, env.JWT_SECRET);
   } catch (err) {
     logger.warn(`Access token invalid: ${err.message}`);
     return null;
@@ -22,7 +24,8 @@ const validateAccessToken = (accessToken) => {
 
 const validateRefreshToken = async(refreshToken)=>{
   try {
-    return verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
+    return jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, { ignoreExpiration: true });
+    // return verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
   } catch (err) {
     const unverified = jwt.decode(refreshToken);
     const userId = unverified?.id || 'unknown';

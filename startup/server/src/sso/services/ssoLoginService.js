@@ -1,45 +1,74 @@
 'use strict';
 
 const logger = require('../../../logger');
-const companyService = require('../../services/companyService');
-const userService = require('../../services/userService');
+const { findByWalletAccountId, linkWalletAccount } = require('../../services/identityLinkService');
+const { provisionUserFromSignup } = require('./ssoProvisionService');
 const {
+  findUserWithRole,
   findUserWithRoleById,
   issueTokensAndPersist,
-  buildLoginPayload
-} = require('../../services/auth');
+  buildLoginPayload,
+  revokeApprovalAfterReset
+} = require('../../services/authService');
 const { getProfileByUserId } = require('../../services/userProfileService');
+const companyService = require('../../services/companyService');
 const { verifyValidSubscribedPermission } = require('../../utils/subscriptionPermissionUtils');
 const { notifyCompanyAdminsOfLogin } = require('../../notifications/dispatchers');
-const { resolveCompany, provisionUser } = require('./ssoProvisionService');
+
+async function validateUserForSso(user) {
+  if (!user) {
+    throw { status: 403, message: 'No local account linked. Ask an admin to invite you.' };
+  }
+  if (!user.isActive) {
+    throw { status: 403, message: 'Account  not found' };
+  }
+  if (!user.is_approved) {
+    throw { status: 403, message: 'Your account is pending admin approval. Please try again later.' };
+  }
+}
 
 
-const resolveOrProvisionUser = async (claims) => {
-  if (!claims.sub) {
+
+async function resolveOrProvisionUser(claims, { companyId = null } = {}) {
+  const sub = claims.sub;
+  if (!sub) {
     throw { status: 401, message: 'OIDC subject missing' };
   }
 
-  const linked = await userService.getUserByWalletUserId(claims.sub);
-  if (linked) {
-    return findUserWithRoleById(linked.id);
+  //for signup
+  if (companyId) {
+    return provisionUserFromSignup({ claims, companyId });
   }
 
-  // Someone who already had an account here before they ever used SSO: same
-  // username, so claim it rather than turning them away or making a duplicate.
+  const link = await findByWalletAccountId(sub);
+  if (link) {
+    const user = await findUserWithRoleById(link.user_id);
+    await validateUserForSso(user);
+    return user;
+  }
+
   const username = claims.preferred_username?.trim();
-  const existing = username ? await userService.getUserByUsername(username) : null;
-  if (existing) {
-    await existing.update({ wallet_user_id: claims.sub });
-    logger.info(`[oidc-rp] Linked existing user to Wallet: ${existing.id} - Sub: ${claims.sub}`);
-    return findUserWithRoleById(existing.id);
+  if (!username) {
+    throw {
+      status: 403,
+      message: 'Account not found on wallet server'
+    };
   }
 
-  const company = await resolveCompany(claims);
-  const created = await provisionUser(claims, company);
-  return findUserWithRoleById(created.id);
-};
+  const user = await findUserWithRole(username);
+  await validateUserForSso(user);
 
-const completeSsoLogin = async (user) => {
+  await linkWalletAccount({
+    walletAccountId: sub,
+    userId: user.id,
+    companyId: user.company_id
+  });
+  logger.info(`[oidc-rp] First-login linked sub=${sub} user=${user.id} username=${username}`);
+  return user;
+}
+
+
+async function completeSsoLogin(user) {
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);
   const activeCompany = await companyService.getActiveCompanyForUser(user);
 
@@ -60,13 +89,24 @@ const completeSsoLogin = async (user) => {
     refreshToken,
     profile
   );
-};
+}
 
-/** Wallet has vouched for them — find or make the local account, then sign in. */
-const completeSsoRoundTrip = async (claims) => {
-  const user = await resolveOrProvisionUser(claims);
-  return completeSsoLogin(user);
-};
+
+async function completeSsoRoundTrip(claims, { companyId = null, resetPassword = false } = {}) {
+  const user = await resolveOrProvisionUser(claims, { companyId });
+
+  if (resetPassword) {
+    await revokeApprovalAfterReset(user.id);
+    return { pendingApproval: true, pendingReason: 'reset', username: user.username };
+  }
+
+  if (!user.is_approved) {
+    return { pendingApproval: true, username: user.username };
+  }
+
+  const payload = await completeSsoLogin(user);
+  return { pendingApproval: false, ...payload };
+}
 
 module.exports = {
   completeSsoRoundTrip

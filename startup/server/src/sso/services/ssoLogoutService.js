@@ -1,6 +1,7 @@
 'use strict';
 
 const logger = require('../../../logger');
+const { findByWalletAccountId } = require('../../services/identityLinkService');
 const userService = require('../../services/userService');
 
 
@@ -11,15 +12,15 @@ const endSessionForWalletAccount = async (claims) => {
     return false;
   }
 
-  const user = await userService.getUserByWalletUserId(sub);
-  if (!user) {
-    logger.info(`[oidc-rp] Backchannel logout for unknown sub: ${sub}`);
+  const link = await findByWalletAccountId(sub);
+  if (!link) {
+    logger.info(`[oidc-rp] Backchannel logout for unlinked sub: ${sub}`);
     return false;
   }
 
-  await userService.invalidateSessions(user.id);
+  await userService.invalidateSessions(link.user_id);
 
-  logger.info(`[oidc-rp] Backchannel logout ended session for user: ${user.id}`);
+  logger.info(`[oidc-rp] Backchannel logout ended session for user: ${link.user_id}`);
   return true;
 };
 

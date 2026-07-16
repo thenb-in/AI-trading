@@ -24,6 +24,18 @@ const JWT_ALGORITHM = 'HS256';
 const SETUP_DEFAULT_COMPANY_NAME = 'default';
 const SETUP_BCRYPT_ROUNDS = 10;
 
+// Signup failures. The controller and the services below it raise plain Errors,
+// so the view classifies them by matching their message — these are the needles
+// it looks for, kept beside the message they have to keep matching.
+const SIGNUP_GENERIC_ERROR = 'An error occurred during signup';
+const SIGNUP_CONFLICT_MESSAGES = ['Phone number already exists', 'username', 'Username'];
+
+const FORGOT_PASSWORD_METHOD = {
+  WALLET_SSO: 'wallet_sso',
+  LOCAL_PASSWORD: 'local_password',
+  LOCAL_TOTP: 'local_totp'
+};
+
 
 module.exports = {
   VALIDATION_MIN_PASSWORD_LENGTH,
@@ -38,6 +50,9 @@ module.exports = {
   JWT_DEFAULT_REFRESH_EXPIRATION,
   JWT_ALGORITHM,
   SETUP_DEFAULT_COMPANY_NAME,
-  SETUP_BCRYPT_ROUNDS
+  SETUP_BCRYPT_ROUNDS,
+  SIGNUP_GENERIC_ERROR,
+  SIGNUP_CONFLICT_MESSAGES,
+  FORGOT_PASSWORD_METHOD
 };
 

@@ -5,6 +5,9 @@ const {
   OIDC_STATE_COOKIE,
   OIDC_NONCE_COOKIE,
   OIDC_RETURN_TO_COOKIE,
+  OIDC_SIGNUP_COOKIE,
+  OIDC_RESET_COOKIE,
+  OIDC_NOTICE_COOKIE,
   OIDC_ERROR_COOKIE
 } = require('../../constants/oidc');
 
@@ -21,13 +24,19 @@ function roundTripCookieOpts() {
   };
 }
 
-function setRoundTripCookies(res, { codeVerifier, state, nonce, returnTo }) {
+function setRoundTripCookies(res, { codeVerifier, state, nonce, returnTo, companyId, resetPassword }) {
   const opts = roundTripCookieOpts();
   res.cookie(OIDC_PKCE_COOKIE, codeVerifier, opts);
   res.cookie(OIDC_STATE_COOKIE, state, opts);
   res.cookie(OIDC_NONCE_COOKIE, nonce, opts);
   if (returnTo) {
     res.cookie(OIDC_RETURN_TO_COOKIE, returnTo, opts);
+  }
+  if (companyId) {
+    res.cookie(OIDC_SIGNUP_COOKIE, companyId, opts);
+  }
+  if (resetPassword) {
+    res.cookie(OIDC_RESET_COOKIE, '1', opts);
   }
 }
 
@@ -36,7 +45,9 @@ function readRoundTripCookies(req) {
     codeVerifier: req.cookies?.[OIDC_PKCE_COOKIE],
     state: req.cookies?.[OIDC_STATE_COOKIE],
     nonce: req.cookies?.[OIDC_NONCE_COOKIE],
-    returnTo: req.cookies?.[OIDC_RETURN_TO_COOKIE]
+    returnTo: req.cookies?.[OIDC_RETURN_TO_COOKIE],
+    companyId: req.cookies?.[OIDC_SIGNUP_COOKIE],
+    resetPassword: req.cookies?.[OIDC_RESET_COOKIE] === '1'
   };
 }
 
@@ -48,6 +59,8 @@ function clearRoundTripCookies(res) {
   res.clearCookie(OIDC_STATE_COOKIE, clear);
   res.clearCookie(OIDC_NONCE_COOKIE, clear);
   res.clearCookie(OIDC_RETURN_TO_COOKIE, clear);
+  res.clearCookie(OIDC_SIGNUP_COOKIE, clear);
+  res.clearCookie(OIDC_RESET_COOKIE, clear);
 }
 
 /**
@@ -72,6 +85,11 @@ function setMessageCookie(res, name, message) {
   });
 }
 
+// Signup succeeded but is waiting on an admin.
+function setNoticeCookie(res, message) {
+  setMessageCookie(res, OIDC_NOTICE_COOKIE, message);
+}
+
 // Wallet authenticated someone this app refused, and we are dropping that
 // session on the way out so the user can pick a different account.
 function setErrorCookie(res, message) {
@@ -89,6 +107,7 @@ module.exports = {
   setRoundTripCookies,
   readRoundTripCookies,
   clearRoundTripCookies,
+  setNoticeCookie,
   setErrorCookie,
   frontendRedirect
 };

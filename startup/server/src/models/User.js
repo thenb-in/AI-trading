@@ -78,20 +78,6 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false
-    },
-    wallet_user_id: {
-      type: DataTypes.UUID,
-      allowNull: true,
-      unique: true
-    },
-    totp_secret: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    is_totp_enabled: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
     }
   }, {
     tableName: 'nbnext_users',
