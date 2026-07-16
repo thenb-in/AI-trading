@@ -3,7 +3,8 @@ import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/useDataContext';
 import { UserTable } from './components/UserTable';
-import { getUserManagementExtraColumns, useApproveExtension } from '@data/userManagementRegistry';
+import { getUserManagementExtraColumns } from '@app/components/userManagementExtraColumns';
+import { useApproveExtension } from '@app/components/user_management_extra_columns/useApproveExtension';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { InviteLinkButton } from './components/InviteLinkButton';
@@ -44,7 +45,6 @@ function UserManagement() {
     handleDeviceOptionUpdate,
     updateUser,
     updateUserProfileInState,
-    walletUserManagementUrl,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(true);
@@ -119,7 +119,6 @@ function UserManagement() {
     handleRoleChange,
     handleDeviceOptionUpdate,
     updateUser,
-    walletUserManagementUrl,
   };
 
   if (loading) {
@@ -179,6 +178,13 @@ function UserManagement() {
         companyId={companyId}
         tone="green"
         testId="copy-signup-link"
+      />
+      <InviteLinkButton
+        label="SSO sign-up link"
+        path="/signup/sso"
+        companyId={companyId}
+        tone="blue"
+        testId="copy-sso-signup-link"
       />
       <button
         onClick={handleShowQRCode}
