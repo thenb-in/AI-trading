@@ -5,7 +5,6 @@
 npm run migrate:sso-users -- --username=abc@1234
 npm run migrate:sso-users -- --company-id=087f...
 npm run migrate:sso-users -- --all
-npm run migrate:sso-users -- --all --clear-local-password
 
  */
 
