@@ -29,6 +29,10 @@ const ApiService = {
     return this.request('GET', '/auth/availability', null, { params: { type, value } });
   },
 
+  identifyForgotPasswordMethod(username) {
+    return this.request('POST', '/auth/forgot-password/identify', { username });
+  },
+
   createPaymentOrder(subscriptionId) {
     return this.request('POST', '/auth/payment/order', { subscriptionId });
   },

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaLock, FaUser } from 'react-icons/fa';
+import { FaLock, FaUser, FaSignInAlt, FaUserPlus } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
+import { useSso } from '@/hooks/useSso';
 import { cleanFormData } from '@utils/authformvalidation';
 import { SetupTotpPopup } from './SetupTotpPopup';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
@@ -18,6 +19,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUserData } = useDataContext();
+  const { startSso } = useSso(setError);
 
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&']/g, '');
@@ -90,6 +92,14 @@ function Login() {
     navigate('/forgot-password');
   };
 
+
+  const handleSsoLoginClick = () => {
+    startSso();
+  };
+
+  const handleSsoSignupClick = () => {
+    navigate('/signup/sso');
+  };
 
   const handleTotpSetupSuccess = () => {
     setShowTotpPopup(false);
@@ -195,6 +205,30 @@ function Login() {
               disabled={isLoading}
             >
               {isLoading ? 'Logging in...' : 'Log In'}
+            </button>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex items-center gap-3 my-4 text-xs text-gray-400">
+              <div className="flex-1 border-t border-gray-200" />
+              <span>or</span>
+              <div className="flex-1 border-t border-gray-200" />
+            </div>
+            <button
+              type="button"
+              onClick={handleSsoLoginClick}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-blue-600 bg-white px-4 py-3 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            >
+              <FaSignInAlt className="h-4 w-4" />
+              Login with NBNext SSO
+            </button>
+            <button
+              type="button"
+              onClick={handleSsoSignupClick}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            >
+              <FaUserPlus className="h-4 w-4" />
+              Sign up on NBNext Wallet
             </button>
           </div>
 

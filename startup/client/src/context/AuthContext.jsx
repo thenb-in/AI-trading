@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ApiService } from "@services/ApiService";
+import { setCacheScope } from "@services/cacheManager";
 import { isAllowedDevice } from "../utils/deviceUtils";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
@@ -27,8 +28,6 @@ const DataProvider = ({ children }) => {
     const isPublicPath =
       entryPath === "/" ||
       entryPath === "/signup" ||
-      entryPath ==='/login'||
-      entryPath === "/get-started" ||
       entryPath === "/forgot-password" ||
       entryPath.startsWith("/signup/") ||
       entryPath.startsWith("/forgot-password/");
@@ -77,7 +76,14 @@ const DataProvider = ({ children }) => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [location, navigate]);
+
+  // Cached data (rosters, filter option lists) belongs to one user in one
+  // company. Logging out or switching company drops the whole cache; a plain
+  // page reload does not, which is what keeps sessionStorage worth having.
+  useEffect(() => {
+    setCacheScope(userData ? `${userData.id}:${userData.companyId ?? ""}` : null);
+  }, [userData]);
 
   useEffect(() => {
     if (!authChecked || !userData) return;
@@ -97,12 +103,11 @@ const DataProvider = ({ children }) => {
     try {
       const response = await ApiService.logout();
       const ssoLogoutUrl = response?.data?.ssoLogoutUrl;
+      setUserData(null);
       if (ssoLogoutUrl) {
-
         window.location.replace(ssoLogoutUrl);
         return;
       }
-      setUserData(null);
       setIsLoggingOut(false);
       navigate("/");
     } catch (err) {
