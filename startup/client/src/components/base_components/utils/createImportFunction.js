@@ -2,6 +2,7 @@
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
+import { coerceBooleanCell, loadFirstWorksheet } from './importCellHelpers';
 
 const getApiErrorMessage = (error, fallback = 'Unknown error') => {
   if (!error) return fallback;
@@ -36,9 +37,7 @@ function normalizeImportCellValue(value, field, dateFields, booleanFields) {
     }
   }
   if (booleanFields.includes(field)) {
-    const v = String(value ?? '').toLowerCase().trim();
-    if (v === 'true' || v === 'yes' || v === '1' || value === true) value = true;
-    else if (v === 'false' || v === 'no' || v === '0' || value === false) value = false;
+    value = coerceBooleanCell(value);
   }
   return value;
 }
@@ -112,11 +111,7 @@ const createImportFunction = ({
 
       if (isExcel) {
         // Parse Excel file
-        const ExcelJS = (await import('exceljs')).default;
-        const buffer = await file.arrayBuffer();
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(buffer);
-        const sheet = workbook.worksheets[0];
+        const sheet = await loadFirstWorksheet(file);
 
         if (!sheet) {
           return { status: 400, data: { error: 'No worksheet found' } };

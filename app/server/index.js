@@ -18,7 +18,6 @@ const env = require('@startup/src/config/env');
 const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
-const companyRoutes = require('./src/routes/companyRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 
 const { startServer } = buildApp({
@@ -28,9 +27,9 @@ const { startServer } = buildApp({
 
 
   // App-owned routes that live under the framework's /api/v1/* namespace.
-  extraRoutes: [
-    { prefix: '/api/v1/company', router: companyRoutes }
-  ],
+  // The framework already serves /api/v1/company (see startup companyRoutes),
+  // so apps register only their OWN endpoints here — nothing by default.
+  extraRoutes: [],
 
   // App-specific routes. See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {

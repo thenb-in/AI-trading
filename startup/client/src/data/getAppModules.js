@@ -14,9 +14,10 @@ import { getAppModuleDefinitions } from '@app/data/getAppModules';
 /**
  * Generic, framework-level app modules shared by every product built on
  * startup (navigator, reports, masters, users, company, roles, superadmin,
- * guide). Product-specific modules (dashboards, biometric punch, HR
- * dashboard, WageMaster, ...) live in the app layer and are merged in via
- * `getAppModuleDefinitions` (imported from `@app/data/getAppModules`).
+ * guide). Product-specific modules (dashboards, biometric punch, HR dashboard,
+ * WageMaster, ...) live in the app layer and are merged in by the app's
+ * `getAppModuleDefinitions` (app/client/src/data/getAppModules.js), which
+ * sources this generic list — one source of truth for the generic modules.
  *
  * Sidebar placement is by the `order` field, so generic and app modules
  * interleave regardless of concat order. `color` is the ModuleCard accent,
