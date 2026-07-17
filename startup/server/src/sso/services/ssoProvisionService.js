@@ -25,6 +25,7 @@ const provisionUserFromSignup = async ({ claims, companyId }) => {
   const user = await userService.createSsoUser({
     username,
     name: claims.name?.trim() || username,
+    phone: claims.phone_number?.trim() || null,
     companyId,
     walletAccountId: claims.sub
   });

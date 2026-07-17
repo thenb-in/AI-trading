@@ -246,13 +246,14 @@ const checkUserActive = async (userId) => {
 };
 
 
-const createSsoUser = async ({ username, name, companyId, walletAccountId }) => {
+const createSsoUser = async ({ username, name, phone = null, companyId, walletAccountId }) => {
   const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
 
   return sequelize.transaction(async (transaction) => {
     const user = await User.create({
       username,
       name,
+      phone,
       password: null,
       company_id: companyId,
       isActive: true,
