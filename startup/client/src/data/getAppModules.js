@@ -14,10 +14,10 @@ import { getAppModuleDefinitions } from '@app/data/getAppModules';
 /**
  * Generic, framework-level app modules shared by every product built on
  * startup (navigator, reports, masters, users, company, roles, superadmin,
- * guide). Product-specific modules (dashboards, biometric punch, HR dashboard,
- * WageMaster, ...) live in the app layer and are merged in by the app's
- * `getAppModuleDefinitions` (app/client/src/data/getAppModules.js), which
- * sources this generic list — one source of truth for the generic modules.
+ * guide). Product-specific modules live in the app layer and are merged in by
+ * the app's `getAppModuleDefinitions` (app/client/src/data/getAppModules.js),
+ * which sources this generic list — one source of truth for the generic
+ * modules.
  *
  * Sidebar placement is by the `order` field, so generic and app modules
  * interleave regardless of concat order. `color` is the ModuleCard accent,
@@ -42,11 +42,11 @@ const getGenericAppModuleDefinitions = () => [
   {
     id: "reportsListing",
     title: "Reports",
-    description: "Open the reports library to run payroll and HR reports.",
+    description: "Open the reports library to run reports.",
     category: "Reports",
     color: "orange",
     tags: ["Reports", "Library", "Analytics"],
-    keywords: "reports listing library payroll hr module report hub",
+    keywords: "reports listing library module report hub",
     permissionName: "view_report_module",
     navigatePath: "/admin/report",
     icon: BarChart3,

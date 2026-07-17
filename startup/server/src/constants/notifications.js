@@ -4,16 +4,14 @@ const NOTIFICATION_TYPES = {
   USER_LOGIN: 'user_login',
   APPROVAL_PENDING: 'approval_pending',
   APPROVAL_APPROVED: 'approval_approved',
-  APPROVAL_REJECTED: 'approval_rejected',
-  DAILY_ATTENDANCE_SUMMARY: 'daily_attendance_summary'
+  APPROVAL_REJECTED: 'approval_rejected'
 };
 
 const VARIANT_BY_TYPE = {
   [NOTIFICATION_TYPES.USER_LOGIN]: 'info',
   [NOTIFICATION_TYPES.APPROVAL_PENDING]: 'warning',
   [NOTIFICATION_TYPES.APPROVAL_APPROVED]: 'success',
-  [NOTIFICATION_TYPES.APPROVAL_REJECTED]: 'error',
-  [NOTIFICATION_TYPES.DAILY_ATTENDANCE_SUMMARY]: 'info'
+  [NOTIFICATION_TYPES.APPROVAL_REJECTED]: 'error'
 };
 
 const DEFAULT_VARIANT = 'info';
