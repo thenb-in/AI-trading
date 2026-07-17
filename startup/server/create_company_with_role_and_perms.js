@@ -199,7 +199,7 @@ const runToExit = (options) =>
     // main() already logs inside its own catch; log once more for top-level
     // visibility and exit non-zero so callers (npm, CI) see the failure.
     logger.error('Setup failed', err);
-    process.exit(1);
+    process.exit(1); // eslint-disable-line no-process-exit
   });
 
 // Run directly (`node create_company_with_role_and_perms.js`) and only the

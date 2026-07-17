@@ -10,68 +10,17 @@
 //   3. That's it — buildApp().startServer() picks the change up via the
 //      registerSchedulerJobs option wired from app/server/index.js.
 
-const { registerJob } = require('@startup/scheduler');
-
-const { calculateWages } = require('./field_sales/wageScheduler');
-const { calculateCallDurations } = require('./field_sales/callLogScheduler');
-const { processRecentWindow } = require('./field_sales/addressScheduler');
-const { runLongLeaveDeactivationOnce } = require('./leave_deactivation/leaveDeactivationScheduler');
-const { runDailyAttendanceNotificationsOnce } = require('../src/services/daily_attendance_notification/dailyAttendanceNotification.service');
-// NOTE: fieldSales.archiveTracking (raw tracking archive/cleanup) runs in the
-// standalone wagemaster server now — it owns the high-volume tracking ingest +
-// its data lifecycle. It MUST run in exactly one process, so it is intentionally
-// not registered here. See wagemaster/index.js.
-const { runOnce: runApprovedManualAttendanceSnapshotBackfillOnce } = require('./approved_manual_attendance_snapshot/run_backfill_once');
-
-const {
-  FIELD_SALES_WAGE_CRON,
-  FIELD_SALES_CALL_LOG_CRON,
-  FIELD_SALES_ADDRESS_CRON,
-  LONG_LEAVE_DEACTIVATION_CRON,
-  DAILY_ATTENDANCE_NOTIFICATION_CRON,
-  APPROVED_MANUAL_ATTENDANCE_SNAPSHOT_BACKFILL_CRON
-} = require('../src/constants');
+// const { registerJob } = require('@startup/scheduler');
 
 function registerAllJobs() {
-  registerJob({
-    name: 'fieldSales.wage',
-    cronTime: FIELD_SALES_WAGE_CRON,
-    run: () => calculateWages()
-  });
-
-  registerJob({
-    name: 'fieldSales.callLog',
-    cronTime: FIELD_SALES_CALL_LOG_CRON,
-    run: () => calculateCallDurations()
-  });
-
-  registerJob({
-    name: 'fieldSales.address',
-    cronTime: FIELD_SALES_ADDRESS_CRON,
-    run: () => processRecentWindow()
-  });
-
-  registerJob({
-    name: 'employee.longLeaveDeactivation',
-    cronTime: LONG_LEAVE_DEACTIVATION_CRON,
-    run: () => runLongLeaveDeactivationOnce()
-  });
-
-  registerJob({
-    name: 'attendance.dailySummaryNotification',
-    cronTime: DAILY_ATTENDANCE_NOTIFICATION_CRON,
-    run: () => runDailyAttendanceNotificationsOnce()
-  });
-
-  // Heals approved manual attendance rows whose att_data snapshot is null
-  // (fire-and-forget population at approval time failed, or pre-existing
-  // approvals from before the column was added). Read path falls through to
-  // live compute for null rows so this is purely a perf-recovery pass.
-  registerJob({
-    name: 'manualAttendance.snapshotBackfill',
-    cronTime: APPROVED_MANUAL_ATTENDANCE_SNAPSHOT_BACKFILL_CRON,
-    run: () => runApprovedManualAttendanceSnapshotBackfillOnce()
-  });
+  // Example (uncomment + adjust when you add your first job):
+  //
+  //   const { runDailyReport } = require('./reports/dailyReport');
+  //   registerJob({
+  //     name: 'reports.daily',
+  //     cronTime: '0 2 * * *',          // every day at 02:00
+  //     run: () => runDailyReport(),
+  //   });
 }
 
 module.exports = { registerAllJobs };

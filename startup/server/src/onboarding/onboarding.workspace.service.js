@@ -3,7 +3,6 @@ const { sequelize } = require('../services/databaseService');
 const subscriptionService = require('../services/subscription.service');
 const authService = require('../services/authService');
 const companyService = require('../services/companyService');
-const { CompanyProfile } = require('../models');
 const companySubscriptionService = require('../services/companySubscription.service');
 const roleService = require('../services/roleService');
 const userService = require('../services/userService');
@@ -51,9 +50,9 @@ const createWorkspace = async ({
       { name: companyName, mobileApp: false, desktopWeb: true, mobileWeb: false, role_id: userRole?.id ?? null },
       transaction
     );
-    await CompanyProfile.create(
-      { companyId: company.id, default_state: defaultState, establishment_employee_count: establishmentCount },
-      { transaction }
+    await companyService.createCompanyProfile(
+      { companyId: company.id, defaultState, establishmentCount },
+      transaction
     );
     const user = await authService.signup(
       username,

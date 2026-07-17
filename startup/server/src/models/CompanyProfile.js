@@ -1,4 +1,4 @@
-const { companyProfileFields } = require('@appServer/src/models/mixins/companyProfileFields');
+const { companyProfileFields } = require('./mixins/companyProfileFields');
 
 module.exports = (sequelize, DataTypes) => {
   const CompanyProfile = sequelize.define('CompanyProfile', {
