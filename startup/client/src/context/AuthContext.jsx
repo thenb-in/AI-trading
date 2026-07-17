@@ -28,6 +28,7 @@ const DataProvider = ({ children }) => {
     const isPublicPath =
       entryPath === "/" ||
       entryPath === "/signup" ||
+      entryPath === "/get-started"
       entryPath === "/forgot-password" ||
       entryPath.startsWith("/signup/") ||
       entryPath.startsWith("/forgot-password/");
