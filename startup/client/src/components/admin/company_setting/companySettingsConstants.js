@@ -1,13 +1,14 @@
 import {
   Settings,
   MapPin,
-  SlidersHorizontal,
 } from "lucide-react";
 
 
+// Base framework tabs. Apps that need extra tabs (e.g. an attendance/compliance
+// "Company Profile" panel) compose their own page around these — the scaffold
+// does not reference app-specific customizations.
 const COMPANY_SETTINGS_TABS = [
   { id: "general", label: "General", description: "Identity, access & company details", icon: Settings },
-  { id: "profile", label: "Company Profile", description: "Attendance, compliance & credentials", icon: SlidersHorizontal },
   { id: "location", label: "Geofencing", description: "Punch location & radius", icon: MapPin }
 
 ];
