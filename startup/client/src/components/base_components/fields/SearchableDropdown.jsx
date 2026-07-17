@@ -1,8 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { Box } from '@mui/material';
 import { ChevronDown, X, Search } from 'lucide-react';
+import {
+  getCheckboxState,
+  toggleNodeSelection,
+  getSelectedRoots,
+  getLastChildValues,
+  getVisibleNodes,
+} from '@utils/treeSelect';
+import { TreeOptionRow, TreeCheckbox } from './TreeOptionRow';
 
 function SearchableDropdown({
   options = [],
@@ -12,12 +20,52 @@ function SearchableDropdown({
   disabled = false,
   multiple = true,
   searchable = true,
+  autoOpen = false,
+  onClose,
+  // Hierarchical rendering. Leave unset to infer from the options themselves
+  // (any option carrying `hasChildren`); pass an explicit boolean to force it.
+  tree,
+  // Value of the option that acts as a global "select everything" toggle in
+  // tree mode. It renders above the tree, outside the hierarchy.
+  allOptionValue = 'all',
+  // Floor for the tree menu width — indented labels need more room than the
+  // trigger. Flat mode always matches the trigger width.
+  minMenuWidth = 250,
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(autoOpen);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPos, setDropdownPos] = useState(null);
+  const [collapsed, setCollapsed] = useState(() => new Set());
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+
+  // Tree mode activates when the options describe a hierarchy; every other
+  // dropdown keeps the flat rendering.
+  const isTree = useMemo(
+    () => (tree === undefined ? options.some((o) => o.hasChildren) : tree),
+    [tree, options]
+  );
+  const optionByValue = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
+  const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
+  const allTreeOption = useMemo(
+    () => options.find((o) => o.value === allOptionValue) || null,
+    [options, allOptionValue]
+  );
+  const treeNodes = useMemo(
+    () => (isTree ? options.filter((o) => o.value !== allOptionValue) : []),
+    [isTree, options, allOptionValue]
+  );
+  const lastChildSet = useMemo(() => getLastChildValues(treeNodes), [treeNodes]);
+  const visibleTreeNodes = useMemo(
+    () => (isTree ? getVisibleNodes(treeNodes, { collapsed, searchTerm }) : []),
+    [isTree, treeNodes, collapsed, searchTerm]
+  );
+
+  // Keep latest onClose without re-subscribing the listeners on every render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const updatePosition = useCallback(() => {
     if (!dropdownRef.current) return;
@@ -29,32 +77,50 @@ function SearchableDropdown({
     });
   }, []);
 
-  // Close dropdown when clicking outside
+  // When mounted already-open (autoOpen), measure so the menu can render.
   useEffect(() => {
+    if (autoOpen) {
+      updatePosition();
+    }
+  }, [autoOpen, updatePosition]);
+
+  // Close dropdown when clicking outside / pressing Escape
+  useEffect(() => {
+    const close = () => {
+      setIsOpen(false);
+      setSearchTerm('');
+      onCloseRef.current?.();
+    };
     const handleClickOutside = (event) => {
       if (
         dropdownRef.current && !dropdownRef.current.contains(event.target) &&
         menuRef.current && !menuRef.current.contains(event.target)
       ) {
-        setIsOpen(false);
-        setSearchTerm('');
+        close();
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        close();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
   }, [isOpen, updatePosition]);
 
-  // Filter options based on search term
+  // Flat-mode filtered options
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -79,10 +145,32 @@ function SearchableDropdown({
     }
   };
 
+  // --- Tree handlers (all logic lives in @utils/treeSelect) ---------------
+
+  const handleTreeSelect = useCallback(
+    (option) => onChange(toggleNodeSelection(option, selectedValues, optionByValue)),
+    [onChange, selectedValues, optionByValue]
+  );
+
+  const toggleCollapse = useCallback((value, e) => {
+    e.stopPropagation();
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }, []);
+
   const handleRemove = (value, e) => {
     e.stopPropagation();
-    const newValues = selectedValues.filter((v) => v !== value);
-    onChange(newValues);
+    const option = isTree ? optionByValue.get(value) : null;
+    // A chip is an already-selected node, so toggling removes it and its subtree.
+    onChange(
+      option
+        ? toggleNodeSelection(option, selectedValues, optionByValue)
+        : selectedValues.filter((v) => v !== value)
+    );
   };
 
   const handleClearAll = (e) => {
@@ -91,20 +179,22 @@ function SearchableDropdown({
   };
 
   const handleInputChangeNoOp = useCallback(() => {
-    // No-op handler for checkbox/radio - selection is handled by parent div onClick
+    // No-op: selection is handled by the row onClick, not the checkbox.
   }, []);
 
   const handleSearchChange = useCallback((e) => {
     setSearchTerm(e.target.value);
   }, []);
 
-  const getSelectedLabels = () => {
-    return selectedValues
-      .map((value) => options.find((opt) => opt.value === value)?.label)
-      .filter(Boolean);
-  };
-
-  const selectedLabels = getSelectedLabels();
+  // Chips: in tree mode collapse fully-selected subtrees to their top-most node.
+  const displayedChips = useMemo(() => {
+    const values = isTree
+      ? getSelectedRoots(selectedValues, optionByValue)
+      : selectedValues;
+    return values
+      .map((value) => ({ value, label: optionByValue.get(value)?.label }))
+      .filter((chip) => chip.label);
+  }, [isTree, selectedValues, optionByValue]);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -118,19 +208,18 @@ function SearchableDropdown({
         } ${isOpen ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-300'}`}
       >
         <div className="flex items-center flex-wrap gap-1">
-          {selectedLabels.length === 0 ? (
+          {displayedChips.length === 0 ? (
             <span className="text-gray-400">{placeholder}</span>
           ) : (
             <>
-              {selectedLabels.map((label, index) => {
-                const value = selectedValues[index];
-                const handleRemoveClick = (e) => handleRemove(value, e);
+              {displayedChips.map((chip) => {
+                const handleRemoveClick = (e) => handleRemove(chip.value, e);
                 return (
                   <span
-                    key={value}
+                    key={chip.value}
                     className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs"
                   >
-                    {label}
+                    {chip.label}
                     {!disabled && (
                       <button
                         type="button"
@@ -143,7 +232,7 @@ function SearchableDropdown({
                   </span>
                 );
               })}
-              {selectedLabels.length > 0 && !disabled && (
+              {displayedChips.length > 0 && !disabled && (
                 <button
                   type="button"
                   onClick={handleClearAll}
@@ -174,7 +263,8 @@ function SearchableDropdown({
             position: 'absolute',
             top: dropdownPos.top + 4,
             left: dropdownPos.left,
-            width: dropdownPos.width,
+            width: isTree ? Math.max(dropdownPos.width, minMenuWidth) : dropdownPos.width,
+            maxWidth: '95vw',
             zIndex: 9999,
           }}
           className="bg-white border border-gray-300 rounded shadow-lg max-h-80 overflow-hidden"
@@ -197,8 +287,55 @@ function SearchableDropdown({
           )}
 
           {/* Options List */}
-          <div className="overflow-y-auto max-h-64">
-            {filteredOptions.length === 0 ? (
+          <div className="overflow-y-auto max-h-64 py-1">
+            {isTree ? (
+              visibleTreeNodes.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                  No options found
+                </div>
+              ) : (
+                <>
+                  {/* "All" sits apart from the tree as a global toggle. */}
+                  {!searchTerm && allTreeOption && (
+                    <>
+                      <div
+                        onClick={() => handleTreeSelect(allTreeOption)}
+                        className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer mx-1 rounded-sm hover:bg-blue-50 ${
+                          selectedSet.has(allOptionValue)
+                            ? 'text-blue-700 font-semibold'
+                            : 'text-gray-700 font-medium'
+                        }`}
+                      >
+                        <TreeCheckbox
+                          checked={selectedSet.has(allOptionValue)}
+                          indeterminate={false}
+                          onChange={handleInputChangeNoOp}
+                        />
+                        <span>{allTreeOption.label}</span>
+                      </div>
+                      <div className="my-1 border-t border-gray-100" />
+                    </>
+                  )}
+                  {visibleTreeNodes.map((option) => {
+                    const { checked, indeterminate } = getCheckboxState(option, selectedSet);
+                    return (
+                      <TreeOptionRow
+                        key={option.value}
+                        option={option}
+                        checked={checked}
+                        indeterminate={indeterminate}
+                        isCollapsed={collapsed.has(option.value)}
+                        isLastChild={lastChildSet.has(option.value)}
+                        showChevron={option.hasChildren && !searchTerm}
+                        showConnectors={(option.depth || 0) > 0 && !searchTerm}
+                        onSelect={() => handleTreeSelect(option)}
+                        onToggleCollapse={(e) => toggleCollapse(option.value, e)}
+                      />
+                    );
+                  })}
+                </>
+              )
+            ) : filteredOptions.length === 0 ? (
               <div className="px-3 py-2 text-sm text-gray-500 text-center">
                 No options found
               </div>
@@ -244,6 +381,10 @@ SearchableDropdown.propTypes = {
       label: PropTypes.string.isRequired,
       highlight: PropTypes.bool,
       is_active: PropTypes.bool,
+      depth: PropTypes.number,
+      hasChildren: PropTypes.bool,
+      parentValue: PropTypes.string,
+      descendants: PropTypes.arrayOf(PropTypes.string),
     })
   ).isRequired,
   selectedValues: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -252,7 +393,11 @@ SearchableDropdown.propTypes = {
   disabled: PropTypes.bool,
   multiple: PropTypes.bool,
   searchable: PropTypes.bool,
+  autoOpen: PropTypes.bool,
+  onClose: PropTypes.func,
+  tree: PropTypes.bool,
+  allOptionValue: PropTypes.string,
+  minMenuWidth: PropTypes.number,
 };
 
 export { SearchableDropdown };
-

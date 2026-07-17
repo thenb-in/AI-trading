@@ -52,6 +52,8 @@ const STATIC_TITLES = {
   '/forgot-password': 'Forgot password',
   '/admin': 'Navigator',
   '/admin/navigator': 'Navigator',
+  '/admin/dashboards': 'Dashboards',
+  '/admin/dashboard': 'Dashboards',
   '/admin/reports': 'Reports',
   '/admin/report': 'Reports',
   '/admin/report/past-report': 'Past Reports',
@@ -86,6 +88,7 @@ function resolveTitle(rawPath) {
     return MASTER_TITLE_BY_KEY[masterMatch[1]] || 'Masters';
   }
 
+  if (path.startsWith('/admin/dashboard/')) return 'Dashboards';
   if (path.startsWith('/admin/')) return 'Admin';
 
   return null;

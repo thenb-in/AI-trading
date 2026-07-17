@@ -15,13 +15,13 @@
 const { invokeExpressHandler } = require('./expressShim');
 const reportRoutes = require('@appServer/src/routes/reportRoutes');
 
-function buildRegistryFromRouter(router) {
+function buildRegistryFromRouter(router, prefix = '') {
   const registry = {};
   for (const layer of router.stack || []) {
     if (!layer.route || !layer.route.methods?.get) {
       continue;
     }
-    const slug = String(layer.route.path).replace(/^\//, '');
+    const slug = prefix + String(layer.route.path).replace(/^\//, '');
     const stack = layer.route.stack || [];
     const last = stack[stack.length - 1];
     const handler = last?.handle;

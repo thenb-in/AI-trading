@@ -66,4 +66,17 @@ const useDebugMode = () => {
   return isDebugModeState;
 };
 
-export { useDebugMode };
+/**
+ * Read-only debug mode for components that only need to react to the current
+ * value (e.g. forms revealing debug fields). Unlike `useDebugMode`, it does NOT
+ * register the global Alt+D toggle listener — mounting several of those at once
+ * would toggle multiple times per keypress and cancel out. The toggle is owned
+ * by the single `useDebugMode` in the app shell.
+ */
+const useDebugModeValue = () => {
+  const [value, setValue] = useState(() => isDebugMode());
+  useEffect(() => subscribeToDebugMode(setValue), []);
+  return value;
+};
+
+export { useDebugMode, useDebugModeValue };

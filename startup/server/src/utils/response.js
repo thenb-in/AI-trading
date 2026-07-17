@@ -13,12 +13,28 @@ function sendSuccess(res, { statusCode = 200, data = null, message = null } = {}
   return res.status(statusCode).json(body);
 }
 
+function extractErrorMessage(error) {
+  if (!error) {
+    return null;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (Array.isArray(error.errors) && error.errors.length) {
+    return error.errors.map((e) => e.message).join('; ');
+  }
+  return error.message || null;
+}
+
 function sendError(res, { statusCode = HTTP_STATUS_INTERNAL_ERROR, message = null, error = null } = {}) {
   const body = { success: false };
-  if (message) {
-    body.message = message;
+  // Explicit message wins; otherwise surface the detail carried by the error.
+  const resolvedMessage = message || extractErrorMessage(error);
+  if (resolvedMessage) {
+    body.message = resolvedMessage;
   }
-  if (error) {
+
+  if (error && !(error instanceof Error)) {
     body.error = error;
   }
   return res.status(statusCode).json(body);

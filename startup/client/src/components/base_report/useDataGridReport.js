@@ -35,6 +35,10 @@ const useDataGridReport = ({
   // handleFiltersApply will route updates through it.
   setColumns: externalSetColumns,
   setRows: externalSetRows,
+  // Optional payload mapper for non-standard responses (e.g. multi-section
+  // reports). When set, handleFiltersApply hands it the raw apiData instead of
+  // running the default processApiData → setColumns/setRows path.
+  applyData,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [internalRows, internalSetRows] = useState([]);
@@ -100,6 +104,7 @@ const useDataGridReport = ({
       hasStatusDefinitions: isEditable,
       setOriginalColumns: setOriginalColumns ?? null,
       transport,
+      applyData,
     });
   };
 

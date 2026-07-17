@@ -22,14 +22,15 @@ const resolveExportVisibleColumns = (
   columnOrder
 ) => {
   if (!showInsightsAsHeader) {
-    return visibleColumns.filter(
-      (c) => c.field !== "__actions__"
-    );
+    return visibleColumns
+      .filter((c) => c.field !== "__actions__")
+      .filter((c) => c.is_export !== false);
   }
 
   const visible = (normalizedColumns || [])
     .filter((c) => columnVisibility[c.field] !== false)
-    .filter((c) => c.field !== "__actions__");
+    .filter((c) => c.field !== "__actions__")
+    .filter((c) => c.is_export !== false);
 
   if (!columnOrder?.length) {
     return visible;
@@ -105,9 +106,10 @@ const buildSheetFromRaw = (
 
   // Respect the user's column visibility toggles. Unknown fields (not in the
   // state map) default to visible.
-  const visibleCols = columnVisibility
+  const visibleCols = (columnVisibility
     ? colsToUse.filter((c) => columnVisibility[c.field] !== false)
-    : colsToUse;
+    : colsToUse
+  ).filter((c) => c.is_export !== false);
 
   const totalRow =
     showTotalRow && unwrapped.length > 1 ? calculateTotals(unwrapped, visibleCols) : null;

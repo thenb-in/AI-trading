@@ -4,7 +4,6 @@ const STORAGE_KEY_REFRESH_TOKEN = 'refreshToken';
 const STORAGE_KEY_USER_DATA = 'userData';
 const STORAGE_KEY_THEME = 'theme';
 const STORAGE_KEY_LANGUAGE = 'language';
-const STORAGE_KEY_ACTIVE_COMPANY_NAME = 'activeCompanyName';
 const STORAGE_KEY_REPORT_FILTERS_DEBUG = 'reportFiltersDebug';
 
 export {
@@ -13,7 +12,6 @@ export {
   STORAGE_KEY_USER_DATA,
   STORAGE_KEY_THEME,
   STORAGE_KEY_LANGUAGE,
-  STORAGE_KEY_ACTIVE_COMPANY_NAME,
   STORAGE_KEY_REPORT_FILTERS_DEBUG
 };
 

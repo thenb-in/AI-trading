@@ -72,10 +72,10 @@ const filterRelevantData = (data, columns) => {
   if (!data || !columns || data.length === 0 || columns.length === 0) {
     return [];
   }
-
+  
   // Pre-compute column keys set for O(1) lookup
   const columnKeys = new Set(columns.map(col => col.key));
-
+  
   return data.map((row) => {
     const filteredRow = {};
     // Use Set iteration for better performance
@@ -162,18 +162,29 @@ const applyDefaultFiltersToSearchParams = (defaultFilters, searchParams, setSear
   if (needsUpdate) setSearchParams(nextParams, { replace: true });
 };
 
+
+const sanitizeFilters = (filters) => {
+  const sanitized = {};
+  Object.entries(filters || {}).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === "") return;
+    if (Array.isArray(value)) {
+      const valid = value.filter((v) => v !== null && v !== undefined && v !== "");
+      if (valid.length > 0) sanitized[key] = valid;
+    } else {
+      sanitized[key] = value;
+    }
+  });
+  return sanitized;
+};
+
 // Update search params with new filters
 const updateSearchParams = (filters, setSearchParams) => {
   const newParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== null && value !== undefined && value !== "") {
-      if (Array.isArray(value)) {
-        value
-          .filter((v) => v !== null && v !== undefined && v !== "")
-          .forEach((v) => newParams.append(key, v));
-      } else {
-        newParams.set(key, value);
-      }
+  Object.entries(sanitizeFilters(filters)).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => newParams.append(key, v));
+    } else {
+      newParams.set(key, value);
     }
   });
   setSearchParams(newParams);
@@ -205,7 +216,7 @@ const fetchReportData = async (
         setStatusDefinitions,
         hasStatusDefinitions
       );
-
+      
       // Batch column and row updates together to prevent partial renders
       // Check if setColumns is a combined function that accepts both columns and rows
       if (typeof setColumns === 'function' && setColumns.length === 2) {
@@ -258,7 +269,11 @@ const runReportOnMainServer = async (report, sanitizedFilters) => {
 //   'runner' → runReportViaReportRunner  (socket → dedicated runner process)
 //   'http'   → runReportOnMainServer     (REST → app server, default)
 //
-// Everything after the fetch is shared.
+// `applyData` lets a caller own how the fetched payload maps onto the grid —
+// pass it when the response isn't the standard single `{ data, columns }`
+// shape (e.g. multi-section reports). When omitted, the default
+// processApiData → setColumns/setRows path runs. Everything else (sanitize,
+// URL sync, transport, loading flags, toasts) stays shared.
 const handleFiltersApply = async ({
   filters,
   report,
@@ -271,24 +286,13 @@ const handleFiltersApply = async ({
   hasStatusDefinitions = false,
   setOriginalColumns = null,
   transport = 'http',
+  applyData = null,
 }) => {
   try {
     setIsFiltering(true);
     setLoading(true);
 
-    const sanitizedFilters = {};
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== "") {
-        if (Array.isArray(value)) {
-          const validValues = value.filter((v) => v !== null && v !== undefined && v !== "");
-          if (validValues.length > 0) {
-            sanitizedFilters[key] = validValues;
-          }
-        } else {
-          sanitizedFilters[key] = value;
-        }
-      }
-    });
+    const sanitizedFilters = sanitizeFilters(filters);
 
     updateSearchParams(sanitizedFilters, setSearchParams);
 
@@ -296,17 +300,21 @@ const handleFiltersApply = async ({
       ? await runReportViaReportRunner(report.slug, sanitizedFilters)
       : await runReportOnMainServer(report, sanitizedFilters);
 
-    if (setOriginalColumns && apiData?.columns) setOriginalColumns(apiData.columns);
-
-    const { gridColumns, gridRows } = processApiData(apiData, setStatusDefinitions, hasStatusDefinitions);
-
-    // Batch column and row updates together to prevent partial renders.
-    // setColumns can be an arity-2 (cols, rows) combined setter from the caller.
-    if (typeof setColumns === 'function' && setColumns.length === 2) {
-      setColumns(gridColumns, gridRows);
+    if (applyData) {
+      applyData(apiData);
     } else {
-      setColumns(gridColumns);
-      setRows(gridRows);
+      if (setOriginalColumns && apiData?.columns) setOriginalColumns(apiData.columns);
+
+      const { gridColumns, gridRows } = processApiData(apiData, setStatusDefinitions, hasStatusDefinitions);
+
+      // Batch column and row updates together to prevent partial renders.
+      // setColumns can be an arity-2 (cols, rows) combined setter from the caller.
+      if (typeof setColumns === 'function' && setColumns.length === 2) {
+        setColumns(gridColumns, gridRows);
+      } else {
+        setColumns(gridColumns);
+        setRows(gridRows);
+      }
     }
 
     toast.success(successMessage);
@@ -320,4 +328,4 @@ const handleFiltersApply = async ({
 };
 
 
-export { convertCellToText, filterRelevantData, processApiData, getFiltersFromSearchParams, updateSearchParams, fetchReportData, handleFiltersApply, applyDefaultFiltersToSearchParams };
+export { convertCellToText, filterRelevantData, processApiData, getFiltersFromSearchParams, updateSearchParams, sanitizeFilters, fetchReportData, handleFiltersApply, applyDefaultFiltersToSearchParams };

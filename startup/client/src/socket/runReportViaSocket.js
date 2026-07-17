@@ -1,15 +1,13 @@
-// Per-call socket lifecycle: connect → emit → await ack → disconnect.
+// Per-call socket lifecycle: acquire (connect) → emit → await ack → release.
+// Ref-counted so concurrent callers share one connection; the socket is only
+// torn down when the last in-flight call releases it.
 
 
-import { ensureSocketReady, disconnectSocket } from './setup';
+import { ensureSocketReady, releaseSocket } from './setup';
 import { REPORT_RUN } from './events';
 
 async function runReportViaSocket({ reportKey, filters }) {
-
   const params = { ...filters };
-  if (params.employment_type === undefined || params.employment_type === null || params.employment_type === '') {
-    params.employment_type = 'monthly';
-  }
   try {
     const socket = await ensureSocketReady();
     return await new Promise((resolve, reject) => {
@@ -21,8 +19,19 @@ async function runReportViaSocket({ reportKey, filters }) {
       });
     });
   } finally {
-    disconnectSocket();
+    releaseSocket();
   }
 }
 
-export { runReportViaSocket };
+async function runViaRunner(reportKey, filters = {}) {
+  try {
+    const envelope = await runReportViaSocket({ reportKey, filters });
+    const payload = envelope?.data ?? envelope;
+    return { data: { success: true, data: payload } };
+  } catch (err) {
+    console.error(`[runner] ${reportKey} failed:`, err?.message || err);
+    throw err;
+  }
+}
+
+export { runReportViaSocket, runViaRunner };

@@ -1,2 +1,2 @@
-export { disconnectSocket } from './setup';
-export { runReportViaSocket } from './runReportViaSocket';
+export { disconnectSocket, releaseSocket } from './setup';
+export { runReportViaSocket, runViaRunner } from './runReportViaSocket';

@@ -7,6 +7,7 @@ const CONNECT_WAIT_MS = 3000;
 
 let _socket = null;
 let _opts = null;
+let _refCount = 0;
 
 
 function buildSocket({ url, token }) {
@@ -38,12 +39,26 @@ function isSocketConnected() {
   return Boolean(_socket?.connected);
 }
 
-function disconnectSocket() {
+function _teardownSocket() {
   if (!_socket) return;
-  console.info('[socket] disconnectSocket() called, was isSocketConnected=' + isSocketConnected());
   try { _socket.disconnect(); } catch { /* already gone */ }
   _socket = null;
   _opts = null;
+}
+
+
+function disconnectSocket() {
+  console.info('[socket] disconnectSocket() called, was isSocketConnected=' + isSocketConnected());
+  _refCount = 0;
+  _teardownSocket();
+}
+
+// Per-call release: tear down only once the last in-flight caller is done.
+function releaseSocket() {
+  _refCount = Math.max(0, _refCount - 1);
+  if (_refCount === 0) {
+    _teardownSocket();
+  }
 }
 
 
@@ -66,9 +81,10 @@ function waitForConnect(socket) {
 
 async function ensureSocketReady() {
   console.info('[socket] ensureSocketReady() entry, isSocketConnected=' + isSocketConnected());
+  _refCount += 1;
   const socket = getSocket();
   await waitForConnect(socket);
   return socket;
 }
 
-export { disconnectSocket, ensureSocketReady };
+export { disconnectSocket, releaseSocket, ensureSocketReady };

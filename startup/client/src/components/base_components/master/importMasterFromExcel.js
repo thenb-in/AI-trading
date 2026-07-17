@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { isExportFooterRow } from '@startup/utils/excelImportFooter';
 
 /**
  * Reads master rows from an Excel workbook produced either by the standard exporter
@@ -75,6 +76,10 @@ async function importMasterFromExcel(
     for (let r = dataStartRow; r <= sheet.rowCount; r++) {
       const row = sheet.getRow(r);
       if (!row || row.cellCount === 0) continue;
+
+      if (isExportFooterRow(row)) {
+        break;
+      }
 
       const payload = {};
       row.eachCell((cell, colNumber) => {

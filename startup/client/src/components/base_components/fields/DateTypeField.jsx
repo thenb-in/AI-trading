@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { TextField } from '@mui/material';
 import { format, parse, isValid } from 'date-fns';
 import { colors, fontSize } from '@startup/constants/theme';
 
@@ -13,7 +12,8 @@ function DateTypeField({
   onChange,
   disabled = false,
   placeholder = 'DD/MM/YYYY',
-  maxToday = true
+  maxToday = true,
+  popperZIndex
 }) {
 
   const parsedDate = useMemo(() => {
@@ -42,40 +42,35 @@ function DateTypeField({
     onChange?.(name, formatted);
   }, [name, onChange, maxToday]);
 
-  const renderInput = useCallback((params) => {
-    return (
-      <TextField
-        {...params}
-        size="small"
-        placeholder={placeholder}
-        fullWidth
-        sx={{
-          '& .MuiInputBase-root': {
-            height: '36px',
-            fontSize: fontSize.sm,
-            backgroundColor: disabled
-              ? colors.background.paper
-              : colors.background.default,
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: disabled
-                ? colors.gray[200]
-                : colors.gray[400],
-            },
-          },
-          '& .MuiInputBase-input': {
-            padding: '8px 12px',
-          },
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: colors.gray[300],
-          },
-          '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: colors.primary.light,
-            borderWidth: '1px',
-          },
-        }}
-      />
-    );
-  }, [disabled, placeholder]);
+  const textFieldSlotProps = useMemo(() => ({
+    size: 'small',
+    placeholder,
+    fullWidth: true,
+    sx: {
+      '& .MuiInputBase-root': {
+        height: '36px',
+        fontSize: fontSize.sm,
+        backgroundColor: disabled
+          ? colors.background.paper
+          : colors.background.default,
+        '&:hover .MuiOutlinedInput-notchedOutline': {
+          borderColor: disabled
+            ? colors.gray[200]
+            : colors.gray[400],
+        },
+      },
+      '& .MuiInputBase-input': {
+        padding: '8px 12px',
+      },
+      '& .MuiOutlinedInput-notchedOutline': {
+        borderColor: colors.gray[300],
+      },
+      '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+        borderColor: colors.primary.light,
+        borderWidth: '1px',
+      },
+    },
+  }), [disabled, placeholder]);
 
   const maxDate = useMemo(() => {
     if (!maxToday) return undefined;
@@ -92,7 +87,10 @@ function DateTypeField({
         disabled={disabled}
         format="dd/MM/yyyy"
         maxDate={maxDate}
-        renderInput={renderInput}
+        slotProps={{
+          textField: textFieldSlotProps,
+          ...(popperZIndex != null ? { popper: { sx: { zIndex: popperZIndex } } } : {}),
+        }}
       />
     </LocalizationProvider>
   );
@@ -104,7 +102,8 @@ DateTypeField.propTypes = {
   onChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
   placeholder: PropTypes.string,
-  maxToday: PropTypes.bool
+  maxToday: PropTypes.bool,
+  popperZIndex: PropTypes.number
 };
 
 export { DateTypeField };

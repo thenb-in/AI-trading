@@ -8,7 +8,6 @@ import { MultiCompanyModule } from "../components/admin/multi_company_module/Mul
 import { appRoutes } from "./AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
-import { DashboardContent } from "@app/pages/Dashboards";
 import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
@@ -26,8 +25,11 @@ const AdminDashboard = () => {
         {/* TODO: Show first route based on user permission */}
         <Route index element={<Navigator />} />
         <Route path="navigator" element={<Navigator />} />
-        <Route path="dashboards" element={<DashboardContent />} />
-        <Route path="dashboard/*" element={<DashboardContent />} />
+        {/* A dashboard is always app-specific — there is no generic dashboard
+            structure in the framework. Apps register their own landing page
+            (and its `dashboards` / `dashboard/*` routes) via `appRoutes` in
+            AppDashboard.jsx, which are rendered inside this same AdminLayout
+            below. */}
         <Route path="reports" element={<ReportContent />} />
         <Route path="report/*" element={<ReportContent />} />
 

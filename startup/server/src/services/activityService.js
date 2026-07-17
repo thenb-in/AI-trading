@@ -1,4 +1,5 @@
 // services/startup/activityService.js
+const { Op } = require('sequelize');
 const { pushActivityToExternalServer } = require('../../interfaces/wallet/activityInterface');
 const logger = require('../../logger');
 const { Activity, User } = require('../models');
@@ -65,15 +66,26 @@ const activityService = {
   },
 
   async getActivitiesByHeadAndType(head, type, companyId = null, options = {}) {
-    const { dateWhere = {}, attributes = ACTIVITY_SUMMARY_ATTRIBUTES, order = [['timestamp', 'DESC']] } = options;
+    const {
+      start_date,
+      end_date,
+      attributes = ACTIVITY_SUMMARY_ATTRIBUTES,
+      order = [['timestamp', 'DESC']]
+    } = options;
     try {
       const where = {
         head,
-        type,
-        ...dateWhere
+        type
       };
       if (companyId) {
         where.companyId = companyId;
+      }
+      if (start_date && end_date) {
+        where.created_at = { [Op.between]: [start_date, end_date] };
+      } else if (start_date) {
+        where.created_at = { [Op.gte]: start_date };
+      } else if (end_date) {
+        where.created_at = { [Op.lte]: end_date };
       }
 
       return await Activity.findAll({

@@ -1,6 +1,7 @@
 import {
   getPreviousMonthRange,
   getThisMonthRange,
+  getTodayRange,
   getYesterdayRange,
 } from '@utils/dateTimeUtils';
 
@@ -21,6 +22,7 @@ const QUICK_DATE_ACTIONS = [
   { label: 'Prev Month', getRange: getPreviousMonthRange },
   { label: 'This Month', getRange: getThisMonthRange },
   { label: 'Yesterday', getRange: getYesterdayRange },
+  { label: 'Today', getRange: getTodayRange }
 ];
 
 /** Fallback sort order for filter configs that don't specify `order`. */

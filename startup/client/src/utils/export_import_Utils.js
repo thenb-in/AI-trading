@@ -13,7 +13,19 @@ const handleImport = async ({
   validateHeaders, // Kept for API compatibility, validation handled by backend
   maxFileSize = 10 * 1024 * 1024, // 10MB
   onResults, // Optional callback to handle results (for modal display)
+  // Optional row-identifying context for import error messages. When set, an
+  // error row's `[errorContextKey]` is appended as `Row 3 (Item: SKU-12): ...`.
+  // Left unset, errors stay domain-neutral: `Row 3: ...`.
+  errorContextKey = null,
+  errorContextLabel = null,
 }) => {
+  const formatRowError = (err) => {
+    const context = errorContextKey ? err?.[errorContextKey] : null;
+    return context
+      ? `Row ${err.row} (${errorContextLabel || errorContextKey}: ${context}): ${err.error}`
+      : `Row ${err.row}: ${err.error}`;
+  };
+
   // Get file from parameter or event
   const selectedFile = file || (event?.target?.files?.[0]);
 
@@ -73,7 +85,7 @@ const handleImport = async ({
         // Show each error separately for better visibility
         errors.forEach(err => {
           toast.error(
-            `Row ${err.row}: ${err.error}`,
+            formatRowError(err),
             { autoClose: 10000 }
           );
         });
@@ -103,17 +115,16 @@ const handleImport = async ({
           errors: errors || (error ? [{ row: 0, error }] : []),
         };
       }
-      
+
       if (errors && Array.isArray(errors) && errors.length > 0) {
         // Show first error in the main toast, then show others separately
-        const firstError = errors[0];
-        errorMessage = `Row ${firstError.row}: ${firstError.error}`;
+        errorMessage = formatRowError(errors[0]);
 
         // Show remaining errors as separate toasts only if not using modal
         if (!onResults) {
           errors.slice(1).forEach(err => {
             toast.error(
-              `Row ${err.row}: ${err.error}`,
+              formatRowError(err),
               { autoClose: 10000 }
             );
           });

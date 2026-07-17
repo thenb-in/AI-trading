@@ -32,7 +32,7 @@ const BaseMaster = ({
   fetchSuccessToast,
   fetchFailureToast,
   showExport = false,
-  showImport = false,
+  showImport,
   exportFileName,
   importApi,
   buildExportColumns,
@@ -71,6 +71,12 @@ const BaseMaster = ({
   const canRead = hasPermission(userData, permissionKeys.read);
   const canCreate = permissionKeys.create;
   const canDelete = permissionKeys.delete && hasPermission(userData, permissionKeys.delete);
+
+
+  const canImport =
+    hasPermission(userData, permissionKeys.create) ||
+    (permissionKeys.update ? hasPermission(userData, permissionKeys.update) : false);
+  const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
   const fetchRows = useCallback(async (filterOverride) => {
     if (!canRead) {
@@ -197,7 +203,7 @@ const BaseMaster = ({
           onRefresh={fetchRows}
           showRefresh={showRefreshButton}
           showExport={showExport}
-          showImport={showImport}
+          showImport={resolvedShowImport}
           exportColumns={showExport ? exportColumns : undefined}
           exportRows={showExport ? rows : undefined}
           exportFileName={exportFileName}
@@ -278,6 +284,7 @@ BaseMaster.propTypes = {
   permissionKeys: PropTypes.shape({
     read: PropTypes.string.isRequired,
     create: PropTypes.string.isRequired,
+    update: PropTypes.string,
     delete: PropTypes.string,
   }).isRequired,
   loadRows: PropTypes.func.isRequired,
