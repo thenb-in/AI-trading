@@ -28,6 +28,7 @@ const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const notificationRoutes = require('./src/notifications/notificationRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const reportRegistry = require('./src/socket/init_setup/reports/registry');
 
 function mountFrameworkMiddleware(app, opts = {}) {
   const {
@@ -175,6 +176,10 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
  *   Routers mounted under the given prefix BEFORE the legacy app_routes hook.
  * @param {(app: import('express').Express, prefix: string) => void} [options.mountAppRoutes]
  *   Optional callback to register routes in the legacy `(app, prefix)` style.
+ * @param {import('express').Router} [options.reportRoutes]
+ *   The app's report router. Used to initialise the report registry (socket
+ *   report-runner transport) without the framework requiring into `app/`.
+ *   Every GET route on it becomes runnable by slug via the runner.
  * @param {() => void} [options.registerSchedulerJobs]
  *   Optional callback that calls `registerJob(...)` for each in-process
  *   scheduled job the app wants. Invoked by startServer() once the HTTP
@@ -211,6 +216,7 @@ function buildApp(options = {}) {
   const {
     extraRoutes = [],
     mountAppRoutes,
+    reportRoutes,
     registerSchedulerJobs,
     bodyParserLimit,
     additionalExposedHeaders = [],
@@ -224,6 +230,13 @@ function buildApp(options = {}) {
 
   const app = express();
   const server = http.createServer(app);
+
+  // Initialise the socket report registry from the app's report router. Kept
+  // as injection (not a require into app/) so the dependency arrow stays
+  // app -> startup. No-op when the app registers no report routes.
+  if (reportRoutes) {
+    reportRegistry.init(reportRoutes);
+  }
 
   mountFrameworkMiddleware(app, {
     bodyParserLimit,

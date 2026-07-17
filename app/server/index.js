@@ -19,6 +19,7 @@ const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyRoutes = require('./src/routes/companyRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 
 const { startServer } = buildApp({
   // 5MB body limit — adjust to suit your app's upload needs.
@@ -35,6 +36,10 @@ const { startServer } = buildApp({
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
+
+  // App-owned report routes, indexed by the framework's socket report
+  // registry so the report_runner transport can run them by slug.
+  reportRoutes,
 
   // Static files — more specific paths first so they win over /uploads
   // (which is mounted by the framework). path is absolute to this server.
