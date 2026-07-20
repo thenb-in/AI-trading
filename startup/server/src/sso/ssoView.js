@@ -3,17 +3,15 @@
 const logger = require('../../logger');
 const env = require('../config/env');
 const { setAuthCookies } = require('../utils/auth_shared_utils');
-const { OIDC_ID_TOKEN_COOKIE, OIDC_ACTION_RESET_PASSWORD } = require('../constants/oidc');
+const { OIDC_ID_TOKEN_COOKIE } = require('../constants/oidc');
 const {
   setRoundTripCookies,
   readRoundTripCookies,
   clearRoundTripCookies,
-  setNoticeCookie,
   setErrorCookie,
   frontendRedirect
 } = require('./utils/httpCookies');
 const { createPkceChallenge } = require('./utils/pkce');
-const { resolveSignupCompany } = require('./utils/signupCompany');
 const {
   buildAuthorizationUrl,
   exchangeAuthorizationCode,
@@ -27,36 +25,20 @@ const { sendError } = require('../utils/response');
 
 /**
  * GET /auth/sso/start — begin Auth Code + PKCE (redirect to Wallet).
+
  */
 async function startSso(req, res) {
   try {
     const { codeVerifier, codeChallenge, state, nonce } = createPkceChallenge();
 
-    const action = req.query.action ? String(req.query.action).slice(0, 64) : null;
-    const signupCompany = await resolveSignupCompany(action, req.query.companyId);
-
     setRoundTripCookies(res, {
       codeVerifier,
       state,
       nonce,
-      returnTo: req.query.returnTo ? String(req.query.returnTo).slice(0, 500) : null,
-      companyId: signupCompany?.id || null,
-      resetPassword: action === OIDC_ACTION_RESET_PASSWORD
+      returnTo: req.query.returnTo ? String(req.query.returnTo).slice(0, 500) : null
     });
 
-    const loginHint = req.query.loginHint
-      ? String(req.query.loginHint).slice(0, 255)
-      : null;
-
-    const authorizationUrl = await buildAuthorizationUrl({
-      codeChallenge,
-      state,
-      nonce,
-      loginHint,
-      action,
-      customerId: signupCompany?.id || null,
-      companyName: signupCompany?.name || null
-    });
+    const authorizationUrl = await buildAuthorizationUrl({ codeChallenge, state, nonce });
     return res.redirect(authorizationUrl);
   } catch (error) {
     logger.error(`[oidc-rp] start failed: ${error.message}`, error);
@@ -84,9 +66,7 @@ async function ssoCallback(req, res) {
       codeVerifier,
       state: expectedState,
       nonce: expectedNonce,
-      returnTo,
-      companyId,
-      resetPassword
+      returnTo
     } = readRoundTripCookies(req);
 
     if (!codeVerifier || !expectedState || !expectedNonce) {
@@ -101,29 +81,9 @@ async function ssoCallback(req, res) {
       codeVerifier,
       expectedNonce
     });
-    const userClaims = exchanged.userClaims;
     idToken = exchanged.idToken;
 
-    const result = await completeSsoRoundTrip(userClaims, { companyId, resetPassword });
-
-    if (result.pendingApproval) {
-      clearRoundTripCookies(res);
-      const notice = result.pendingReason === 'reset'
-        ? `Password updated for ${result.username}. Awaiting admin re-approval.`
-        : `Account created for ${result.username}. Awaiting admin approval.`;
-      setNoticeCookie(res, notice);
-
-      const ssoLogoutUrl = await buildEndSessionUrl({
-        idToken,
-        state: 'signup_complete'
-      });
-      if (ssoLogoutUrl) {
-        return res.redirect(ssoLogoutUrl);
-      }
-      return res.redirect(frontendRedirect('/', {}));
-    }
-
-    const { user, accessToken, refreshToken } = result;
+    const { user, accessToken, refreshToken } = await completeSsoRoundTrip(exchanged.userClaims);
 
     clearRoundTripCookies(res);
     setAuthCookies(res, { access: accessToken, refresh: refreshToken });
