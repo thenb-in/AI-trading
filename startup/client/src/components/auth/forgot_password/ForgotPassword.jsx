@@ -1,14 +1,11 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { useSso, SSO_ACTION } from '@startup/hooks/useSso';
 import { useForgotPassword } from './useForgotPassword';
 import { UsernameStep } from './UsernameStep';
-import { WalletSsoStep } from './WalletSsoStep';
 import { LocalResetStep } from './LocalResetStep';
-import {
-  FORGOT_PASSWORD_METHOD_WALLET_SSO,
-  FORGOT_PASSWORD_METHOD_LOCAL_TOTP
-} from './constants';
+import { SetupTotpPopup } from '../SetupTotpPopup';
+
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -17,33 +14,21 @@ const ForgotPassword = () => {
   const prefillUsername = location.state?.username || '';
 
   const {
-    method,
-    username,
-    ssoConfigured,
+    account,
     isLoading,
     error,
-    setError,
     identifyUsername,
     resetLocalPassword,
     restart
   } = useForgotPassword({ isFirstLogin, prefillUsername });
 
-  const { startSso } = useSso(setError);
+  const [totpJustEnabled, setTotpJustEnabled] = useState(false);
+  const [isTotpSetupOpen, setIsTotpSetupOpen] = useState(false);
 
-  const isUsernameStep = !method;
-  const isWalletSso = method === FORGOT_PASSWORD_METHOD_WALLET_SSO;
+  const isUsernameStep = !account;
   const canPickAnotherUsername = !isUsernameStep && !isFirstLogin;
-
-  const handleBackToLogin = () => {
-    navigate('/');
-  };
-
-  const handleStartSso = () => {
-    startSso({
-      loginHint: username,
-      action: SSO_ACTION.RESET_PASSWORD
-    });
-  };
+  const hasTotp = Boolean(account?.isTotpEnabled) || totpJustEnabled;
+  const canSetupTotp = !isUsernameStep && !isFirstLogin && !hasTotp;
 
   const handleLocalReset = async (formData) => {
     const didReset = await resetLocalPassword(formData);
@@ -52,12 +37,17 @@ const ForgotPassword = () => {
     }
   };
 
+  const handleBackToLogin = () => navigate('/login');
+  const handleOpenTotpSetup = () => setIsTotpSetupOpen(true);
+  const handleCloseTotpSetup = () => setIsTotpSetupOpen(false);
+  const handleTotpSetupSuccess = () => {
+    setIsTotpSetupOpen(false);
+    setTotpJustEnabled(true);
+  };
+
   const resolveHeading = () => {
     if (isUsernameStep) {
       return { title: 'Forgot Password', subtitle: 'Enter your username' };
-    }
-    if (isWalletSso) {
-      return { title: 'Managed by Wallet', subtitle: 'Reset happens on NBNext Wallet' };
     }
     return isFirstLogin
       ? { title: 'Reset Password', subtitle: 'Set a new password to continue' }
@@ -73,7 +63,7 @@ const ForgotPassword = () => {
           <div className="text-center mb-6">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">{heading.title}</h2>
             <p className="text-gray-600">{heading.subtitle}</p>
-            {isFirstLogin && !isWalletSso && (
+            {isFirstLogin && (
               <p className="text-sm text-amber-600 mt-2 bg-amber-50 py-2 rounded-lg">
                 Password reset required to continue
               </p>
@@ -90,21 +80,29 @@ const ForgotPassword = () => {
             <UsernameStep isLoading={isLoading} onSubmit={identifyUsername} />
           )}
 
-          {!isUsernameStep && isWalletSso && (
-            <WalletSsoStep
-              username={username}
-              ssoConfigured={ssoConfigured}
-              onStartSso={handleStartSso}
-            />
-          )}
-
-          {!isUsernameStep && !isWalletSso && (
-            <LocalResetStep
-              isFirstLogin={isFirstLogin}
-              requiresTotp={method === FORGOT_PASSWORD_METHOD_LOCAL_TOTP}
-              isLoading={isLoading}
-              onSubmit={handleLocalReset}
-            />
+          {!isUsernameStep && (
+            <>
+              {canSetupTotp && (
+                <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <p className="text-sm text-blue-800 mb-2">
+                    Set up Google Authenticator to approve this reset instantly.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenTotpSetup}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline transition"
+                  >
+                    Set up Google Authenticator
+                  </button>
+                </div>
+              )}
+              <LocalResetStep
+                isFirstLogin={isFirstLogin}
+                requiresTotp={hasTotp}
+                isLoading={isLoading}
+                onSubmit={handleLocalReset}
+              />
+            </>
           )}
 
           <div className="mt-6 pt-5 border-t border-gray-100">
@@ -138,6 +136,15 @@ const ForgotPassword = () => {
           </div>
         </div>
       </div>
+
+      {isTotpSetupOpen && account && (
+        <SetupTotpPopup
+          isOpen={isTotpSetupOpen}
+          onClose={handleCloseTotpSetup}
+          onSuccess={handleTotpSetupSuccess}
+          username={account.username}
+        />
+      )}
     </div>
   );
 };

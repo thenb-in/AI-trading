@@ -4,9 +4,8 @@ import { ApiService } from '@services/ApiService';
 import { cleanFormData } from '@utils/authformvalidation';
 
 const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) => {
-  const [method, setMethod] = useState(null);
-  const [ssoConfigured, setSsoConfigured] = useState(false);
-  const [username, setUsername] = useState(prefillUsername);
+  // account = { username, isTotpEnabled } once the username is confirmed to exist.
+  const [account, setAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,10 +19,17 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
     setIsLoading(true);
     setError(null);
     try {
-      const response = await ApiService.identifyForgotPasswordMethod(cleanedUsername);
-      setUsername(cleanedUsername);
-      setMethod(response.data.method);
-      setSsoConfigured(Boolean(response.data.ssoConfigured));
+      const response = await ApiService.checkAvailability('username', cleanedUsername);
+      if (response.data.available) {
+        const message = 'No account found for this username';
+        setError(message);
+        toast.error(message);
+        return;
+      }
+      setAccount({
+        username: response.data.value || cleanedUsername,
+        isTotpEnabled: Boolean(response.data.isTotpEnabled)
+      });
     } catch (err) {
       const message = err.error || 'Unable to look up this username';
       setError(message);
@@ -34,7 +40,10 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
   }, []);
 
   const resetLocalPassword = useCallback(async ({ newPassword, confirmPassword, otp }) => {
-    const cleaned = cleanFormData({ username, newPassword, confirmPassword });
+    if (!account) {
+      return false;
+    }
+    const cleaned = cleanFormData({ username: account.username, newPassword, confirmPassword });
 
     if (cleaned.newPassword !== cleaned.confirmPassword) {
       setError('Passwords do not match');
@@ -47,8 +56,7 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
       await ApiService.request('POST', '/auth/reset-password', {
         username: cleaned.username,
         password: cleaned.newPassword,
-        isFirstLogin,
-        otp: !isFirstLogin ? otp : undefined
+        otp: account.isTotpEnabled ? otp : undefined
       });
       toast.success('Password reset successful! Please log in.');
       return true;
@@ -60,12 +68,11 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
     } finally {
       setIsLoading(false);
     }
-  }, [username, isFirstLogin]);
+  }, [account]);
 
 
   const restart = useCallback(() => {
-    setMethod(null);
-    setSsoConfigured(false);
+    setAccount(null);
     setError(null);
   }, []);
 
@@ -79,9 +86,7 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
   }, [isFirstLogin, prefillUsername, identifyUsername]);
 
   return {
-    method,
-    username,
-    ssoConfigured,
+    account,
     isLoading,
     error,
     setError,
