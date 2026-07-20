@@ -2,12 +2,6 @@ import { useEffect } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const SSO_ACTION = {
-  RESET_PASSWORD: 'reset_password',
-  SIGNUP: 'signup'
-};
-
-const SSO_NOTICE_COOKIE = 'sso_notice';
 const SSO_ERROR_COOKIE = 'sso_error';
 
 const readCookie = (name) => {
@@ -38,11 +32,6 @@ const useSso = (onError) => {
   }, [searchParams, setSearchParams, onError]);
 
   useEffect(() => {
-    const notice = readCookie(SSO_NOTICE_COOKIE);
-    if (notice) {
-      toast.success(notice);
-      clearCookie(SSO_NOTICE_COOKIE);
-    }
     const cookieError = readCookie(SSO_ERROR_COOKIE);
     if (cookieError) {
       onError?.(cookieError);
@@ -53,23 +42,15 @@ const useSso = (onError) => {
 
 
 
-  const startSso = ({ loginHint, action, companyId } = {}) => {
+
+  const startSso = () => {
     const from = location.state?.from;
     const returnTo = (typeof from === 'string' ? from : from?.pathname) || '/admin';
     const qs = new URLSearchParams({ returnTo: String(returnTo) });
-    if (loginHint) {
-      qs.set('loginHint', String(loginHint));
-    }
-    if (action) {
-      qs.set('action', String(action));
-    }
-    if (companyId) {
-      qs.set('companyId', String(companyId));
-    }
     window.location.href = `/api/v1/auth/sso/start?${qs.toString()}`;
   };
 
   return { startSso };
 };
 
-export { useSso, SSO_ACTION };
+export { useSso };

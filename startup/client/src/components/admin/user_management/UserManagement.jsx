@@ -179,13 +179,6 @@ function UserManagement() {
         tone="green"
         testId="copy-signup-link"
       />
-      <InviteLinkButton
-        label="SSO sign-up link"
-        path="/signup/sso"
-        companyId={companyId}
-        tone="blue"
-        testId="copy-sso-signup-link"
-      />
       <button
         onClick={handleShowQRCode}
         className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs sm:text-base"

@@ -25,12 +25,18 @@ const ApiService = {
   },
 
   // Live availability check while typing (type: 'company' | 'username').
+
   checkAvailability(type, value) {
     return this.request('GET', '/auth/availability', null, { params: { type, value } });
   },
 
-  identifyForgotPasswordMethod(username) {
-    return this.request('POST', '/auth/forgot-password/identify', { username });
+  // TOTP (Google Authenticator 2FA) enrolment
+  generateTotpSecret(data) {
+    return this.request('POST', '/auth/generate-totp-secret', data);
+  },
+
+  verifyAndEnableTotp(data) {
+    return this.request('POST', '/auth/verify-totp', data);
   },
 
   createPaymentOrder(subscriptionId, employeeCount) {
