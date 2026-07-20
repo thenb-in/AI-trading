@@ -138,9 +138,13 @@ const useUserManagement = () => {
       });
 
       setError('');
+      return true;
     } catch (err) {
       console.error('❌ Failed to update role:', err);
       setError(err.message || 'Failed to update role');
+      // The caller reports the outcome next to the row the user is looking at;
+      // the banner at the top of the page is easy to miss from down here.
+      return false;
     }
   };
 

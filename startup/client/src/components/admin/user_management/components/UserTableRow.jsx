@@ -1,11 +1,17 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe, ExternalLink } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { EditFieldModal } from './EditFieldModal';
 import { hasPermission, useDataContext } from '@context/useDataContext';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+
+// SearchableDropdown speaks strings, and '' is its "nothing selected" value —
+// which is not the same as deliberately choosing to remove someone's role.
+const NO_ROLE_VALUE = '__none__';
 
 const WALLET_WINDOW_NAME = 'nbnextWallet';
 const WALLET_WINDOW_FEATURES = 'popup=yes,width=1180,height=820';
@@ -38,7 +44,6 @@ const UserTableRow = ({
     setEditField(field);
   };
 
-  const roleSelectRef = useRef(null);
   const deviceRef = useRef(null);
 
   const isSelected = selectedUsers?.includes(user.id);
@@ -53,9 +58,29 @@ const UserTableRow = ({
     }
   };
 
-  const onRoleChange = async (e) => {
-    const newRoleId = e.target.value === '' ? null : parseInt(e.target.value, 10);
-    await handleRoleChange(user.id, newRoleId);
+  // A role can be taken away, not just swapped — the handler has always
+  // accepted null, but without this entry there was no way to say it.
+  const roleOptions = [
+    { value: NO_ROLE_VALUE, label: 'No Role' },
+    ...roles.map((role) => ({ value: String(role.id), label: role.name })),
+  ];
+
+  const onRoleChange = async (value) => {
+    const newRoleId = value === NO_ROLE_VALUE || value === '' ? null : parseInt(value, 10);
+    if (newRoleId === (user?.role?.id ?? null)) {
+      setEditingRole(false);
+      return;
+    }
+    const next = roles.find((role) => role.id === newRoleId);
+    const who = user.name || user.username;
+    const ok = await handleRoleChange(user.id, newRoleId);
+    // Changing what someone is allowed to do should say so. It used to happen
+    // in silence, with failures surfacing in a banner at the top of the page.
+    if (ok) {
+      toast.success(next ? `${who} is now ${next.name}` : `${who} now has no role`);
+    } else {
+      toast.error(`Could not change the role for ${who}`);
+    }
     setEditingRole(false);
   };
 
@@ -130,13 +155,6 @@ const UserTableRow = ({
   if (user.desktopWeb) activeDevices.push({ label: 'Desktop Web', icon: <Monitor size={14} className="text-green-500" /> });
   if (user.mobileWeb) activeDevices.push({ label: 'Mobile Web', icon: <Globe size={14} className="text-purple-500" /> });
 
-  useEffect(() => {
-    if (editingRole && roleSelectRef.current) {
-      roleSelectRef.current.focus();
-      roleSelectRef.current.click();
-    }
-  }, [editingRole]);
-
   // Close device editor on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -203,22 +221,21 @@ const UserTableRow = ({
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         {editingRole ? (
-          <select
-            ref={roleSelectRef}
-            value={user?.role?.id || ''}
-            onChange={onRoleChange}
-            onBlur={handleRoleBlur} 
-            onClick={handleStopPropagation}
-            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={!canUpdateRole}
-          >
-            <option value="">
-              No Role
-            </option>
-            {roles.map((r) => (
-              <option key={r.id} value={String(r.id)}>{r.name}</option>
-            ))}
-          </select>
+          // Wide enough to read a role name in: the column is sized for a badge,
+          // and role names here run to `attendance_admin`.
+          <div onClick={handleStopPropagation} className="min-w-[14rem]">
+            <SearchableDropdown
+              options={roleOptions}
+              selectedValues={user?.role?.id ? String(user.role.id) : NO_ROLE_VALUE}
+              onChange={onRoleChange}
+              onClose={handleRoleBlur}
+              placeholder="No Role"
+              defaultOptionValue={NO_ROLE_VALUE}
+              multiple={false}
+              autoOpen
+              disabled={!canUpdateRole}
+            />
+          </div>
         ) : (
           <div
             className={`flex items-center gap-2 rounded px-2 py-1 transition-colors duration-150 ${
@@ -229,7 +246,7 @@ const UserTableRow = ({
             onClick={canUpdateRole ? handleEditRoleClick : undefined}
             title={!canUpdateRole ? 'You do not have permission to update roles' : ''}
           >
-            <RoleBadge role={user?.role?.name || 'No Role'} />
+            <RoleBadge role={user?.role?.name} description={user?.role?.description} />
           </div>
         )}
       </td>

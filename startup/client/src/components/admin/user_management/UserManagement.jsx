@@ -45,6 +45,7 @@ function UserManagement() {
     handleDeviceOptionUpdate,
     updateUser,
     updateUserProfileInState,
+    walletUserManagementUrl,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(true);
@@ -119,6 +120,7 @@ function UserManagement() {
     handleRoleChange,
     handleDeviceOptionUpdate,
     updateUser,
+    walletUserManagementUrl,
   };
 
   if (loading) {

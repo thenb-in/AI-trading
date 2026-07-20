@@ -55,9 +55,9 @@ const getAllUsers = async (companyId) => {
   if (!companyId) {
     throw new Error(`Company ID is required ${companyId}.`);
   }
-  const users = await User.findAll({
+  const rows = await User.findAll({
     where: { isActive: true, company_id: companyId },
-    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'wallet_user_id'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
       // description is what tells an admin what a role like `company_admin`
@@ -66,6 +66,11 @@ const getAllUsers = async (companyId) => {
       { model: UserProfile, as: 'userProfile', required: false }
     ],
     order: [['last_active', 'DESC']]
+  });
+
+  const users = rows.map((row) => {
+    const { wallet_user_id: walletUserId, ...user } = row.toJSON();
+    return { ...user, isSso: Boolean(walletUserId) };
   });
 
   // Fetch all roles separately - get global roles (companyId is null) and company-specific roles

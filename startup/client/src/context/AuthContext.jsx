@@ -105,11 +105,12 @@ const DataProvider = ({ children }) => {
     try {
       const response = await ApiService.logout();
       const ssoLogoutUrl = response?.data?.ssoLogoutUrl;
-      setUserData(null);
       if (ssoLogoutUrl) {
+
         window.location.replace(ssoLogoutUrl);
         return;
       }
+      setUserData(null);
       setIsLoggingOut(false);
       navigate("/");
     } catch (err) {
