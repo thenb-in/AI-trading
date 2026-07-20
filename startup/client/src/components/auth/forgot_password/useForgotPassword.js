@@ -26,6 +26,13 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
         toast.error(message);
         return;
       }
+
+      if (response.data.isSso) {
+        const message = 'This account signs in with SSO. Reset your password on NBNext Wallet.';
+        setError(message);
+        toast.error(message);
+        return;
+      }
       setAccount({
         username: response.data.value || cleanedUsername,
         isTotpEnabled: Boolean(response.data.isTotpEnabled)

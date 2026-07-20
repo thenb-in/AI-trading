@@ -105,8 +105,17 @@ const checkAvailability = async ({ type, value }) => {
 
   if (type === 'username') {
     const username = normalize(raw);
-    const existing = await User.findOne({ where: { username }, attributes: ['id', 'is_totp_enabled'] });
-    return { type, value: username, available: !existing, isTotpEnabled: Boolean(existing?.is_totp_enabled) };
+    const existing = await User.findOne({
+      where: { username },
+      attributes: ['id', 'is_totp_enabled', 'wallet_user_id']
+    });
+    return {
+      type,
+      value: username,
+      available: !existing,
+      isTotpEnabled: Boolean(existing?.is_totp_enabled),
+      isSso: Boolean(existing?.wallet_user_id)
+    };
   }
   if (type === 'company') {
     const existing = await Company.findOne({ where: { name: raw }, attributes: ['id'] });
