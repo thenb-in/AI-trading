@@ -1,7 +1,7 @@
 const logger = require('../../logger');
 const { sequelize } = require('../services/databaseService');
 const subscriptionService = require('../services/subscription');
-const authService = require('../services/authService');
+const auth = require('../services/auth');
 const companyService = require('../services/companyService');
 const companySubscriptionService = require('../services/companySubscription.service');
 const roleService = require('../services/roleService');
@@ -69,7 +69,7 @@ const createWorkspace = async ({
       { companyId: company.id, default_state: defaultState, establishment_employee_count: establishmentCount },
       transaction
     );
-    const user = await authService.signup(
+    const user = await auth.signup(
       username,
       password,
       company.id,

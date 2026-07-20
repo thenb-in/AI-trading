@@ -118,6 +118,10 @@ module.exports = {
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
+
+  TOTP_ISSUER: process.env.TOTP_ISSUER || appName,
+  TOTP_WINDOW: parseInt(process.env.TOTP_WINDOW, PARSE_INT_RADIX) || 1,
+
   // Report runner
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
   REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,

@@ -5,7 +5,6 @@ const db = require('../models');
 const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
-const { linkWalletAccount } = require('./identityLinkService');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -153,6 +152,14 @@ const getUserByUsername = async (username, transaction) => {
   return User.findOne({ where: { username }, transaction });
 };
 
+/** The local account for a Wallet user, by their OIDC `sub`. Null if none. */
+const getUserByWalletUserId = async (walletUserId) => {
+  if (!walletUserId) {
+    return null;
+  }
+  return User.findOne({ where: { wallet_user_id: walletUserId } });
+};
+
 const updateUserProfile = async (userId, userProfile) => {
   const user = await findModelByIdOrThrow(User, userId, {
     include: [
@@ -246,7 +253,7 @@ const checkUserActive = async (userId) => {
 };
 
 
-const createSsoUser = async ({ username, name, phone = null, companyId, walletAccountId }) => {
+const createSsoUser = async ({ username, name, phone = null, companyId, walletUserId }) => {
   const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
 
   return sequelize.transaction(async (transaction) => {
@@ -256,8 +263,9 @@ const createSsoUser = async ({ username, name, phone = null, companyId, walletAc
       phone,
       password: null,
       company_id: companyId,
+      wallet_user_id: walletUserId,
       isActive: true,
-      is_approved: false,
+      is_approved: true,
       refresh_token: null,
       mobileApp: company.mobileApp,
       desktopWeb: company.desktopWeb,
@@ -273,13 +281,6 @@ const createSsoUser = async ({ username, name, phone = null, companyId, walletAc
       userId: user.id,
       companyId
     }, { transaction });
-
-    await linkWalletAccount({
-      walletAccountId,
-      userId: user.id,
-      companyId,
-      transaction
-    });
 
     return user;
   });
@@ -380,6 +381,7 @@ module.exports = {
   getActiveUserIdsByRoleName,
   getActiveUserIdsByPermissionName,
   getUserByUsername,
+  getUserByWalletUserId,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,

@@ -30,11 +30,14 @@ const SETUP_BCRYPT_ROUNDS = 10;
 const SIGNUP_GENERIC_ERROR = 'An error occurred during signup';
 const SIGNUP_CONFLICT_MESSAGES = ['Phone number already exists', 'username', 'Username'];
 
+// Still consumed by forgotPasswordService, which feat-sso deletes a few commits
+// later. Dropped in the post-rebase cleanup once its last reader is gone.
 const FORGOT_PASSWORD_METHOD = {
   WALLET_SSO: 'wallet_sso',
   LOCAL_PASSWORD: 'local_password',
   LOCAL_TOTP: 'local_totp'
 };
+
 
 
 module.exports = {

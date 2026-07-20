@@ -29,6 +29,9 @@ async function signup(req, res) {
     // Build and send response
     res.status(201).json({ message: `User registered successfully, awaiting admin approval for ${username}`, userId: user.id });
   } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
     // Sequelize unique/validation errors default to message = "Validation error";
     // unwrap .errors[] so the caller sees what actually failed (e.g.
     // "username must be unique") instead of the generic string.
@@ -124,33 +127,54 @@ async function login(req, res) {
 async function resetPassword(req, res) {
   try {
     // Extract data from request
-    const { username, password, isFirstLogin } = req.body;
+    const { username, password, otp } = req.body;
 
     // Call controller
-    await authController.resetPassword({ username, password, isFirstLogin });
+    await authController.resetPassword({ username, password, otp });
 
     // Build and send response
-    res.status(200).json({ message: `Password reset successfully, account deactivated, pending admin approval ${username}` });
+    res.status(200).json({ message: `Password reset successfully for ${username}` });
   } catch (error) {
-    if (error.message === 'User not found') {
-      return res.status(404).json({ error: error.message });
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
     }
     logger.error('Reset password error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }
-async function identifyForgotPasswordMethod(req, res) {
+/**
+ * Generate TOTP secret view — POST /auth/generate-totp-secret
+ */
+async function generateTotpSecret(req, res) {
   try {
     const { username } = req.body;
+    const totpData = await authController.generateTotpSecret(username);
+    res.status(200).json(totpData);
+  } catch (error) {
+    if (error.message.includes('User not found')) {
+      return res.status(404).json({ error: error.message });
+    }
+    logger.error('Generate TOTP secret error', error);
+    res.status(500).json({ error: `Internal server error: ${error.message}` });
+  }
+}
 
-    const result = await authController.identifyForgotPasswordMethod(username);
-
+/**
+ * Verify and enable TOTP view — POST /auth/verify-totp
+ */
+async function verifyAndEnableTotp(req, res) {
+  const { username, totpCode } = req.body;
+  try {
+    const result = await authController.verifyAndEnableTotp(username, totpCode);
     res.status(200).json(result);
   } catch (error) {
-    if (error.status) {
-      return res.status(error.status).json({ error: error.message });
+    if (error.message.includes('User not found')) {
+      return res.status(404).json({ error: error.message });
     }
-    logger.error(`Forgot password identify error: ${error.message}`, error);
+    if (error.message === `Invalid TOTP code: ${totpCode}` || error.message === `TOTP is already enabled for this user:${username}`) {
+      return res.status(400).json({ error: error.message });
+    }
+    logger.error('Verify and enable TOTP error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }
@@ -262,7 +286,8 @@ module.exports = {
   signup,
   login,
   resetPassword,
-  identifyForgotPasswordMethod,
+  generateTotpSecret,
+  verifyAndEnableTotp,
   approveUser,
   getAllUsers,
   getAllRoles,
