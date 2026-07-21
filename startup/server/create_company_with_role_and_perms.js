@@ -197,9 +197,12 @@ async function main({
 const runToExit = (options) =>
   main(options).catch((err) => {
     // main() already logs inside its own catch; log once more for top-level
-    // visibility and exit non-zero so callers (npm, CI) see the failure.
+    // visibility. Set the code rather than process.exit() — this file is also
+    // require()d (module.exports below), where a hard exit would kill the host,
+    // and the success path already lets the loop drain to exit, so a non-zero
+    // code drains the same way while letting the logger flush first.
     logger.error('Setup failed', err);
-    process.exit(1); // eslint-disable-line no-process-exit
+    process.exitCode = 1;
   });
 
 // Run directly (`node create_company_with_role_and_perms.js`) and only the
