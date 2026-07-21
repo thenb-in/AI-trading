@@ -5,6 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { DataProvider } from "@startup/context/AuthContext";
 import { registerServiceWorker } from "@startup/seo/registerServiceWorker";
+// Side-effect import: registers this app's masters into the startup registry
+// before anything renders. The framework never imports `@app/...`, so without
+// this the Masters page / navigator / search would only show generic masters.
+import "./data/getMasterModules";
 import "./index.css";
 
 // Register the production service worker as a side-effect of boot. No-op

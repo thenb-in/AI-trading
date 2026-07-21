@@ -1,4 +1,5 @@
-import { getMasterModules, masterCategoryOrder } from '@app/data/getMasterModules';
+import { getMasterModules, getMasterCategoryOrder } from './masterModuleRegistry';
+import { defaultMasterCategoryIcon } from './genericMasterModules';
 import { getModulePermissionName } from './getModulePermissionName';
 
 /**
@@ -22,8 +23,7 @@ const buildCategoryList = (predicate = () => true) => {
     categoryCounts[category] = (categoryCounts[category] || 0) + 1;
   });
 
-  return [...masterCategoryOrder]
-    .sort((a, b) => a.order - b.order)
+  return getMasterCategoryOrder()
     .filter(({ name }) => categoryCounts[name])
     .map(({ name }) => ({ name, count: categoryCounts[name] }));
 };
@@ -47,6 +47,8 @@ const getMasterCategoriesForUser = (hasPermissionFn, dataContext) => {
 
 export {
   getMasterModules,
+  getMasterCategoryOrder,
+  defaultMasterCategoryIcon,
   getMasterCategories,
   getMasterCategoriesForUser,
   getOnboardingMasters,

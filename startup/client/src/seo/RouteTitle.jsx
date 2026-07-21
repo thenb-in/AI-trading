@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageMeta } from './PageMeta';
 import { reports } from '@app/data/getReportModules';
-import { getMasterModules } from '@app/data/getMasterModules';
+import { getMasterModules } from '@data/getMasterModules';
 import { getAppModuleDefinitions } from '@app/data/getAppModules';
 
 // Per-route document <title> for every page in the app. Without this the

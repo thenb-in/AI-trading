@@ -3,6 +3,8 @@ import { getLocalDateStringYmd, getYesterdayYmd } from '@utils/dateTimeUtils';
 
 const TODAY = getLocalDateStringYmd();
 const YESTERDAY = getYesterdayYmd();
+const NOW = new Date();
+const MONTH_START = getLocalDateStringYmd(new Date(NOW.getFullYear(), NOW.getMonth(), 1));
 
 // Reports default to yesterday; pending-status master pages default to today.
 // Two named exports = the "flag" — caller picks the variant they want.
@@ -16,7 +18,12 @@ const dateFiltersToday = [
   { name: 'end_date', label: 'End Date', type: 'date', default: TODAY, is_standard: true, order: 2 },
 ];
 
-//use this for debug like employment_type
+const dateFiltersMonthToDate = [
+  { name: 'start_date', label: 'Start Date', type: 'date', default: MONTH_START, is_standard: true, order: 1 },
+  { name: 'end_date', label: 'End Date', type: 'date', default: TODAY, is_standard: true, order: 2 },
+];
+
+
 const debugFilters = [
   // { name: 'employment_type', label: 'Employment Type', type: 'select', options: [], is_standard: true, order: 5, alwaysInclude: true, debug: true },
 ];
@@ -26,7 +33,9 @@ const debugFilters = [
 export {
   TODAY,
   YESTERDAY,
+  MONTH_START,
   dateFiltersYesterday,
   dateFiltersToday,
+  dateFiltersMonthToDate,
   debugFilters,
 };
