@@ -48,9 +48,6 @@ async function notifyApproverUsers({
         actorName
       })
     });
-    if (!row) {
-      continue;
-    }
     emitToUsers([userId], NOTIFICATION_NEW, formatNotification(row));
   }
 }

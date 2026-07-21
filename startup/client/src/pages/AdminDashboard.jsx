@@ -8,6 +8,7 @@ import { MultiCompanyModule } from "../components/admin/multi_company_module/Mul
 import { appRoutes } from "./AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
+// import { DashboardContent } from "@app/pages/Dashboards";
 import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";

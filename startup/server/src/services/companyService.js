@@ -49,24 +49,6 @@ const companyService = {
     );
   },
 
-  /**
-   * Create the CompanyProfile row for a company. Keeps CompanyProfile model
-   * access inside the service layer so callers (onboarding, etc.) don't import
-   * the model directly.
-   * @param {{ companyId: string, defaultState?: string|null, establishmentCount?: number|null }} data
-   * @param {import('sequelize').Transaction} [transaction]
-   */
-  async createCompanyProfile(data, transaction) {
-    return CompanyProfile.create(
-      {
-        companyId: data.companyId,
-        default_state: data.defaultState ?? null,
-        establishment_employee_count: data.establishmentCount ?? null
-      },
-      { transaction }
-    );
-  },
-
   async getCompanySettings(id) {
     try {
       return await findModelByIdOrThrow(Company, id, {

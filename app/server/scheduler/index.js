@@ -13,14 +13,17 @@
 // const { registerJob } = require('@startup/scheduler');
 
 function registerAllJobs() {
-  // Example (uncomment + adjust when you add your first job):
-  //
-  //   const { runDailyReport } = require('./reports/dailyReport');
-  //   registerJob({
-  //     name: 'reports.daily',
-  //     cronTime: '0 2 * * *',          // every day at 02:00
-  //     run: () => runDailyReport(),
-  //   });
+  // registerJob({
+  //   // Unique job name
+  //   name: '<feature>.<jobName>',
+  //   // Cron expression or cron constant
+  //   cronTime: '<CRON_EXPRESSION>',
+  //   // Function to execute
+  //   run: () => {
+  //     // TODO: Call your job function
+  //   }
+  // });
 }
+
 
 module.exports = { registerAllJobs };

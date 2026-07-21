@@ -127,7 +127,7 @@ const issueTokensAndPersist = async (user) => {
   return { accessToken, refreshToken };
 };
 
-const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
+const buildLoginPayload = (user, activeCompany, accessToken, refreshToken,profile) => {
   // Use get({ plain: true }) but then override with filtered permissions
   const userData = user.get({ plain: true });
   delete userData.password;
@@ -145,6 +145,9 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken) => {
       mobileApp: userData.mobileApp,
       desktopWeb: userData.desktopWeb,
       mobileWeb: userData.mobileApp,
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
+      default_screen_mode: profile?.default_screen_mode,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude} : null,
       isSupportUser: userData.isSupportUser,
       role: userData.role ? {
@@ -177,7 +180,8 @@ const loginUser = async (credentials) => {
   });
   // Filter permissions based on subscription status
   const userWithFilteredPermissions = await verifyValidSubscribedPermission(user, activeCompany.id);
-  return buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken);
+  const profile = await UserProfile.findOne({ where: { userId:user.id } });
+  return buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken,profile);
 };
 
 
@@ -254,6 +258,9 @@ const getCurrentUser = async (userId) => {
       mobileApp: userWithFilteredPermissions.mobileApp,
       desktopWeb: userWithFilteredPermissions.desktopWeb,
       mobileWeb: userWithFilteredPermissions.mobileWeb,
+      default_screen_mode: profile?.default_screen_mode || 'location_mode',
+      office_latitude:profile?.office_latitude,
+      office_longitude: profile?.office_longitude,
       username: userWithFilteredPermissions.username,
       phone: userWithFilteredPermissions.phone,
       name: userWithFilteredPermissions.name,

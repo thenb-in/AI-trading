@@ -72,10 +72,6 @@ async function runNotifyCreatorOfApprovalDecision({
     })
   });
 
-  if (!row) {
-    return;
-  }
-
   emitToUsers([creatorUserId], NOTIFICATION_NEW, formatNotification(row));
 
   const entityRef = formatEntityRef(entityType, entityId);
