@@ -3,7 +3,8 @@ import { useDataContext } from "@context/useDataContext";
 import { motion } from "framer-motion";
 import { Building2, Save, Loader2, RotateCcw, Menu } from "lucide-react";
 import { useCompanySettingsContext, TAB_COMPONENTS } from "./companySettingsContextCore";
-import { COMPANY_SETTINGS_TABS } from "./companySettingsConstants";
+import { COMPANY_SETTINGS_TABS, ENGINEERING_SETTINGS_TAB } from "./companySettingsConstants";
+import { useTripleClick } from "../../../hooks/useTripleClick";
 import { getCompanyProfileSettings } from "@data/companyProfileRegistry";
 
 
@@ -11,6 +12,17 @@ function CompanySettingsShell() {
   const { setHamburgerMenu, hamburgerMenu } = useDataContext();
   const [activeTab, setActiveTab] = useState(COMPANY_SETTINGS_TABS[0].id);
   const CompanyProfileSettings = getCompanyProfileSettings();
+
+  const [showEngineeringTab, setShowEngineeringTab] = useState(false);
+  const toggleEngineeringTab = useTripleClick(() =>
+    setShowEngineeringTab((shown) => {
+      if (shown) {
+        setActiveTab(COMPANY_SETTINGS_TABS[0].id);
+      }
+      return !shown;
+    })
+  );
+  const tabs = showEngineeringTab ? [...COMPANY_SETTINGS_TABS, ENGINEERING_SETTINGS_TAB] : COMPANY_SETTINGS_TABS;
 
   const {
     isLoading,
@@ -41,9 +53,15 @@ function CompanySettingsShell() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="hidden sm:flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+            <button
+              type="button"
+              onClick={toggleEngineeringTab}
+              tabIndex={-1}
+              aria-hidden="true"
+              className="hidden sm:flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm cursor-default"
+            >
               <Building2 className="w-5 h-5" />
-            </span>
+            </button>
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight truncate">
                 Company Settings
@@ -101,7 +119,7 @@ function CompanySettingsShell() {
           {/* Centred segmented navigation */}
           <div className="flex justify-center px-4 pb-3">
             <nav className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
-              {COMPANY_SETTINGS_TABS.map(({ id, label, icon: Icon }) => {
+              {tabs.map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
                 return (
                   <button
@@ -132,7 +150,7 @@ function CompanySettingsShell() {
       <main className="flex-1 min-h-0 overflow-y-auto">
         <div className="mx-auto w-full max-w-6xl p-4 sm:p-6 lg:p-8">
           {/* All panels mounted; inactive ones hidden so form state persists */}
-          {COMPANY_SETTINGS_TABS.map(({ id }) => {
+          {tabs.map(({ id }) => {
             const TabComponent = TAB_COMPONENTS[id];
             return (
               <div key={id} className={activeTab === id ? "" : "hidden"}>

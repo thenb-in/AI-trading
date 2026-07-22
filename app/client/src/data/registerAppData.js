@@ -9,12 +9,14 @@ import {
   registerAppLoginHandlers,
   registerAppLogoutHandlers,
 } from "@startup/data/authHandlerRegistry";
+import { registerCompanyProfileSettings } from "@startup/data/companyProfileRegistry";
+import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
 
 import {
   getAppSpecificMasterModules,
   appSpecificMasterCategoryOrder,
 } from "./getMasterModules";
-import { getEtimeAppModuleDefinitions } from "./getAppModules";
+import { getAppSpecificModuleDefinitions } from "./getAppModules";
 import { reports, categories } from "./getReportModules";
 import { registerFilterOptionResolvers } from "../filter/registerFilterOptionResolvers";
 import {
@@ -29,7 +31,7 @@ import { onLogin } from "../hooks/onLogin";
 function registerAppData() {
   registerAppMasterModules(getAppSpecificMasterModules);
   registerAppMasterCategories(appSpecificMasterCategoryOrder);
-  registerAppModules(getEtimeAppModuleDefinitions);
+  registerAppModules(getAppSpecificModuleDefinitions);
   registerAppReports(reports, categories);
   registerFilterOptionResolvers();
   registerAppRouteTitles({
@@ -39,6 +41,7 @@ function registerAppData() {
   });
   registerAppLogoutHandlers([onLogout]);
   registerAppLoginHandlers([onLogin]);
+  registerCompanyProfileSettings(CompanyProfileSettings);
 }
 
 export { registerAppData };
