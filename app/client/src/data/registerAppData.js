@@ -5,6 +5,10 @@ import {
 import { registerAppModules } from "@startup/data/appModuleRegistry";
 import { registerAppReports } from "@startup/data/reportModuleRegistry";
 import { registerAppRouteTitles } from "@startup/seo/routeTitleRegistry";
+import {
+  registerAppLoginHandlers,
+  registerAppLogoutHandlers,
+} from "@startup/data/authHandlerRegistry";
 
 import {
   getAppSpecificMasterModules,
@@ -18,6 +22,8 @@ import {
   appTitlePatterns,
   appPrivatePathPrefixes,
 } from "../seo/appRouteTitles";
+import { onLogout } from "../hooks/onLogout";
+import { onLogin } from "../hooks/onLogin";
 
 
 function registerAppData() {
@@ -31,6 +37,8 @@ function registerAppData() {
     patterns: appTitlePatterns,
     privatePrefixes: appPrivatePathPrefixes,
   });
+  registerAppLogoutHandlers([onLogout]);
+  registerAppLoginHandlers([onLogin]);
 }
 
 export { registerAppData };
