@@ -4,8 +4,12 @@ import { useSearchParams } from 'react-router-dom';
 import {
   applyDefaultFiltersToSearchParams,
   fetchReportData,
-  handleFiltersApply,
 } from '@startup/components/base_report/ReportUtils';
+import {
+  handleFiltersApply,
+  loadSavedReportRun,
+} from '@startup/components/base_report/reportDataSources';
+import { SAVED_RUN_PARAM } from '@startup/constants/reportRuns';
 import { useFilterDynamicOptions } from '@startup/hooks/useFilterDynamicOptions';
 import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
 
@@ -84,6 +88,36 @@ const useDataGridReport = ({
       setSummary,
     );
   }, [report, locationState]);
+
+  // ?runId= means "show this saved run". Lives here rather than in each report
+  // so every report page opens a saved result — and the "report ready"
+  // notification's deep link — without its own wiring. Keyed on the id alone:
+  // loadSavedReportRun writes the run's filters back into the URL, and re-running
+  // on every param change would fight that.
+  //
+  // loadedRunRef makes the load happen exactly once per id. A saved payload can
+  // be megabytes, so a second fetch is not a wasted round trip — it is the whole
+  // report downloaded and parsed again, with two writes racing to the grid.
+  // StrictMode's double-invoke is what exposed this in dev; the guard is what
+  // makes the effect idempotent everywhere.
+  const savedRunId = searchParams.get(SAVED_RUN_PARAM);
+  const loadedRunRef = useRef(null);
+  useEffect(() => {
+    if (!savedRunId || loadedRunRef.current === savedRunId) return;
+    loadedRunRef.current = savedRunId;
+    loadSavedReportRun({
+      runId: savedRunId,
+      setRows,
+      setColumns,
+      setLoading,
+      setInitialLoad,
+      setStatusDefinitions: setStatusDefinitions ?? (() => {}),
+      hasStatusDefinitions: isEditable,
+      setOriginalColumns: setOriginalColumns ?? null,
+      applyData,
+      setSearchParams,
+    });
+  }, [savedRunId]);
 
   // fetchReportData seeds rows/columns from locationState; originalColumns is
   // a side channel some reports need for summary/lookup logic.

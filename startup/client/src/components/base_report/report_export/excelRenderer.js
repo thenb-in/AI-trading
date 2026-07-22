@@ -409,9 +409,15 @@ const addTotalRow = (reportSheet, totalRowData, columns, startRow) => {
 };
 
 /**
- * Apply row heights
+ * Apply row heights.
+ *
+ * `columnWidths` is the array returned by `calculateOptimalColumnWidths` — Excel
+ * widths, in characters, for the sheet as it was actually laid out. It must not
+ * be the grid's column defs: their `width` is a pixel count for the on-screen
+ * table, and feeding pixels into a per-character wrap estimate reads every
+ * column as far wider than it is, so nothing ever appears to wrap.
  */
-const applyRowHeights = (reportSheet, columns, dataStartRow = 2, headerRowNumber = 1) => {
+const applyRowHeights = (reportSheet, columnWidths, dataStartRow = 2, headerRowNumber = 1) => {
   if (reportSheet.getRow(headerRowNumber)) {
     reportSheet.getRow(headerRowNumber).height = 30;
   }
@@ -423,8 +429,7 @@ const applyRowHeights = (reportSheet, columns, dataStartRow = 2, headerRowNumber
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       if (!cell.value) return;
 
-      const col = columns?.[colNumber - 1];
-      const colWidth = col?.width || 10;
+      const colWidth = columnWidths?.[colNumber - 1] || 10;
       const text = String(cell.value);
 
       const approxCharPerLine = colWidth * 1.2;

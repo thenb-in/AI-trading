@@ -121,8 +121,13 @@ const populateReportSheet = (
     addTotalRow(reportSheet, totalRow, columnsWithData, dataStartRow + rows.length);
   }
 
-  calculateOptimalColumnWidths(reportSheet, columnsWithData, excelColumns, dataStartRow);
-  applyRowHeights(reportSheet, columnsWithData, dataStartRow, headerRowNumber);
+  const excelColumnWidths = calculateOptimalColumnWidths(
+    reportSheet,
+    columnsWithData,
+    excelColumns,
+    dataStartRow
+  );
+  applyRowHeights(reportSheet, excelColumnWidths, dataStartRow, headerRowNumber);
   applyConditionalFormatting();
 
   const totalRowCount = totalRow && Object.keys(totalRow).length > 0 ? 1 : 0;

@@ -15,6 +15,11 @@ import {
   registerApproveExtension,
 } from "@startup/data/userManagementRegistry";
 import { registerAppLayout } from "@startup/data/appLayoutRegistry";
+import { registerReportApi } from "@startup/data/reportApiRegistry";
+import { registerSummaryHeaderFields } from "@startup/data/summaryFieldRegistry";
+import { registerDefaultSortFields } from "@startup/data/defaultSortFieldRegistry";
+import { reportApi } from "../services/api";
+import { SUMMARY_HEADER_FIELDS, DEFAULT_REPORT_SORT_FIELDS } from "./reportSummaryConfig";
 import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
 import { getUserManagementExtraColumns } from "../components/userManagementExtraColumns";
 import { useApproveExtension } from "../components/user_management_extra_columns/useApproveExtension";
@@ -53,6 +58,9 @@ function registerAppData() {
   registerUserManagementExtraColumns(getUserManagementExtraColumns);
   registerApproveExtension(useApproveExtension);
   registerAppLayout(AppLayout);
+  registerReportApi(reportApi);
+  registerSummaryHeaderFields(SUMMARY_HEADER_FIELDS);
+  registerDefaultSortFields(DEFAULT_REPORT_SORT_FIELDS);
 }
 
 export { registerAppData };
