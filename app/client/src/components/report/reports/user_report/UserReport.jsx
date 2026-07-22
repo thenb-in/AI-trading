@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import { BaseReport } from "@startup/components/base_report/BaseReport";
 import { ApiService } from "@services/ApiService";
-import { commonFilters as userReportFilters } from "@app/data/reportFilterConfig";
+import { commonFilters as userReportFilters } from "@app/filter/reportFilterConfig";
 import { useFilterDynamicOptions } from "@startup/hooks/useFilterDynamicOptions";
-import { FILTER_DYNAMIC_LOADERS } from "@app/data/filterDynamicLoaders";
+import { FILTER_DYNAMIC_LOADERS } from "@app/filter/filterDynamicLoaders";
 import { useFilterConfig } from "@startup/components/base_filter/filterUtils";
 
 /**
@@ -25,7 +25,7 @@ const UserReport = ({ report, locationState }) => {
   };
 
   // Filters marked `dynamic: true` in reportFilterConfig.js are resolved by the
-  // app-side loader registry (`@app/data/filterDynamicLoaders`).
+  // app-side loader registry (`@app/filter/filterDynamicLoaders`).
   const { dynamicOptions } = useFilterDynamicOptions(userReportFilters, FILTER_DYNAMIC_LOADERS);
   const filtersConfig = useFilterConfig(userReportFilters, dynamicOptions);
 

@@ -1,35 +1,53 @@
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { PageMeta } from './PageMeta';
-import { reports } from '@app/data/getReportModules';
+import { reports } from '@data/getReportModules';
 import { getMasterModules } from '@data/getMasterModules';
-import { getAppModuleDefinitions } from '@app/data/getAppModules';
+import { getAppModuleDefinitions } from '@data/getAppModules';
+import {
+  getAppStaticTitles,
+  getAppTitlePatterns,
+  getAppPrivatePathPrefixes,
+} from './routeTitleRegistry';
 
 // Per-route document <title> for every page in the app. Without this the
 // title sticks at whatever the last <PageMeta>-emitting page set it to —
 // authed admin routes have no per-page meta of their own, so e.g. landing
 // at /admin/reports after signing in left the tab labelled "Sign in".
 
-const REPORT_TITLE_BY_SLUG = (() => {
+// The reports / app-module / master lists are populated by the app at boot
+// (registered via registerAppData). These lookup maps are therefore built
+// lazily on first resolveTitle() call — which happens at render, after boot —
+// not at module eval, which would capture empty lists.
+let reportTitleBySlug = null;
+let appTitleByPath = null;
+let masterTitleByKey = null;
+
+function getReportTitleBySlug() {
+  if (reportTitleBySlug) return reportTitleBySlug;
   const map = {};
   for (const r of reports) {
     if (r.slug && r.title) map[r.slug] = r.title;
   }
+  reportTitleBySlug = map;
   return map;
-})();
+}
 
-const APP_TITLE_BY_PATH = (() => {
+function getAppTitleByPath() {
+  if (appTitleByPath) return appTitleByPath;
   const map = {};
   for (const def of getAppModuleDefinitions()) {
     if (def.navigatePath && def.title) map[def.navigatePath] = def.title;
   }
+  appTitleByPath = map;
   return map;
-})();
+}
 
 // Master modules expose their URL key only via `onClick: () => handler(key)`.
 // Pass a capturing handler and invoke each onClick to harvest a key→title map
 // without changing the data file or duplicating the entries.
-const MASTER_TITLE_BY_KEY = (() => {
+function getMasterTitleByKey() {
+  if (masterTitleByKey) return masterTitleByKey;
   const map = {};
   let captured = null;
   const capture = (k) => { captured = k; };
@@ -43,17 +61,19 @@ const MASTER_TITLE_BY_KEY = (() => {
     }
     if (captured && m.title) map[captured] = m.title;
   }
+  masterTitleByKey = map;
   return map;
-})();
+}
 
-const STATIC_TITLES = {
+// Framework-level static titles only. App-specific page titles (dashboards,
+// ...) are registered by the app via registerAppRouteTitles and merged in
+// through getStaticTitles() — startup never hardcodes them.
+const GENERIC_STATIC_TITLES = {
   '/': 'Sign in',
   '/signup': 'Sign up',
   '/forgot-password': 'Forgot password',
   '/admin': 'Navigator',
   '/admin/navigator': 'Navigator',
-  '/admin/dashboards': 'Dashboards',
-  '/admin/dashboard': 'Dashboards',
   '/admin/reports': 'Reports',
   '/admin/report': 'Reports',
   '/admin/report/past-report': 'Past Reports',
@@ -71,36 +91,54 @@ const STATIC_TITLES = {
   '/admin/help-support': 'Help & Support',
 };
 
+// Framework generics + app-registered titles/prefixes, merged lazily at first
+// render (after boot registration) so the app's entries are present.
+let staticTitles = null;
+let privatePathPrefixes = null;
+
+function getStaticTitles() {
+  if (staticTitles) return staticTitles;
+  staticTitles = { ...GENERIC_STATIC_TITLES, ...getAppStaticTitles() };
+  return staticTitles;
+}
+
+function getPrivatePathPrefixes() {
+  if (privatePathPrefixes) return privatePathPrefixes;
+  privatePathPrefixes = ['/admin', ...getAppPrivatePathPrefixes()];
+  return privatePathPrefixes;
+}
+
 function resolveTitle(rawPath) {
   if (!rawPath) return null;
   const path = rawPath === '/' ? '/' : rawPath.replace(/\/+$/, '');
 
-  if (STATIC_TITLES[path]) return STATIC_TITLES[path];
-  if (APP_TITLE_BY_PATH[path]) return APP_TITLE_BY_PATH[path];
+  if (getStaticTitles()[path]) return getStaticTitles()[path];
+  if (getAppTitleByPath()[path]) return getAppTitleByPath()[path];
 
   const reportMatch = path.match(/^\/admin\/report\/([^/]+)$/);
   if (reportMatch) {
-    return REPORT_TITLE_BY_SLUG[reportMatch[1]] || 'Reports';
+    return getReportTitleBySlug()[reportMatch[1]] || 'Reports';
   }
 
   const masterMatch = path.match(/^\/admin\/master\/([^/]+)$/);
   if (masterMatch) {
-    return MASTER_TITLE_BY_KEY[masterMatch[1]] || 'Masters';
+    return getMasterTitleByKey()[masterMatch[1]] || 'Masters';
   }
 
-  if (path.startsWith('/admin/dashboard/')) return 'Dashboards';
+  for (const { pattern, title } of getAppTitlePatterns()) {
+    if (pattern.test(path)) return title;
+  }
+
   if (path.startsWith('/admin/')) return 'Admin';
 
   return null;
 }
 
-const PRIVATE_PATH_PREFIXES = ['/admin'];
-
 function RouteTitle() {
   const { pathname } = useLocation();
   const title = useMemo(() => resolveTitle(pathname), [pathname]);
   if (!title) return null;
-  const isPrivate = PRIVATE_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPrivate = getPrivatePathPrefixes().some((p) => pathname === p || pathname.startsWith(`${p}/`));
   return <PageMeta title={title} noIndex={isPrivate} />;
 }
 
