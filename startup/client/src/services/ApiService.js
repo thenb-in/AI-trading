@@ -25,12 +25,22 @@ const ApiService = {
   },
 
   // Live availability check while typing (type: 'company' | 'username').
+
   checkAvailability(type, value) {
     return this.request('GET', '/auth/availability', null, { params: { type, value } });
   },
 
-  createPaymentOrder(subscriptionId) {
-    return this.request('POST', '/auth/payment/order', { subscriptionId });
+  // TOTP (Google Authenticator 2FA) enrolment
+  generateTotpSecret(data) {
+    return this.request('POST', '/auth/generate-totp-secret', data);
+  },
+
+  verifyAndEnableTotp(data) {
+    return this.request('POST', '/auth/verify-totp', data);
+  },
+
+  createPaymentOrder(subscriptionId, employeeCount) {
+    return this.request('POST', '/auth/payment/order', { subscriptionId, employeeCount });
   },
 
   onboard(data) {
@@ -65,9 +75,6 @@ const ApiService = {
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
   },
-
-  // Company Profile (attendance aliases, compliance defaults, credentials,
-  // emp_code_basis) is owned by app now — see @app/services/api companyProfileApi.
 
   getCompanyDetails() {
     return this.request('GET', '/company-details');
@@ -227,12 +234,9 @@ const ApiService = {
     return this.request('POST', '/admin/subscriptions', data);
   },
 
-  updateSubscriptionPermissionStatus(data) {
-    return this.request('POST', '/admin/subscription-permissions/update', data);
-  },
-
-  updateMultipleSubscriptionPermissionStatuses(data) {
-    return this.request('POST', '/admin/subscription-permissions/update-multiple', data);
+  // Batch-save the changed permission rows for one subscription in a single call.
+  updateSubscriptionPermissions(subscriptionId, permissions, isGlobal) {
+    return this.request('PUT', `/admin/subscriptions/${subscriptionId}/permissions`, { permissions, isGlobal });
   },
 
   exportSubscription(subscriptionId) {
@@ -243,6 +247,10 @@ const ApiService = {
 
   importSubscription(payload) {
     return this.request('POST', '/admin/subscriptions/import', payload);
+  },
+
+  pushSubscriptionToWallet(subscriptionId) {
+    return this.request('POST', `/admin/subscriptions/${subscriptionId}/push-to-wallet`);
   },
 
   // Company-Subscription methods

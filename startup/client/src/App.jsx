@@ -5,17 +5,22 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { Home } from './pages/Home';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { NotFound } from './pages/NotFound';
 import { SignupPage } from './pages/SignupPage';
 import { GetStartedPage } from './pages/GetStartedPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { SsoLoginPage } from './pages/SsoLoginPage';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/consoleLogBufferService';
 import { PWAInstallPrompt } from './seo/PWAInstallPrompt';
 import { RouteTitle } from './seo/RouteTitle';
+import { useSso } from './hooks/useSso';
 
 export function App() {
+  useSso();
+
   useEffect(() => {
     consoleLogBufferService.start();
   }, []);
@@ -30,10 +35,12 @@ export function App() {
      <PWAInstallPrompt />
       <GlobalSearchPalette />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<SsoLoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/get-started" element={<GetStartedPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        {/* Straight to Wallet — signing up and resetting happen on its screens. */}
+        <Route path="/login" element={<Home />} />
         <Route 
           path="/user-routes"
           element={
@@ -52,6 +59,7 @@ export function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <ToastContainer 
         position="top-right" 

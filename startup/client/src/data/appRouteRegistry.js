@@ -1,5 +1,6 @@
 let appRoutes = [];
 let appRoutesWithoutSidebar = [];
+let reportStaticPages = [];
 let dashboardContentComponent = null;
 
 /**
@@ -25,6 +26,19 @@ const registerAppRoutesWithoutSidebar = (routes) => {
 const getAppRoutesWithoutSidebar = () => appRoutesWithoutSidebar;
 
 /**
+ * Register the app's static report pages (rendered at fixed slugs under
+ * /admin/report, e.g. a "past report" page). Startup renders these generically
+ * so it needs no knowledge of which static pages the app provides.
+ * @param {Array<{ path: string, element: import('react').ReactNode }>} pages
+ */
+const registerReportStaticPages = (pages) => {
+  reportStaticPages = Array.isArray(pages) ? pages : [];
+};
+
+/** The app-registered static report pages, or [] if the app registered none. */
+const getReportStaticPages = () => reportStaticPages;
+
+/**
  * Register the app's dashboard content component (rendered at the dashboard routes).
  * @param {import('react').ComponentType} component
  */
@@ -40,6 +54,8 @@ export {
   getAppRoutes,
   registerAppRoutesWithoutSidebar,
   getAppRoutesWithoutSidebar,
+  registerReportStaticPages,
+  getReportStaticPages,
   registerDashboardContent,
   getDashboardContent,
 };

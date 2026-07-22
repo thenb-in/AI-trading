@@ -13,19 +13,15 @@ const handleImport = async ({
   validateHeaders, // Kept for API compatibility, validation handled by backend
   maxFileSize = 10 * 1024 * 1024, // 10MB
   onResults, // Optional callback to handle results (for modal display)
-  // Optional row-identifying context for import error messages. When set, an
-  // error row's `[errorContextKey]` is appended as `Row 3 (Item: SKU-12): ...`.
-  // Left unset, errors stay domain-neutral: `Row 3: ...`.
-  errorContextKey = null,
-  errorContextLabel = null,
+  // Optional: how a single row-error is rendered in a toast. Defaults to a
+  // domain-agnostic "Row N: <error>" so this generic util stays decoupled from
+  // app-specific fields (e.g. emp_code). Apps that want richer labels can pass
+  // their own formatter.
+  formatRowError = (err) => {
+    const rowLabel = err?.row !== undefined && err?.row !== null ? `Row ${err.row}: ` : "";
+    return `${rowLabel}${err?.error ?? "Import error"}`;
+  },
 }) => {
-  const formatRowError = (err) => {
-    const context = errorContextKey ? err?.[errorContextKey] : null;
-    return context
-      ? `Row ${err.row} (${errorContextLabel || errorContextKey}: ${context}): ${err.error}`
-      : `Row ${err.row}: ${err.error}`;
-  };
-
   // Get file from parameter or event
   const selectedFile = file || (event?.target?.files?.[0]);
 
@@ -84,10 +80,7 @@ const handleImport = async ({
         
         // Show each error separately for better visibility
         errors.forEach(err => {
-          toast.error(
-            formatRowError(err),
-            { autoClose: 10000 }
-          );
+          toast.error(formatRowError(err), { autoClose: 10000 });
         });
       } else {
         toast.success(message || successMessage);
@@ -112,10 +105,10 @@ const handleImport = async ({
           message: message || error || "Import failed",
           created: created || [],
           updated: updated || [],
-          errors: errors || (error ? [{ row: 0, error }] : []),
+          errors: errors || (error ? [{ row: 0, emp_code: 'N/A', error }] : []),
         };
       }
-
+      
       if (errors && Array.isArray(errors) && errors.length > 0) {
         // Show first error in the main toast, then show others separately
         errorMessage = formatRowError(errors[0]);
@@ -123,10 +116,7 @@ const handleImport = async ({
         // Show remaining errors as separate toasts only if not using modal
         if (!onResults) {
           errors.slice(1).forEach(err => {
-            toast.error(
-              formatRowError(err),
-              { autoClose: 10000 }
-            );
+            toast.error(formatRowError(err), { autoClose: 10000 });
           });
         }
       } else if (error) {
@@ -141,7 +131,7 @@ const handleImport = async ({
           message: errorMessage,
           created: [],
           updated: [],
-          errors: [{ row: 0, error: errorMessage }],
+          errors: [{ row: 0, emp_code: 'N/A', error: errorMessage }],
         };
       }
     }

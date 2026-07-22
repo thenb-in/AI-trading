@@ -32,7 +32,7 @@ import {
   FolderOpen as LoadIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { layoutApi } from '@app/services/api';
+import { ApiService as layoutApi } from '@services/ApiService';
 import { getLayoutTypeIcon, getLayoutTypeColor } from './layoutTypeHelpers';
 
 const LayoutManager = ({

@@ -16,9 +16,9 @@ import {
 // at /admin/reports after signing in left the tab labelled "Sign in".
 
 // The reports / app-module / master lists are populated by the app at boot
-// (registered via registerAppData). These lookup maps are therefore built
-// lazily on first resolveTitle() call — which happens at render, after boot —
-// not at module eval, which would capture empty lists.
+// (registered as a side-effect import in main.jsx). These lookup maps are
+// therefore built lazily on first resolveTitle() call — which happens at
+// render, after boot — not at module eval, which would capture empty lists.
 let reportTitleBySlug = null;
 let appTitleByPath = null;
 let masterTitleByKey = null;
@@ -65,9 +65,7 @@ function getMasterTitleByKey() {
   return map;
 }
 
-// Framework-level static titles only. App-specific page titles (dashboards,
-// ...) are registered by the app via registerAppRouteTitles and merged in
-// through getStaticTitles() — startup never hardcodes them.
+
 const GENERIC_STATIC_TITLES = {
   '/': 'Sign in',
   '/signup': 'Sign up',
@@ -91,8 +89,6 @@ const GENERIC_STATIC_TITLES = {
   '/admin/help-support': 'Help & Support',
 };
 
-// Framework generics + app-registered titles/prefixes, merged lazily at first
-// render (after boot registration) so the app's entries are present.
 let staticTitles = null;
 let privatePathPrefixes = null;
 

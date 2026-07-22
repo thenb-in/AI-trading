@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { layoutApi } from '@app/services/api';
+import { ApiService as layoutApi } from '@services/ApiService';
 import { buildColumnConfig } from './useColumnOrder';
 
 /**

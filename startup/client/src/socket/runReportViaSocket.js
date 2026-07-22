@@ -3,11 +3,13 @@
 // torn down when the last in-flight call releases it.
 
 
+import { resolveReportParams } from '@startup/data/reportParamsRegistry';
 import { ensureSocketReady, releaseSocket } from './setup';
 import { REPORT_RUN } from './events';
 
 async function runReportViaSocket({ reportKey, filters }) {
-  const params = { ...filters };
+
+  const params = resolveReportParams(reportKey, filters);
   try {
     const socket = await ensureSocketReady();
     return await new Promise((resolve, reject) => {
