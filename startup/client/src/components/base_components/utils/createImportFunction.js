@@ -2,6 +2,7 @@
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
+import { runAsBatch } from '@startup/services/batchContext';
 import { coerceExcelBoolean, loadFirstWorksheet } from './importParsingEngine';
 
 const getApiErrorMessage = (error, fallback = 'Unknown error') => {
@@ -82,7 +83,7 @@ const createImportFunction = ({
     return map;
   };
 
-  return async (formData) => {
+  const importRows = async (formData) => {
     try {
       const file = formData instanceof FormData ? formData.get('file') : formData;
       if (!file) {
@@ -395,6 +396,14 @@ const createImportFunction = ({
         data: { error: error?.message || 'Import failed' }
       };
     }
+  };
+
+  // An import is one gesture to the person who ran it, however many rows it
+  // POSTs. Sharing a batch id across them makes it one undoable action, and the
+  // id comes back in the result so the caller can offer that undo.
+  return async (formData) => {
+    const { result, batchId } = await runAsBatch(() => importRows(formData));
+    return { ...result, data: { ...(result?.data || {}), batchId } };
   };
 };
 

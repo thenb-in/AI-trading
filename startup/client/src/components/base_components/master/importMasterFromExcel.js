@@ -1,5 +1,5 @@
-import ExcelJS from 'exceljs';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
+import { coerceExcelBoolean, loadFirstWorksheet } from '../utils/importParsingEngine';
 
 /**
  * Turns a cell back into the value the API wants, using the column definitions the grid was
@@ -89,10 +89,7 @@ async function importMasterFromExcel(
   }
 
   try {
-    const buffer = await file.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const sheet = workbook.worksheets[0];
+    const sheet = await loadFirstWorksheet(file);
     if (!sheet) return { status: 400, data: { error: 'No worksheet found' } };
 
     const buildHeaderMap = (headerRowIndex) => {
