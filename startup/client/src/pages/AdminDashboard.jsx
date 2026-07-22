@@ -10,6 +10,7 @@ import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
+import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
 import { AppGuide } from "./AppGuide";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
 import { NotificationsPage } from "../notifications/NotificationsPage";
@@ -41,6 +42,7 @@ const AdminDashboard = () => {
         <Route path="master/*" element={<MasterContent />} />
         <Route path="master/activity" element={<ActivityMaster />} />
         <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
+        <Route path="master/cache" element={<CacheMaster />} />
         
         <Route path="users" element={<UserManagement />} />
         <Route path="company" element={<CompanySettings />} />
