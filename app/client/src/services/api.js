@@ -53,49 +53,8 @@ const layoutApi = {
   unsetDefaultLayout: (documentName) => api.post('/layouts/unset-default', { document_name: documentName }),
 };
 
-// --------------------------------------------
-// Customer API
-// --------------------------------------------
-const customerApi = {
-  getAllCustomers: (filters = {}) => api.get(`/customer`, { params: filters }),
-  createCustomer: (formData) => api.post(`/customer`, formData),
-  updateCustomer: (customerId, formData) => api.put(`/customer/${customerId}`, formData),
-  deleteCustomer: (customerId) => api.delete(`/customer/${customerId}`),
-  getSelf: () => api.get(`/customer/self`),
-  upsertSelf: (formData) => api.put(`/customer/self`, formData),
-};
-
-// --------------------------------------------
-// Service Offering API
-// --------------------------------------------
-const serviceOfferingApi = {
-  getAllServiceOfferings: (filters = {}) => api.get(`/service-offering`, { params: filters }),
-  createServiceOffering: (offeringData) => api.post(`/service-offering`, offeringData),
-  updateServiceOffering: (offeringId, offeringData) => api.put(`/service-offering/${offeringId}`, offeringData),
-  deleteServiceOffering: (offeringId) => api.delete(`/service-offering/${offeringId}`),
-};
-
-// --------------------------------------------
-// Shift API
-// --------------------------------------------
-const shiftApi = {
-  getAllShifts: () => api.get('/shifts'),
-};
-
-// --------------------------------------------
-// Data Access API — wired to the framework's /api/v1/data-access routes.
-// --------------------------------------------
-const dataAccessApi = {
-  getUserDataAccess: (userId) => api.get(`/data-access/${userId}`),
-  setUserDataAccess: (payload) => api.post('/data-access', payload),
-};
-
 export {
   reportApi,
   pastReportApi,
   layoutApi,
-  customerApi,
-  serviceOfferingApi,
-  shiftApi,
-  dataAccessApi,
 };
