@@ -3,17 +3,16 @@ import ReactDOM from "react-dom";
 import { LogOut } from "lucide-react";
 import PropTypes from 'prop-types';
 import { useDataContext } from "@context/useDataContext";
-import { useOnLogout } from "@app/hooks/useOnLogout";
+import { runAppLogoutHandlers } from "@startup/data/authHandlerRegistry";
 
 function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const { logout } = useDataContext();
-  const onLogout = useOnLogout();
 
   const confirmLogout = async () => {
     setShowConfirm(false);
     try {
-      onLogout();
+      runAppLogoutHandlers();
       await logout();
     } catch {
       // AuthContext.logout handles navigation and SSO end_session redirect
