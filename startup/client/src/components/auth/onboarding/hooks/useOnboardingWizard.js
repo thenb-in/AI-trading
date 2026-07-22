@@ -195,7 +195,7 @@ function useOnboardingWizard() {
 
     let order;
     try {
-      const orderRes = await ApiService.createPaymentOrder(selectedPlanId);
+      const orderRes = await ApiService.createPaymentOrder(selectedPlanId, Number(company.employeeCount) || 0);
       order = orderRes.data?.data;
       setOrderId(order?.orderId || null);
       const ready = await loadRazorpayCheckout();

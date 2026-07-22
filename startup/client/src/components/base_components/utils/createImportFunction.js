@@ -2,7 +2,6 @@
 // Supports Excel (.xlsx, .xls) and CSV files
 import { formatDate, parseDateValue } from '@utils/dateTimeUtils';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
-import { coerceBooleanCell, loadFirstWorksheet } from './importCellHelpers';
 
 const getApiErrorMessage = (error, fallback = 'Unknown error') => {
   if (!error) return fallback;
@@ -37,7 +36,9 @@ function normalizeImportCellValue(value, field, dateFields, booleanFields) {
     }
   }
   if (booleanFields.includes(field)) {
-    value = coerceBooleanCell(value);
+    const v = String(value ?? '').toLowerCase().trim();
+    if (v === 'true' || v === 'yes' || v === '1' || value === true) value = true;
+    else if (v === 'false' || v === 'no' || v === '0' || value === false) value = false;
   }
   return value;
 }
@@ -59,7 +60,7 @@ const createImportFunction = ({
   // When provided, the built-in header-mapped Excel/CSV parsing is bypassed and this
   // function owns turning the file into flat payload rows; everything downstream
   // (fieldTransform, dedup, create/update, result reporting) is reused unchanged.
-  // Use this for non-tabular layouts such as a wide multi-column matrix export.
+  // Use this for non-tabular layouts such as the wide Monthly Attendance Report export.
   customParser = null,
 }) => {
   // Match a header label to its column definition by id / label / name / headerName.
@@ -111,7 +112,11 @@ const createImportFunction = ({
 
       if (isExcel) {
         // Parse Excel file
-        const sheet = await loadFirstWorksheet(file);
+        const ExcelJS = (await import('exceljs')).default;
+        const buffer = await file.arrayBuffer();
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(buffer);
+        const sheet = workbook.worksheets[0];
 
         if (!sheet) {
           return { status: 400, data: { error: 'No worksheet found' } };

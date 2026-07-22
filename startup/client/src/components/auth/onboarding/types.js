@@ -31,8 +31,7 @@ const planShape = PropTypes.shape({
   id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   name: PropTypes.string.isRequired,
   description: PropTypes.string,
-  // Fixed signup price from the server: amount in the currency's minor unit
-  // (paise for INR) plus the ISO currency code. Same for every plan today.
+
   amount: PropTypes.number,
   currency: PropTypes.string,
   permissions: PropTypes.arrayOf(permissionShape),

@@ -1,5 +1,3 @@
-import { loadFirstWorksheet } from './importCellHelpers';
-
 const cellToText = (value) => {
   if (value === null || value === undefined) return '';
   let text;
@@ -64,7 +62,11 @@ const importParsingEngine = async (file) => {
   const ext = `.${(file.name.split('.').pop() || '').toLowerCase()}`;
 
   if (['.xlsx', '.xls'].includes(ext)) {
-    const sheet = await loadFirstWorksheet(file);
+    const ExcelJS = (await import('exceljs')).default;
+    const buffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    const sheet = workbook.worksheets[0];
     if (!sheet) return null;
     return readExcelSheetGrid(sheet);
   }

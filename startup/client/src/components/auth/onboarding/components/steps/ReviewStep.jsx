@@ -24,7 +24,12 @@ Row.propTypes = {
 function ReviewStep({ selectedPlan, company, account }) {
   const featureCount = selectedPlan?.features?.length;
   const groups = groupFeatures(selectedPlan?.features || []);
-  const price = formatPrice(selectedPlan?.amount, selectedPlan?.currency);
+  // Price is per employee, per year; the total billed = price × team size.
+  const perEmployeePrice = formatPrice(selectedPlan?.amount, selectedPlan?.currency);
+  const employeeCount = Number(company.employeeCount) || 0;
+  const totalPrice = typeof selectedPlan?.amount === 'number' && employeeCount > 0
+    ? formatPrice(selectedPlan.amount * employeeCount, selectedPlan.currency)
+    : null;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -53,13 +58,34 @@ function ReviewStep({ selectedPlan, company, account }) {
           <Row icon={Lock} label="Username" value={account.username} />
         </div>
 
-        {/* Amount payable — the fixed annual price, shown before checkout */}
-        {price && (
-          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-5 py-4">
-            <span className="text-sm font-semibold text-gray-700">Amount payable</span>
-            <span className="text-xl font-bold text-gray-900">
-              {price} <span className="text-xs font-medium text-gray-500">per year</span>
-            </span>
+        {/* Amount payable — per-employee price × team size, itemised before checkout */}
+        {perEmployeePrice && (
+          <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Price</span>
+                <span className="font-medium text-gray-900">
+                  {perEmployeePrice}
+                  <span className="text-xs font-normal text-gray-400"> / employee / year</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Team size</span>
+                <span className="font-medium text-gray-900">
+                  {employeeCount > 0 ? `× ${employeeCount}` : '—'}
+                </span>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
+              <span className="text-sm font-semibold text-gray-700">Amount payable</span>
+              {totalPrice ? (
+                <span className="text-xl font-bold text-gray-900">
+                  {totalPrice} <span className="text-xs font-medium text-gray-500">/ year</span>
+                </span>
+              ) : (
+                <span className="text-sm text-gray-400">Add team size to see total</span>
+              )}
+            </div>
           </div>
         )}
       </div>

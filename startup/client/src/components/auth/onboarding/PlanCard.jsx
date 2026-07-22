@@ -75,16 +75,22 @@ function PlanCard({ plan, selected, onSelect }) {
         </span>
       </div>
 
-      {/* Price — fixed annual amount from the server */}
+      {/* Price — per employee, per year */}
       {price && (
-        <div className="mt-4 flex items-baseline gap-1.5">
-          <span className="text-3xl font-extrabold tracking-tight text-gray-900">{price}</span>
-          <span className="text-sm font-medium text-gray-500">/year</span>
+        <div className="mt-4">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-3xl font-extrabold tracking-tight text-gray-900">{price}</span>
+            <span className="text-sm font-medium text-gray-500">/ year / employee</span>
+          </div>
         </div>
       )}
 
-      {/* Feature breakdown — one icon-led row per group */}
-      <ul className="mt-5 space-y-2.5">
+      {/* What's included — header + icon-led row per feature group */}
+      <div className="mt-5 mb-3 flex items-center gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">What&apos;s included</span>
+        <span className="h-px flex-1 bg-gray-200" />
+      </div>
+      <ul className="space-y-2.5">
         {groups.map(({ group, items }) => {
           const { icon: Icon, badge } = styleFor(group);
           return (
@@ -114,13 +120,20 @@ function PlanCard({ plan, selected, onSelect }) {
         </button>
 
         <div
-          className={`mt-4 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition ${
+          className={`mt-4 flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition ${
             selected
               ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-              : 'bg-gray-100 text-gray-700 group-hover:bg-blue-50 group-hover:text-blue-700'
+              : 'border-2 border-blue-600 bg-white text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
           }`}
         >
-          {selected ? 'Selected' : 'Choose this plan'}
+          {selected ? (
+            <>
+              <Check className="h-4 w-4" strokeWidth={3} />
+              Selected
+            </>
+          ) : (
+            'Choose this plan'
+          )}
         </div>
       </div>
 

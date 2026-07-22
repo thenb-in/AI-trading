@@ -22,15 +22,6 @@ function SearchableDropdown({
   searchable = true,
   autoOpen = false,
   onClose,
-  // Hierarchical rendering. Leave unset to infer from the options themselves
-  // (any option carrying `hasChildren`); pass an explicit boolean to force it.
-  tree,
-  // Value of the option that acts as a global "select everything" toggle in
-  // tree mode. It renders above the tree, outside the hierarchy.
-  allOptionValue = 'all',
-  // Floor for the tree menu width — indented labels need more room than the
-  // trigger. Flat mode always matches the trigger width.
-  minMenuWidth = 250,
 }) {
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,21 +30,18 @@ function SearchableDropdown({
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Tree mode activates when the options describe a hierarchy; every other
-  // dropdown keeps the flat rendering.
-  const isTree = useMemo(
-    () => (tree === undefined ? options.some((o) => o.hasChildren) : tree),
-    [tree, options]
-  );
+  // Tree mode activates only when the options describe a hierarchy (the
+  // Department filter). Every other dropdown keeps the flat rendering.
+  const isTree = useMemo(() => options.some((o) => o.hasChildren), [options]);
   const optionByValue = useMemo(() => new Map(options.map((o) => [o.value, o])), [options]);
   const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
   const allTreeOption = useMemo(
-    () => options.find((o) => o.value === allOptionValue) || null,
-    [options, allOptionValue]
+    () => options.find((o) => o.value === 'all') || null,
+    [options]
   );
   const treeNodes = useMemo(
-    () => (isTree ? options.filter((o) => o.value !== allOptionValue) : []),
-    [isTree, options, allOptionValue]
+    () => (isTree ? options.filter((o) => o.value !== 'all') : []),
+    [isTree, options]
   );
   const lastChildSet = useMemo(() => getLastChildValues(treeNodes), [treeNodes]);
   const visibleTreeNodes = useMemo(
@@ -145,7 +133,7 @@ function SearchableDropdown({
     }
   };
 
-  // --- Tree handlers (all logic lives in @utils/treeSelect) ---------------
+  // --- Tree handlers (all logic lives in @utils/tree) ---------------------
 
   const handleTreeSelect = useCallback(
     (option) => onChange(toggleNodeSelection(option, selectedValues, optionByValue)),
@@ -263,7 +251,8 @@ function SearchableDropdown({
             position: 'absolute',
             top: dropdownPos.top + 4,
             left: dropdownPos.left,
-            width: isTree ? Math.max(dropdownPos.width, minMenuWidth) : dropdownPos.width,
+            // Widen tree menus for long, indented labels (e.g. department names).
+            width: isTree ? Math.max(dropdownPos.width, 250) : dropdownPos.width,
             maxWidth: '95vw',
             zIndex: 9999,
           }}
@@ -301,13 +290,13 @@ function SearchableDropdown({
                       <div
                         onClick={() => handleTreeSelect(allTreeOption)}
                         className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer mx-1 rounded-sm hover:bg-blue-50 ${
-                          selectedSet.has(allOptionValue)
+                          selectedSet.has('all')
                             ? 'text-blue-700 font-semibold'
                             : 'text-gray-700 font-medium'
                         }`}
                       >
                         <TreeCheckbox
-                          checked={selectedSet.has(allOptionValue)}
+                          checked={selectedSet.has('all')}
                           indeterminate={false}
                           onChange={handleInputChangeNoOp}
                         />
@@ -395,9 +384,6 @@ SearchableDropdown.propTypes = {
   searchable: PropTypes.bool,
   autoOpen: PropTypes.bool,
   onClose: PropTypes.func,
-  tree: PropTypes.bool,
-  allOptionValue: PropTypes.string,
-  minMenuWidth: PropTypes.number,
 };
 
 export { SearchableDropdown };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {  FaLock, FaUser } from 'react-icons/fa';
+import { FaLock, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
@@ -18,9 +18,9 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUserData } = useDataContext();
-  
+
   const handleChange = (e) => {
-    const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
+    const sanitizedValue = e.target.value.replace(/[<>&']/g, '');
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
   };
 
@@ -89,6 +89,7 @@ function Login() {
   const handleForgotPasswordClick = () => {
     navigate('/forgot-password');
   };
+
 
   const handleTotpSetupSuccess = () => {
     setShowTotpPopup(false);
@@ -190,14 +191,13 @@ function Login() {
           <div className="mb-6">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 transform hover:scale-[1.02] shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isLoading}
             >
               {isLoading ? 'Logging in...' : 'Log In'}
             </button>
           </div>
 
-          {/* Signup link */}
           <div className="text-center">
             <p className="text-sm text-gray-600">
               Not registered yet?{' '}
