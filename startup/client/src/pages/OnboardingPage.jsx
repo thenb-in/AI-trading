@@ -16,7 +16,7 @@ const JOIN_METHOD_SCAN = 'scan';
 
 function OnboardingPage() {
   const navigate = useNavigate();
-  const { userData, setUserData } = useDataContext();
+  const { userData, setUserData, logout } = useDataContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [joinMethod, setJoinMethod] = useState(JOIN_METHOD_PASTE);
@@ -27,10 +27,8 @@ function OnboardingPage() {
 
   const handleBackToLogin = async () => {
     try {
-      await ApiService.logout();
+      await logout();
     } catch {
-      // Ignore logout errors, still navigate to login
-    } finally {
       navigate('/', { replace: true });
     }
   };

@@ -1,8 +1,0 @@
-
-
-const appRoutes = [
-
-];
-
-export { appRoutes };
-
