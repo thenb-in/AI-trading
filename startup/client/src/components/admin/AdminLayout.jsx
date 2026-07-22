@@ -3,7 +3,7 @@ import { AppSideBar } from "../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { useHelpSupportShortcut } from "@/hooks/useHelpSupportShortcut";
-import { AppLayout } from "@app/components/app_layout/AppLayout";
+import { getAppLayout } from "@data/appLayoutRegistry";
 import { NotificationProvider } from "../../notifications/NotificationProvider";
 import { ToastProvider } from "../toast";
 
@@ -32,6 +32,8 @@ function AdminLayout() {
   useDebugMode();
   useHelpSupportShortcut();
 
+  const AppLayout = getAppLayout();
+
   const renderSidebar = () => (
     <AppSideBar
       collapsed={collapsed}
@@ -54,7 +56,7 @@ function AdminLayout() {
               <Outlet />
             </div>
           </div>
-          <AppLayout />
+          {AppLayout && <AppLayout />}
         </div>
       </NotificationProvider>
     </ToastProvider>

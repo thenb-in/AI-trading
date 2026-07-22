@@ -14,9 +14,11 @@ import {
   registerUserManagementExtraColumns,
   registerApproveExtension,
 } from "@startup/data/userManagementRegistry";
+import { registerAppLayout } from "@startup/data/appLayoutRegistry";
 import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
 import { getUserManagementExtraColumns } from "../components/userManagementExtraColumns";
 import { useApproveExtension } from "../components/user_management_extra_columns/useApproveExtension";
+import { AppLayout } from "../components/app_layout/AppLayout";
 
 import {
   getAppSpecificMasterModules,
@@ -50,6 +52,7 @@ function registerAppData() {
   registerCompanyProfileSettings(CompanyProfileSettings);
   registerUserManagementExtraColumns(getUserManagementExtraColumns);
   registerApproveExtension(useApproveExtension);
+  registerAppLayout(AppLayout);
 }
 
 export { registerAppData };
