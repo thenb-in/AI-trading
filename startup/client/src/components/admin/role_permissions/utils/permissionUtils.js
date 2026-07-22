@@ -297,13 +297,17 @@ function groupMasterPermissionsByOperation(permissions) {
 /**
  * Groups report permissions by operation type (view, download, export, etc.)
  */
+const REPORT_OPERATIONS = ['read', 'view', 'download', 'export'];
+
 function groupReportPermissionsByOperation(permissions) {
+  // Report permissions are named `<operation>_<report-slug>`, and the slug is
+  // hyphenated: `read_all-leaves-report`. Testing for a `_report` suffix caught
+  // only the one legacy `read_user_report`, so all 32 real report permissions
+  // landed in "Other" — leaving the Read/View column empty on every row and the
+  // toggles under a heading that says nothing about what they grant.
   return groupPermissionsByClassifier(permissions, (name) => {
-    if (name.startsWith('view_report') || name.includes('view_report')) return 'view';
-    if (name.startsWith('read_report') || name.includes('read_report') || (name.startsWith('read_') && name.endsWith('_report'))) return 'read';
-    if (name.startsWith('download_report') || name.includes('download_report')) return 'download';
-    if (name.startsWith('export_report') || name.includes('export_report')) return 'export';
-    return 'other';
+    const operation = name.split('_')[0];
+    return REPORT_OPERATIONS.includes(operation) ? operation : 'other';
   });
 }
 
@@ -518,8 +522,21 @@ function hasNoOrganizedPermissions(organized) {
     (!organized.other || organized.other.length === 0);
 }
 
+/**
+ * What to call a permission on screen. `display_name` is nullable and 7 of the
+ * 17 module permissions have none, so falling back to the raw `name` put
+ * `view_role_permission_module` on screen next to "View Company Settings".
+ * Title-casing the identifier is a worse label than a curated one but a much
+ * better one than none.
+ */
+function getPermissionLabel(permission) {
+  if (!permission) return '';
+  return permission.display_name || toTitleCase(permission.name || '');
+}
+
 export {
   organizePermissions,
+  getPermissionLabel,
   groupMasterPermissionsByOperation,
   groupReportPermissionsByOperation,
   getOperationDisplayName,
