@@ -10,7 +10,13 @@ import {
   registerAppLogoutHandlers,
 } from "@startup/data/authHandlerRegistry";
 import { registerCompanyProfileSettings } from "@startup/data/companyProfileRegistry";
+import {
+  registerUserManagementExtraColumns,
+  registerApproveExtension,
+} from "@startup/data/userManagementRegistry";
 import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
+import { getUserManagementExtraColumns } from "../components/userManagementExtraColumns";
+import { useApproveExtension } from "../components/user_management_extra_columns/useApproveExtension";
 
 import {
   getAppSpecificMasterModules,
@@ -42,6 +48,8 @@ function registerAppData() {
   registerAppLogoutHandlers([onLogout]);
   registerAppLoginHandlers([onLogin]);
   registerCompanyProfileSettings(CompanyProfileSettings);
+  registerUserManagementExtraColumns(getUserManagementExtraColumns);
+  registerApproveExtension(useApproveExtension);
 }
 
 export { registerAppData };

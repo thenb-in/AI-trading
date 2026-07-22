@@ -3,8 +3,7 @@ import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/useDataContext';
 import { UserTable } from './components/UserTable';
-import { getUserManagementExtraColumns } from '@app/components/userManagementExtraColumns';
-import { useApproveExtension } from '@app/components/user_management_extra_columns/useApproveExtension';
+import { getUserManagementExtraColumns, useApproveExtension } from '@data/userManagementRegistry';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { InviteLinkButton } from './components/InviteLinkButton';
