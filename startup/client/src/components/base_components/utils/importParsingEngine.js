@@ -1,3 +1,23 @@
+// Load the first worksheet of an uploaded Excel file (exceljs is imported lazily so it
+// only lands in the bundle when an import actually runs). Returns the worksheet, or null
+// when the workbook has no sheets.
+const loadFirstWorksheet = async (file) => {
+  const ExcelJS = (await import('exceljs')).default;
+  const buffer = await file.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  return workbook.worksheets[0] || null;
+};
+
+// Interpret a spreadsheet cell as a boolean: true/yes/1 → true, false/no/0 → false. Any
+// other value is returned untouched so callers keep the original cell value for non-boolean data.
+const coerceExcelBoolean = (value) => {
+  const v = String(value ?? '').toLowerCase().trim();
+  if (v === 'true' || v === 'yes' || v === '1' || value === true) return true;
+  if (v === 'false' || v === 'no' || v === '0' || value === false) return false;
+  return value;
+};
+
 const cellToText = (value) => {
   if (value === null || value === undefined) return '';
   let text;
@@ -62,11 +82,7 @@ const importParsingEngine = async (file) => {
   const ext = `.${(file.name.split('.').pop() || '').toLowerCase()}`;
 
   if (['.xlsx', '.xls'].includes(ext)) {
-    const ExcelJS = (await import('exceljs')).default;
-    const buffer = await file.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const sheet = workbook.worksheets[0];
+    const sheet = await loadFirstWorksheet(file);
     if (!sheet) return null;
     return readExcelSheetGrid(sheet);
   }
@@ -109,4 +125,12 @@ const parseImportedExcelFile = async (file, detect, { stopAt = isExportFooterCel
   return { columns: header.cells, rows };
 };
 
-export { cellToText, importParsingEngine, findHeaderRow, isExportFooterCells, parseImportedExcelFile };
+export {
+  cellToText,
+  coerceExcelBoolean,
+  findHeaderRow,
+  importParsingEngine,
+  isExportFooterCells,
+  loadFirstWorksheet,
+  parseImportedExcelFile,
+};

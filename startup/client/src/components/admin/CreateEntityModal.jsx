@@ -1,104 +1,57 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
-import { toast } from 'react-toastify';
+import { useEntityCreateForm } from '@/hooks/useEntityCreateForm';
 
 function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi, canCreateGlobal = false }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isGlobal, setIsGlobal] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState({});
+  const {
+    name,
+    description,
+    isGlobal,
+    submitting,
+    errors,
+    setIsGlobal,
+    handleNameChange,
+    handleDescriptionChange,
+    reset,
+    submit,
+  } = useEntityCreateForm(entityName);
 
   useEscapeKey(onClose, isOpen);
 
-  const handleBackdropClick = useCallback((e) => {
-    if (e.target === e.currentTarget) {
+  const handleClose = useCallback(() => {
+    if (!submitting) {
+      reset();
       onClose();
     }
-  }, [onClose]);
+  }, [submitting, reset, onClose]);
 
-  const handleNameChange = useCallback((e) => {
-    setName(e.target.value);
-    if (errors.name) {
-      setErrors(prev => ({ ...prev, name: null }));
+  const handleBackdropClick = useCallback((e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
     }
-  }, [errors.name]);
-
-  const handleDescriptionChange = useCallback((e) => {
-    setDescription(e.target.value);
-    if (errors.description) {
-      setErrors(prev => ({ ...prev, description: null }));
-    }
-  }, [errors.description]);
+  }, [handleClose]);
 
   const handleStopPropagation = useCallback((e) => {
     e.stopPropagation();
   }, []);
 
-  const validate = () => {
-    const newErrors = {};
-
-    if (!name || !name.trim()) {
-      newErrors.name = `${entityName} name is required`;
-    } else if (name.trim().length < 2) {
-      newErrors.name = `${entityName} name must be at least 2 characters`;
-    } else if (name.trim().length > 50) {
-      newErrors.name = `${entityName} name cannot exceed 50 characters`;
-    }
-
-    if (description && description.trim().length > 500) {
-      newErrors.description = 'Description cannot exceed 500 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validate()) {
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const payload = {
+    const ok = await submit(() =>
+      onSubmitApi({
         name: name.trim(),
         description: description.trim() || null,
         ...(canCreateGlobal && { isGlobal }),
-      };
-
-      await onSubmitApi(payload);
-
-      toast.success(`${entityName} created successfully!`);
-
-      setName('');
-      setDescription('');
-      setIsGlobal(false);
-      setErrors({});
-
+      }),
+    );
+    if (ok) {
+      reset();
       onClose();
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error) {
-      const errorMessage = error?.message || `Failed to create ${entityName.toLowerCase()}`;
-      toast.error(errorMessage);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    if (!submitting) {
-      setName('');
-      setDescription('');
-      setIsGlobal(false);
-      setErrors({});
-      onClose();
     }
   };
 

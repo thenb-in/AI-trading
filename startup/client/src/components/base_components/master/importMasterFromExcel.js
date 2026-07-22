@@ -1,5 +1,5 @@
-import ExcelJS from 'exceljs';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
+import { coerceExcelBoolean, loadFirstWorksheet } from '../utils/importParsingEngine';
 
 /**
  * Reads master rows from an Excel workbook produced either by the standard exporter
@@ -30,10 +30,7 @@ async function importMasterFromExcel(
   }
 
   try {
-    const buffer = await file.arrayBuffer();
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
-    const sheet = workbook.worksheets[0];
+    const sheet = await loadFirstWorksheet(file);
     if (!sheet) return { status: 400, data: { error: 'No worksheet found' } };
 
     const buildHeaderMap = (headerRowIndex) => {
@@ -88,9 +85,7 @@ async function importMasterFromExcel(
         let value = cell.value;
         if (typeof value === 'string') value = value.trim();
         if (booleanFields?.includes(field)) {
-          const v = String(value ?? '').toLowerCase().trim();
-          if (v === 'true' || v === 'yes' || v === '1' || value === true) value = true;
-          else if (v === 'false' || v === 'no' || v === '0' || value === false) value = false;
+          value = coerceExcelBoolean(value);
         }
         payload[field] = value ?? null;
       });
