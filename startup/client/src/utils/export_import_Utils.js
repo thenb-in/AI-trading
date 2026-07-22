@@ -1,4 +1,5 @@
 import { toast } from "react-toastify";
+import { showUndoToast } from "@startup/components/base_components/undo/UndoToast";
 
 // Generic handleImport function for bulk uploads
 const handleImport = async ({
@@ -9,8 +10,8 @@ const handleImport = async ({
   setImporting,
   successMessage = "Data imported successfully",
   acceptedFileTypes = ".csv,.xlsx,.xls",
-  // eslint-disable-next-line no-unused-vars
-  validateHeaders, // Kept for API compatibility, validation handled by backend
+  // Callers may still pass `validateHeaders`; it is ignored — header validation
+  // is the backend's job, so nothing here reads it.
   maxFileSize = 10 * 1024 * 1024, // 10MB
   onResults, // Optional callback to handle results (for modal display)
   // Optional: how a single row-error is rendered in a toast. Defaults to a
@@ -82,6 +83,10 @@ const handleImport = async ({
         errors.forEach(err => {
           toast.error(formatRowError(err), { autoClose: 10000 });
         });
+      } else if (responseData.batchId && responseData.created > 0) {
+        // Imports run through createImportFunction come back tagged with the
+        // batch they wrote, so the confirmation can carry its own way back.
+        showUndoToast({ message: message || successMessage, batchId: responseData.batchId, onUndone: fetchData });
       } else {
         toast.success(message || successMessage);
       }
