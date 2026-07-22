@@ -8,7 +8,6 @@ function useSubscriptions() {
   const [selectedSubscriptionId, setSelectedSubscriptionId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [updating, setUpdating] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -53,133 +52,9 @@ function useSubscriptions() {
     fetchData();
   }, [fetchData]);
 
-  const selectedSubscription = subscriptions.find((s) => s.id === selectedSubscriptionId) || null;
-
-  const isValidStatusUpdate = useCallback(
-    (status) => {
-      if (!selectedSubscriptionId) {
-        toast.error('Please select a subscription first');
-        return false;
-      }
-      if (!['subscribed', 'not_subscribed', 'hidden'].includes(status)) {
-        toast.error('Invalid status');
-        return false;
-      }
-      return true;
-    },
-    [selectedSubscriptionId]
-  );
-
-  const updatePermissionStatus = useCallback(
-    async (permission_id, status) => {
-      if (!isValidStatusUpdate(status)) return;
-
-      // Optimistically update the local state
-      setSubscriptions((prevSubscriptions) =>
-        prevSubscriptions.map((subscription) => {
-          if (subscription.id === selectedSubscriptionId) {
-            const currentPermissions = subscription.permissions || [];
-            const permissionIndex = currentPermissions.findIndex((p) => p.id === permission_id);
-            
-            if (permissionIndex >= 0) {
-              // Update existing permission status
-              const updatedPermissions = [...currentPermissions];
-              updatedPermissions[permissionIndex] = {
-                ...updatedPermissions[permissionIndex],
-                subscriptionStatus: status
-              };
-              return {
-                ...subscription,
-                permissions: updatedPermissions
-              };
-            } else {
-              // Add new permission with status
-              const permission = permissions.find((p) => p.id === permission_id);
-              if (permission) {
-                return {
-                  ...subscription,
-                  permissions: [...currentPermissions, { ...permission, subscriptionStatus: status }]
-                };
-              }
-            }
-          }
-          return subscription;
-        })
-      );
-
-      setUpdating(true);
-      try {
-        await ApiService.updateSubscriptionPermissionStatus({
-          subscription_id: selectedSubscriptionId,
-          permission_id,
-          status
-        });
-        toast.success('Permission status updated successfully');
-      } catch (err) {
-        // On error, revert the optimistic update by refetching
-        await fetchData();
-        const errorMessage = err?.message || 'Failed to update permission status';
-        toast.error(errorMessage);
-      } finally {
-        setUpdating(false);
-      }
-    },
-    [isValidStatusUpdate, selectedSubscriptionId, permissions, fetchData]
-  );
-
-  const updateMultiplePermissionStatuses = useCallback(
-    async (permission_ids, status) => {
-      if (!isValidStatusUpdate(status)) return;
-
-      // Optimistically update the local state
-      setSubscriptions((prevSubscriptions) =>
-        prevSubscriptions.map((subscription) => {
-          if (subscription.id === selectedSubscriptionId) {
-            const currentPermissions = subscription.permissions || [];
-            const updatedPermissions = currentPermissions.map((p) => {
-              if (permission_ids.includes(p.id)) {
-                return {
-                  ...p,
-                  subscriptionStatus: status
-                };
-              }
-              return p;
-            });
-
-            // Add any missing permissions
-            const existingIds = new Set(currentPermissions.map((p) => p.id));
-            const newPermissions = permissions
-              .filter((p) => permission_ids.includes(p.id) && !existingIds.has(p.id))
-              .map((p) => ({ ...p, subscriptionStatus: status }));
-
-            return {
-              ...subscription,
-              permissions: [...updatedPermissions, ...newPermissions]
-            };
-          }
-          return subscription;
-        })
-      );
-
-      setUpdating(true);
-      try {
-        await ApiService.updateMultipleSubscriptionPermissionStatuses({
-          subscription_id: selectedSubscriptionId,
-          permission_ids,
-          status
-        });
-        toast.success(`${permission_ids.length} permission(s) updated successfully`);
-      } catch (err) {
-        // On error, revert the optimistic update by refetching
-        await fetchData();
-        const errorMessage = err?.message || 'Failed to update permission statuses';
-        toast.error(errorMessage);
-      } finally {
-        setUpdating(false);
-      }
-    },
-    [isValidStatusUpdate, selectedSubscriptionId, permissions, fetchData]
-  );
+  const selectedSubscription = subscriptions.find(
+    (s) => String(s.id) === String(selectedSubscriptionId)
+  ) || null;
 
   return {
     subscriptions,
@@ -188,10 +63,7 @@ function useSubscriptions() {
     selectedSubscription,
     loading,
     error,
-    updating,
     setSelectedSubscriptionId,
-    updatePermissionStatus,
-    updateMultiplePermissionStatuses,
     refetch: fetchData,
   };
 }

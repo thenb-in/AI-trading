@@ -55,13 +55,17 @@ function CompanySubscriptionSelector({
   }, [isOpen, hasLoaded, loadSubscriptions]);
 
   const handleToggleSubscription = useCallback((subscriptionId) => {
+    // Pending subscriptions go for approval — never let them be selected.
+    const sub = (resolvedAvailable.length ? resolvedAvailable : availableSubscriptions)
+      .find((s) => s.id === subscriptionId);
+    if (sub?.status === 'pending') return;
     setSelectedSubscriptions((prev) => {
       if (prev.includes(subscriptionId)) {
         return prev.filter((id) => id !== subscriptionId);
       }
       return [...prev, subscriptionId];
     });
-  }, []);
+  }, [resolvedAvailable, availableSubscriptions]);
 
   const handleSave = useCallback(async () => {
     if (!companyId) return;
@@ -164,21 +168,27 @@ function SubscriptionSelectorPanel({
                 <div className="space-y-1">
                   {subsList.map((subscription) => {
                     const isSelected = selectedSubscriptions.includes(subscription.id);
+                    const isPending = subscription.status === 'pending';
                     return (
                       <label
                         key={subscription.id}
-                        className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'bg-blue-50 border border-blue-200'
-                            : 'hover:bg-gray-50 border border-transparent'
+                        title={isPending ? 'This subscription is awaiting approval.' : undefined}
+                        onClick={isPending ? (e) => e.preventDefault() : undefined}
+                        className={`flex items-center gap-2 p-2 rounded-md transition-colors ${
+                          isPending
+                            ? 'bg-red-50 border border-red-200 cursor-not-allowed'
+                            : isSelected
+                              ? 'bg-blue-50 border border-blue-200 cursor-pointer'
+                              : 'hover:bg-gray-50 border border-transparent cursor-pointer'
                         }`}
                       >
                         <div className="relative flex items-center justify-center w-4 h-4">
                           <input
                             type="checkbox"
                             checked={isSelected}
+                            disabled={isPending}
                             onChange={() => onToggle(subscription.id)}
-                            className="absolute opacity-0 cursor-pointer"
+                            className={`absolute opacity-0 ${isPending ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                           />
                           <div
                             className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-colors ${
@@ -191,8 +201,13 @@ function SubscriptionSelectorPanel({
                           </div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-gray-900 truncate">
-                            {subscription.name}
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-900">
+                            <span className="truncate">{subscription.name}</span>
+                            {isPending ? (
+                              <span className="shrink-0 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
+                                Pending
+                              </span>
+                            ) : null}
                           </div>
                           {subscription.description ? (
                             <div className="text-xs text-gray-500 truncate">

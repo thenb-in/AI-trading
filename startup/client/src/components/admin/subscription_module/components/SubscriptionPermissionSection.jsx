@@ -60,6 +60,7 @@ function SubscriptionPermissionSection({
   onUpdatePermissionStatus,
   onUpdateMultiplePermissionStatuses,
   updating,
+  namePrefix = '',
 }) {
   // Handler for individual permission status update
   const handlePermissionStatusChange = useCallback((permission_id, status) => {
@@ -230,7 +231,7 @@ function SubscriptionPermissionSection({
                   <td className="p-1.5 text-center border-r border-gray-200">
                     <input
                       type="radio"
-                      name={`permission-group-${category}-${row.key}`}
+                      name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="subscribed"
                       checked={currentStatus === 'subscribed'}
                       onChange={() => updateGroup('subscribed')}
@@ -241,7 +242,7 @@ function SubscriptionPermissionSection({
                   <td className="p-1.5 text-center border-r border-gray-200">
                     <input
                       type="radio"
-                      name={`permission-group-${category}-${row.key}`}
+                      name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="not_subscribed"
                       checked={currentStatus === 'not_subscribed'}
                       onChange={() => updateGroup('not_subscribed')}
@@ -252,7 +253,7 @@ function SubscriptionPermissionSection({
                   <td className="p-1.5 text-center">
                     <input
                       type="radio"
-                      name={`permission-group-${category}-${row.key}`}
+                      name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="hidden"
                       checked={currentStatus === 'hidden'}
                       onChange={() => updateGroup('hidden')}
@@ -281,6 +282,7 @@ SubscriptionPermissionSection.propTypes = {
   onUpdatePermissionStatus: PropTypes.func.isRequired,
   onUpdateMultiplePermissionStatuses: PropTypes.func.isRequired,
   updating: PropTypes.bool,
+  namePrefix: PropTypes.string,
 };
 
 export { SubscriptionPermissionSection };
