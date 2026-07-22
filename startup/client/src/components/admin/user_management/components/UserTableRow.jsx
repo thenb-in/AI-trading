@@ -1,11 +1,14 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe } from 'lucide-react';
+import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe, ExternalLink } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { EditFieldModal } from './EditFieldModal';
 import { hasPermission, useDataContext } from '@context/useDataContext';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+
+const WALLET_WINDOW_NAME = 'nbnextWallet';
+const WALLET_WINDOW_FEATURES = 'popup=yes,width=1180,height=820';
 
 const UserTableRow = ({
   user,
@@ -18,6 +21,7 @@ const UserTableRow = ({
   handleRoleChange,
   handleDeviceOptionUpdate,
   updateUser,
+  walletUserManagementUrl,
   extraColumns = []
 }) => {
   const dataContext = useDataContext();
@@ -106,6 +110,13 @@ const UserTableRow = ({
 
   const handleDeleteClick = () => {
     showConfirmation(user.id, 'delete', user.name);
+  };
+
+  const showWalletLink = Boolean(user.isSso && walletUserManagementUrl);
+
+  const handleWalletClick = () => {
+    const popup = window.open(walletUserManagementUrl, WALLET_WINDOW_NAME, WALLET_WINDOW_FEATURES);
+    popup?.focus();
   };
 
   const handleDeviceClick = (e) => {
@@ -305,7 +316,16 @@ const UserTableRow = ({
         onClick={handleStopPropagation}
       >
         <div className="flex items-center justify-end space-x-3">
-          {!bulkDeleteMode ? (
+          {showWalletLink && !bulkDeleteMode ? (
+            <button
+              onClick={handleWalletClick}
+              className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors duration-150"
+              title="This account is managed on NBNext Wallet"
+            >
+              Manage on Wallet
+              <ExternalLink size={13} />
+            </button>
+          ) : !bulkDeleteMode ? (
             <>
               {user.is_approved ? (
                 <button
@@ -368,6 +388,7 @@ UserTableRow.propTypes = {
   handleRoleChange: PropTypes.func.isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
   updateUser: PropTypes.func.isRequired,
+  walletUserManagementUrl: PropTypes.string,
   extraColumns: PropTypes.array
 };
 

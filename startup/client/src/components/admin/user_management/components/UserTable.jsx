@@ -19,6 +19,7 @@ const UserTable = ({
   // deviceAccessOptions,
   handleDeviceOptionUpdate,
   updateUser,
+  walletUserManagementUrl,
   extraColumns = []
 }) => {
   console.log('title', title);
@@ -92,6 +93,7 @@ const UserTable = ({
                   // deviceAccessOptions={deviceAccessOptions}
                   handleDeviceOptionUpdate={handleDeviceOptionUpdate}
                   updateUser={updateUser}
+                  walletUserManagementUrl={walletUserManagementUrl}
                   extraColumns={extraColumns}
                 />
               ))}
@@ -135,6 +137,7 @@ UserTable.propTypes = {
   // deviceAccessOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
   updateUser: PropTypes.func.isRequired,
+  walletUserManagementUrl: PropTypes.string,
   extraColumns: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     header: PropTypes.string.isRequired,

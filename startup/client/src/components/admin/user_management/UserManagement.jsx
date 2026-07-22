@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode, Link as LinkIcon } from 'lucide-react';
+import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/useDataContext';
 import { UserTable } from './components/UserTable';
@@ -7,6 +7,7 @@ import { getUserManagementExtraColumns } from '@app/components/userManagementExt
 import { useApproveExtension } from '@app/components/user_management_extra_columns/useApproveExtension';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
+import { InviteLinkButton } from './components/InviteLinkButton';
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
 import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
 import { toast } from 'react-toastify';
@@ -44,6 +45,7 @@ function UserManagement() {
     handleDeviceOptionUpdate,
     updateUser,
     updateUserProfileInState,
+    walletUserManagementUrl,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(true);
@@ -104,24 +106,6 @@ function UserManagement() {
     setShowQRModal(true);
   };
 
-  const signupUrl = companyId ? `${window.location.origin}/signup?company_id=${companyId}` : '';
-  const canCopy = typeof window !== 'undefined' && window.isSecureContext;
-  const signupLinkDisplay = companyId
-    ? (canCopy ? `/signup?company_id=${companyId}` : signupUrl)
-    : 'Sign-up link unavailable';
-
-  const handleCopySignupLink = async () => {
-    try {
-      if (!companyId) {
-        toast.error('Company ID not found. Please try again.');
-        return;
-      }
-      await navigator.clipboard.writeText(signupUrl);
-      toast.success('Sign-up link copied to clipboard!');
-    } catch {
-      toast.error('Failed to copy link. Please try again.');
-    }
-  };
 
 
 
@@ -136,6 +120,7 @@ function UserManagement() {
     handleRoleChange,
     handleDeviceOptionUpdate,
     updateUser,
+    walletUserManagementUrl,
   };
 
   if (loading) {
@@ -188,19 +173,14 @@ function UserManagement() {
     </div>
 
     <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
-      <button
-        onClick={canCopy ? handleCopySignupLink : undefined}
-        disabled={!canCopy}
-        data-testid="copy-signup-link"
-        data-signup-url={signupUrl}
-        className={`flex items-center justify-center max-w-full px-2 py-1 sm:px-3 sm:py-2 bg-green-50 border border-green-300 text-green-700 rounded-md text-xs sm:text-sm font-mono ${
-          canCopy ? 'hover:bg-green-100 transition-colors cursor-pointer' : 'cursor-default select-text'
-        }`}
-        title={canCopy ? 'Copy sign-up link for current company' : 'Sign-up link'}
-      >
-        <LinkIcon size={16} className="mr-1 flex-shrink-0" />
-        <span className="truncate">{signupLinkDisplay}</span>
-      </button>
+
+      <InviteLinkButton
+        label="Sign-up link"
+        path="/signup"
+        companyId={companyId}
+        tone="green"
+        testId="copy-signup-link"
+      />
       <button
         onClick={handleShowQRCode}
         className="w-full sm:w-auto flex items-center justify-center px-2 py-1 sm:px-4 sm:py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-xs sm:text-base"

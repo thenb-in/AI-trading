@@ -6,6 +6,8 @@ const INITIAL_CONFIRM_DIALOG = { show: false, userId: null, action: null, userna
 const useUserManagement = () => {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
+  // Wallet's user-management page — only sent when Wallet is configured here.
+  const [walletUserManagementUrl, setWalletUserManagementUrl] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,6 +24,7 @@ const useUserManagement = () => {
       const usersResponse = await ApiService.getAllUsers();
       setUsers(usersResponse.data.users);
       setRoles(usersResponse.data.roles);
+      setWalletUserManagementUrl(usersResponse.data.walletUserManagementUrl || null);
       setError("");
     } catch (err) {
       setError(err.message || "Failed to load users");
@@ -237,6 +240,7 @@ const useUserManagement = () => {
   return {
     users,
     roles,
+    walletUserManagementUrl,
     error,
     loading,
     searchQuery,
