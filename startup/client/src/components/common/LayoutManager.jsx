@@ -7,10 +7,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   Typography,
   List,
@@ -34,6 +30,13 @@ import {
 } from '@mui/icons-material';
 import { ApiService as layoutApi } from '@services/ApiService';
 import { getLayoutTypeIcon, getLayoutTypeColor } from './layoutTypeHelpers';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+
+const LAYOUT_TYPE_OPTIONS = [
+  { value: 'private', label: 'Private (Only you can see)' },
+  { value: 'public', label: 'Public (Everyone can see)' },
+  { value: 'temp', label: 'Temporary (Auto-deleted after 7 days)' },
+];
 
 const LayoutManager = ({
   open,
@@ -335,33 +338,18 @@ const LayoutManager = ({
               placeholder="Enter a name for this layout"
             />
             
-            <FormControl fullWidth>
-              <InputLabel>Layout Type</InputLabel>
-              <Select
-                value={newLayoutType}
-                onChange={(e) => setNewLayoutType(e.target.value)}
-                label="Layout Type"
-              >
-                <MenuItem value="private">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    {getLayoutTypeIcon('private')}
-                    Private (Only you can see)
-                  </Box>
-                </MenuItem>
-                <MenuItem value="public">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    {getLayoutTypeIcon('public')}
-                    Public (Everyone can see)
-                  </Box>
-                </MenuItem>
-                <MenuItem value="temp">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    {getLayoutTypeIcon('temp')}
-                    Temporary (Auto-deleted after 7 days)
-                  </Box>
-                </MenuItem>
-              </Select>
-            </FormControl>
+            <Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Layout Type
+              </Typography>
+              <SearchableDropdown
+                options={LAYOUT_TYPE_OPTIONS}
+                selectedValues={newLayoutType}
+                onChange={setNewLayoutType}
+                placeholder="Select layout type"
+                multiple={false}
+              />
+            </Box>
           </Box>
         </DialogContent>
 

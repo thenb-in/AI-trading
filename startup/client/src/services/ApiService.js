@@ -76,9 +76,6 @@ const ApiService = {
     return this.request('PUT', '/company/settings', settings);
   },
 
-  // Company Profile (attendance aliases, compliance defaults, credentials,
-  // emp_code_basis) is owned by app now — see @app/services/api companyProfileApi.
-
   getCompanyDetails() {
     return this.request('GET', '/company-details');
   },

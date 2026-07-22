@@ -1,5 +1,6 @@
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { ReportRunMaster } from '@startup/components/masters/report_run_master/ReportRunMaster';
 import { ReportList } from './report_components/ReportList';
 import { DummyComponent } from './DummyComponent';
 import { reports, categories } from '../data/getReportModules';
@@ -25,6 +26,7 @@ const ReportContent = () => {
     <div className="px-4 py-4 sm:px-6 lg:px-8 max-w-8xl mx-auto">
       <Routes>
         <Route index element={<ReportList reports={reports} categories={categories} />} />
+        <Route path="manager" element={<ReportRunMaster />} />
 
         {staticPages.map((page) => (
           <Route key={page.path} path={page.path} element={page.element} />
