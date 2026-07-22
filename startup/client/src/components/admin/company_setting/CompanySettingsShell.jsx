@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { Building2, Save, Loader2, RotateCcw, Menu } from "lucide-react";
 import { useCompanySettingsContext, TAB_COMPONENTS } from "./companySettingsContextCore";
 import { COMPANY_SETTINGS_TABS } from "./companySettingsConstants";
+import { getCompanyProfileSettings } from "@data/companyProfileRegistry";
 
 
 function CompanySettingsShell() {
   const { setHamburgerMenu, hamburgerMenu } = useDataContext();
   const [activeTab, setActiveTab] = useState(COMPANY_SETTINGS_TABS[0].id);
+  const CompanyProfileSettings = getCompanyProfileSettings();
 
   const {
     isLoading,
@@ -17,6 +19,8 @@ function CompanySettingsShell() {
     canSave,
     handleSaveAll,
     handleDiscardAll,
+    companyProfileRef,
+    handleProfileDirtyChange,
   } = useCompanySettingsContext();
 
   const handleDiscard = () => {
@@ -132,7 +136,17 @@ function CompanySettingsShell() {
             const TabComponent = TAB_COMPONENTS[id];
             return (
               <div key={id} className={activeTab === id ? "" : "hidden"}>
-                <TabComponent />
+                {id === "profile" ? (
+                  CompanyProfileSettings ? (
+                    <CompanyProfileSettings
+                      ref={companyProfileRef}
+                      isLoading={isLoading}
+                      onDirtyChange={handleProfileDirtyChange}
+                    />
+                  ) : null
+                ) : (
+                  <TabComponent />
+                )}
               </div>
             );
           })}

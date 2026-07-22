@@ -9,6 +9,8 @@ import {
   registerAppLoginHandlers,
   registerAppLogoutHandlers,
 } from "@startup/data/authHandlerRegistry";
+import { registerCompanyProfileSettings } from "@startup/data/companyProfileRegistry";
+import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
 
 import {
   getAppSpecificMasterModules,
@@ -39,6 +41,7 @@ function registerAppData() {
   });
   registerAppLogoutHandlers([onLogout]);
   registerAppLoginHandlers([onLogin]);
+  registerCompanyProfileSettings(CompanyProfileSettings);
 }
 
 export { registerAppData };

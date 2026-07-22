@@ -23,6 +23,7 @@ function useCompanySettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const companyProfileRef = useRef(null);
   const logoInputRef = useRef(null);
 
   const originalCompanyRef = useRef(null);
@@ -138,6 +139,11 @@ function useCompanySettings() {
 
       await ApiService.updateCompanySettings(companyData);
 
+      // Persist the embedded CompanyProfile settings (app-owned) through its ref.
+      if (companyProfileRef.current?.save) {
+        await companyProfileRef.current.save();
+      }
+
       // Persist the company details. entity_name is not stored — it is derived
       // from the Company name on read.
       const detailsFd = new FormData();
@@ -167,6 +173,12 @@ function useCompanySettings() {
     }
   };
 
+  const handleProfileDirtyChange = (isProfileDirty) => {
+    if (isProfileDirty) {
+      setIsDirty(true);
+    }
+  };
+
   // Restore every section to its last-loaded values — no page reload.
   const handleDiscardAll = () => {
     if (originalCompanyRef.current) setCompanySettings(originalCompanyRef.current);
@@ -174,6 +186,7 @@ function useCompanySettings() {
     setCompanyLogoFile(null);
     setCompanyLogoPreview(originalLogoPreviewRef.current);
     if (logoInputRef.current) logoInputRef.current.value = "";
+    companyProfileRef.current?.reset?.();
     setIsDirty(false);
   };
 
@@ -190,7 +203,8 @@ function useCompanySettings() {
     setIsDirty(true);
   };
 
-  const canSave = isDirty;
+  // Save is enabled when this form is dirty OR the embedded CompanyProfile is dirty.
+  const canSave = isDirty || (companyProfileRef.current?.isDirty?.() || false);
 
   return {
     userData,
@@ -202,6 +216,7 @@ function useCompanySettings() {
     showFeedback,
     isDirty,
     canSave,
+    companyProfileRef,
     logoInputRef,
     handleInputChange,
     handleCompanyDetailsChange,
@@ -209,6 +224,7 @@ function useCompanySettings() {
     clearCompanyLogo,
     handleSaveAll,
     handleDiscardAll,
+    handleProfileDirtyChange,
     handleNameChange,
     handleMobileAppChange,
     handleDesktopWebChange,
