@@ -1,20 +1,30 @@
 import PropTypes from 'prop-types';
 import { formatCellValueForInsight } from "../utils/helpers.js";
+import {
+  getSummaryHeaderFields,
+  getSummaryHeaderFieldKeys,
+} from "@startup/data/summaryFieldRegistry";
 
 const Summary = ({ summary = {}, columns = [], compact = false }) => {
-  // Collect numeric summary totals from the unified summary prop
+  // App-registered identity/header fields (e.g. employee code/name). The grid
+  // itself stays domain-agnostic — see summaryFieldRegistry.
+  const headerFields = getSummaryHeaderFields();
+  const headerKeySet = getSummaryHeaderFieldKeys();
+
   const summaryTotals = {};
 
   // When `columns` is the effective per-tab column set (via useTabsState),
   // build a field-name lookup so we can drop summary totals that don't belong
-  // to the currently-active tab. Without this, rollups from one tab would leak
-  // into another tab's insights and vice versa.
+  // to the currently-active tab. Without this, salary-side rollups would leak
+  // into the Attendance tab's insights and vice versa.
   const columnKeySet =
     columns && columns.length > 0
       ? new Set(columns.map((c) => c.key || c.field).filter(Boolean))
       : null;
 
+  // Separate header/identity fields from summary totals
   Object.keys(summary).forEach(key => {
+    if (headerKeySet.has(key)) return;
     // Only keep numeric values. If we have a column set for the active view,
     // also drop anything not present in that set.
     const value = summary[key];
@@ -27,11 +37,26 @@ const Summary = ({ summary = {}, columns = [], compact = false }) => {
     summaryTotals[key] = value;
   });
 
+  // Resolve each registered header field to its first present value. When any
+  // header field is present, render every configured slot (empty allowed) so
+  // the block keeps a stable column layout.
+  const hasHeaderData = headerFields.some(({ keys }) =>
+    (keys || []).some((k) => summary[k] !== undefined && summary[k] !== null && summary[k] !== '')
+  );
+  const headerEntries = hasHeaderData
+    ? headerFields.map(({ keys, label }) => {
+        const key = (keys || []).find(
+          (k) => summary[k] !== undefined && summary[k] !== null && summary[k] !== ''
+        );
+        return { label, value: key ? summary[key] : '' };
+      })
+    : [];
+
   // Check if we have summary totals
   const hasSummaryTotals = Object.keys(summaryTotals).length > 0;
 
-  // Don't render if no summary totals
-  if (!hasSummaryTotals) {
+  // Don't render if no header data and no summary totals
+  if (!hasHeaderData && !hasSummaryTotals) {
     return null;
   }
 
@@ -72,8 +97,17 @@ const Summary = ({ summary = {}, columns = [], compact = false }) => {
       {/* Content */}
       <div className={compact ? 'p-4' : 'p-6'}>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Summary totals */}
-          {Object.entries(summaryTotals).map(([key, value]) => (
+          {/* Header/identity fields - only show if header data exists */}
+          {hasHeaderData &&
+            headerEntries.map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+                <p className="text-sm font-semibold text-gray-900">{value}</p>
+              </div>
+            ))}
+
+          {/* Summary totals - always show if they exist */}
+          {hasSummaryTotals && Object.entries(summaryTotals).map(([key, value]) => (
             <div key={key}>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 {getSummaryDisplayName(key)}

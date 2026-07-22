@@ -17,8 +17,10 @@ import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
  * filter config — and gets back the state, setters, and a ready-to-spread
  * `layoutProps` object for `<BaseReportLayout>`.
  *
- * Optional setters (`setOriginalColumns`, `setStatusDefinitions`) are
- * forwarded to fetchReportData.
+ * Optional setters (`setOriginalColumns`, `setStatusDefinitions`,
+ * `setSummary`) are forwarded to fetchReportData. The summary is only populated
+ * from route locationState now (no report API returns it); handleFiltersApply
+ * ignores it. Any domain shaping of the summary payload is the caller's job.
  */
 const useDataGridReport = ({
   report,
@@ -29,6 +31,7 @@ const useDataGridReport = ({
   applyDefaultFilters: shouldApplyDefaultFilters = true,
   setOriginalColumns,
   setStatusDefinitions,
+  setSummary,
   // Optional caller-owned setters. Use these when the caller needs to apply
   // column customization (e.g. inject renderCell) atomically before columns
   // are set — pass an arity-2 setColumns(cols, rows) and fetchReportData /
@@ -78,6 +81,7 @@ const useDataGridReport = ({
       setStatusDefinitions ?? (() => {}),
       setSearchParams,
       isEditable,
+      setSummary,
     );
   }, [report, locationState]);
 

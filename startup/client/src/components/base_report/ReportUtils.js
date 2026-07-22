@@ -1,9 +1,9 @@
 import { toast } from "react-toastify";
-import { reportApi } from "@app/services/api";
+import { getReportApi } from "@startup/data/reportApiRegistry";
 import { sanitizeHTML, formatDate, formatDateTime, formatTime, formatDuration, formatDurationJson } from "@utils/formattingUtils";
+import { parseDateValue } from "@utils/dateTimeUtils";
 import { toValidNumber } from "@utils/toValidNumber";
 import { runReportViaSocket } from "@startup/socket";
-// getStatusClass is imported but not currently used - reserved for future status styling functionality
 
 const convertCellToText = (cell, rawValue) => {
   if (rawValue === undefined || rawValue === null) {
@@ -127,8 +127,9 @@ const processApiData = (
   const gridRows = filteredData.map((row, index) => ({
     id: index,
     ...row,
+    attendance_date: row.attendance_date ? parseDateValue(row.attendance_date) : null,
   }));
-
+  
   return { gridColumns, gridRows };
 };
 
@@ -200,11 +201,12 @@ const fetchReportData = async (
   setInitialLoad,
   setStatusDefinitions,
   setSearchParams,
-  hasStatusDefinitions = false
+  hasStatusDefinitions = false,
+  setSummary
 ) => {
   try {
     setLoading(true);
-    const { reportData, columns: stateColumns, filters: stateFilters, statusDefinitions: stateStatusDefinitions } = locationState || {};
+    const { reportData, columns: stateColumns, filters: stateFilters, statusDefinitions: stateStatusDefinitions, summary: stateSummary } = locationState || {};
 
     if (locationState && reportData && stateColumns) {
       const { gridColumns, gridRows } = processApiData(
@@ -227,7 +229,13 @@ const fetchReportData = async (
         setColumns(gridColumns);
         setRows(gridRows);
       }
-
+      
+      if (setSummary && stateSummary) {
+        // Handle array response - take the first entry if an array, otherwise use
+        // the object directly. The caller owns any domain-specific normalization.
+        const summaryData = Array.isArray(stateSummary) ? stateSummary[0] : stateSummary;
+        setSummary(summaryData);
+      }
       if (stateFilters) {
         updateSearchParams(stateFilters, setSearchParams);
       }
@@ -256,7 +264,7 @@ const runReportViaReportRunner = async (reportKey, sanitizedFilters) => {
 // Same return shape as runReportViaReportRunner so handleFiltersApply stays
 // oblivious to transport.
 const runReportOnMainServer = async (report, sanitizedFilters) => {
-  const response = await reportApi.getReportData(report.slug, sanitizedFilters);
+  const response = await getReportApi().getReportData(report.slug, sanitizedFilters);
   return {
     apiData: response.data.data,
     successMessage: response.data.message || 'Filters applied successfully!',
