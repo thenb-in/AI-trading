@@ -18,10 +18,11 @@ const env = require('@startup/src/config/env');
 const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
-const reportRoutes = require('./src/routes/reportRoutes');
+const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
+const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
 
-const { startServer } = buildApp({
-  // 5MB body limit — adjust to suit your app's upload needs.
+const { server, startServer } = buildApp({
+  // 5MB body limit — header/footer image uploads, base64 face photos.
   bodyParserLimit: '5mb',
 
 
@@ -29,16 +30,14 @@ const { startServer } = buildApp({
   // App-owned routes that live under the framework's /api/v1/* namespace.
   // The framework already serves /api/v1/company (see startup companyRoutes),
   // so apps register only their OWN endpoints here — nothing by default.
-  extraRoutes: [],
+  extraRoutes: [
+    { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
+  ],
 
   // App-specific routes. See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
-
-  // App-owned report routes, indexed by the framework's socket report
-  // registry so the report_runner transport can run them by slug.
-  reportRoutes,
 
   // Static files — more specific paths first so they win over /uploads
   // (which is mounted by the framework). path is absolute to this server.
@@ -52,17 +51,14 @@ const { startServer } = buildApp({
   // client bundle from this Express server. Path defaults to ../client (the
   // deployed layout where app/client/ holds the built bundle); override via
   // CLIENT_STATIC_DIR for local testing (e.g. CLIENT_STATIC_DIR=../client/dist).
-  clientStaticDir: path.resolve(
-    process.cwd(),
-    env.CLIENT_STATIC_DIR
-  ),
-
+  clientStaticDir: path.resolve(process.cwd(), env.CLIENT_STATIC_DIR),
 
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
   onAfterListen: () => {
-
+    initAppServerRunnerClient();
+    initClientAppServerSocket(server);
   },
 
   // Drain app-level resources before the framework stops schedulers.

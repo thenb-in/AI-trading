@@ -14,7 +14,7 @@ import {
   getAppSpecificMasterModules,
   appSpecificMasterCategoryOrder,
 } from "./getMasterModules";
-import { getEtimeAppModuleDefinitions } from "./getAppModules";
+import { getAppSpecificModuleDefinitions } from "./getAppModules";
 import { reports, categories } from "./getReportModules";
 import { registerFilterOptionResolvers } from "../filter/registerFilterOptionResolvers";
 import {
@@ -29,7 +29,7 @@ import { onLogin } from "../hooks/onLogin";
 function registerAppData() {
   registerAppMasterModules(getAppSpecificMasterModules);
   registerAppMasterCategories(appSpecificMasterCategoryOrder);
-  registerAppModules(getEtimeAppModuleDefinitions);
+  registerAppModules(getAppSpecificModuleDefinitions);
   registerAppReports(reports, categories);
   registerFilterOptionResolvers();
   registerAppRouteTitles({
