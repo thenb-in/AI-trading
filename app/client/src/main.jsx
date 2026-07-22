@@ -5,9 +5,12 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { DataProvider } from "@startup/context/AuthContext";
 import { registerServiceWorker } from "@startup/seo/registerServiceWorker";
-import "./filter/registerFilterOptionResolvers";
-import "./data/getMasterModules";
+import { registerAppData } from "./data/registerAppData";
 import "./index.css";
+
+// Plug this app's masters, modules, reports, and filter resolvers into the
+// startup library's registries
+registerAppData();
 
 // Register the production service worker as a side-effect of boot. No-op
 // in dev mode; in production, caches the shell + static assets so launch
