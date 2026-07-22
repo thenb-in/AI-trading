@@ -1,14 +1,21 @@
 import { useDataContext } from '@context/useDataContext';
 import { useLocation } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
+import { CircularLoadingBar } from '@utils/CircularLoadingBar';
 import PropTypes from 'prop-types';
 
 function ProtectedRoute({ children }) {
     const { userData, loading } = useDataContext();
     const location = useLocation();
 
-    // Wait for auth 
-    if (loading) return null;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[200px] gap-2">
+                <CircularLoadingBar />
+                <p className="text-xs text-gray-600">Loading...</p>
+            </div>
+        );
+    }
 
     if (!userData) return <Navigate to="/" replace state={{ from: location }} />;
     return children;
