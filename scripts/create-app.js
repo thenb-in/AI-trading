@@ -28,24 +28,31 @@ const INTEGRATION_TEST_ENV = path.join(ROOT_DIR, 'tests', 'integration-tests', '
 const E2E_TEST_ENV_EXAMPLE = path.join(ROOT_DIR, 'tests', 'e2e-tests', '.env.example');
 const E2E_TEST_ENV = path.join(ROOT_DIR, 'tests', 'e2e-tests', '.env');
 const DEPLOY_BASE_CONF = path.join(ROOT_DIR, 'deploy', 'base.conf');
+const REPORT_RUNNER_ENV_EXAMPLE = path.join(ROOT_DIR, 'report_runner', '.env.example');
+const REPORT_RUNNER_ENV = path.join(ROOT_DIR, 'report_runner', '.env');
 
 const PORT_MIN = 4000;
 const PORT_MAX = 9999;
 
-function randomPort() {
-  return Math.floor(Math.random() * (PORT_MAX - PORT_MIN + 1)) + PORT_MIN;
+function randomPort(exclude = []) {
+  let port;
+  do {
+    port = Math.floor(Math.random() * (PORT_MAX - PORT_MIN + 1)) + PORT_MIN;
+  } while (exclude.includes(port));
+  return port;
 }
 
-function updateEnvFileWithPort(filePath, port, kind) {
-  if (!fs.existsSync(filePath)) return;
+/**
+ * Generic search-and-replace over a config file. Skips silently when the file
+ * is optional and missing (e.g. .env not yet copied from .env.example).
+ * replacements: array of [pattern, replacement] pairs applied in order.
+ */
+function replaceInFile(filePath, replacements, { mustExist = false } = {}) {
+  if (!mustExist && !fs.existsSync(filePath)) return;
   try {
     let content = fs.readFileSync(filePath, 'utf8');
-    if (kind === 'server') {
-      content = content.replace(/^PORT=\d+$/m, `PORT=${port}`);
-      content = content.replace(
-        /^SERVER_URL=http:\/\/localhost:\d+\/?\s*$/m,
-        `SERVER_URL=http://localhost:${port}\n`
-      );
+    for (const [pattern, replacement] of replacements) {
+      content = content.replace(pattern, replacement);
     }
     fs.writeFileSync(filePath, content, 'utf8');
   } catch (error) {
@@ -54,28 +61,22 @@ function updateEnvFileWithPort(filePath, port, kind) {
   }
 }
 
-function updateTestEnvFileWithPort(filePath, port, varName) {
-  if (!fs.existsSync(filePath)) return;
-  try {
-    let content = fs.readFileSync(filePath, 'utf8');
-    const re = new RegExp(`^(${varName}=)(['"]?)http://localhost:\\d+\\2`, 'm');
-    content = content.replace(re, `$1$2http://localhost:${port}$2`);
-    fs.writeFileSync(filePath, content, 'utf8');
-  } catch (error) {
-    console.error(`❌ Failed to update ${filePath}: ${error.message}`);
-    throw error;
-  }
+// Set a numeric env var, e.g. PORT=4000 or REPORT_RUNNER_PORT=4001.
+function setEnvPort(filePath, varName, port) {
+  replaceInFile(filePath, [
+    [new RegExp(`^${varName}=\\d+$`, 'm'), `${varName}=${port}`],
+  ]);
 }
 
-function updateDeployBaseConfWithPort(port) {
-  try {
-    let content = fs.readFileSync(DEPLOY_BASE_CONF, 'utf8');
-    content = content.replace(/server localhost:\d+;/, `server localhost:${port};`);
-    fs.writeFileSync(DEPLOY_BASE_CONF, content, 'utf8');
-  } catch (error) {
-    console.error(`❌ Failed to update deploy/base.conf: ${error.message}`);
-    throw error;
-  }
+// Set a localhost-URL env var, preserving optional quotes and dropping any
+// trailing slash, e.g. SERVER_URL=http://localhost:4000 or API_BASE_URL='...'.
+function setEnvLocalhostUrl(filePath, varName, port) {
+  replaceInFile(filePath, [
+    [
+      new RegExp(`^(${varName}=)(['"]?)http://localhost:\\d+/?\\2`, 'm'),
+      `$1$2http://localhost:${port}$2`,
+    ],
+  ]);
 }
 
 function updatePackageJsonFiles(appName, port) {
@@ -109,21 +110,6 @@ function updatePackageJsonFiles(appName, port) {
     fs.writeFileSync(SERVER_PACKAGE_PATH, JSON.stringify(serverPkg, null, 2) + '\n', 'utf8');
   } catch (error) {
     console.error(`❌ Failed to update server/package.json: ${error.message}`);
-    throw error;
-  }
-}
-
-function updateViteConfigWithPort(filePath, port) {
-  if (!fs.existsSync(filePath)) return;
-  try {
-    let content = fs.readFileSync(filePath, 'utf8');
-    content = content.replace(
-      /(localServerUrl\s*=\s*['"])http:\/\/localhost:\d+(['"])/,
-      `$1http://localhost:${port}$2`
-    );
-    fs.writeFileSync(filePath, content, 'utf8');
-  } catch (error) {
-    console.error(`❌ Failed to update ${filePath}: ${error.message}`);
     throw error;
   }
 }
@@ -182,17 +168,36 @@ function setupGitRemotes(newAppUrl) {
   console.log(`✅ origin → ${newAppUrl}`);
 }
 
-function updatePortInConfigs(port) {
-  updateEnvFileWithPort(SERVER_ENV_EXAMPLE, port, 'server');
-  if (fs.existsSync(SERVER_ENV)) {
-    updateEnvFileWithPort(SERVER_ENV, port, 'server');
+function updatePortInConfigs(port, reportRunnerPort) {
+  // Server env: own port + URLs (both .env.example and .env if present)
+  for (const file of [SERVER_ENV_EXAMPLE, SERVER_ENV]) {
+    setEnvPort(file, 'PORT', port);
+    setEnvLocalhostUrl(file, 'SERVER_URL', port);
+    setEnvLocalhostUrl(file, 'REPORT_RUNNER_URL', reportRunnerPort);
   }
-  updateViteConfigWithPort(CLIENT_VITE_CONFIG, port);
-  updateTestEnvFileWithPort(INTEGRATION_TEST_ENV_EXAMPLE, port, 'API_BASE_URL');
-  updateTestEnvFileWithPort(INTEGRATION_TEST_ENV, port, 'API_BASE_URL');
-  updateTestEnvFileWithPort(E2E_TEST_ENV_EXAMPLE, port, 'BACKEND_URL');
-  updateTestEnvFileWithPort(E2E_TEST_ENV, port, 'BACKEND_URL');
-  updateDeployBaseConfWithPort(port);
+
+  // Report runner env: its own listen port
+  for (const file of [REPORT_RUNNER_ENV_EXAMPLE, REPORT_RUNNER_ENV]) {
+    setEnvPort(file, 'REPORT_RUNNER_PORT', reportRunnerPort);
+  }
+
+  // Test envs point at the server
+  for (const file of [INTEGRATION_TEST_ENV_EXAMPLE, INTEGRATION_TEST_ENV]) {
+    setEnvLocalhostUrl(file, 'API_BASE_URL', port);
+  }
+  for (const file of [E2E_TEST_ENV_EXAMPLE, E2E_TEST_ENV]) {
+    setEnvLocalhostUrl(file, 'BACKEND_URL', port);
+  }
+
+  // Client dev proxy target
+  replaceInFile(CLIENT_VITE_CONFIG, [
+    [/(localServerUrl\s*=\s*['"])http:\/\/localhost:\d+(['"])/, `$1http://localhost:${port}$2`],
+  ]);
+
+  // nginx upstream
+  replaceInFile(DEPLOY_BASE_CONF, [
+    [/server localhost:\d+;/, `server localhost:${port};`],
+  ], { mustExist: true });
 }
 
 async function createApp() {
@@ -217,13 +222,15 @@ async function createApp() {
     console.log(`📦 App name: ${appName}`);
 
     const serverPort = randomPort();
+    const reportRunnerPort = serverPort + 1;
     console.log(`🔌 Server port: ${serverPort} (random)`);
+    console.log(`🔌 Report runner port: ${reportRunnerPort} (server port + 1)`);
     console.log('');
 
-    // Update port in env files, deploy config, and server kill script
-    console.log('📝 Updating server port in configs...');
-    updatePortInConfigs(serverPort);
-    console.log('✅ Port updated in server .env, client vite.config.js, test envs, deploy/base.conf');
+    // Update ports in env files, deploy config, and server kill script
+    console.log('📝 Updating server & report runner ports in configs...');
+    updatePortInConfigs(serverPort, reportRunnerPort);
+    console.log('✅ Ports updated in server .env, client vite.config.js, test envs, deploy/base.conf, report_runner .env');
 
     // Update client and server package.json (name, version 1.0.0, deploy script, kill script)
     console.log('📝 Updating package.json (client & server)...');
@@ -242,7 +249,8 @@ async function createApp() {
     console.log('📋 Files updated:');
     console.log('  - app/client/package.json (name, version 1.0.0)');
     console.log('  - app/server/package.json (name, version 1.0.0, kill script port)');
-    console.log('  - app/server/.env.example (PORT, SERVER_URL)');
+    console.log('  - app/server/.env.example (PORT, SERVER_URL, REPORT_RUNNER_URL)');
+    console.log('  - report_runner/.env.example (REPORT_RUNNER_PORT)');
     console.log('  - app/client/vite.config.js (proxy target port)');
     console.log('  - tests/integration-tests/.env.example (API_BASE_URL)');
     console.log('  - tests/e2e-tests/.env.example (BACKEND_URL)');
