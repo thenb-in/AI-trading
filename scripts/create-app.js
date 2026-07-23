@@ -222,9 +222,9 @@ async function createApp() {
     console.log(`📦 App name: ${appName}`);
 
     const serverPort = randomPort();
-    const reportRunnerPort = serverPort + 1;
+    const reportRunnerPort = Math.ceil(serverPort / 10) * 10 + 1;
     console.log(`🔌 Server port: ${serverPort} (random)`);
-    console.log(`🔌 Report runner port: ${reportRunnerPort} (server port + 1)`);
+    console.log(`🔌 Report runner port: ${reportRunnerPort} (server port rounded up to nearest 10, + 1)`);
     console.log('');
 
     // Update ports in env files, deploy config, and server kill script
