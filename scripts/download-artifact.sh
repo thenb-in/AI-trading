@@ -82,8 +82,11 @@ resolve_app_name() {
 }
 
 # ─── fetch_latest_artifact ──────────────────────────────────────────────────
-# Finds the latest successful workflow run for a given workflow name,
-# prints deployment metadata, and locates the artifact download URL.
+# Finds the latest workflow run for a given workflow name that has already
+# published the named artifact, prints deployment metadata, and locates the
+# artifact download URL. Run status is not filtered — the only requirement
+# is that the artifact be present, so a still-running pipeline whose
+# client_build has finished uploading wins over an older finished run.
 #
 # Arguments:
 #   $1 = workflow display name  (e.g. "Build and Upload Artifacts")
@@ -97,11 +100,11 @@ fetch_latest_artifact() {
     local target_branch="${DEPLOY_BRANCH:-main}"
     local run_conclusion=""
 
-    log_info "Looking for latest completed run of \"$workflow_name\" that contains artifact \"$artifact_name\" on branch '$target_branch'..."
+    log_info "Looking for latest run of \"$workflow_name\" that contains artifact \"$artifact_name\" on branch '$target_branch'..."
 
     local runs_json
     runs_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?status=completed&branch=$target_branch&per_page=50")
+        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?branch=$target_branch&per_page=50")
 
     local run_ids
     mapfile -t run_ids < <(
@@ -110,7 +113,7 @@ fetch_latest_artifact() {
     )
 
     if [[ ${#run_ids[@]} -eq 0 ]]; then
-        error_exit "No completed workflow runs found for '$workflow_name' on branch $target_branch."
+        error_exit "No workflow runs found for '$workflow_name' on branch $target_branch."
     fi
 
     ARTIFACT_URL=""
@@ -134,7 +137,7 @@ fetch_latest_artifact() {
     done
 
     if [[ -z "$LATEST_RUN_ID" ]]; then
-        error_exit "No completed run found with artifact '$artifact_name' for workflow '$workflow_name' on branch $target_branch."
+        error_exit "No run found with artifact '$artifact_name' for workflow '$workflow_name' on branch $target_branch."
     fi
 
     # Fetch full run details
