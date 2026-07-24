@@ -16,11 +16,12 @@
 // disabled and the wallclock bumper still runs (it's harmless when no
 // license is installed).
 
-const logger = require('../../logger');
-const env = require('../config/env');
-const { registerJob } = require('../../scheduler');
+const logger = require('../../../../logger');
+const env = require('../../../config/env');
+const { registerJob } = require('../../../../scheduler');
+const { nowMs, toEpochMs } = require('../../../utils/dateUtils');
 const licenseSeal = require('./licenseSeal');
-const licenseService = require('./licenseService');
+const licenseService = require('../../licenseService');
 
 function isAutoRenewEnabled() {
   const v = env.LICENSE_AUTO_RENEW.toLowerCase();
@@ -28,7 +29,7 @@ function isAutoRenewEnabled() {
 }
 
 async function tryRenew() {
-  const state = licenseService.getCurrentState();
+  const state = await licenseService.getCurrentState();
   if (!state || !state.ok || state.bypass) {
     return;
   }
@@ -39,15 +40,15 @@ async function tryRenew() {
   if ((payload.renewal_mode || 'online') !== 'online') {
     // Airgap or manual renewal: don't attempt to phone home, but DO log
     // the impending expiry so ops dashboards can pick it up.
-    const daysLeft = Math.ceil((new Date(payload.expires_at) - Date.now()) / 86400000);
+    const daysLeft = Math.ceil((toEpochMs(payload.expires_at) - nowMs()) / 86400000);
     if (daysLeft <= 7) {
       logger.warn(`[license] non-online license expires in ${daysLeft}d (renewal_mode=${payload.renewal_mode})`);
     }
     return;
   }
-  const now = Date.now();
-  const renewalAfter = payload.renewal_after ? new Date(payload.renewal_after).getTime() : null;
-  const expiresAt = new Date(payload.expires_at).getTime();
+  const now = nowMs();
+  const renewalAfter = payload.renewal_after ? toEpochMs(payload.renewal_after) : null;
+  const expiresAt = toEpochMs(payload.expires_at);
   if (renewalAfter && now < renewalAfter) {
     return;
   } // not in renewal window yet

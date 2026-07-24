@@ -12,10 +12,10 @@
 
 const crypto = require('crypto');
 const path = require('path');
-const verifierFmt = require('./tokenFormat');
+const verifierFmt = require('../engine/core/tokenFormat');
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
 ));
 
 let pass = 0;
@@ -86,7 +86,7 @@ check('wrong version rejected', !vVer.ok && vVer.reason === 'bad-version');
 console.log('── machine fingerprint compute ─────────────────────');
 let fpResult;
 try {
-  const mf = require('./machineFingerprint');
+  const mf = require('../engine/core/machineFingerprint');
   fpResult = mf.compute();
   check('fingerprint computed', typeof fpResult.fingerprint === 'string' && fpResult.fingerprint.length === 64);
   check('fingerprint deterministic', mf.compute().fingerprint === fpResult.fingerprint);

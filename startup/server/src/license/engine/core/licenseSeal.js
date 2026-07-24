@@ -47,9 +47,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const logger = require('../../logger');
-const env = require('../config/env');
-const { LICENSE_SEAL_FILENAME, DEFAULT_CLOCK_SKEW_SECONDS } = require('../constants/license');
+const logger = require('../../../../logger');
+const env = require('../../../config/env');
+const { LICENSE_SEAL_FILENAME, DEFAULT_CLOCK_SKEW_SECONDS } = require('../../../constants/license');
 const pinnedKeys = require('./pinnedKeys');
 const tokenFormat = require('./tokenFormat');
 

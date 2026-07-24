@@ -1,8 +1,9 @@
 // In-process cron job registry.
 //
 // Wraps node-cron with a consistent overlap guard, timing log, and error
-// isolation so every in-process scheduler job can be registered the same way
-// without each of them reinventing the wheel.
+// isolation so every in-process scheduler (wage, callLog, address, archive
+// tracking, lock attendance, etc.) can be registered the same way without
+// each of them reinventing the wheel.
 //
 // Usage (app-specific jobs register themselves, then call startAllJobs from
 // server/index.js after models are ready):

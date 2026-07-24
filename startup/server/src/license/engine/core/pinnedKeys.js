@@ -21,9 +21,9 @@
 
 const fs = require('fs');
 const path = require('path');
-const logger = require('../../logger');
-const env = require('../config/env');
-const { WALLET_KEYS_FILENAME } = require('../constants/license');
+const logger = require('../../../../logger');
+const env = require('../../../config/env');
+const { WALLET_KEYS_FILENAME } = require('../../../constants/license');
 
 // ─── BAKED_KEYS ─────────────────────────────────────────────────────────────
 // Replace these PEM strings with the wallet's public keys at release-cut

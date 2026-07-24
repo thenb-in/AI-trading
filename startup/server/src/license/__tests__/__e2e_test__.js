@@ -17,7 +17,10 @@ const path = require('path');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lic-e2e-'));
 process.env.SECRETS_PATH = tmp;
 process.env.NODE_ENV = 'development';
-process.env.APP_NAME = 'startup-app';
+// License enforcement follows secure cookies; force it on so this test
+// exercises the real verification/permission-gate path (not the dev bypass).
+process.env.SECURE_COOKIE = 'true';
+process.env.APP_NAME = 'etime-payroll';
 
 // Generate wallet keypair, pin pub in env.
 const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
@@ -26,9 +29,9 @@ const privatePem = privateKey.export({ type: 'pkcs8', format: 'pem' });
 process.env.LICENSE_WALLET_PUBLIC_KEYS = JSON.stringify([publicPem]);
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
 ));
-const mf = require('./machineFingerprint');
+const mf = require('../engine/core/machineFingerprint');
 
 let pass = 0;
 let fail = 0;
@@ -44,8 +47,8 @@ function check(label, cond, detail) {
 const fp = mf.compute();
 
 // Reset pinnedKeys + licenseService caches so we pick up the test env.
-require('./pinnedKeys')._reset();
-const licenseService = require('./licenseService');
+require('../engine/core/pinnedKeys')._reset();
+const licenseService = require('../licenseService');
 
 licenseService._resetForTest();
 
@@ -76,7 +79,7 @@ const fakeLicense = {
     }
   }
 };
-require.cache[require.resolve('../models')] = {
+require.cache[require.resolve('../../models')] = {
   exports: { License: fakeLicense, sequelize: { transaction: async () => ({ commit: async () => {}, rollback: async () => {} }) } }
 };
 
@@ -88,10 +91,10 @@ const issuedPayload = {
   license_id: '11111111-1111-1111-1111-111111111111',
   serial: 1,
   customer_id: '22222222-2222-2222-2222-222222222222',
-  app_name: 'startup-app',
+  app_name: 'etime-payroll',
   machine_fingerprint: fp.fingerprint,
   subscription_id: 1,
-  permissions: ['Report.run', 'User.read'],
+  permissions: ['Payroll.run', 'User.read'],
   permission_caps: { max_users: 50 },
   issued_at: new Date().toISOString(),
   not_before: new Date(Date.now() - 1000).toISOString(),
@@ -111,13 +114,13 @@ const token = issuerFmt.signPayload(issuedPayload, privatePem);
   check('payload roundtrip matches', installed.payload?.license_id === issuedPayload.license_id);
 
   // Permission gate
-  check('whitelist allows Report.run', licenseService.hasLicensedPermission('Report.run'));
-  check('whitelist allows User.read', licenseService.hasLicensedPermission('User.read'));
-  check('whitelist denies User.write', !licenseService.hasLicensedPermission('User.write'));
+  check('whitelist allows Payroll.run', await licenseService.hasLicensedPermission('Payroll.run'));
+  check('whitelist allows User.read', await licenseService.hasLicensedPermission('User.read'));
+  check('whitelist denies User.write', !(await licenseService.hasLicensedPermission('User.write')));
 
   // Status
-  const snap = licenseService.getStatusSnapshot();
-  check('status snapshot ok', snap.ok && snap.app_name === 'startup-app');
+  const snap = await licenseService.getStatusSnapshot();
+  check('status snapshot ok', snap.ok && snap.app_name === 'etime-payroll');
   check('status snapshot serial', snap.serial === 1);
 
   // App-name mismatch is refused

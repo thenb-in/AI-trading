@@ -9,7 +9,7 @@ The DB and filesystem are within the customer's blast radius — anyone with adm
 1. **Can't be altered client-side.** Tampering with the token, the seal, or the database row must be detected and refused.
 2. **Has a hard expiry.** Time-boxed access; the clock can't be rolled back to extend it.
 3. **Is bound to one machine.** A leaked license file can't be moved to a competitor's box.
-4. **Gates permissions, not just access.** Even if `RolePermission` grants `Report.run`, the license must also whitelist `Report.run`. The license is the **upper bound**.
+4. **Gates permissions, not just access.** Even if `RolePermission` grants `Payroll.run`, the license must also whitelist `Payroll.run`. The license is the **upper bound**.
 5. **Renews cleanly online OR via sneakernet** for air-gapped installs.
 
 ## Trust model
@@ -69,7 +69,7 @@ The bundle is timestamped; the wallet refuses any request older than 7 days, def
 `requirePermission(name)` is now a layered check:
 
 ```
-allowed = license.permissions.includes(name) || license.permissions.includes('*')
+allowed = license.permissions.includes(name)
          AND
          user.role.permissions.includes(name)
 ```
@@ -89,8 +89,8 @@ Both must pass. The license is the **upper bound** — even if the DB widens wha
 4. On the wallet, issue a license for that fingerprint:
    ```
    POST /api/v1/license/issue
-   { "customerId": "...", "appName": "nbnext-startup",
-     "machineFingerprint": "...", "permissions": ["Report.run", "User.read"],
+   { "customerId": "...", "appName": "etime-payroll",
+     "machineFingerprint": "...", "permissions": ["Payroll.run", "User.read"],
      "renewalMode": "online", "validityDays": 30 }
    ```
 5. Deliver the returned token to the target and install:
@@ -110,8 +110,9 @@ Both must pass. The license is the **upper bound** — even if the DB widens wha
 
 ```bash
 cd startup/server
-node src/license/__smoke_test__.js   # crypto + tamper + rotation + fingerprint
-node src/license/__seal_test__.js    # anti-rollback + clock-rollback
+node src/license/__tests__/__smoke_test__.js   # crypto + tamper + rotation + fingerprint
+node src/license/__tests__/__seal_test__.js    # anti-rollback + clock-rollback
+node src/license/__tests__/__e2e_test__.js     # full wallet↔framework happy path
 ```
 
 Both should print `Pass: N   Fail: 0` and exit 0.

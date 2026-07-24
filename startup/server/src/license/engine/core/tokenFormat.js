@@ -13,7 +13,7 @@
 // wallet's exclusive job.
 
 const crypto = require('crypto');
-const { LICENSE_TOKEN_HEADER, ED25519_SIGNATURE_BYTES } = require('../constants/license');
+const { LICENSE_TOKEN_HEADER, ED25519_SIGNATURE_BYTES } = require('../../../constants/license');
 
 function b64uEncode(buf) {
   return Buffer.from(buf)

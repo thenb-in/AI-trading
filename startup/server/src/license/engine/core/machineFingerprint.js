@@ -25,7 +25,7 @@ const { execSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
-const { LICENSE_ERRORS } = require('../constants/license');
+const { LICENSE_ERRORS } = require('../../../constants/license');
 
 const VIRTUAL_PREFIXES = [
   '00:00:00:00:00:00',

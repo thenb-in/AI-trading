@@ -21,8 +21,8 @@ process.env.SECRETS_PATH = tmp;
 process.env.NODE_ENV = 'development';
 
 // dotenv-safe needs the example file present even for tests. Stub it.
-const stubExamplePath = path.join(__dirname, '../../.env.example');
-const stubEnvPath = path.join(__dirname, '../../.env');
+const stubExamplePath = path.join(__dirname, '../../../.env.example');
+const stubEnvPath = path.join(__dirname, '../../../.env');
 let createdStub = false;
 if (!fs.existsSync(stubExamplePath)) {
   fs.writeFileSync(stubExamplePath, 'NODE_ENV=development\n');
@@ -41,14 +41,14 @@ const privatePem = privateKey.export({ type: 'pkcs8', format: 'pem' });
 process.env.LICENSE_WALLET_PUBLIC_KEYS = JSON.stringify([publicPem]);
 
 // Require AFTER setting env so config loads the right paths.
-const pinnedKeys = require('./pinnedKeys');
+const pinnedKeys = require('../engine/core/pinnedKeys');
 
 pinnedKeys._reset();
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
 ));
-const seal = require('./licenseSeal');
+const seal = require('../engine/core/licenseSeal');
 
 let pass = 0;
 let fail = 0;

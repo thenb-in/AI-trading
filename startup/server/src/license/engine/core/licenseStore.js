@@ -16,10 +16,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const logger = require('../../logger');
-const env = require('../config/env');
-const { LICENSE_TOKEN_FILENAME } = require('../constants/license');
-const db = require('../models');
+const logger = require('../../../../logger');
+const env = require('../../../config/env');
+const { LICENSE_TOKEN_FILENAME } = require('../../../constants/license');
+const db = require('../../../models');
 const pinnedKeys = require('./pinnedKeys');
 const tokenFormat = require('./tokenFormat');
 
@@ -137,9 +137,7 @@ async function persist({ token, payload }) {
     appName: payload.app_name,
     machineFingerprint: payload.machine_fingerprint,
     serial: payload.serial,
-    subscriptionId: payload.subscription_id ?? null,
-    permissions: payload.permissions ?? [],
-    permissionCaps: payload.permission_caps ?? {},
+    plan: payload.plan ?? [],
     notBefore: payload.not_before,
     expiresAt: payload.expires_at,
     renewalAfter: payload.renewal_after ?? null,

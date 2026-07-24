@@ -19,6 +19,8 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const licenseService = require('../src/license/licenseService');
+const env = require('../src/config/env');
 
 function promptToken() {
   return new Promise((resolve) => {
@@ -71,8 +73,6 @@ function exitErr(msg, code = 1) {
 }
 
 async function cmdInstall(args) {
-  const licenseService = require('../src/license/licenseService');
-  const env = require('../src/config/env');
   let token = args.token;
   if (!token && args['token-file']) {
     token = fs.readFileSync(args['token-file'], 'utf8').trim();
@@ -94,12 +94,18 @@ async function cmdInstall(args) {
   console.log(`  license_id: ${result.payload.license_id}`);
   console.log(`  serial:     ${result.payload.serial}`);
   console.log(`  expires_at: ${result.payload.expires_at}`);
-  console.log(`  permissions: ${JSON.stringify(result.payload.permissions)}`);
+  const plans = Array.isArray(result.payload.plan) ? result.payload.plan : [];
+  const permissionCount = plans.reduce(
+    (total, plan) => total + (Array.isArray(plan.permissions) ? plan.permissions.length : 0),
+    0
+  );
+  console.log(`  plans:       ${plans.map((plan) => plan.name).join(', ') || '(none)'}`);
+  console.log(`  permissions: ${permissionCount}`);
   return 0;
 }
 
 function cmdMachine() {
-  const mf = require('../src/license/machineFingerprint');
+  const mf = require('../src/license/engine/core/machineFingerprint');
   const fp = mf.compute();
   console.log(JSON.stringify(fp, null, 2));
   return 0;
@@ -107,8 +113,7 @@ function cmdMachine() {
 
 async function cmdStatus() {
   const licenseService = require('../src/license/licenseService');
-  await licenseService.loadAndVerify({ force: true });
-  const snap = licenseService.getStatusSnapshot();
+  const snap = await licenseService.getStatusSnapshot();
   console.log(JSON.stringify(snap, null, 2));
   return snap?.ok ? 0 : 1;
 }
