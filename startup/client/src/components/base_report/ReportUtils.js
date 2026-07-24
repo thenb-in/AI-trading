@@ -242,7 +242,7 @@ const fetchReportData = async (
     }
   } catch (error) {
     console.error("Error in fetchReportData:", error);
-    toast.error(error?.response?.data?.error || "Failed to fetch report data. Please try again.");
+    toast.error(error?.response?.data?.error || error?.message || "Failed to fetch report data. Please try again.");
   } finally {
     setLoading(false);
     setInitialLoad(false);

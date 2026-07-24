@@ -12,6 +12,7 @@ import { SearchButton } from "../SearchButton";
 import { NotificationButton } from "../NotificationButton";
 import { DebugModeIndicator } from "../DebugModeIndicator";
 import { isDebugMode, subscribeToDebugMode } from "@services/debugModeService";
+import { SocketStatusIndicator } from "../SocketStatusIndicator";
 import PropTypes from "prop-types";
 import { useEffect, useMemo, useState } from "react";
 
@@ -209,7 +210,21 @@ function AdminSidebar({
           <NotificationButton collapsed={collapsed} />
           <SearchButton collapsed={collapsed} />
           <HelpSupportButton collapsed={collapsed} />
-          <LogoutButton collapsed={collapsed} />
+          {collapsed ? (
+            <>
+              <div className="flex justify-center py-2">
+                <SocketStatusIndicator />
+              </div>
+              <LogoutButton collapsed={collapsed} />
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <LogoutButton collapsed={collapsed} />
+              </div>
+              <SocketStatusIndicator />
+            </div>
+          )}
         </div>
       </div>
   );

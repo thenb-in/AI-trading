@@ -200,7 +200,7 @@ const BaseMaster = ({
           userData={userData}
           permissionKey={canCreate}
           addButtonText={addButtonText}
-          onRefresh={fetchRows}
+          onRefresh={() => fetchRows()}
           showRefresh={showRefreshButton}
           showExport={showExport}
           showImport={resolvedShowImport}

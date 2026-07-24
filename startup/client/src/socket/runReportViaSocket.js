@@ -4,25 +4,21 @@
 
 
 import { resolveReportParams } from '@startup/data/reportParamsRegistry';
-import { ensureSocketReady, releaseSocket } from './setup';
+import { ensureSocketReady } from './setup';
 import { REPORT_RUN } from './events';
 
 async function runReportViaSocket({ reportKey, filters }) {
 
   const params = resolveReportParams(reportKey, filters);
-  try {
-    const socket = await ensureSocketReady();
-    return await new Promise((resolve, reject) => {
-      socket.emit(REPORT_RUN, { reportKey, filters: params }, (response) => {
-        if (!response || response.ok !== true) {
-          return reject(new Error(response?.error || 'SOCKET_RPC_ERROR'));
-        }
-        resolve(response.data);
-      });
+  const socket = await ensureSocketReady();
+  return new Promise((resolve, reject) => {
+    socket.emit(REPORT_RUN, { reportKey, filters: params }, (response) => {
+      if (!response || response.ok !== true) {
+        return reject(new Error(response?.error || 'Report server returned an invalid response. Please try again.'));
+      }
+      resolve(response.data);
     });
-  } finally {
-    releaseSocket();
-  }
+  });
 }
 
 async function runViaRunner(reportKey, filters = {}) {

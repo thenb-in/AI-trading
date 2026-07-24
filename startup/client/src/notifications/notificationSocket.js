@@ -1,4 +1,4 @@
-import { ensureSocketReady, releaseSocket } from "../socket/setup";
+import { ensureSocketReady } from "../socket/setup";
 import { NOTIFICATION_NEW } from "../constants/notifications";
 
 
@@ -8,7 +8,6 @@ async function subscribeToNotifications(onNew) {
 
   return () => {
     socket.off(NOTIFICATION_NEW, onNew);
-    releaseSocket();
   };
 }
 

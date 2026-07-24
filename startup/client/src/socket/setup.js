@@ -1,13 +1,33 @@
 // Client socket lifecycle pipeline
+//
+// Connect-once model: the socket is created lazily on first use and stays
+// alive for the whole session (socket.io auto-reconnects on drops). It is
+// only torn down by disconnectSocket() on logout.
 
 
 import { io } from 'socket.io-client';
 
-const CONNECT_WAIT_MS = 3000;
+const CONNECT_WAIT_MS = 5000;
 
 let _socket = null;
 let _opts = null;
-let _refCount = 0;
+
+const _statusListeners = new Set();
+
+function _notifyStatus() {
+  const connected = isSocketConnected();
+  _statusListeners.forEach((listener) => {
+    try { listener(connected); } catch { /* listener error */ }
+  });
+}
+
+// Subscribe to connect/disconnect changes; calls back immediately with the
+// current status and returns an unsubscribe function.
+function subscribeSocketStatus(listener) {
+  _statusListeners.add(listener);
+  listener(isSocketConnected());
+  return () => _statusListeners.delete(listener);
+}
 
 
 function buildSocket({ url, token }) {
@@ -19,6 +39,9 @@ function buildSocket({ url, token }) {
     reconnectionDelayMax: 10000,
     auth: (cb) => cb(token ? { token: typeof token === 'function' ? token() : token } : {}),
   });
+  sock.on('connect', _notifyStatus);
+  sock.on('disconnect', _notifyStatus);
+  sock.on('connect_error', _notifyStatus);
   if (typeof window !== 'undefined') {
     sock.on('connect', () => console.info('[socket] connected id=' + sock.id + ' isSocketConnected=' + isSocketConnected()));
     sock.on('connect_error', (err) => console.warn('[socket] connect_error:', err?.message || err, ' isSocketConnected=' + isSocketConnected()));
@@ -44,21 +67,13 @@ function _teardownSocket() {
   try { _socket.disconnect(); } catch { /* already gone */ }
   _socket = null;
   _opts = null;
+  _notifyStatus();
 }
 
 
 function disconnectSocket() {
   console.info('[socket] disconnectSocket() called, was isSocketConnected=' + isSocketConnected());
-  _refCount = 0;
   _teardownSocket();
-}
-
-// Per-call release: tear down only once the last in-flight caller is done.
-function releaseSocket() {
-  _refCount = Math.max(0, _refCount - 1);
-  if (_refCount === 0) {
-    _teardownSocket();
-  }
 }
 
 
@@ -72,8 +87,14 @@ function waitForConnect(socket) {
       clearTimeout(timer);
     };
     const onConnect = () => { cleanup(); resolve(); };
-    const onError = (err) => { cleanup(); reject(new Error(err?.message || 'CONNECT_ERROR')); };
-    const timer = setTimeout(() => { cleanup(); reject(new Error('SOCKET_NOT_CONNECTED')); }, CONNECT_WAIT_MS);
+    const onError = (err) => {
+      cleanup();
+      reject(new Error(`Could not connect to the report server${err?.message ? ` (${err.message})` : ''}. Please try again.`));
+    };
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Report server did not respond within ${CONNECT_WAIT_MS / 1000}s. It may be down or unreachable — please try again.`));
+    }, CONNECT_WAIT_MS);
     socket.once('connect', onConnect);
     socket.once('connect_error', onError);
   });
@@ -81,10 +102,9 @@ function waitForConnect(socket) {
 
 async function ensureSocketReady() {
   console.info('[socket] ensureSocketReady() entry, isSocketConnected=' + isSocketConnected());
-  _refCount += 1;
   const socket = getSocket();
   await waitForConnect(socket);
   return socket;
 }
 
-export { disconnectSocket, releaseSocket, ensureSocketReady };
+export { disconnectSocket, ensureSocketReady, subscribeSocketStatus };
