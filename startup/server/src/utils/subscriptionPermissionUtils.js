@@ -81,7 +81,9 @@ const verifyValidSubscribedPermission = async (user, activeCompanyId) => {
     return user;
   } catch (error) {
     logger.error(`Error verifying subscribed permissions for user ${user.id}: ${error.message}`, error);
-    // Return user without filtering if there's an error
+    if (user.role) {
+      user.role.permissions = [];
+    }
     return user;
   }
 };
