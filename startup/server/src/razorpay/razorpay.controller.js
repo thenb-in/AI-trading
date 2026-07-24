@@ -10,8 +10,8 @@ const razorpayController = {
    * @param {string} subscriptionId - Plan (global subscription) to pay for
    * @returns {Promise<object>} { orderId, amount, currency, keyId, planName }
    */
-  async createOrder(subscriptionId) {
-    const order = await razorpayService.createOrderForPlan(subscriptionId);
+  async createOrder(subscriptionId, employeeCount) {
+    const order = await razorpayService.createOrderForPlan(subscriptionId, employeeCount);
     await onboardingOrderService.createOrderRecord({
       razorpayOrderId: order.orderId,
       subscriptionId,

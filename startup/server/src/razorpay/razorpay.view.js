@@ -6,8 +6,8 @@ const { sendSuccess, sendError } = require('../utils/response');
 /** POST /auth/payment/order — create a Razorpay order for the chosen plan. */
 async function createOrder(req, res) {
   try {
-    const { subscriptionId } = req.body;
-    const order = await razorpayController.createOrder(subscriptionId);
+    const { subscriptionId, employeeCount } = req.body;
+    const order = await razorpayController.createOrder(subscriptionId, employeeCount);
     return sendSuccess(res, { statusCode: HTTP_STATUS_CREATED, data: order });
   } catch (error) {
     if (error.status) {

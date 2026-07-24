@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const env = require('../config/env');
 const logger = require('../../logger');
-const subscriptionService = require('../services/subscription.service');
+const subscriptionService = require('../services/subscription');
+const { fetchPlansFromWallet } = require('../../interfaces/wallet/subscriptionInterface');
 const { getRazorpayClient } = require('./razorpay.config');
 const {
   MIN_AMOUNT_PAISE,
@@ -130,19 +131,37 @@ const getDefaultPricing = () => ({
 });
 
 /**
- * Create a Razorpay order for the chosen plan. The amount is fixed server-side
- * (env.RAZORPAY_DEFAULT_AMOUNT) since plans have no per-plan price column yet.
- * Returns the order + public key id the browser needs to open checkout.
+ * Per-employee price (in paise) for a plan, sourced from the wallet (same value the
+ * plan cards show). Throws if it can't be determined — we never charge a guessed price.
  */
-const createOrderForPlan = async (subscriptionId) => {
+const resolvePerEmployeeAmount = async (subscriptionId) => {
+  const plans = await fetchPlansFromWallet(env.APP_KEY);
+  const plan = plans.find((p) => String(p.id) === String(subscriptionId));
+  if (!plan || typeof plan.amount !== 'number') {
+    throw { status: 400, message: 'Could not determine the plan price. Please try again.' };
+  }
+  return Math.round(plan.amount * 100); // wallet stores rupees; Razorpay wants paise
+};
+
+/**
+ * Create a Razorpay order for the chosen plan. Price is per employee, per year, so the
+ * order total = per-employee price × team size (at least 1). Returns the order + the
+ * public key id the browser needs to open checkout.
+ */
+const createOrderForPlan = async (subscriptionId, employeeCount = 1) => {
   if (!subscriptionId) {
     throw { status: 400, message: 'Please choose a plan' };
   }
 
+  const count = Math.max(1, Math.floor(Number(employeeCount) || 1));
   const subscription = await subscriptionService.getGlobalPlanById(subscriptionId);
+  const perEmployeeAmount = await resolvePerEmployeeAmount(subscriptionId);
+  const amount = perEmployeeAmount * count;
+
+  logger.info(`Order for plan ${subscriptionId}: ${perEmployeeAmount} paise/employee × ${count} = ${amount} paise`);
 
   const order = await createOrder({
-    amount: env.RAZORPAY_DEFAULT_AMOUNT,
+    amount,
     currency: DEFAULT_CURRENCY,
     receipt: `${RECEIPT_PREFIX}${subscription.id}_${Date.now()}`.slice(0, RECEIPT_MAX_LENGTH)
   });
