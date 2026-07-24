@@ -80,7 +80,6 @@ const createWorkspace = async ({
         is_approved: true,
         last_active: new Date()
       },
-      null,
       transaction
     );
 

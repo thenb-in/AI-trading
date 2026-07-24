@@ -6,7 +6,7 @@ const { assertPasswordPolicy } = require('./passwordPolicy');
 
 const normalize = (val) => val?.trim().toLowerCase();
 
-const signup = async (username, password, companyId, { phone, name, role, is_approved = false, last_active = null }, emp_code, transaction) => {
+const signup = async (username, password, companyId, { phone, name, role, is_approved = false, last_active = null }, transaction) => {
   username = normalize(username);
   password = password?.trim();
   assertPasswordPolicy(password);
@@ -63,7 +63,7 @@ const signup = async (username, password, companyId, { phone, name, role, is_app
     desktopWeb: company.desktopWeb,    // inherits from company
     mobileWeb: company.mobileWeb       // inherits from company
   }, { transaction });
-  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId, emp_code }, { transaction });
+  await UserProfile.create({ userId: user?.dataValues?.id, currentCompany: companyId }, { transaction });
   await MultiCompanyModule.create({ userId: user?.dataValues?.id, companyId }, { transaction });
 
   return user;

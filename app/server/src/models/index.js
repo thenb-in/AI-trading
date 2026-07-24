@@ -75,4 +75,13 @@ appModelNames.forEach(name => {
 
 db.sequelize = sequelize;
 
+// Register this complete registry (framework + HR + relocated device models)
+// as the process registry for the shared biometric-interface services in
+// common/. Those services read the registry lazily via getDb(); when they run
+// inside THIS app process (operator-initiated device actions through
+// @biometric), getDb() must hand back the app's full registry — Company and
+// Employee present — so guarded device associations resolve. A standalone
+// gateway never reaches here; it calls buildRegistry() instead.
+require('@biometric_interface/common/db').useRegistry(db);
+
 module.exports = db;

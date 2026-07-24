@@ -14,8 +14,7 @@ const setAuthCookies = (res, tokens) => {
 
 const validateAccessToken = (accessToken) => {
   try {
-    return jwt.verify(accessToken, env.JWT_SECRET, { ignoreExpiration: true });
-    // return verifyToken(accessToken, env.JWT_SECRET);
+    return verifyToken(accessToken, env.JWT_SECRET);
   } catch (err) {
     logger.warn(`Access token invalid: ${err.message}`);
     return null;
@@ -24,8 +23,7 @@ const validateAccessToken = (accessToken) => {
 
 const validateRefreshToken = async(refreshToken)=>{
   try {
-    return jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, { ignoreExpiration: true });
-    // return verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
+    return verifyToken(refreshToken, env.REFRESH_TOKEN_SECRET);
   } catch (err) {
     const unverified = jwt.decode(refreshToken);
     const userId = unverified?.id || 'unknown';

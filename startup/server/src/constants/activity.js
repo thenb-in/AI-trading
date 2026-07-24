@@ -11,10 +11,7 @@ const ACTIVITY_TYPE = {
   ACTIVATE: 4,
   DEACTIVATE: 5,
   APPROVE: 6,
-  REJECT: 7,
-  REGISTER_IMAGE: 8,
-  VERIFY_IMAGE: 9,
-  STOP_PUNCHES: 10
+  REJECT: 7
 };
 
 /** Decode numeric type to action label for client display */
@@ -27,10 +24,7 @@ const ACTIVITY_TYPE_TO_ACTION = {
   [ACTIVITY_TYPE.ACTIVATE]: 'ACTIVATE',
   [ACTIVITY_TYPE.DEACTIVATE]: 'DEACTIVATE',
   [ACTIVITY_TYPE.APPROVE]: 'APPROVE',
-  [ACTIVITY_TYPE.REJECT]: 'REJECT',
-  [ACTIVITY_TYPE.REGISTER_IMAGE]: 'REGISTER_IMAGE',
-  [ACTIVITY_TYPE.VERIFY_IMAGE]: 'VERIFY_IMAGE',
-  [ACTIVITY_TYPE.STOP_PUNCHES]: 'STOP_PUNCHES'
+  [ACTIVITY_TYPE.REJECT]: 'REJECT'
 };
 
 /** Action string -> numeric type (for encoding) */
@@ -43,10 +37,7 @@ const ACTION_TO_ACTIVITY_TYPE = {
   ACTIVATE: ACTIVITY_TYPE.ACTIVATE,
   DEACTIVATE: ACTIVITY_TYPE.DEACTIVATE,
   APPROVE: ACTIVITY_TYPE.APPROVE,
-  REJECT: ACTIVITY_TYPE.REJECT,
-  REGISTER_IMAGE: ACTIVITY_TYPE.REGISTER_IMAGE,
-  VERIFY_IMAGE: ACTIVITY_TYPE.VERIFY_IMAGE,
-  STOP_PUNCHES: ACTIVITY_TYPE.STOP_PUNCHES
+  REJECT: ACTIVITY_TYPE.REJECT
 };
 
 /** Professional message label per action (e.g. "Employee was updated"). */
@@ -59,10 +50,7 @@ const ACTION_TO_MESSAGE_LABEL = {
   ACTIVATE: 'was activated',
   DEACTIVATE: 'was deactivated',
   APPROVE: 'was approved',
-  REJECT: 'was rejected',
-  REGISTER_IMAGE: 'image was registered',
-  VERIFY_IMAGE: 'image was verified',
-  STOP_PUNCHES: 'punches were stopped'
+  REJECT: 'was rejected'
 };
 
 /**
@@ -119,6 +107,19 @@ const ACTIVITY_ERRORS = {
   HEAD_BASE_WALLET_UNREACHABLE:
     'The wallet could not be reached, so there is no telling which heads it wants'
 };
+ * Register app-owned activity types into the framework maps (in place).
+ * Call from the app's registerAppData bootstrap at process start.
+ */
+function registerActivityTypes(defs) {
+  for (const { action, type, messageLabel } of defs) {
+    ACTIVITY_TYPE[action] = type;
+    ACTIVITY_TYPE_TO_ACTION[type] = action;
+    ACTION_TO_ACTIVITY_TYPE[action] = type;
+    if (messageLabel) {
+      ACTION_TO_MESSAGE_LABEL[action] = messageLabel;
+    }
+  }
+}
 
 module.exports = {
   ACTIVITY_ERRORS,
@@ -133,5 +134,6 @@ module.exports = {
   WALLET_INGEST_PREFIX,
   ACTIVITY_TYPE_TO_ACTION,
   ACTION_TO_ACTIVITY_TYPE,
-  ACTION_TO_MESSAGE_LABEL
+  ACTION_TO_MESSAGE_LABEL,
+  registerActivityTypes
 };
