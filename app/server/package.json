@@ -21,7 +21,9 @@
   },
   "description": "App-side server boot. Imports buildApp() from startup/server and registers app-specific routes.",
   "_moduleAliases": {
+    "@nucleus": "../../nucleus",
     "@startup": "../../startup/server",
+    "@appServer": ".",
     "sequelize": "../../startup/server/node_modules/sequelize"
   },
   "dependencies": {

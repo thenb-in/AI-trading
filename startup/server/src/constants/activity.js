@@ -53,9 +53,25 @@ const ACTION_TO_MESSAGE_LABEL = {
   REJECT: 'was rejected'
 };
 
+/**
+ * Register app-owned activity types into the framework maps (in place).
+ * Call from the app's registerAppData bootstrap at process start.
+ */
+function registerActivityTypes(defs) {
+  for (const { action, type, messageLabel } of defs) {
+    ACTIVITY_TYPE[action] = type;
+    ACTIVITY_TYPE_TO_ACTION[type] = action;
+    ACTION_TO_ACTIVITY_TYPE[action] = type;
+    if (messageLabel) {
+      ACTION_TO_MESSAGE_LABEL[action] = messageLabel;
+    }
+  }
+}
+
 module.exports = {
   ACTIVITY_TYPE,
   ACTIVITY_TYPE_TO_ACTION,
   ACTION_TO_ACTIVITY_TYPE,
-  ACTION_TO_MESSAGE_LABEL
+  ACTION_TO_MESSAGE_LABEL,
+  registerActivityTypes
 };

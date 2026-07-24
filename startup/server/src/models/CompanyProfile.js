@@ -1,4 +1,5 @@
-const { companyProfileFields } = require('./mixins/companyProfileFields');
+// App-owned columns are injected via the model field registry
+const { getModelFields } = require('./register/modelFieldRegistry');
 
 module.exports = (sequelize, DataTypes) => {
   const CompanyProfile = sequelize.define('CompanyProfile', {
@@ -12,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    ...companyProfileFields(DataTypes)
+    ...getModelFields('CompanyProfile', DataTypes)
   }, {
     tableName: 'company_profiles',
     timestamps: true,

@@ -21,8 +21,8 @@ const directories = fs.readdirSync(__dirname)
   .filter(file => {
     const fullPath = path.join(__dirname, file);
 
-    // skip non-model folders (abstracts, base classes, shared mixins)
-    const excludeFolders = file.includes('abstract_') || file.includes('base') || file === 'mixins';
+    // skip non-model folders (abstracts, base classes, shared mixins, registries)
+    const excludeFolders = file.includes('abstract_') || file.includes('base') || file === 'mixins' || file === 'register';
 
     // ensure it's a directory
     const isDir = fs.statSync(fullPath).isDirectory();

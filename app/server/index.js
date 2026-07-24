@@ -4,6 +4,10 @@ require('module-alias/register');
 // in startup/server, so without this, requires from startup-loaded files like
 // startup/server/buildApp.js fail with MODULE_NOT_FOUND.
 require('module-alias').addPath(require('path').join(__dirname, 'node_modules'));
+// App columns onto framework models — must load before @startup models below.
+// eslint-disable-next-line custom/no-direct-model-imports
+require('./src/models/register/registerAppModelFields');
+require('./src/data/registerAppData');
 
 // App-side server boot. Wires the framework's buildApp() with this app's
 // own routes, middleware, schedulers and shutdown hooks.

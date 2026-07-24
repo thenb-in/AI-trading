@@ -1,6 +1,6 @@
 const logger = require('../../logger');
 const allowedPermissions = require('../utils/allowedPermissions');
-const { handleRefreshToken, validateAccessToken, checkUserActive, setAuthCookies ,extractTokens } = require('../utils/auth_shared_utils');
+const { handleRefreshToken, validateAccessToken, checkUserActive, isTokenSuperseded, setAuthCookies ,extractTokens } = require('../utils/auth_shared_utils');
 
 // Mobile clients send tokens via headers (Authorization + X-Refresh-Token).
 // Web clients send via cookies.
@@ -19,6 +19,11 @@ exports.protect = async (req, res, next) => {
       if (!isApproved) {
         return res.status(401)
           .json({ message: 'Your account is currently inactive. Please reach out to your administrator for assistance.', requiresLogin: true });
+      }
+
+      if (await isTokenSuperseded(decoded)) {
+        return res.status(401)
+          .json({ message: 'You have been signed out. Please sign in again to continue.', requiresLogin: true });
       }
       req.user = { id: decoded.id, company_id: decoded.company_id };
       return next();

@@ -118,19 +118,24 @@ module.exports = {
 
   DEFAULT_COMPANY: process.env.DEFAULT_COMPANY,
 
+
+  TOTP_ISSUER: process.env.TOTP_ISSUER || appName,
+  TOTP_WINDOW: parseInt(process.env.TOTP_WINDOW, PARSE_INT_RADIX) || 1,
+
   // Report runner
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
   REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
   REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
 
-  // License configuration. Set LICENSE_ENFORCEMENT=false in dev to bypass
-  // the license gate entirely. LICENSE_AUTO_RENEW=false disables the
+  // License configuration
+  // License enforcement follows SECURE_COOKIE: a non-secure-cookie install is
+  // treated as local/dev and bypasses the gate; secure cookies enforce it.
+  // LICENSE_AUTO_RENEW=false disables the
   // hourly auto-renew cron job (use for airgap installs where you don't
   // want repeated phone-home attempts to the wallet logged as failures).
   // LICENSE_WALLET_PUBLIC_KEYS is a JSON array of PEM strings; if set,
   // it overrides the pinned public keys file under SECRET_DIR.
   // Defaults are 'true' so production fails closed if the env var is unset.
-  LICENSE_ENFORCEMENT: process.env.LICENSE_ENFORCEMENT || 'true',
   LICENSE_AUTO_RENEW: process.env.LICENSE_AUTO_RENEW || 'true',
   LICENSE_WALLET_PUBLIC_KEYS: process.env.LICENSE_WALLET_PUBLIC_KEYS,
 
@@ -175,9 +180,21 @@ module.exports = {
   TERMINAL_NAME: process.env.TERMINAL_NAME,
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
+  // Optional: used by migrate:sso-users CLI (eTime → Wallet accounts).
+  WALLET_DATABASE_URL: process.env.WALLET_DATABASE_URL,
 
   // Django OAuth introspection
   DJANGO_AUTH_URL: process.env.DJANGO_AUTH_URL,
+
+  // OIDC RP / Wallet SSO (ADR 001)
+  OIDC_ISSUER: process.env.OIDC_ISSUER,
+  // Wallet Application.app_key. One value, two uses: the OIDC client_id on the
+  // wire, and the key identifying this app when pushing subscriptions to Wallet.
+  APP_KEY: process.env.APP_KEY,
+  OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET,
+  OIDC_REDIRECT_URI: process.env.OIDC_REDIRECT_URI,
+  OIDC_SCOPES: process.env.OIDC_SCOPES || 'openid profile offline_access',
+  OIDC_POST_LOGOUT_REDIRECT_URI: process.env.OIDC_POST_LOGOUT_REDIRECT_URI || process.env.FRONTEND_URL,
 
   // Shared secret guarding the internal service-to-service API
   // (/api/v1/internal). The standalone biometric gateways send it in the

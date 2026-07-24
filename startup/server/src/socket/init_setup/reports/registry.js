@@ -1,16 +1,11 @@
-// Report registry — an app-injected map of report slug → route handler.
+// Report registry (app-populated).
 //
-// The app owns its report routes; the framework must not reach into `app/`
-// to read them (that would invert the app -> startup dependency). So instead
-// of requiring the routes here, the registry is INITIALISED by whichever
-// top-level process composes the app:
-//   - the app server, via buildApp({ reportRoutes }) (see buildApp.js);
-//   - the report_runner process, via registry.init(reportRoutes) at boot.
-//
-// init() walks the Express router stack and indexes every GET route by its
-// slug → final route handler. Adding a new `router.get('/x-report', ...)` in
-// the app's reportRoutes.js makes it available automatically — no parallel
-// registration list to keep in sync.
+// The app registers its report routers here via registerReportRouter() from its
+// registerAppData bootstrap — startup must not import @appServer. Each call walks
+// the Express router stack and indexes every GET route by its slug → final route
+// handler, so adding a new `router.get('/x-report', ...)` in reportRoutes.js
+// automatically makes it available to the socket runner — no parallel list to
+// keep in sync.
 //
 // Caveats:
 //   - GET-only. POST/PUT routes are not exposed via the socket transport.
@@ -21,9 +16,6 @@
 
 const { invokeExpressHandler } = require('./expressShim');
 
-// Populated by init(). null until then so callers get a clear error instead
-// of silently resolving every report key to "unknown".
-let registeredReports = null;
 
 function buildRegistryFromRouter(router, prefix = '') {
   const registry = {};
@@ -43,38 +35,26 @@ function buildRegistryFromRouter(router, prefix = '') {
   return registry;
 }
 
-/**
- * Initialise the registry from the app's report router. Called once per
- * process by whichever entrypoint composes the app (buildApp for the app
- * server, the runner bootstrap for report_runner).
- * @param {import('express').Router} reportRoutes
- */
-function init(reportRoutes) {
-  if (!reportRoutes || !Array.isArray(reportRoutes.stack)) {
-    throw new Error(`registry.init: expected an Express router (with a .stack) as reportRoutes, got ${typeof reportRoutes} (stack=${reportRoutes && typeof reportRoutes.stack})`);
-  }
-  registeredReports = buildRegistryFromRouter(reportRoutes);
-  return registeredReports;
-}
+const registeredReports = {};
 
-function ensureInitialised() {
-  if (registeredReports === null) {
-    throw new Error(`registry: not initialised (registeredReports=${registeredReports}) — call registry.init(reportRoutes) before use, via buildApp({ reportRoutes }) or the runner bootstrap`);
-  }
+/**
+ * Register every GET route on an Express router as a runnable report handler.
+ * Called by the app (registerAppData) at process start, before the socket
+ * report runner handles any request.
+ */
+function registerReportRouter(router, prefix = '') {
+  Object.assign(registeredReports, buildRegistryFromRouter(router, prefix));
 }
 
 function has(reportKey) {
-  ensureInitialised();
   return Object.prototype.hasOwnProperty.call(registeredReports, reportKey);
 }
 
 function get(reportKey) {
-  ensureInitialised();
   return registeredReports[reportKey] ?? null;
 }
 
 function list() {
-  ensureInitialised();
   return Object.keys(registeredReports);
 }
 
@@ -86,4 +66,4 @@ async function run(reportKey, { filters, user }) {
   return invokeExpressHandler(handler, { user, filters });
 }
 
-module.exports = { init, has, get, list, run };
+module.exports = { has, get, list, run, registerReportRouter };

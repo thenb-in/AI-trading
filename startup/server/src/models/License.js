@@ -43,21 +43,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0
     },
-    subscriptionId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      field: 'subscription_id'
-    },
-    permissions: {
+    // Per-plan grant mirrored from the token: [{ id, name, permissions: [...] }].
+    plan: {
       type: DataTypes.JSONB,
       allowNull: false,
       defaultValue: []
-    },
-    permissionCaps: {
-      type: DataTypes.JSONB,
-      allowNull: false,
-      defaultValue: {},
-      field: 'permission_caps'
     },
     notBefore: {
       type: DataTypes.DATE,

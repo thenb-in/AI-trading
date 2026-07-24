@@ -1,4 +1,6 @@
+const auth = require('../services/auth');
 const authService = require('../services/authService');
+const totpService = require('../services/totpService');
 const userService = require('../services/userService');
 
 const authController = {
@@ -11,7 +13,7 @@ const authController = {
    * @returns {Promise<object>} Created user
    */
   async signup(username, password, companyId, userData) {
-    return await authService.signup(username, password, companyId, userData);
+    return await auth.signup(username, password, companyId, userData);
   },
 
   /**
@@ -20,16 +22,35 @@ const authController = {
    * @returns {Promise<object>} User data with tokens
    */
   async loginUser(credentials) {
-    return await authService.loginUser(credentials);
+    return await auth.loginUser(credentials);
   },
 
   /**
    * Reset password
-   * @param {object} data - Reset password data (username, password, isFirstLogin)
+   * @param {object} data - Reset password data (username, password, otp)
    * @returns {Promise<object>} Updated user
    */
   async resetPassword(data) {
-    return await authService.resetPassword(data);
+    return await auth.resetPassword(data);
+  },
+
+  /**
+   * Generate a TOTP secret (+ QR) for a user
+   * @param {string} username - Username
+   * @returns {Promise<object>} TOTP data (secret, qrCodeUrl, otpauthUrl)
+   */
+  async generateTotpSecret(username) {
+    return await totpService.generateTotpSecret(username);
+  },
+
+  /**
+   * Verify a TOTP code and enable 2FA for the user
+   * @param {string} username - Username
+   * @param {string} totpCode - Code from the authenticator app
+   * @returns {Promise<object>} Verification result
+   */
+  async verifyAndEnableTotp(username, totpCode) {
+    return await totpService.verifyAndEnableTotp(username, totpCode);
   },
 
   /**

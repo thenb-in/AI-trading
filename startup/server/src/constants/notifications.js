@@ -7,6 +7,8 @@ const NOTIFICATION_TYPES = {
   APPROVAL_REJECTED: 'approval_rejected'
 };
 
+// App-specific notification types need no entry here — anything unmapped
+// falls back to DEFAULT_VARIANT.
 const VARIANT_BY_TYPE = {
   [NOTIFICATION_TYPES.USER_LOGIN]: 'info',
   [NOTIFICATION_TYPES.APPROVAL_PENDING]: 'warning',

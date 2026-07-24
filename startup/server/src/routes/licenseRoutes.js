@@ -30,7 +30,7 @@
 
 const express = require('express');
 const licenseService = require('../license/licenseService');
-const machineFingerprint = require('../license/machineFingerprint');
+const machineFingerprint = require('../license/engine/core/machineFingerprint');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -39,14 +39,8 @@ const router = express.Router();
 // frontend login screen need to render "this server is locked" without
 // being authenticated. Returns minimal info; no permission list or
 // fingerprint.
-router.get('/status', (req, res) => {
-  const snap = licenseService.getStatusSnapshot();
-  if (!snap || (snap.ok === false && snap.reason === 'not_loaded')) {
-    // Force a load on first hit if the server just booted.
-    return licenseService.loadAndVerify().then(() => {
-      res.status(200).json(licenseService.getStatusSnapshot());
-    });
-  }
+router.get('/status', async (req, res) => {
+  const snap = await licenseService.getStatusSnapshot();
   res.status(200).json({
     ok: snap.ok,
     bypass: snap.bypass || false,
@@ -81,9 +75,9 @@ router.post('/refresh', authMiddleware.protect, async (req, res) => {
   }
 });
 
-router.post('/airgap-request', authMiddleware.protect, (req, res) => {
+router.post('/airgap-request', authMiddleware.protect, async (req, res) => {
   try {
-    const bundle = licenseService.buildAirgapRequest();
+    const bundle = await licenseService.buildAirgapRequest();
     // The operator typically saves this as JSON and ferries it to the
     // wallet's `/license/airgap-renew` endpoint.
     res.setHeader('Content-Disposition', `attachment; filename="license-renewal-request-${Date.now()}.json"`);

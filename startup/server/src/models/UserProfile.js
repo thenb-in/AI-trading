@@ -1,3 +1,9 @@
+// App-owned columns (office location, price tiers, mobile-app metadata, etc.)
+// are injected via the model field registry — startup must not import @appServer.
+// The app registers them from registerAppData before this model is defined; a
+// framework-only process just gets the base identity columns below.
+const { getModelFields } = require('./register/modelFieldRegistry');
+
 module.exports = (sequelize, DataTypes) => {
   const UserProfile = sequelize.define('UserProfile', {
     id: {
@@ -12,8 +18,9 @@ module.exports = (sequelize, DataTypes) => {
     },
     currentCompany: {
       type: DataTypes.UUID,  // type UUID because foreign key is a UUID
-      allowNull: true
-    }
+      allowNull: false
+    },
+    ...getModelFields('UserProfile', DataTypes)
   }, {
     tableName: 'nbnext_user_profiles',
     timestamps: false

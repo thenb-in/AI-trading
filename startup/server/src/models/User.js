@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     name: {
       type: DataTypes.STRING,
@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     company_id: {
       type: DataTypes.UUID,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: 'nbnext_company',
         key: 'id'
@@ -57,6 +57,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    tokens_valid_after: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     is_approved: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
@@ -73,6 +77,20 @@ module.exports = (sequelize, DataTypes) => {
     isSupportUser: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
+      defaultValue: false
+    },
+    wallet_user_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      unique: true
+    },
+    totp_secret: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    is_totp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
       defaultValue: false
     }
   }, {
