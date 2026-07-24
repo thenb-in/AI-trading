@@ -44,11 +44,30 @@ const validateRefreshToken = async(refreshToken)=>{
 const getCookieOptions = () => {
   const accessMax = env.MAX_JWT_ACCESS_EXPIRATION_MS;
   const refreshMax = env.MAX_JWT_REFRESH_EXPIRATION_MS;
+  // Lax required so cookies survive OIDC redirect (Wallet → eTime callback → SPA)
+  const base = { sameSite: 'lax', secure: env.isSecureCookie };
   return {
-    access:  { httpOnly: true, sameSite: 'strict', secure: env.isSecureCookie, maxAge: accessMax },
-    refresh: { httpOnly: true, sameSite: 'strict', secure: env.isSecureCookie, maxAge: refreshMax },
-    isLoggedIn: { sameSite: 'strict', secure: env.isSecureCookie, maxAge: refreshMax }
+    access: { ...base, httpOnly: true, maxAge: accessMax },
+    refresh: { ...base, httpOnly: true, maxAge: refreshMax },
+    isLoggedIn: { ...base, maxAge: refreshMax }
   };
+};
+
+const clearAuthCookies = (res) => {
+  const options = getCookieOptions();
+  const clearOpts = {
+    httpOnly: true,
+    sameSite: options.access.sameSite,
+    secure: options.access.secure,
+    path: '/'
+  };
+  res.clearCookie('accessToken', clearOpts);
+  res.clearCookie('refreshToken', clearOpts);
+  res.clearCookie('isLoggedIn', {
+    sameSite: options.isLoggedIn.sameSite,
+    secure: options.isLoggedIn.secure,
+    path: '/'
+  });
 };
 
 const extractTokens = (req)=>{
@@ -90,6 +109,7 @@ const extractTokens = (req)=>{
 module.exports = {
   validateAccessToken,
   setAuthCookies,
+  clearAuthCookies,
   extractTokens,
   validateRefreshToken
 };
