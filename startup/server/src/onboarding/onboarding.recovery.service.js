@@ -2,6 +2,37 @@ const logger = require('../../logger');
 const env = require('../config/env');
 const razorpayService = require('../razorpay/razorpay.service');
 const onboardingOrderService = require('../services/onboardingOrder.service');
+const companyService = require('../services/companyService');
+const companyProfileService = require('../services/companyProfileService');
+const { syncWorkspaceToWallet } = require('./onboarding.workspace.service');
+
+
+const recoverPendingWalletSyncs = async () => {
+  const orders = await onboardingOrderService.findProvisionedUnsynced();
+  let synced = 0;
+  for (const order of orders) {
+    try {
+      const company = await companyService.getCompanyById(order.company_id);
+      const profile = await companyProfileService.getCompanyProfile(order.company_id);
+      await syncWorkspaceToWallet({
+        companyId: order.company_id,
+        companyName: company?.name,
+        subscriptionId: order.subscription_id,
+        employeeCount: profile?.establishment_employee_count ?? null,
+        amount: order.amount !== null ? order.amount / 100 : null,
+        paymentId: order.razorpay_payment_id
+      });
+      await onboardingOrderService.markWalletSynced(order.razorpay_order_id);
+      synced += 1;
+    } catch (error) {
+      logger.warn(`Wallet re-sync still failing for order ${order.razorpay_order_id}: ${error.message}`);
+    }
+  }
+  if (orders.length) {
+    logger.info(`Onboarding wallet re-sync: scanned=${orders.length} synced=${synced}`);
+  }
+  return { scanned: orders.length, synced };
+};
 
 
 const recoverOneOrder = async (order, nowMs, expiryMs) => {
@@ -51,6 +82,9 @@ const recoverOneOrder = async (order, nowMs, expiryMs) => {
 
 
 const recoverPendingOrders = async () => {
+  // Retry wallet mirrors first — independent of payment-gateway config.
+  await recoverPendingWalletSyncs();
+
   if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
     return { scanned: 0, refunded: 0, failed: 0, skipped: 'payments_not_configured' };
   }
@@ -79,4 +113,4 @@ const recoverPendingOrders = async () => {
   return { scanned: orders.length, refunded, failed };
 };
 
-module.exports = { recoverPendingOrders };
+module.exports = { recoverPendingOrders, recoverPendingWalletSyncs };

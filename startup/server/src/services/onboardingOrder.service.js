@@ -79,6 +79,23 @@ const onboardingOrderService = {
       },
       order: [['updatedAt', 'ASC']]
     });
+  },
+
+  async markWalletSynced(razorpayOrderId, transaction = null) {
+    const [count] = await OnboardingOrder.update(
+      { wallet_synced: true },
+      { where: { razorpay_order_id: razorpayOrderId }, transaction }
+    );
+    return count;
+  },
+
+  // Provisioned orders whose subscription never made it to the wallet — to retry.
+  async findProvisionedUnsynced(limit = 50) {
+    return OnboardingOrder.findAll({
+      where: { status: ORDER_STATUS.PROVISIONED, wallet_synced: false },
+      order: [['updatedAt', 'ASC']],
+      limit
+    });
   }
 };
 

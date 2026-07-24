@@ -1,32 +1,20 @@
 const razorpayService = require('../razorpay/razorpay.service');
-const subscriptionService = require('../services/subscription.service');
-const { SUBSCRIBED_STATUS } = require('../constants/onboarding/onboarding.constants');
+const env = require('../config/env');
+const { fetchPlansFromWallet } = require('../../interfaces/wallet/subscriptionInterface');
+
 
 const getPublicPlans = async () => {
-  const subscriptions = await subscriptionService.getGlobalPlansWithPermissions();
-  const { amount, currency } = razorpayService.getDefaultPricing();
+  const plans = await fetchPlansFromWallet(env.APP_KEY);
+  const { currency } = razorpayService.getDefaultPricing();
 
-  return subscriptions.map((subscription) => {
-    const json = subscription.toJSON();
-    const permissions = (json.permissions || [])
-      .filter((perm) => perm.subscriptionPermission?.status === SUBSCRIBED_STATUS)
-      .map((perm) => ({
-        id: perm.id,
-        name: perm.name,
-        display_name: perm.display_name,
-        description: perm.description,
-        type: perm.type
-      }));
-
-    return {
-      id: json.id,
-      name: json.name,
-      description: json.description || null,
-      amount,
-      currency,
-      permissions
-    };
-  });
+  return plans.map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    description: plan.description ?? null,
+    amount: typeof plan.amount === 'number' ? Math.round(plan.amount * 100) : null,
+    currency,
+    permissions: plan.permissions || []
+  }));
 };
 
 module.exports = { getPublicPlans };
