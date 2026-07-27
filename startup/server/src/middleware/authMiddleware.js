@@ -1,9 +1,21 @@
 const logger = require('../../logger');
 const allowedPermissions = require('../utils/allowedPermissions');
 const { handleRefreshToken, validateAccessToken, checkUserActive, isTokenSuperseded, setAuthCookies ,extractTokens } = require('../utils/auth_shared_utils');
+const { isSsoUserAllowedPath } = require('../config/ssoUserAccess');
 
 // Mobile clients send tokens via headers (Authorization + X-Refresh-Token).
 // Web clients send via cookies.
+
+// Managed SSO accounts (req.user.ssoManaged) may only reach the user-management
+// endpoints. Everything else is 403 — the server-side mirror of the client's
+// redirect. Relying-party SSO users are not managed, so they pass through.
+const denySsoUserOutsideScope = (req, res, next) => {
+  if (!req.user?.ssoManaged || isSsoUserAllowedPath(req.originalUrl)) {
+    return next();
+  }
+  logger.warn(`[sso-user] ${req.user.id} blocked from ${req.method} ${req.originalUrl}`);
+  return res.status(403).json({ error: 'This account can only manage users.' });
+};
 
 exports.protect = async (req, res, next) => {
   try {
@@ -15,8 +27,8 @@ exports.protect = async (req, res, next) => {
     }
     const decoded = validateAccessToken(accessToken);
     if (decoded) {
-      const isApproved = await checkUserActive(decoded.id);
-      if (!isApproved) {
+      const { isActive, ssoManaged } = await checkUserActive(decoded.id);
+      if (!isActive) {
         return res.status(401)
           .json({ message: 'Your account is currently inactive. Please reach out to your administrator for assistance.', requiresLogin: true });
       }
@@ -25,8 +37,8 @@ exports.protect = async (req, res, next) => {
         return res.status(401)
           .json({ message: 'You have been signed out. Please sign in again to continue.', requiresLogin: true });
       }
-      req.user = { id: decoded.id, company_id: decoded.company_id };
-      return next();
+      req.user = { id: decoded.id, company_id: decoded.company_id, ssoManaged };
+      return denySsoUserOutsideScope(req, res, next);
     }
 
     if (!refreshToken) {
@@ -35,11 +47,12 @@ exports.protect = async (req, res, next) => {
 
     try {
       const result = await handleRefreshToken(refreshToken);
-      const isApproved = await checkUserActive(result.user.id);
-      if (!isApproved) {
+      const { isActive, ssoManaged } = await checkUserActive(result.user.id);
+      if (!isActive) {
         return res.status(401).json({ message: 'Your account is currently inactive. Please reach out to your administrator for assistance.' , requiresLogin: true });
       }
       req.user = result.user;
+      req.user.ssoManaged = ssoManaged;
       req.cookies.accessToken = result.tokens.access;
       if (result.isRefresher) {
         setAuthCookies(res, result.tokens);
@@ -47,7 +60,7 @@ exports.protect = async (req, res, next) => {
         res.set('x-new-refresh-token', result.tokens.refresh);
         logger.info(`Tokens refreshed for user ${result.user.id}`);
       }
-      return next();
+      return denySsoUserOutsideScope(req, res, next);
     } catch (err) {
       logger.error('Refresh token failed', err);
       return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: false });

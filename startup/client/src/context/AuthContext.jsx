@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ApiService } from "@services/ApiService";
 import { setCacheScope } from "@services/cacheManager";
 import { isAllowedDevice } from "../utils/deviceUtils";
+import { isSsoEnabled } from "@startup/sso/ssoMode";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
 import {
@@ -105,19 +106,18 @@ const DataProvider = ({ children }) => {
     try {
       const response = await ApiService.logout();
       const ssoLogoutUrl = response?.data?.ssoLogoutUrl;
-      if (ssoLogoutUrl) {
-
+      if (isSsoEnabled() && ssoLogoutUrl) {
         window.location.replace(ssoLogoutUrl);
         return;
       }
       setUserData(null);
       setIsLoggingOut(false);
-      navigate("/");
+      navigate(isSsoEnabled() ? "/" : "/login");
     } catch (err) {
       console.error("Logout error:", err);
       setUserData(null);
       setIsLoggingOut(false);
-      navigate("/");
+      navigate(isSsoEnabled() ? "/" : "/login");
     }
   }, [navigate]);
 

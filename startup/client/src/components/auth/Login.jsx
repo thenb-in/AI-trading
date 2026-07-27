@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaLock, FaUser } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -9,7 +10,7 @@ import { SetupTotpPopup } from './SetupTotpPopup';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { PasswordTypeField } from '@startup/components/base_components/fields/PasswordTypeField';
 
-function Login() {
+function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +32,30 @@ function Login() {
 
     // Clean form data: trim all fields and remove spaces from username and password
     const cleanedData = cleanFormData(formData);
+
+    if (typeof onSubmit === 'function') {
+      try {
+        await onSubmit(cleanedData);
+      } catch (err) {
+        if (err?.requiresPasswordChange) {
+          toast.warning('Please change your password on first login');
+          if (onForgotPassword) {
+            onForgotPassword({ username: cleanedData.username, isFirstLogin: true });
+          } else {
+            navigate('/forgot-password', {
+              state: { username: cleanedData.username, isFirstLogin: true }
+            });
+          }
+          return;
+        }
+        const message = err?.error || err?.message || 'Login failed. Please check your credentials.';
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await ApiService.login({
@@ -180,7 +205,7 @@ function Login() {
           <div className="mb-4 text-right">
             <button
               type="button"
-              onClick={handleForgotPasswordClick}
+              onClick={onForgotPassword || handleForgotPasswordClick}
               className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition"
             >
               Forgot Password?
@@ -202,8 +227,8 @@ function Login() {
             <p className="text-sm text-gray-600">
               Not registered yet?{' '}
               <button
-               type="button" 
-                onClick={() => navigate('/signup')}
+               type="button"
+                onClick={onSignup || (() => navigate('/signup'))}
                 className="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition"
               >
                 Sign up
@@ -236,5 +261,11 @@ function Login() {
     </div>
   );
 }
+
+Login.propTypes = {
+  onSubmit: PropTypes.func,
+  onForgotPassword: PropTypes.func,
+  onSignup: PropTypes.func,
+};
 
 export { Login };

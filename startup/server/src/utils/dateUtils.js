@@ -202,6 +202,20 @@ function getDaysBetween(start_date, end_date, weekday) {
   return days;
 }
 
+const calculateWorkDays = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  start.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(0, 0, 0, 0);
+
+  let count = 0;
+  while (start <= end) {
+    count++;
+    start.setUTCDate(start.getUTCDate() + 1);
+  }
+  return count;
+};
+
 function getMonthPercentage(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -716,6 +730,7 @@ module.exports = {
   getAllDays,
   getDaysBetween,
   countDaysBetween,
+  calculateWorkDays,
   getMonthPercentage,
   getCompleteMonthsPercentage,
   normalizeToDate,

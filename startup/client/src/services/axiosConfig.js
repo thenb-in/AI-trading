@@ -1,5 +1,11 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { getCurrentBatchId, newBatchId } from './batchContext';
+
+// Writes carry a batch id so the server's activity log can group one user
+// gesture into one undoable action. Inside runAsBatch every request shares an
+// id; a standalone write gets its own, so it is undoable by itself.
+const WRITE_METHODS = ['post', 'put', 'patch', 'delete'];
 
 // URLs
 const API_BASE_URL = import.meta.env.VITE_API_URL;
@@ -33,6 +39,10 @@ api.interceptors.request.use(
       }
     } else {
       config.headers['Content-Type'] = 'application/json';
+    }
+
+    if (WRITE_METHODS.includes(String(config.method).toLowerCase())) {
+      config.headers['x-batch-id'] = getCurrentBatchId() || newBatchId();
     }
 
     console.log(`📡 API ${config.method?.toUpperCase()} ${config.url}`, {
@@ -77,13 +87,20 @@ api.interceptors.response.use(
       });
     }
 
-    // Handle 401 Unauthorized responses (skip if already on login page to avoid reload loop)
-    if (error.response?.status === 401 && window.location.pathname !== '/') {
+    const onSsoInteraction = new URLSearchParams(window.location.search).has('interaction');
+    if (error.response?.status === 401 && window.location.pathname !== '/' && !onSsoInteraction) {
       console.log('Received 401 Unauthorized, logging out...');
       window.location.href = '/'
     }
 
-    return Promise.reject(error.response?.data || error);
+    // Reject with the response body, but keep the HTTP status on it — callers
+    // need to tell "you may not see this" (403) apart from "this broke" (5xx)
+    // so they can explain themselves instead of rendering a dead control.
+    const body = error.response?.data;
+    if (body && typeof body === 'object') {
+      return Promise.reject(Object.assign({}, body, { httpStatus: error.response.status }));
+    }
+    return Promise.reject(error);
   }
 );
 

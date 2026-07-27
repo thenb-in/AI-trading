@@ -2,6 +2,7 @@ const { User, Company, CompanyProfile, Role, UserProfile } = require('../models'
 const logger = require('../../logger');
 const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../utils/modelHelpers');
 const { verifyValidSubscribedPermission } = require('../utils/subscriptionPermissionUtils');
+const { isSsoManagedAccount } = require('../config/ssoUserAccess');
 
 const normalize = (val) => val?.trim().toLowerCase();
 
@@ -69,6 +70,13 @@ const getCurrentUser = async (userId) => {
       is_approved: userWithFilteredPermissions.is_approved,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name ,longitude:activeCompany.longitude,latitude:activeCompany.latitude, geofence_radius_meters: activeCompany.geofence_radius_meters, debug_mode_shortcut: activeCompany.companyProfile?.debug_mode_shortcut ?? null} : null,
       isSupportUser: user.isSupportUser,
+      // isSso = SSO-LINKED (any wallet_user_id): drives the "Manage on Wallet"
+      // link and forgot-password routing.
+      isSso: Boolean(user.wallet_user_id),
+      // ssoManaged = provider-signup account (wallet_user_id === id): confined
+      // to the /usermanagement screen (see ProtectedRoute). RP SSO users are
+      // linked but not managed, so they are NOT confined.
+      ssoManaged: isSsoManagedAccount(user),
       role: user.role ? {
         id: user.role.id,
         name: user.role.name,

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useForgotPassword } from './useForgotPassword';
@@ -7,7 +8,7 @@ import { LocalResetStep } from './LocalResetStep';
 import { SetupTotpPopup } from '../SetupTotpPopup';
 
 
-const ForgotPassword = () => {
+const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isFirstLogin = location.state?.isFirstLogin || false;
@@ -20,7 +21,7 @@ const ForgotPassword = () => {
     identifyUsername,
     resetLocalPassword,
     restart
-  } = useForgotPassword({ isFirstLogin, prefillUsername });
+  } = useForgotPassword({ isFirstLogin, prefillUsername, onSubmit });
 
   const [totpJustEnabled, setTotpJustEnabled] = useState(false);
   const [isTotpSetupOpen, setIsTotpSetupOpen] = useState(false);
@@ -33,11 +34,12 @@ const ForgotPassword = () => {
   const handleLocalReset = async (formData) => {
     const didReset = await resetLocalPassword(formData);
     if (didReset) {
-      setTimeout(() => navigate('/'), 1000);
+      const afterReset = onBackToLogin || (() => navigate('/'));
+      setTimeout(afterReset, 1000);
     }
   };
 
-  const handleBackToLogin = () => navigate('/login');
+  const handleBackToLogin = onBackToLogin || (() => navigate('/login'));
   const handleOpenTotpSetup = () => setIsTotpSetupOpen(true);
   const handleCloseTotpSetup = () => setIsTotpSetupOpen(false);
   const handleTotpSetupSuccess = () => {
@@ -85,14 +87,14 @@ const ForgotPassword = () => {
               {canSetupTotp && (
                 <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                   <p className="text-sm text-blue-800 mb-2">
-                    Set up Google Authenticator to approve this reset instantly.
+                    Enable two-factor authentication with Google Authenticator to verify your identity and reset your password instantly.
                   </p>
                   <button
                     type="button"
                     onClick={handleOpenTotpSetup}
                     className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline transition"
                   >
-                    Set up Google Authenticator
+                    Set up two-factor authentication
                   </button>
                 </div>
               )}
@@ -147,6 +149,11 @@ const ForgotPassword = () => {
       )}
     </div>
   );
+};
+
+ForgotPassword.propTypes = {
+  onSubmit: PropTypes.func,
+  onBackToLogin: PropTypes.func,
 };
 
 export { ForgotPassword };

@@ -1,8 +1,19 @@
+import { useNavigate } from 'react-router-dom';
 import { AnimatedBackground } from '@startup/components/AnimatedBackground';
 import { ForgotPassword } from '@startup/components/auth/forgot_password';
 import { motion } from 'framer-motion';
 import { PageMeta } from '@startup/seo/PageMeta';
+import { useSsoInteraction, useSsoPasswordReset } from '@startup/sso';
 function ForgotPasswordPage() {
+  const navigate = useNavigate();
+  // SSO provider interaction: reset through the interaction endpoint when
+  // redirected here with ?interaction=<uid>; otherwise the normal reset flow.
+  const { isSso, uid, loginPath } = useSsoInteraction();
+  const ssoForgot = useSsoPasswordReset(uid);
+  const forgotProps = isSso
+    ? { onSubmit: ssoForgot, onBackToLogin: () => navigate(loginPath) }
+    : {};
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
     <PageMeta
@@ -23,7 +34,7 @@ function ForgotPasswordPage() {
           transition={{ duration: 0.3 }}
           className="w-full"
         >
-        <ForgotPassword />
+        <ForgotPassword {...forgotProps} />
         </motion.div>
       </div>
     </div>

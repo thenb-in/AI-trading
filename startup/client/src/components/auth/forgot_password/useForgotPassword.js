@@ -3,7 +3,8 @@ import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
 import { cleanFormData } from '@utils/authformvalidation';
 
-const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) => {
+
+const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '', onSubmit } = {}) => {
   // account = { username, isTotpEnabled } once the username is confirmed to exist.
   const [account, setAccount] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +29,7 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
       }
 
       if (response.data.isSso) {
-        const message = 'This account signs in with SSO. Reset your password on NBNext Wallet.';
+        const message = 'This account signs in with SSO. Reset your password with sso.';
         setError(message);
         toast.error(message);
         return;
@@ -60,22 +61,28 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '' } = {}) 
     setIsLoading(true);
     setError(null);
     try {
-      await ApiService.request('POST', '/auth/reset-password', {
+      const resetPayload = {
         username: cleaned.username,
         password: cleaned.newPassword,
         otp: account.isTotpEnabled ? otp : undefined
-      });
+      };
+
+      if (typeof onSubmit === 'function') {
+        await onSubmit(resetPayload);
+      } else {
+        await ApiService.request('POST', '/auth/reset-password', resetPayload);
+      }
       toast.success('Password reset successful! Please log in.');
       return true;
     } catch (err) {
-      const message = err.error || 'Unable to reset password';
+      const message = err?.error || err?.message || 'Unable to reset password';
       setError(message);
       toast.error(message);
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, [account]);
+  }, [account, onSubmit]);
 
 
   const restart = useCallback(() => {

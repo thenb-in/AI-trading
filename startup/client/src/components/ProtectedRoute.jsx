@@ -18,6 +18,11 @@ function ProtectedRoute({ children }) {
     }
 
     if (!userData) return <Navigate to="/" replace state={{ from: location }} />;
+
+    // Only MANAGED SSO accounts
+    if (userData.ssoManaged && location.pathname !== '/usermanagement') {
+        return <Navigate to="/usermanagement" replace />;
+    }
     return children;
 }
 

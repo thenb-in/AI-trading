@@ -43,6 +43,11 @@ const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
 // Determine secure cookie setting: if SECURE_COOKIE is explicitly set, use that; otherwise default to true in production and false in development
 const isSecureCookie = process.env.SECURE_COOKIE ? process.env.SECURE_COOKIE === 'True' || process.env.SECURE_COOKIE === 'true' : isProduction;
 const isDevelopment = !isProduction;
+// OIDC provider cookies go secure in production, or when explicitly forced for a
+// TLS-terminated non-production deployment. Mirrors the SECURE_COOKIE handling above.
+const isOidcSecureCookie = isProduction
+  || process.env.OIDC_SECURE_COOKIES === 'True'
+  || process.env.OIDC_SECURE_COOKIES === 'true';
 
 // Calculate default uploads directory relative to server root
 // env.js is at startup/server/src/config/env.js, so we go up 4 levels to base root
@@ -89,7 +94,9 @@ module.exports = {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
   SYNC_DB: process.env.SYNC_DB === 'true',
-  FRONTEND_URL: process.env.FRONTEND_URL,
+  // Empty string when unset, so callers can normalise it (.replace(/\/$/, ''))
+  // without a guard and still treat it as falsy for "is the SPA on its own origin".
+  FRONTEND_URL: process.env.FRONTEND_URL || '',
   SERVER_URL: process.env.SERVER_URL,
   APP_NAME: appName || 'unknown-app',
   SECURE_COOKIE: process.env.SECURE_COOKIE === 'true',
@@ -201,7 +208,7 @@ module.exports = {
   OIDC_POST_LOGOUT_REDIRECT_URI: process.env.OIDC_POST_LOGOUT_REDIRECT_URI || process.env.FRONTEND_URL,
 
   // Shared secret guarding the internal service-to-service API
-  // (/internal). The standalone biometric gateways send it in the
+  // (/api/v1/internal). The standalone biometric gateways send it in the
   // `x-internal-secret` header; when unset (local/dev) the check is skipped.
   MAIN_APP_INTERNAL_SECRET: process.env.MAIN_APP_INTERNAL_SECRET,
 
@@ -227,6 +234,7 @@ module.exports = {
   // Helper functions
   isProduction,
   isSecureCookie,
+  isOidcSecureCookie,
   isDevelopment,
 
 

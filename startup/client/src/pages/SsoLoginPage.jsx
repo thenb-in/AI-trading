@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSso } from '@startup/hooks/useSso';
 import { useDataContext } from '@context/useDataContext';
+import { isSsoEnabled } from '@startup/sso/ssoMode';
 
 
 function SsoLoginPage() {
@@ -20,6 +21,12 @@ function SsoLoginPage() {
     if (userData) {
       const returnTo = searchParams.get('returnTo');
       navigate(returnTo && returnTo.startsWith('/') ? returnTo : '/admin', { replace: true });
+      return;
+    }
+    // SSO (consumer) mode off → don't kick off an SSO redirect; use the local
+    // login page instead.
+    if (!isSsoEnabled()) {
+      navigate('/login', { replace: true });
       return;
     }
     if (isSsoReturn) {

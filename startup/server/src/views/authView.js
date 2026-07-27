@@ -270,7 +270,7 @@ async function logout(req, res) {
       path: '/'
     });
 
-    const ssoLogoutUrl = await sso.buildEndSessionUrl({ idToken });
+    const ssoLogoutUrl = idToken ? await sso.buildEndSessionUrl({ idToken }) : null;
 
     return res.status(200).json({
       message: `User logged out successfully ${userId}`,

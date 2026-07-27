@@ -10,16 +10,17 @@ import { PhoneTypeField } from '@startup/components/base_components/fields/Phone
 import { PasswordTypeField } from '@startup/components/base_components/fields/PasswordTypeField';
 import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 
 
-function Signup({ showRoleDropdown }) {
+function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    companyId: '',
+    companyId: companyId || '',
   });
   const [error, setError] = useState('');
   const [roles, setRoles] = useState([]);
@@ -29,7 +30,13 @@ function Signup({ showRoleDropdown }) {
 
   const usernameAvailability = useAvailabilityCheck('username', formData.username);
 
-  // Honor company_id from URL (e.g. /signup?company_id=uuid) for invite/signup links
+
+  useEffect(() => {
+    if (companyId?.trim()) {
+      setFormData(prev => ({ ...prev, companyId: companyId.trim() }));
+    }
+  }, [companyId]);
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const companyIdFromUrl = params.get('company_id');
@@ -70,6 +77,15 @@ function Signup({ showRoleDropdown }) {
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
   };
 
+  const roleOptions = roles.map((role) => ({
+    value: String(role.id),
+    label: role.name,
+  }));
+
+  const handleRoleChange = (value) => {
+    setFormData({ ...formData, role: value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -84,6 +100,17 @@ function Signup({ showRoleDropdown }) {
 
     if (usernameAvailability.status === 'taken') {
       setError('That username is already taken. Please choose another.');
+      return;
+    }
+
+    if (typeof onSubmit === 'function') {
+      try {
+        await onSubmit(cleanedData);
+      } catch (err) {
+        const message = err?.error || err?.message || 'Signup failed. Please try again.';
+        setError(message);
+        toast.error(message);
+      }
       return;
     }
 
@@ -214,26 +241,15 @@ function Signup({ showRoleDropdown }) {
           {/* Role Dropdown - only show if showRoleDropdown is true */}
           {showRoleDropdown && (
             <div className="mb-4">
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <SearchableDropdown
+                options={roleOptions}
+                selectedValues={String(formData.role ?? '')}
+                onChange={handleRoleChange}
+                placeholder="Select Role"
+                multiple={false}
                 disabled={loading}
-              >
-                <option value="" disabled hidden>
-                  Select Role
-                </option>
-                {loading ? (
-                  <option>Loading roles...</option>
-                ) : (
-                  roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))
-                )}
-              </select>
+                loading={loading}
+              />
             </div>
           )}
 
@@ -257,7 +273,8 @@ function Signup({ showRoleDropdown }) {
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <button
-                onClick={handleNavigateToLogin}
+                type="button"
+                onClick={onBackToLogin || handleNavigateToLogin}
                 className="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition"
               >
                 Log in
@@ -272,6 +289,9 @@ function Signup({ showRoleDropdown }) {
 
 Signup.propTypes = {
   showRoleDropdown: PropTypes.bool,
+  onSubmit: PropTypes.func,
+  onBackToLogin: PropTypes.func,
+  companyId: PropTypes.string,
 };
 
 export { Signup };

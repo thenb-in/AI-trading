@@ -12,6 +12,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { SsoLoginPage } from './pages/SsoLoginPage';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { UserManagement } from './components/admin/user_management/UserManagement';
 import { GlobalSearchPalette } from './components/global_search_palette/GlobalSearchPalette';
 import { consoleLogBufferService } from './utils/consoleLogBufferService';
 import { PWAInstallPrompt } from './seo/PWAInstallPrompt';
@@ -50,6 +51,15 @@ export function App() {
              </div>
             </ProtectedRoute>
           } 
+        />
+        {/* Standalone user management outside the admin layout (ported from wallet). */}
+        <Route
+          path="/usermanagement"
+          element={
+            <ProtectedRoute>
+              <UserManagement />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/admin/*"

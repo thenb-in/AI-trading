@@ -7,6 +7,19 @@ const { generateAccessToken, generateRefreshToken } = require('../utils/authUtil
 const { normalizeCoordinate, normalizeRadiusMeters } = require('../utils/locationUtils');
 
 const companyController = {
+
+  async companyExists(req, res) {
+    try {
+      const company = await companyService.getCompanyById(req.params.companyId);
+      if (!company) {
+        return res.json({ exists: false });
+      }
+      return res.json({ exists: true, company: { id: company.id, name: company.name } });
+    } catch (error) {
+      return res.status(400).json({ error: error.message });
+    }
+  },
+
   async getCompanySettings(req, res) {
     try {
       const requiredPermission = MODULE_PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS.name;
@@ -32,10 +45,14 @@ const companyController = {
       }
 
       const id = req.user.company_id;
-      const { deleteOnSeen, messageTimer, name, hideChat, mobileApp, desktopWeb, mobileWeb, latitude, longitude, geofence_radius_meters } = req.body;
+      const {
+        deleteOnSeen, messageTimer, name, hideChat, mobileApp, desktopWeb, mobileWeb,
+        latitude, longitude, geofence_radius_meters, debug_mode_shortcut
+      } = req.body;
 
       // Normalize lat/long (empty => null/cleared, else range-checked) and the
-      // geofence radius (blank => unchanged, else a positive whole number).
+      // geofence radius (blank => unchanged, else a positive whole number). The debug
+      // shortcut's format is validated on the model.
       let latitudeValue, longitudeValue, geofenceRadiusValue;
       try {
         latitudeValue = normalizeCoordinate(latitude, -90, 90, 'latitude');
@@ -55,7 +72,8 @@ const companyController = {
         name,
         latitude: latitudeValue,
         longitude: longitudeValue,
-        geofence_radius_meters: geofenceRadiusValue
+        geofence_radius_meters: geofenceRadiusValue,
+        debug_mode_shortcut
       });
 
       res.json(settings);

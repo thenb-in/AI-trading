@@ -1,9 +1,22 @@
+import { useNavigate } from 'react-router-dom';
 import { Login } from '@startup/components/auth/Login';
 import { motion } from 'framer-motion';
 import { AnimatedBackground } from '@startup/components/AnimatedBackground';
 import { PageMeta, softwareApplicationJsonLd } from '@startup/seo/PageMeta';
+import { useSsoInteraction, useSsoLogin } from '@startup/sso';
 
 function Home() {
+  const navigate = useNavigate();
+  const { isSso, uid, signupPath, forgotPasswordPath } = useSsoInteraction();
+  const ssoLogin = useSsoLogin(uid);
+  const loginProps = isSso
+    ? {
+        onSubmit: ssoLogin,
+        onForgotPassword: (state) => navigate(forgotPasswordPath, state ? { state } : undefined),
+        onSignup: () => navigate(signupPath),
+      }
+    : {};
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Per-page SEO. The structured-data card lets Google render a
@@ -26,7 +39,7 @@ function Home() {
             transition={{ duration: 0.3 }}
             className="w-full"
           >
-             <Login />
+             <Login {...loginProps} />
           </motion.div>
         </div>
       </div>

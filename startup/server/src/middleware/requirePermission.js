@@ -12,6 +12,9 @@ function requirePermission(permissionName) {
   const permissionList = Array.isArray(permissionName) ? permissionName : [permissionName];
   return async function requirePermissionMiddleware(req, res, next) {
     try {
+      if (req.user?.ssoManaged) {
+        return next();
+      }
       // Load the license whitelist once (null = licensing bypassed → allow all).
       const licensedNames = await licenseService.getLicensedPermissions();
       const licensedPermissions = licensedNames === null

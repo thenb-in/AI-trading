@@ -5,6 +5,7 @@ const env = require('../config/env');
 const { fetchAvailableSubscriptionsFromWallet, syncCompanySubscriptionsToWallet } = require('../../interfaces/wallet/subscriptionInterface');
 const { buildLicenseSubscriptions, validateSubscriptionsWithWallet } = require('./subscriptionResolvers');
 const { formatSubscriptionRow } = require('../data_formatters/subscriptionFormatter');
+const { getSubscriptionsAndPermissions } = require('./subscription/listSubscription.service');
 
 
 const COMPANY_SUBSCRIPTION_INCLUDE = [
@@ -57,6 +58,9 @@ const getCompanySubscriptions = async (companyId) => {
  * includes both approved and pending entries.
  */
 const getAvailableSubscriptions = async (companyId) => {
+  if (!env.APP_KEY) {
+    return getSubscriptionsAndPermissions(companyId);
+  }
   return fetchAvailableSubscriptionsFromWallet(env.APP_KEY, companyId);
 };
 

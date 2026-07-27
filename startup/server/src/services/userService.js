@@ -249,7 +249,7 @@ const updateUserBasic = async (userId, fields = {}) => {
 
 const checkUserActive = async (userId) => {
   const user = await User.findByPk(userId, {
-    attributes: ['is_approved', 'username']
+    attributes: ['id', 'is_approved', 'username', 'wallet_user_id']
   });
   if (!user || !user.is_approved) {
     return { isActive: false, user };

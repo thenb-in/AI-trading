@@ -56,7 +56,7 @@ const resetPassword = async ({ username, password, otp }) => {
     logger.warn(`Local password reset refused for SSO account: ${user.id}`);
     throw {
       status: 403,
-      message: 'This account signs in with SSO. Reset your password on NBNext Wallet.'
+      message: 'This account signs in with SSO. Reset your password with sso.'
     };
   }
 

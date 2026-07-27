@@ -19,6 +19,10 @@ const ApiService = {
     return this.request('POST', '/auth/login', data);
   },
 
+  companyExists(companyId) {
+    return this.request('GET', `/company/exists/${encodeURIComponent(companyId)}`);
+  },
+
   // Self-serve onboarding (public)
   getPublicPlans() {
     return this.request('GET', '/auth/plans');
