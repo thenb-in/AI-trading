@@ -42,6 +42,7 @@ function SubscriptionPage() {
               canExport={!!sm.selectedSubscription}
               isExporting={sm.isExporting}
               isImporting={sm.isImporting}
+              showPush={sm.walletEnabled}
               canPush={!!sm.selectedSubscription}
               isPushed={!!sm.selectedSubscription?.pushed}
               isPushing={sm.isPushing}

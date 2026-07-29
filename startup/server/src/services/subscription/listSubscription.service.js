@@ -34,6 +34,7 @@ const getSubscriptionsAndPermissions = async (companyId) => {
     });
 
     const pushedIds = await getPushedPlanIds(companyId);
+    const walletEnabled = Boolean(env.APP_KEY);
 
     return subscriptions.map((subscription) => {
       const subscriptionJson = subscription.toJSON();
@@ -46,6 +47,7 @@ const getSubscriptionsAndPermissions = async (companyId) => {
         ...subscriptionJson,
         isGlobal: isGlobalSubscription(subscription),
         pushed: pushedIds.has(subscription.id),
+        walletEnabled,
         permissions: permissionsWithStatus
       };
     });

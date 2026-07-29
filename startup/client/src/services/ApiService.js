@@ -23,11 +23,6 @@ const ApiService = {
     return this.request('GET', `/company/exists/${encodeURIComponent(companyId)}`);
   },
 
-  // Self-serve onboarding (public)
-  getPublicPlans() {
-    return this.request('GET', '/auth/plans');
-  },
-
   // Live availability check while typing (type: 'company' | 'username').
 
   checkAvailability(type, value) {
@@ -41,14 +36,6 @@ const ApiService = {
 
   verifyAndEnableTotp(data) {
     return this.request('POST', '/auth/verify-totp', data);
-  },
-
-  createPaymentOrder(subscriptionId, employeeCount) {
-    return this.request('POST', '/auth/payment/order', { subscriptionId, employeeCount });
-  },
-
-  onboard(data) {
-    return this.request('POST', '/auth/onboard', data);
   },
 
   getUser() {

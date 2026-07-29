@@ -47,6 +47,7 @@ import {
 import { adaptLayoutConfig } from "./utils/layoutConfig.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
 
+const INFINITE_SCROLL_MAX_HEIGHT = 'calc(100vh - 180px)';
 
 const NbNextDataGrid = forwardRef(({
   rows: rowsProp = [],
@@ -76,6 +77,11 @@ const NbNextDataGrid = forwardRef(({
    * detailed attendance print view, which lists one row per parameter per employee).
    */
   isSectionHeaderRow = null,
+  /**
+   * `(row) => boolean`. Rows it returns true for are tinted red — for entries the
+   * caller wants the reader to check before acting on them (a duplicate punch, say).
+   */
+  isAlertRow = null,
   hideConstantColumns = true,
   /**
    * Excel export only. When false (default), columns with the same value on
@@ -520,6 +526,7 @@ const NbNextDataGrid = forwardRef(({
       maxHeight: "none",
       overflow: "visible",
     }),
+    ...(infiniteScroll && !fullScreen && { maxHeight: INFINITE_SCROLL_MAX_HEIGHT }),
     ...activeTheme.vars,
   };
   const bodyScrollAreaStyle = useNaturalFlow
@@ -626,6 +633,7 @@ const NbNextDataGrid = forwardRef(({
             selectedRowId={selectedRowId}
             handleRowClick={handleRowClick}
             getRowIdFunc={getRowId}
+            isAlertRow={isAlertRow}
           />
         ) : (
           <table style={tableStyle}>
@@ -672,6 +680,7 @@ const NbNextDataGrid = forwardRef(({
               allColumns={l1}
               selection={bodySelectionProp}
               isSectionHeaderRow={isSectionHeaderRow}
+              isAlertRow={isAlertRow}
               density={density}
             />
           </table>
@@ -745,6 +754,7 @@ NbNextDataGrid.propTypes = {
   showTotalRow: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   isSectionHeaderRow: PropTypes.func,
+  isAlertRow: PropTypes.func,
   hideConstantColumns: PropTypes.bool,
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,

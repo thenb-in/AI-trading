@@ -25,7 +25,11 @@ async function syncSubscriptionToWallet({ subscription, permissions, action, aud
     auditedBy: user?.name
   };
 
-  await pushSubscriptionToWallet(payload);
+  const result = await pushSubscriptionToWallet(payload);
+  if (result?.skipped) {
+    logger.info(`Subscription ${subscription.id} (${action}) saved locally — no wallet configured`);
+    return;
+  }
   logger.info(`Subscription ${subscription.id} (${action}) synced to wallet`);
 }
 

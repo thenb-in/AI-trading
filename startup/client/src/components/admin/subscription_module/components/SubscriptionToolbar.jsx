@@ -6,6 +6,7 @@ function SubscriptionToolbar({
   canExport,
   isExporting,
   isImporting,
+  showPush,
   canPush,
   isPushed,
   isPushing,
@@ -43,7 +44,8 @@ function SubscriptionToolbar({
         onChange={onImportFile}
         className="hidden"
       />
-      <button
+      {/* Hidden when no wallet is configured (APP_KEY empty) */}
+      {showPush && <button
         onClick={onPush}
         disabled={!canPush || isPushed || isPushing}
         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors disabled:cursor-not-allowed ${
@@ -65,7 +67,7 @@ function SubscriptionToolbar({
             ? <Check className="w-4 h-4" />
             : <UploadCloud className="w-4 h-4" />}
         {isPushed ? 'Pushed' : 'Push to wallet'}
-      </button>
+      </button>}
       <button
         onClick={onAdd}
         className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
@@ -81,6 +83,7 @@ SubscriptionToolbar.propTypes = {
   canExport: PropTypes.bool,
   isExporting: PropTypes.bool,
   isImporting: PropTypes.bool,
+  showPush: PropTypes.bool,
   canPush: PropTypes.bool,
   isPushed: PropTypes.bool,
   isPushing: PropTypes.bool,

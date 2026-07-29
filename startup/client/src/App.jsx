@@ -7,7 +7,6 @@ import { Home } from './pages/Home';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { NotFound } from './pages/NotFound';
 import { SignupPage } from './pages/SignupPage';
-import { GetStartedPage } from './pages/GetStartedPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { SsoLoginPage } from './pages/SsoLoginPage';
 import PropTypes from 'prop-types';
@@ -19,7 +18,16 @@ import { PWAInstallPrompt } from './seo/PWAInstallPrompt';
 import { RouteTitle } from './seo/RouteTitle';
 import { useSso } from './hooks/useSso';
 
-export function App() {
+/**
+ * Framework root. Owns auth, routing, sidebar and the global chrome.
+ *
+ * `extraRoutes` is the app-side extension point: an app passes its own
+ * `{ path, element }` entries and they mount alongside the framework routes,
+ * ahead of the catch-all. Mirrors buildApp()'s `extraRoutes` on the server, so
+ * a route that belongs to one product (e.g. the self-serve /get-started signup
+ * wizard) lives in that app instead of every app built on startup.
+ */
+export function App({ extraRoutes = [] }) {
   useSso();
 
   useEffect(() => {
@@ -38,7 +46,6 @@ export function App() {
       <Routes>
         <Route path="/" element={<SsoLoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/get-started" element={<GetStartedPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {/* Straight to Wallet — signing up and resetting happen on its screens. */}
         <Route path="/login" element={<Home />} />
@@ -69,6 +76,10 @@ export function App() {
             </ProtectedRoute>
           }
         />
+        {/* App-owned routes, mounted before the catch-all so they resolve. */}
+        {extraRoutes.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
         <Route path="*" element={<NotFound />} />
       </Routes>
       <ToastContainer 
@@ -87,6 +98,13 @@ export function App() {
     </>
   );
 }
+
+App.propTypes = {
+  extraRoutes: PropTypes.arrayOf(PropTypes.shape({
+    path: PropTypes.string.isRequired,
+    element: PropTypes.node.isRequired,
+  })),
+};
 
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,

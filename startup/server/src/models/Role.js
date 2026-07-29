@@ -18,9 +18,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'users'
     });
 
-    // A Role can have many Permissions (through RolePermission join table)
+    // A Role can have many Permissions (through the RolePermission join model).
+    // Pass the model, not the table name — a string `through` makes Sequelize
+    // define a second, id-less model on the same table, and sync() then drops
+    // the join table's primary key.
     Role.belongsToMany(models.Permission, {
-      through: 'nbnext_role_permission_mapping',
+      through: models.RolePermission,
       as: 'permissions',
       foreignKey: 'role_id'
     });

@@ -74,9 +74,9 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
         return;
       }
 
-      // Check if user requires onboarding (no companyId)
+      // No company yet — send them through self-serve signup (/get-started).
       if (requiresOnboarding) {
-        navigate('/onboarding', { replace: true });
+        navigate('/get-started', { replace: true });
         return;
       }
 
@@ -125,9 +125,9 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
       const updatedUser = { ...user, is_totp_enabled: true };
       setUserData(updatedUser);
 
-      // Check if user requires onboarding (no companyId)
+      // No company yet — send them through self-serve signup (/get-started).
       if (requiresOnboarding) {
-        navigate('/onboarding', { replace: true });
+        navigate('/get-started', { replace: true });
         return;
       }
 
@@ -143,9 +143,9 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
     if (loginSuccessData) {
       const { user, requiresOnboarding } = loginSuccessData;
       
-      // Check if user requires onboarding (no companyId)
+      // No company yet — send them through self-serve signup (/get-started).
       if (requiresOnboarding) {
-        navigate('/onboarding', { replace: true });
+        navigate('/get-started', { replace: true });
         setLoginSuccessData(null);
         return;
       }

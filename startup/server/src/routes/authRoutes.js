@@ -3,8 +3,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 const authValidator = require('../validators/authValidator');
 const { signup, login, resetPassword, generateTotpSecret, verifyAndEnableTotp, approveUser, getAllUsers, getAllRoles, logout, checkAvailability } = require('../views/authView');
 const { startSso, ssoCallback, ssoBackchannelLogout } = require('../sso');
-const { getPlans, onboard, razorpayWebhook } = require('../onboarding/onboarding.view');
-const { createOrder } = require('../razorpay/razorpay.view');
 
 const router = express.Router();
 
@@ -27,13 +25,10 @@ router.get('/sso/callback', ssoCallback);
 router.post('/sso/backchannel-logout', express.urlencoded({ extended: false }), ssoBackchannelLogout);
 
 
-// Public self-serve onboarding (plan catalogue + Razorpay order + create company/admin/plan)
-router.get('/plans', getPlans);
-router.post('/payment/order', createOrder);
-router.post('/onboard', onboard);
-// Razorpay server-to-server webhook (payment.captured / order.paid). Public:
-// authenticated by HMAC signature over the raw body, not a session.
-router.post('/razorpay/webhook', razorpayWebhook);
+// NOTE: the public self-serve onboarding endpoints (/plans, /payment/order,
+// /onboard, /razorpay/webhook) are NOT framework routes. They belong to the
+// app that sells subscriptions — see app/server/src/routes/onboardingRoutes.js,
+// which mounts them onto this same /auth prefix.
 router.post('/logout', authMiddleware.protect, logout);
 // Protected routes (admin only)
 router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUserValidation, approveUser);

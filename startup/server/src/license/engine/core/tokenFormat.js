@@ -1,16 +1,17 @@
 'use strict';
 
-// Verifier-side codec. KEEP IN BYTE-FOR-BYTE SYNC with the wallet's
-// `nbnext_wallet/server/src/services/license/tokenFormat.js`. The format
-// is the contract between issuer and verifier; drift breaks every
-// license in the field.
+// The license token codec, and the whole of it that a verifier needs. The
+// format is the contract between issuer and verifier, so the issuer reads its
+// encoding and verification from right here rather than keeping a copy in
+// step by hand — see app/server/src/services/license/tokenFormat.js, which
+// adds the signing half.
 //
 // Format:  NBLIC1.<base64url(payload_json)>.<base64url(signature)>
 //
 // The signature is computed over the ASCII bytes of
-// "NBLIC1.<base64url(payload_json)>" using Ed25519. We expose only the
-// verify path here — the framework never signs anything; that's the
-// wallet's exclusive job.
+// "NBLIC1.<base64url(payload_json)>" using Ed25519. No signing path lives
+// here — putting a license's name to it is the wallet's exclusive job, and
+// this module ships to machines that only ever check one.
 
 const crypto = require('crypto');
 const { LICENSE_TOKEN_HEADER, ED25519_SIGNATURE_BYTES } = require('../../../constants/license');
@@ -56,6 +57,8 @@ function verifyToken(token, publicKey) {
   } catch {
     return { ok: false, reason: 'bad-signature-encoding' };
   }
+  // Ed25519 signatures are always exactly 64 bytes. Reject obvious garbage
+  // up-front so we don't waste a crypto.verify on it.
   if (sig.length !== ED25519_SIGNATURE_BYTES) {
     return { ok: false, reason: 'bad-signature-length' };
   }
@@ -93,6 +96,13 @@ function verifyToken(token, publicKey) {
   return { ok: true, payload, keyIndex: validKeyIndex };
 }
 
+/**
+ * Decodes a token's payload WITHOUT verifying its signature. Use ONLY for
+ * inspecting fields needed BEFORE signature verification can be done (e.g.
+ * deciding which key in a rotation set to try based on the embedded `key_id`,
+ * or reading `license_id` for log lines). NEVER trust the result for
+ * authorization decisions.
+ */
 function decodeUnsafe(token) {
   if (typeof token !== 'string') {
     return null;

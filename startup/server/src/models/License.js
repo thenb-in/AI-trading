@@ -65,10 +65,16 @@ module.exports = (sequelize, DataTypes) => {
       field: 'renewal_after'
     },
     renewalMode: {
-      type: DataTypes.ENUM('online', 'airgap', 'manual'),
+      type: DataTypes.STRING,
       allowNull: false,
       defaultValue: 'online',
-      field: 'renewal_mode'
+      field: 'renewal_mode',
+      validate: {
+        isIn: {
+          args: [['online', 'airgap', 'manual']],
+          msg: 'renewalMode must be one of: online, airgap, manual'
+        }
+      }
     },
     token: {
       type: DataTypes.TEXT,

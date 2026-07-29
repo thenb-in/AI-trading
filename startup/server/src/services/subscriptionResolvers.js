@@ -55,6 +55,10 @@ const buildLicenseSubscriptions = async (companyId) => {
  * Validate a company's locally-computed subscriptions against the wallet.
  */
 const validateSubscriptionsWithWallet = async (companyId, localSubs) => {
+  if (!env.APP_KEY) {
+    return localSubs;
+  }
+
   let walletPlans;
   try {
     walletPlans = await fetchCompanySubscriptionsFromWallet(env.APP_KEY, companyId);

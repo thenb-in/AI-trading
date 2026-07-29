@@ -6,6 +6,10 @@ import { formatTime } from '@utils/formattingUtils';
 import { NbNextDataGrid } from '@/components/nbnext_data_grid';
 import PropTypes from 'prop-types';
 
+// Row action fields may be given as a plain value or as a function of the row,
+// for actions that flip with the row's state (Hold/Resume, Close/Reopen).
+const perRow = (value, row) => (typeof value === 'function' ? value(row) : value);
+
 const MasterTable = ({
   columns,
   data,
@@ -19,17 +23,30 @@ const MasterTable = ({
   hasMore = false,
   onLoadMore,
   isLoadingMore = false,
+  /** Field to group rows by on first render; the user can retoggle from the
+   *  column menu. Omit to start ungrouped. */
+  defaultGroupByField = null,
   getRowId,
   density,
   documentName,
   enableRowSelection = false,
   selectedRowIds,
   onSelectionChange,
+  /** `(row) => boolean`; rows it flags are tinted red (e.g. duplicates to review). */
+  isAlertRow,
 
   showGridExport = true,
   exportReport = { title: 'Export', slug: 'export' },
   showInsightsAsHeader = true,
   showEmptyColumns = true,
+  /**
+   * The grid folds columns whose value is identical across every row into the
+   * Insights header. Set false when such a column is what identifies the row —
+   * ten runs of the same report still need their "Report" column.
+   */
+  hideConstantColumns = true,
+  /** Seeds the grid's initial row grouping; user can still toggle it. */
+  defaultGroupByField = null,
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
 
@@ -213,22 +230,28 @@ const MasterTable = ({
                   e.stopPropagation();
                   action.onClick(row.id, row);
                 };
+                // An action that flips with the row — Hold/Resume, Close/Reopen
+                // — states its label and colour as a function of that row.
+                const label = perRow(action.label, row);
+                const type = perRow(action.type, row);
                 return (
                   <button
                     key={idx}
                     onClick={handleClick}
                     className={`inline-flex items-center px-2 py-1 border text-xs font-medium rounded ${
-                      action.type === 'danger'
+                      type === 'danger'
                         ? 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-2 focus:ring-red-500'
-                        : action.type === 'primary'
+                        : type === 'primary'
                           ? 'border-blue-300 text-blue-700 bg-white hover:bg-blue-50 focus:ring-2 focus:ring-blue-500'
-                          : action.type === 'success'
+                          : type === 'success'
                             ? 'border-green-300 text-green-700 bg-white hover:bg-green-50 focus:ring-2 focus:ring-green-500'
-                            : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
+                            : type === 'warning'
+                              ? 'border-amber-300 text-amber-700 bg-white hover:bg-amber-50 focus:ring-2 focus:ring-amber-500'
+                              : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
                     }`}
                   >
-                    {action.icon && <span className="mr-1">{action.icon}</span>}
-                    {action.label}
+                    {action.icon && <span className="mr-1">{perRow(action.icon, row)}</span>}
+                    {label}
                   </button>
                 );
               })}
@@ -272,6 +295,7 @@ const MasterTable = ({
         columns={gridColumns}
         rows={data}
         onRowClick={rowClickEnabled ? handleGridRowClick : null}
+        defaultGroupByField={defaultGroupByField}
         infiniteScroll={infiniteScroll}
         hasMore={hasMore}
         onLoadMore={onLoadMore}
@@ -283,11 +307,14 @@ const MasterTable = ({
         enableRowSelection={enableRowSelection}
         selectedRowIds={selectedRowIds}
         onSelectionChange={onSelectionChange}
+        isAlertRow={isAlertRow}
 
         showExcelExport={showGridExport}
         exportReport={exportReport}
         showInsightsAsHeader={showInsightsAsHeader}
         showEmptyColumns={showEmptyColumns}
+        hideConstantColumns={hideConstantColumns}
+        defaultGroupByField={defaultGroupByField}
       />
       <FileViewerModal
         isOpen={viewerState.open}
@@ -307,7 +334,14 @@ MasterTable.propTypes = {
       id: PropTypes.string,
       label: PropTypes.string,
       display_name: PropTypes.string,
-      type: PropTypes.oneOf(['text', 'number', 'select', 'datetime', 'date', 'time', 'boolean', 'file', 'array']),
+      // The full vocabulary the server's column constants actually emit. Only
+      // file/date/datetime/time/select/boolean get special rendering above;
+      // the rest fall through to text. Listing them all keeps a typo an error
+      // without making a legitimate server column one.
+      type: PropTypes.oneOf([
+        'text', 'string', 'number', 'select', 'datetime', 'date', 'time',
+        'boolean', 'file', 'array', 'object', 'json', 'status', 'duration',
+      ]),
       options: PropTypes.array,
       render: PropTypes.func,
       getExportValue: PropTypes.func,
@@ -317,10 +351,14 @@ MasterTable.propTypes = {
   loading: PropTypes.bool,
   actions: PropTypes.arrayOf(
     PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      icon: PropTypes.node,
+      /** A string, or a function of the row for labels that flip with state. */
+      label: PropTypes.oneOfType([PropTypes.string, PropTypes.func]).isRequired,
+      icon: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
       onClick: PropTypes.func.isRequired,
-      type: PropTypes.oneOf(['primary', 'danger', 'success', 'default']),
+      type: PropTypes.oneOfType([
+        PropTypes.oneOf(['primary', 'danger', 'success', 'warning', 'default']),
+        PropTypes.func
+      ]),
       /** Optional: hide this action for a row by returning false. */
       show: PropTypes.func,
     })
@@ -329,6 +367,7 @@ MasterTable.propTypes = {
   loadingMessage: PropTypes.string,
   onRowClick: PropTypes.func,
   rowClickEnabled: PropTypes.bool,
+  defaultGroupByField: PropTypes.string,
   infiniteScroll: PropTypes.bool,
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
@@ -339,10 +378,13 @@ MasterTable.propTypes = {
   enableRowSelection: PropTypes.bool,
   selectedRowIds: PropTypes.oneOfType([PropTypes.array, PropTypes.instanceOf(Set)]),
   onSelectionChange: PropTypes.func,
+  isAlertRow: PropTypes.func,
   showGridExport: PropTypes.bool,
   exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,
+  hideConstantColumns: PropTypes.bool,
+  defaultGroupByField: PropTypes.string,
 };
 
 export { MasterTable };

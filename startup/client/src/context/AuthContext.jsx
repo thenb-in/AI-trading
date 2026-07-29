@@ -12,7 +12,13 @@ import {
   UnauthorizedScreen,
 } from "./AuthScreens";
 
-const DataProvider = ({ children }) => {
+/**
+ * `publicPaths` lets an app declare entry paths of its own that an anonymous
+ * visitor may land on — app-owned routes passed to <App extraRoutes>, which the
+ * framework's own list below cannot know about (e.g. a self-serve signup page).
+ * Without it those routes bounce to "/" before they ever render.
+ */
+const DataProvider = ({ children, publicPaths = [] }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
@@ -30,10 +36,10 @@ const DataProvider = ({ children }) => {
       entryPath === "/" ||
       entryPath === "/signup" ||
       entryPath ==='/login'||
-      entryPath === "/get-started" ||
       entryPath === "/forgot-password" ||
       entryPath.startsWith("/signup/") ||
-      entryPath.startsWith("/forgot-password/");
+      entryPath.startsWith("/forgot-password/") ||
+      publicPaths.includes(entryPath);
 
     let cancelled = false;
 
@@ -165,6 +171,7 @@ const DataProvider = ({ children }) => {
 
 DataProvider.propTypes = {
   children: PropTypes.node.isRequired,
+  publicPaths: PropTypes.arrayOf(PropTypes.string),
 };
 
 export { DataProvider };

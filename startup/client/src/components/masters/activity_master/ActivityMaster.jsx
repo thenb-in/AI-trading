@@ -3,11 +3,12 @@ import { MasterHeader } from '@startup/components/base_components/master/master_
 import { MasterSearch } from '@startup/components/base_components/master/MasterSearch';
 import { MasterTable } from '@startup/components/base_components/master/master_table/MasterTable';
 import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
+import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
 import { ActivityForm } from './ActivityForm';
 import { ActivityLogDetails } from './ActivityLogDetails';
 import { activityService } from '@services/activityService';
 import { useDataContext, hasPermission } from '@context/useDataContext';
-import { X, Plus, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 
@@ -229,24 +230,7 @@ const ActivityMaster = () => {
           onClose={handleClose}
           title="Add Activity Log"
           maxWidth="md"
-          actions={
-            <>
-              <button
-                onClick={handleClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                <X className="w-4 h-4 inline mr-2" />
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 inline mr-2" />
-                Create
-              </button>
-            </>
-          }
+          actions={<MasterModalActions onCancel={handleClose} onConfirm={handleSave} confirmLabel="Create" />}
         >
           <ActivityForm formData={formData} onChange={handleFormChange} />
         </MasterModal>

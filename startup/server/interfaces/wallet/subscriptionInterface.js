@@ -11,11 +11,17 @@ function buildWalletUrl(path, base = 'plan') {
   return `${env.WALLET_SERVER_URL.replace(/\/+$/, '')}/${base}/${path}`;
 }
 
-function requireAppKey(appKey) {
-  if (!appKey) {
-    throw { status: 503, message: 'Wallet not configured: APP_KEY is missing' };
-  }
+if (!env.APP_KEY) {
+  logger.warn(`APP_KEY is empty — wallet sync disabled, subscriptions stay local (WALLET_SERVER_URL=${env.WALLET_SERVER_URL})`);
 }
+
+const hasWallet = (appKey = env.APP_KEY) => Boolean(appKey);
+
+/** Result for a wallet call that was skipped because no wallet is configured. */
+const skipped = (reason) => {
+  logger.info(`Wallet sync skipped (APP_KEY empty): ${reason}`);
+  return { success: true, skipped: true };
+};
 
 /** Single place for the shared wallet HTTP call (URL build, logging, timeout, headers). */
 async function walletRequest(method, path, { data, params, log, base } = {}) {
@@ -35,7 +41,9 @@ async function walletRequest(method, path, { data, params, log, base } = {}) {
 
 /** Push one subscription create/update event to the wallet. */
 async function pushSubscriptionToWallet(payload) {
-  requireAppKey(env.APP_KEY);
+  if (!hasWallet()) {
+    return skipped(`subscription ${payload.subscriptionId} (${payload.action}) stays local`);
+  }
   const response = await walletRequest('post', 'push', {
     data: payload,
     log: `Pushing subscription ${payload.subscriptionId} (${payload.action}) to wallet`
@@ -45,7 +53,9 @@ async function pushSubscriptionToWallet(payload) {
 
 /** Fetch this app's available plans (identified by appKey). */
 async function fetchPlansFromWallet(appKey) {
-  requireAppKey(appKey);
+  if (!hasWallet(appKey)) {
+    return [];
+  }
   const response = await walletRequest('get', 'plans', {
     params: { appKey },
     log: `Fetching plans from wallet appKey:${appKey}`
@@ -55,7 +65,9 @@ async function fetchPlansFromWallet(appKey) {
 
 /** company's full set of subscriptions on the wallet (adds new, removes dropped). */
 async function syncCompanySubscriptionsToWallet({ companyId, companyName, planIds, heads, expiryDate, amount, paymentId }) {
-  requireAppKey(env.APP_KEY);
+  if (!hasWallet()) {
+    return skipped(`${planIds.length} subscription(s) for company ${companyId} stay local`);
+  }
   const response = await walletRequest('post', 'company-subscription/sync', {
     data: { appKey: env.APP_KEY, companyId, companyName, planIds, heads, expiryDate, amount, paymentId },
     base: 'subscription',
@@ -66,7 +78,9 @@ async function syncCompanySubscriptionsToWallet({ companyId, companyName, planId
 
 /** Fetch available subscriptions (global + the given company), approved and pending. */
 async function fetchAvailableSubscriptionsFromWallet(appKey, companyId) {
-  requireAppKey(appKey);
+  if (!hasWallet(appKey)) {
+    return [];
+  }
   const response = await walletRequest('get', 'available', {
     params: { appKey, companyId },
     log: `Fetching available subscriptions from wallet (company ${companyId})`
@@ -76,7 +90,9 @@ async function fetchAvailableSubscriptionsFromWallet(appKey, companyId) {
 
 /** Fetch a company's actual subscriptions (with permissions) — what it HAS, for validation. */
 async function fetchCompanySubscriptionsFromWallet(appKey, companyId) {
-  requireAppKey(appKey);
+  if (!hasWallet(appKey)) {
+    return [];
+  }
   const response = await walletRequest('get', `company/${companyId}`, {
     base: 'subscription',
     params: { appKey },

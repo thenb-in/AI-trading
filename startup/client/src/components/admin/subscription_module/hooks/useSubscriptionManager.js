@@ -33,6 +33,7 @@ function useSubscriptionManager() {
   const isDirty = dirtyCount > 0;
   // Global (default) subscriptions are server-side read-only for non-support users.
   const isReadOnly = !!selectedSubscription?.isGlobal && !isSupportUser;
+  const walletEnabled = subscriptions.some((subscription) => subscription.walletEnabled);
 
   // Re-seed the draft from the saved statuses whenever the selected subscription changes.
   // Keyed on id only — refetches that keep the same selection must not wipe in-progress edits.
@@ -175,6 +176,7 @@ function useSubscriptionManager() {
     isDirty,
     dirtyCount,
     isReadOnly,
+    walletEnabled,
     // flags
     isSaving,
     isExporting,

@@ -137,11 +137,7 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
       // plus every urlPrefix the caller registered in additionalStaticDirs.
       // The SPA fallback skips any path under these — so they 404 on miss
       // instead of being shadowed by index.html.
-      // '/internal' is server-owned like '/api': the service-to-service gateway
-      // routes sit outside the /api/v1 namespace, so without listing it here a
-      // mistyped /internal/* path would be shadowed by index.html and hand the
-      // calling gateway an HTML 200 instead of a JSON 404.
-      const serverPrefixes = ['/api', '/internal', ...serverOnlyPrefixes];
+      const serverPrefixes = ['/api', ...serverOnlyPrefixes];
       const staticPrefixes = ['/static', '/uploads', ...additionalStaticDirs.map((d) => d.urlPrefix)];
       const serverToHandle = [...serverPrefixes, ...staticPrefixes];
       const isServerOnly = (urlPath) =>
@@ -322,8 +318,6 @@ function buildApp(options = {}) {
         // registration callback.
         startAllSchedulers(() => {
           registerLicenseJobs();
-          // Framework-level: refunds onboarding payments that never provisioned.
-          registerOnboardingJobs();
           if (typeof registerSchedulerJobs === 'function') {
             registerSchedulerJobs();
           }
