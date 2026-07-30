@@ -163,6 +163,46 @@ function DataGridBody({
 
         const stopPropagation = (e) => e.stopPropagation();
 
+        const renderDataCell = (col, frozen) => {
+          const content = isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row);
+          const width = columnWidths[col.field] || fallbackColumnWidth(col);
+          let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+          if (isSectionHeader && !isSelected) {
+            cellBg = SECTION_HEADER_CELL_BACKGROUND;
+          }
+
+          const setCellStyles = (element) => {
+            if (!element) {
+              return;
+            }
+            Object.assign(element.style, baseCellStyle);
+            if (frozen) {
+              const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
+              element.style.setProperty('--cell-left', `${left}px`);
+            }
+            element.style.setProperty('--cell-width', `${width}px`);
+            element.style.setProperty('--cell-bg', cellBg);
+            if (isSectionHeader) {
+              Object.assign(element.style, sectionHeaderCellStyle);
+            }
+            if (isGroupTotal) {
+              element.style.fontWeight = '600';
+              element.style.color = '#1f2937';
+            }
+          };
+
+          return (
+            <td
+              key={col.field}
+              ref={setCellStyles}
+              className={frozen ? "data-grid-cell-frozen" : "data-grid-cell"}
+              title={frozen ? content : undefined}
+            >
+              {content}
+            </td>
+          );
+        };
+
         return (
           <tr
             key={key}
@@ -206,74 +246,8 @@ function DataGridBody({
                 </td>
               );
             })()}
-            {frozenColumns.map((col) => {
-              const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
-              let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
-              if (isSectionHeader && !isSelected) {
-                cellBg = SECTION_HEADER_CELL_BACKGROUND;
-              }
-              const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
-
-              const setCellStyles = (element) => {
-                if (element) {
-                  Object.assign(element.style, baseCellStyle);
-                  element.style.setProperty('--cell-left', `${left}px`);
-                  element.style.setProperty('--cell-width', `${totalWidth}px`);
-                  element.style.setProperty('--cell-bg', cellBg);
-                  if (isSectionHeader) {
-                    Object.assign(element.style, sectionHeaderCellStyle);
-                  }
-                  if (isGroupTotal) {
-                    element.style.fontWeight = '600';
-                    element.style.color = '#1f2937';
-                  }
-                }
-              };
-              
-              return (
-                <td
-                  key={col.field}
-                  ref={setCellStyles}
-                  className="data-grid-cell-frozen"
-                  title={isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
-                >
-                  {isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
-                </td>
-              );
-            })}
-            {nonFrozenColumns.map((col) => {
-              let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
-              if (isSectionHeader && !isSelected) {
-                cellBg = SECTION_HEADER_CELL_BACKGROUND;
-              }
-              const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
-
-              const setCellStyles = (element) => {
-                if (element) {
-                  Object.assign(element.style, baseCellStyle);
-                  element.style.setProperty('--cell-width', `${totalWidth}px`);
-                  element.style.setProperty('--cell-bg', cellBg);
-                  if (isSectionHeader) {
-                    Object.assign(element.style, sectionHeaderCellStyle);
-                  }
-                  if (isGroupTotal) {
-                    element.style.fontWeight = '600';
-                    element.style.color = '#1f2937';
-                  }
-                }
-              };
-              
-              return (
-                <td
-                  key={col.field}
-                  ref={setCellStyles}
-                  className="data-grid-cell"
-                  // title={renderCellContent(col, row)}
-                >
-                  {isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row)}
-                </td>
-              );
-            })}
+            {frozenColumns.map((col) => renderDataCell(col, true))}
+            {nonFrozenColumns.map((col) => renderDataCell(col, false))}
           </tr>
         );
       })}
