@@ -1,5 +1,12 @@
 import PropTypes from "prop-types";
-import { cellBaseStyle, getRowStyle, getCellBackgroundColor, totalRowStyle } from "../utils/styles.js";
+import {
+  cellBaseStyle,
+  getRowStyle,
+  getCellBackgroundColor,
+  totalRowStyle,
+  SECTION_HEADER_CELL_BACKGROUND,
+  sectionHeaderCellStyle
+} from "../utils/styles.js";
 import { renderCellContent, getKeyForRow, fallbackColumnWidth, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
 
@@ -27,8 +34,10 @@ function DataGridBody({
   allRows = [],
   allColumns = [],
   selection = null,
+  isSectionHeaderRow = null,
+  density = "comfortable",
 }) {
-  const baseCellStyle = cellBaseStyle(rowHeight, autoHeight);
+  const baseCellStyle = cellBaseStyle(rowHeight, autoHeight, density);
   const selectionEnabled = Boolean(selection?.enabled);
   const selectionWidth = selectionEnabled ? selection.columnWidth || 40 : 0;
   const totalColSpan = frozenColumns.length + nonFrozenColumns.length + (selectionEnabled ? 1 : 0);
@@ -103,6 +112,9 @@ function DataGridBody({
         const isEven = displayIndex % 2 === 0;
         const isSelected = key === selectedRowId;
         const isDisabled = row._isDisabled === true || isGroupTotal === true;
+        // The row that opens a section (one employee's set of rows, say) is drawn as
+        // its header: a rule above it and a tint, so the section's extent is obvious.
+        const isSectionHeader = !isGroupTotal && typeof isSectionHeaderRow === "function" && isSectionHeaderRow(row);
 
         const rowStyle = {
           ...getRowStyle(isEven, isSelected),
@@ -196,15 +208,21 @@ function DataGridBody({
             })()}
             {frozenColumns.map((col) => {
               const left = (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth;
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              if (isSectionHeader && !isSelected) {
+                cellBg = SECTION_HEADER_CELL_BACKGROUND;
+              }
               const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
-              
+
               const setCellStyles = (element) => {
                 if (element) {
                   Object.assign(element.style, baseCellStyle);
                   element.style.setProperty('--cell-left', `${left}px`);
                   element.style.setProperty('--cell-width', `${totalWidth}px`);
                   element.style.setProperty('--cell-bg', cellBg);
+                  if (isSectionHeader) {
+                    Object.assign(element.style, sectionHeaderCellStyle);
+                  }
                   if (isGroupTotal) {
                     element.style.fontWeight = '600';
                     element.style.color = '#1f2937';
@@ -224,14 +242,20 @@ function DataGridBody({
               );
             })}
             {nonFrozenColumns.map((col) => {
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              if (isSectionHeader && !isSelected) {
+                cellBg = SECTION_HEADER_CELL_BACKGROUND;
+              }
               const totalWidth = columnWidths[col.field] || fallbackColumnWidth(col);
-              
+
               const setCellStyles = (element) => {
                 if (element) {
                   Object.assign(element.style, baseCellStyle);
                   element.style.setProperty('--cell-width', `${totalWidth}px`);
                   element.style.setProperty('--cell-bg', cellBg);
+                  if (isSectionHeader) {
+                    Object.assign(element.style, sectionHeaderCellStyle);
+                  }
                   if (isGroupTotal) {
                     element.style.fontWeight = '600';
                     element.style.color = '#1f2937';
@@ -363,6 +387,8 @@ DataGridBody.propTypes = {
     isSelected: PropTypes.func,
     onToggleRow: PropTypes.func,
   }),
+  isSectionHeaderRow: PropTypes.func,
+  density: PropTypes.oneOf(["compact", "standard", "comfortable"]),
 };
 
 export { DataGridBody };

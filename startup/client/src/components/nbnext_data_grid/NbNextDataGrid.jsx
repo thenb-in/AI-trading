@@ -69,6 +69,13 @@ const NbNextDataGrid = forwardRef(({
   fullScreen: externalFullScreen,
   showTotalRow = false,
   frozenColumns = [],
+  /**
+   * Optional `(row) => boolean`. Rows it accepts are drawn as the header of the section
+   * they open — a rule above them and a tint — so a reader can see where one section
+   * ends and the next begins. For views that stack several rows per entity (e.g. the
+   * detailed attendance print view, which lists one row per parameter per employee).
+   */
+  isSectionHeaderRow = null,
   hideConstantColumns = true,
   /**
    * Excel export only. When false (default), columns with the same value on
@@ -664,6 +671,8 @@ const NbNextDataGrid = forwardRef(({
               allRows={sortedRows}
               allColumns={l1}
               selection={bodySelectionProp}
+              isSectionHeaderRow={isSectionHeaderRow}
+              density={density}
             />
           </table>
         )}
@@ -735,6 +744,7 @@ NbNextDataGrid.propTypes = {
   fullScreen: PropTypes.bool,
   showTotalRow: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
+  isSectionHeaderRow: PropTypes.func,
   hideConstantColumns: PropTypes.bool,
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,

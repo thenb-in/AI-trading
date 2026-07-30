@@ -78,10 +78,10 @@ const headerCellBaseStyle = {
   textTransform: "uppercase",
 };
 
-const cellBaseStyle = (rowHeight, autoHeight = false) => ({
+const cellBaseStyle = (rowHeight, autoHeight = false, density = "comfortable") => ({
   borderBottom: "2px solid #d1d5db",
   borderRight: "2px solid #e5e7eb",
-  padding: "12px 16px",
+  padding: density === "compact" ? "5px 10px" : "12px 16px",
   // autoHeight=true: row grows to fit wrapped content; rowHeight is a floor.
   // autoHeight=false: fixed-height row, content truncates with ellipsis.
   // Emit both keys with explicit reset values so Object.assign overwrites
@@ -172,6 +172,14 @@ const totalRowStyle = {
   zIndex: 1,
 };
 
+const SECTION_HEADER_CELL_BACKGROUND = "#e6edf7";
+const sectionHeaderCellStyle = {
+  borderTop: "2px solid #94a3b8",
+  fontSize: 12,
+  fontWeight: 600,
+  color: "#0f172a",
+};
+
 export {
   getGridContainerStyle,
   toolbarStyle,
@@ -187,4 +195,6 @@ export {
   getRowStyle,
   getCellBackgroundColor,
   totalRowStyle,
+  SECTION_HEADER_CELL_BACKGROUND,
+  sectionHeaderCellStyle,
 };

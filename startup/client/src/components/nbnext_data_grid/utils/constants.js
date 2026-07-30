@@ -5,7 +5,7 @@ const TOOLBAR_HEIGHT = 44;
 const MIN_BODY_HEIGHT = 300; // Minimum height for grid body when no rows are present
 
 const DENSITY_CONFIG = {
-  compact: { rowHeight: 40, headerHeight: 56 },
+  compact: { rowHeight: 36, headerHeight: 56 },
   standard: { rowHeight: 48, headerHeight: 56 },
   comfortable: { rowHeight: 52, headerHeight: 56 },
 };
