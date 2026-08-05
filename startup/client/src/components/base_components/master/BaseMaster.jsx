@@ -90,6 +90,7 @@ const BaseMaster = ({
 
   // controler add action button 
   showAdd = true,
+  hideConstantColumns = true,
 }) => {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
@@ -235,9 +236,6 @@ const BaseMaster = ({
     setSelectedRow(null);
     setIsModalOpen(true);
   };
-
-  // A read-only master 
-  const isEditable = Boolean(FormComponent);
 
   const handleRowClick = (row) => {
     if (onRowClickOverride) {

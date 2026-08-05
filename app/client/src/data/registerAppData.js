@@ -18,7 +18,6 @@ import { registerAppLayout } from "@startup/data/appLayoutRegistry";
 import { registerReportApi } from "@startup/data/reportApiRegistry";
 import { registerSummaryHeaderFields } from "@startup/data/summaryFieldRegistry";
 import { registerDefaultSortFields } from "@startup/data/defaultSortFieldRegistry";
-import { registerReportParamsResolver } from "@startup/data/reportParamsRegistry";
 import {
   registerAppRoutes,
   registerAppRoutesWithoutSidebar,
@@ -33,7 +32,6 @@ import { useApproveExtension } from "../components/user_management_extra_columns
 import { AppLayout } from "../components/app_layout/AppLayout";
 import { DashboardContent } from "../pages/Dashboards";
 import { appRoutes, appRoutesWithoutSidebar, reportStaticPages } from "./getAppRoutes";
-import { resolveReportEmploymentParams } from "../utils/empTypeScope";
 
 import {
   getAppSpecificMasterModules,
@@ -71,7 +69,6 @@ function registerAppData() {
   registerReportApi(reportApi);
   registerSummaryHeaderFields(SUMMARY_HEADER_FIELDS);
   registerDefaultSortFields(DEFAULT_REPORT_SORT_FIELDS);
-  registerReportParamsResolver(resolveReportEmploymentParams);
   registerAppRoutes(appRoutes);
   registerAppRoutesWithoutSidebar(appRoutesWithoutSidebar);
   registerReportStaticPages(reportStaticPages);
