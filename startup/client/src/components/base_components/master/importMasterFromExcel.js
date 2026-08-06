@@ -1,5 +1,64 @@
+import ExcelJS from 'exceljs';
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
-import { coerceExcelBoolean, loadFirstWorksheet } from '../utils/importParsingEngine';
+
+/**
+ * Turns a cell back into the value the API wants, using the column definitions the grid was
+ * built from. Import is the inverse of export, so it has to undo exactly what export did:
+ *
+ *  - a `select` column exports its option LABEL ("Sales"), not the id it stores, so the
+ *    label is resolved back through the same option list. A file that carries raw ids still
+ *    works, because an exact value match is accepted too.
+ *  - a `boolean` column round-trips as true/false or Yes/No.
+ *
+ * Both are derived from `columns` rather than declared per master: every master already
+ * hands its column definitions in, and a list repeated at each call site is a list that goes
+ * stale. `extraBooleanFields` stays available for a column the server does not type.
+ *
+ * A select value that matches nothing is reported rather than guessed at — writing an
+ * unrecognised department name into an id column just moves the failure to the server.
+ */
+function buildCellCoercer(columns, extraBooleanFields) {
+  const booleanFields = new Set([
+    ...(extraBooleanFields || []),
+    ...columns.filter((c) => c.type === 'boolean').map((c) => c.id),
+  ]);
+  const selectOptions = new Map(
+    columns
+      .filter((c) => c.type === 'select' && Array.isArray(c.options))
+      .map((c) => [c.id, c.options]),
+  );
+  const unresolved = [];
+
+  const coerce = (field, rawValue) => {
+    const value = typeof rawValue === 'string' ? rawValue.trim() : rawValue;
+
+    if (booleanFields.has(field)) {
+      const v = String(value ?? '').toLowerCase().trim();
+      if (v === 'true' || v === 'yes' || v === '1' || value === true) return true;
+      if (v === 'false' || v === 'no' || v === '0' || value === false) return false;
+      return value ?? null;
+    }
+
+    const options = selectOptions.get(field);
+    if (!options) {
+      return value ?? null;
+    }
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const text = String(value).trim();
+    const match = options.find(
+      (o) => String(o.label).trim() === text || String(o.value).trim() === text,
+    );
+    if (match) {
+      return match.value === '' ? null : match.value;
+    }
+    unresolved.push(`${field}="${text}"`);
+    return null;
+  };
+
+  return { coerce, unresolved };
+}
 
 /**
  * Reads master rows from an Excel workbook produced either by the standard exporter
@@ -30,7 +89,10 @@ async function importMasterFromExcel(
   }
 
   try {
-    const sheet = await loadFirstWorksheet(file);
+    const buffer = await file.arrayBuffer();
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    const sheet = workbook.worksheets[0];
     if (!sheet) return { status: 400, data: { error: 'No worksheet found' } };
 
     const buildHeaderMap = (headerRowIndex) => {
@@ -63,6 +125,7 @@ async function importMasterFromExcel(
       };
     }
 
+    const { coerce, unresolved } = buildCellCoercer(columns, booleanFields);
     const existingByKey = new Map(rows.map((r) => [r[keyField], r]));
     let created = 0;
     let updated = 0;
@@ -82,12 +145,7 @@ async function importMasterFromExcel(
       row.eachCell((cell, colNumber) => {
         const field = headerToField[colNumber];
         if (!field) return;
-        let value = cell.value;
-        if (typeof value === 'string') value = value.trim();
-        if (booleanFields?.includes(field)) {
-          value = coerceExcelBoolean(value);
-        }
-        payload[field] = value ?? null;
+        payload[field] = coerce(field, cell.value);
       });
 
       const hasAny = Object.values(payload).some((v) => v !== null && v !== '');
@@ -109,9 +167,14 @@ async function importMasterFromExcel(
     }
 
     await refresh();
+    // A dropdown value that matched no option was left blank rather than guessed at. Saying
+    // so is the difference between a visible gap and a silently emptied column.
+    const unmatched = unresolved.length
+      ? `. ${unresolved.length} value(s) matched no option and were left blank: ${[...new Set(unresolved)].slice(0, 3).join(', ')}`
+      : '';
     return {
       status: 200,
-      data: { message: `Imported: ${created} created, ${updated} updated, ${duplicatesInFile} duplicates skipped, ${skippedEmpty} empty rows skipped` },
+      data: { message: `Imported: ${created} created, ${updated} updated, ${duplicatesInFile} duplicates skipped, ${skippedEmpty} empty rows skipped${unmatched}` },
     };
   } catch (e) {
     return { status: 500, data: { error: e?.message || 'Import failed' } };

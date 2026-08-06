@@ -3,7 +3,6 @@ import { runViaRunner } from '@startup/socket';
 import { sanitizeHTML } from '@utils/formattingUtils';
 import { getDeviceLocation } from '../utils/locationUtils';
 
-
 // --------------------------------------------
 // Employee API
 // --------------------------------------------
@@ -113,7 +112,14 @@ const employeeApi = {
     const emp_code = Array.isArray(empCode) ? empCode : [empCode];
     const body = { emp_code };
     if (options.software_only) body.software_only = true;
+    // Sent only when this is a rejoining — it opens a new employment period. Without it the
+    // server reopens the period they were already on.
+    if (options.joining_date) body.joining_date = options.joining_date;
     return api.post('/employees/activate', body);
+  },
+  getEmploymentPeriods: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}/employment-periods`);
   },
   verifyEmployeeImage: (empCode, imageUrl) => {
     if (!empCode) throw new Error('Employee code is required');
@@ -175,6 +181,23 @@ const employeeApi = {
     if (!empCode) throw new Error('Employee code is required');
     if (!documentId) throw new Error('Document ID is required');
     return api.delete(`/employees/${empCode}/documents/${documentId}`);
+  },
+  listEmployeeAssets: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}/assets`);
+  },
+  // Always creates a new assignment row, so re-issuing a previously returned
+  // asset produces a fresh assign id rather than reopening the old one. Photos
+  // are uploaded separately against that id through NBnext Drive.
+  assignEmployeeAsset: (empCode, payload) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!payload?.asset_id) throw new Error('Asset is required');
+    return api.post(`/employees/${empCode}/assets`, payload);
+  },
+  returnEmployeeAsset: (empCode, assignmentId, payload = {}) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!assignmentId) throw new Error('Assignment ID is required');
+    return api.post(`/employees/${empCode}/assets/${assignmentId}/return`, payload);
   },
 };
 
@@ -456,26 +479,6 @@ const reportApi = {
       throw new Error(errorMessage);
     }
   }
-,
-deactivateUser: async (empCode) => {
-  try {
-    const response = await api.post('/django/deactivate', {
-      emp_code: empCode
-    }, {
-      headers: {
-         'Content-Type': 'application/json',
-          'Accept': 'application/json'
-      },
-    });
-
-    return response.data;
-  } catch (error) {
-    const errorData = error?.response?.data;
-    console.error('Deactivation Error:', errorData || error.message);
-    throw new Error(errorData?.message || 'User deactivation failed');
-  }
-}
-
 };
 
 // --------------------------------------------
@@ -563,14 +566,6 @@ const biotemplateReportApi = {
 };
 
 // --------------------------------------------
-// Past Report API
-// --------------------------------------------
-const pastReportApi = {
-  getAllPastReports: () => api.get('/pastreport/get_all_past_report'),
-  getReportById: (id) => api.get(`/pastreport/get_report/${id}`),
-};
-
-// --------------------------------------------
 // Gate Pass API
 // --------------------------------------------
 const gatePassApi = {
@@ -599,6 +594,18 @@ const positionApi = {
   createPosition: (positionData) => api.post(`/position`, positionData),
   updatePosition: (positionId, positionData) => api.put(`/position/${positionId}`, positionData),
   deletePosition: (positionId) => api.delete(`/position/${positionId}`),
+};
+
+// --------------------------------------------
+// Asset API
+// --------------------------------------------
+const assetApi = {
+  getAllAssets: () => api.get(`/asset`),
+  getAllAllocations: (filters = {}) => api.get(`/asset/allocations`, { params: filters }),
+  getAssetCustodyHistory: (assetId) => api.get(`/asset/${assetId}/allocations`),
+  createAsset: (assetData) => api.post(`/asset`, assetData),
+  updateAsset: (assetId, assetData) => api.put(`/asset/${assetId}`, assetData),
+  deleteAsset: (assetId) => api.delete(`/asset/${assetId}`),
 };
 
 // --------------------------------------------
@@ -653,6 +660,38 @@ const purposeTypeApi = {
   createPurposeType: (purposeTypeData) => api.post(`/purpose-type`, purposeTypeData),
   updatePurposeType: (purposeTypeId, purposeTypeData) => api.put(`/purpose-type/${purposeTypeId}`, purposeTypeData),
   deletePurposeType: (purposeTypeId) => api.delete(`/purpose-type/${purposeTypeId}`),
+};
+
+// --------------------------------------------
+// Performance Management API — appraisal cycles, the KRA / competency catalogue,
+// and the appraisals themselves
+// --------------------------------------------
+const performanceCycleApi = {
+  getAllPerformanceCycles: (filters = {}) => api.get(`/performance-cycle`, { params: filters }),
+  createPerformanceCycle: (cycleData) => api.post(`/performance-cycle`, cycleData),
+  updatePerformanceCycle: (cycleId, cycleData) => api.put(`/performance-cycle/${cycleId}`, cycleData),
+  deletePerformanceCycle: (cycleId) => api.delete(`/performance-cycle/${cycleId}`),
+};
+
+const performanceParameterApi = {
+  getAllPerformanceParameters: (filters = {}) => api.get(`/performance-parameter`, { params: filters }),
+  createPerformanceParameter: (parameterData) => api.post(`/performance-parameter`, parameterData),
+  updatePerformanceParameter: (parameterId, parameterData) => api.put(`/performance-parameter/${parameterId}`, parameterData),
+  deletePerformanceParameter: (parameterId) => api.delete(`/performance-parameter/${parameterId}`),
+};
+
+const performanceReviewApi = {
+  getAllPerformanceReviews: (filters = {}) => api.get(`/performance-review`, { params: filters }),
+  getPerformanceReview: (reviewId) => api.get(`/performance-review/${reviewId}`),
+  createPerformanceReview: (reviewData) => api.post(`/performance-review`, reviewData),
+  // Opens a whole cycle's appraisals at once. Re-runnable — already-reviewed employees
+  // are skipped, so this is also how joiners are picked up mid-round.
+  generatePerformanceReviews: (payload) => api.post(`/performance-review/generate`, payload),
+  updatePerformanceReview: (reviewId, reviewData) => api.put(`/performance-review/${reviewId}`, reviewData),
+  updateStatus: (reviewId, status) => api.patch(`/performance-review/${reviewId}/status`, { status }),
+  finalise: (reviewId) => api.post(`/performance-review/${reviewId}/finalise`),
+  reopen: (reviewId) => api.post(`/performance-review/${reviewId}/reopen`),
+  deletePerformanceReview: (reviewId) => api.delete(`/performance-review/${reviewId}`),
 };
 
 // --------------------------------------------
@@ -865,6 +904,24 @@ const departmentWeeklyOffApi = {
 };
 
 // --------------------------------------------
+// Company Schedule / Weekly Off API — company-wide fallbacks, so the company comes
+// from the token and never from the path.
+// --------------------------------------------
+const companyScheduleApi = {
+  getCompanySchedules: () => api.get('/company-schedule'),
+  createCompanySchedule: (data) => api.post('/company-schedule', data),
+  updateCompanySchedule: (id, data) => api.put(`/company-schedule/${id}`, data),
+  deleteCompanySchedule: (id) => api.delete(`/company-schedule/${id}`),
+};
+
+const companyWeeklyOffApi = {
+  getCompanyWeeklyOffs: () => api.get('/company-weekly-off'),
+  createCompanyWeeklyOff: (data) => api.post('/company-weekly-off', data),
+  updateCompanyWeeklyOff: (id, data) => api.put(`/company-weekly-off/${id}`, data),
+  deleteCompanyWeeklyOff: (id) => api.delete(`/company-weekly-off/${id}`),
+};
+
+// --------------------------------------------
 // Compound Shift API
 // --------------------------------------------
 const compoundShiftApi = {
@@ -881,16 +938,6 @@ const holidayTypeApi = {
   createHolidayType: (holidayTypeData) => api.post('/holiday-type', holidayTypeData),
   updateHolidayType: (holidayTypeId, holidayTypeData) => api.put(`/holiday-type/${holidayTypeId}`, holidayTypeData),
   deleteHolidayType: (holidayTypeId) => api.delete(`/holiday-type/${holidayTypeId}`),
-};
-
-// --------------------------------------------
-// Holiday Days API
-// --------------------------------------------
-const holidayDaysApi = {
-  getAllHolidayDays: () => api.get('/holiday-days'),
-  createHolidayDay: (holidayDayData) => api.post('/holiday-days', holidayDayData),
-  updateHolidayDay: (holidayDayId, holidayDayData) => api.put(`/holiday-days/${holidayDayId}`, holidayDayData),
-  deleteHolidayDay: (holidayDayId) => api.delete(`/holiday-days/${holidayDayId}`),
 };
 
 // --------------------------------------------
@@ -1087,6 +1134,15 @@ const personnelAreaApi = {
   deletePersonnelArea: (id) => api.delete(`/personnel-areas/${id}`),
 };
 
+// --------------------------------------------
+// Employee Area Assignment API
+// --------------------------------------------
+const employeeAreaAssignmentApi = {
+  getAllAssignments: () => api.get('/employee-area-assignments'),
+  createAssignments: (data) => api.post('/employee-area-assignments', data),
+  deleteAssignment: (id) => api.delete(`/employee-area-assignments/${id}`),
+};
+
 
 const hrDashboardApi = {
   getTrends: () => runViaRunner('hr-dashboard/trends'),
@@ -1108,4 +1164,12 @@ const hrDashboardApi = {
   }
 };
 
-export { api, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, pastReportApi, gatePassApi, departmentApi, positionApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, compoundShiftApi, holidayTypeApi, holidayDaysApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, whatsappTemplateApi,hrDashboardApi };
+// The checklist worklist — its own page, its own permission, its own prefix.
+// Every item shares one response shape, so it takes the segment
+// ('daily/no-shift', 'monthly/payroll-bank', …) rather than repeating fifteen
+// identical wrappers. Segments live in CHECKLIST_ITEMS.
+const hrChecklistApi = {
+  run: (segment) => runViaRunner(`hr-checklist/${segment}`)
+};
+
+export { api, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
