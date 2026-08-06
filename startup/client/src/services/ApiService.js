@@ -25,22 +25,12 @@ const ApiService = {
   },
 
   // Live availability check while typing (type: 'company' | 'username').
-
   checkAvailability(type, value) {
     return this.request('GET', '/auth/availability', null, { params: { type, value } });
   },
 
-  // TOTP (Google Authenticator 2FA) enrolment
-  generateTotpSecret(data) {
-    return this.request('POST', '/auth/generate-totp-secret', data);
-  },
-
-  verifyAndEnableTotp(data) {
-    return this.request('POST', '/auth/verify-totp', data);
-  },
-
-  createPaymentOrder(subscriptionId, employeeCount) {
-    return this.request('POST', '/auth/payment/order', { subscriptionId, employeeCount });
+  createPaymentOrder(subscriptionId) {
+    return this.request('POST', '/auth/payment/order', { subscriptionId });
   },
 
   onboard(data) {
@@ -75,6 +65,9 @@ const ApiService = {
   updateCompanySettings(settings) {
     return this.request('PUT', '/company/settings', settings);
   },
+
+  // Company Profile (attendance aliases, compliance defaults, credentials,
+  // emp_code_basis) is owned by app now — see @app/services/api companyProfileApi.
 
   getCompanyDetails() {
     return this.request('GET', '/company-details');
@@ -234,9 +227,12 @@ const ApiService = {
     return this.request('POST', '/admin/subscriptions', data);
   },
 
-  // Batch-save the changed permission rows for one subscription in a single call.
-  updateSubscriptionPermissions(subscriptionId, permissions, isGlobal) {
-    return this.request('PUT', `/admin/subscriptions/${subscriptionId}/permissions`, { permissions, isGlobal });
+  updateSubscriptionPermissionStatus(data) {
+    return this.request('POST', '/admin/subscription-permissions/update', data);
+  },
+
+  updateMultipleSubscriptionPermissionStatuses(data) {
+    return this.request('POST', '/admin/subscription-permissions/update-multiple', data);
   },
 
   exportSubscription(subscriptionId) {
@@ -249,8 +245,10 @@ const ApiService = {
     return this.request('POST', '/admin/subscriptions/import', payload);
   },
 
-  pushSubscriptionToWallet(subscriptionId) {
-    return this.request('POST', `/admin/subscriptions/${subscriptionId}/push-to-wallet`);
+  // Head base — restate this company's head history to the wallet, so periods
+  // that predate activity logging are billed on what was actually there.
+  buildHeadBase(months) {
+    return this.request('POST', '/admin/head-base', { months });
   },
 
   // Company-Subscription methods

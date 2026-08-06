@@ -3,8 +3,13 @@ const { Op } = require('sequelize');
 const { pushActivityToExternalServer } = require('../../interfaces/wallet/activityInterface');
 const logger = require('../../logger');
 const { Activity, User } = require('../models');
+const { MAX_BATCH_SIZE } = require('../constants/undo');
+const walletHeadsService = require('./walletHeadsService');
 
-const ACTIVITY_SUMMARY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'createdAt', 'updatedAt'];
+const ACTIVITY_SUMMARY_ATTRIBUTES = ['id', 'head', 'log', 'timestamp', 'objectName', 'objectId', 'createdBy', 'companyId', 'isConfirmed', 'type', 'batchId', 'createdAt', 'updatedAt'];
+
+/** An undo of batch X is itself recorded as batch `undo:X` — no extra column needed. */
+const undoBatchIdFor = (batchId) => `undo:${batchId}`;
 
 const ACTIVITY_INCLUDE_CREATED_BY_USER = {
   model: User,
@@ -100,14 +105,36 @@ const activityService = {
     }
   },
 
-  async createActivity(head, log, objectName = null, objectId = null, createdBy = null, companyId = null, type = null, transaction = null) {
+  /** Every activity row in one batch — the raw material an undo replays. */
+  async getActivitiesByBatchId(batchId, companyId = null) {
+    return fetchActivities({
+      extraWhere: { batchId },
+      limit: MAX_BATCH_SIZE,
+      companyId,
+      errorContext: `Error fetching activities by batchId: ${batchId}`,
+      errorMessagePrefix: 'Failed to fetch batch activities'
+    });
+  },
+
+  async createActivity({
+    head,
+    log,
+    objectName = null,
+    objectId = null,
+    createdBy = null,
+    companyId = null,
+    type = null,
+    batchId = null,
+    transaction = null
+  }) {
     try {
       const options = transaction ? { transaction } : {};
       const activityData = {
         head,
         log,
         objectName,
-        objectId
+        objectId,
+        batchId
       };
 
       if (createdBy) {
@@ -143,6 +170,16 @@ const activityService = {
         updatedAt: activity.updatedAt
       };
 
+      // Send it on only if the wallet has a use for this head. The local
+      // activity row is written either way — it is this app's audit trail and
+      // its undo, and neither is the wallet's business. What the wallet wants
+      // is a much shorter list: it prices or caps a handful of heads and drops
+      // the rest, so the ones it drops need never be sent. See
+      // walletHeadsService for what happens when we cannot ask.
+      if (!await walletHeadsService.shouldPush(activity.head, activity.companyId)) {
+        return { success: true, skipped: true, message: 'Head is not tracked by the wallet' };
+      }
+
       // Push activity to external server
       try {
         const walletResponse = await pushActivityToExternalServer(activityPayload);
@@ -163,3 +200,5 @@ const activityService = {
 };
 
 module.exports = activityService;
+module.exports.undoBatchIdFor = undoBatchIdFor;
+module.exports.MAX_BATCH_SIZE = MAX_BATCH_SIZE;

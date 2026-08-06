@@ -4,17 +4,14 @@ require('module-alias/register');
 // in startup/server, so without this, requires from startup-loaded files like
 // startup/server/buildApp.js fail with MODULE_NOT_FOUND.
 require('module-alias').addPath(require('path').join(__dirname, 'node_modules'));
-// App columns onto framework models — must load before @startup models below.
-// eslint-disable-next-line custom/no-direct-model-imports
-require('./src/models/register/registerAppModelFields');
-require('./src/data/registerAppData');
 
 // App-side server boot. Wires the framework's buildApp() with this app's
 // own routes, middleware, schedulers and shutdown hooks.
 //
 // The framework (auth, users, admin, layouts, activity, nbnext-drive,
 // help-support) is composed by buildApp() under /api/v1/*. Everything
-// app-specific (your own routes, schedulers and resources) is wired here.
+// SalaryMitra-specific (HR, payroll, attendance, ADMS biometric, field sales,
+// reports) is wired here.
 
 const path = require('path');
 const logger = require('@startup/logger');
@@ -23,32 +20,43 @@ const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
+const { piscinaPool } = require('./src/config/piscinaPool');
+const headBaseService = require('@startup/src/services/headBaseService');
+const employeeHeadBaseService = require('./src/services/employeeHeadBaseService');
 const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
+
+// Where this app's billable heads read their history from, for the framework's
+// headbase. Employee is the head the wallet bills SalaryMitra on; a head added
+// to the wallet's rate card and not registered here is reported as unsupported
+// rather than silently skipped.
+headBaseService.registerSource('Employee', employeeHeadBaseService);
 
 const { server, startServer } = buildApp({
   // 5MB body limit — header/footer image uploads, base64 face photos.
   bodyParserLimit: '5mb',
 
+  // Device-facing paths (/iclock, /hdata) are served only by the standalone
+  // biometric gateway servers now; the edge (nginx/vite) routes device traffic
+  // straight to them, so the HR app no longer reverse-proxies device protocols.
 
-
-  // App-owned routes that live under the framework's /api/v1/* namespace.
-  // The framework already serves /api/v1/company (see startup companyRoutes),
-  // so apps register only their OWN endpoints here — nothing by default.
+  // App-owned routes that depend on app-specific things (biometric, hr/employee
+  // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
+  // namespace.
   extraRoutes: [
     { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
   ],
 
-  // App-specific routes. See src/routes/app_routes.js.
+  // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
+  // formulas, gatepass, reports, masters, etc.). See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
 
   // Static files — more specific paths first so they win over /uploads
   // (which is mounted by the framework). path is absolute to this server.
-
   additionalStaticDirs: [
-    // { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
-    // { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
+    { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
+    { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
   ],
 
   // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
@@ -60,15 +68,18 @@ const { server, startServer } = buildApp({
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
+  // The ADMS auto-sync loop (employee push to online terminals) was here;
+  // it now runs in adms_server's process — see adms_server/index.js.
   onAfterListen: () => {
+    piscinaPool.initialize();
     initAppServerRunnerClient();
     initClientAppServerSocket(server);
   },
 
   // Drain app-level resources before the framework stops schedulers.
   onBeforeShutdown: async () => {
-
     try {
+      await piscinaPool.shutdown();
     } catch (err) {
       logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
     }
