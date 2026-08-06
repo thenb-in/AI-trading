@@ -1,5 +1,5 @@
 'use strict';
-const { toIso, daysUntil } = require('../../../utils/dateUtils');
+const { toIso, daysUntil } = require('../../../utils/clock');
 const { loadAndVerify } = require('./verify');
 const { licensedPermissionNames } = require('../core/licenseUtils');
 

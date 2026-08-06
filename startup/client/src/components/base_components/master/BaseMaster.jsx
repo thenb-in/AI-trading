@@ -88,9 +88,8 @@ const BaseMaster = ({
   infiniteScroll = false,
   pageSize = 50,
 
-  // controler add action button 
+  // controler add action button
   showAdd = true,
-  hideConstantColumns = true,
 }) => {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);

@@ -45,8 +45,6 @@ const MasterTable = ({
    * ten runs of the same report still need their "Report" column.
    */
   hideConstantColumns = true,
-  /** Seeds the grid's initial row grouping; user can still toggle it. */
-  defaultGroupByField = null,
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
 
@@ -314,7 +312,6 @@ const MasterTable = ({
         showInsightsAsHeader={showInsightsAsHeader}
         showEmptyColumns={showEmptyColumns}
         hideConstantColumns={hideConstantColumns}
-        defaultGroupByField={defaultGroupByField}
       />
       <FileViewerModal
         isOpen={viewerState.open}
@@ -384,7 +381,6 @@ MasterTable.propTypes = {
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,
   hideConstantColumns: PropTypes.bool,
-  defaultGroupByField: PropTypes.string,
 };
 
 export { MasterTable };

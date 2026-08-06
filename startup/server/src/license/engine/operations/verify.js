@@ -1,7 +1,7 @@
 'use strict';
 const env = require('../../../config/env');
 const { VERIFY_REASONS } = require('../../../constants/license');
-const { nowMs } = require('../../../utils/dateUtils');
+const { nowMs } = require('../../../utils/clock');
 const pinnedKeys = require('../core/pinnedKeys');
 const licenseStore = require('../core/licenseStore');
 const { runRejectionChecks } = require('../core/licenseHelper');

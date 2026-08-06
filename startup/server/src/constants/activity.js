@@ -107,6 +107,8 @@ const ACTIVITY_ERRORS = {
   HEAD_BASE_WALLET_UNREACHABLE:
     'The wallet could not be reached, so there is no telling which heads it wants'
 };
+
+/**
  * Register app-owned activity types into the framework maps (in place).
  * Call from the app's registerAppData bootstrap at process start.
  */

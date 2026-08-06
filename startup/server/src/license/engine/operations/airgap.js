@@ -1,7 +1,7 @@
 'use strict';
 const crypto = require('crypto');
 const { LICENSE_ERRORS } = require('../../../constants/license');
-const { nowIso } = require('../../../utils/dateUtils');
+const { nowIso } = require('../../../utils/clock');
 const machineFingerprint = require('../core/machineFingerprint');
 const pinnedKeys = require('../core/pinnedKeys');
 const tokenFormat = require('../core/tokenFormat');

@@ -1,7 +1,7 @@
 'use strict';
 const env = require('../../../config/env');
 const { DEFAULT_CLOCK_SKEW_SECONDS } = require('../../../constants/license');
-const { toEpochMs } = require('../../../utils/dateUtils');
+const { toEpochMs } = require('../../../utils/clock');
 
 // Pure, stateless helpers over a license payload / env. No I/O, no async.
 

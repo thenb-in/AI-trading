@@ -19,7 +19,7 @@
 const logger = require('../../../../logger');
 const env = require('../../../config/env');
 const { registerJob } = require('../../../../scheduler');
-const { nowMs, toEpochMs } = require('../../../utils/dateUtils');
+const { nowMs, toEpochMs } = require('../../../utils/clock');
 const licenseSeal = require('./licenseSeal');
 const licenseService = require('../../licenseService');
 

@@ -1,6 +1,6 @@
 'use strict';
 const { VERIFY_REASONS } = require('../../../constants/license');
-const { nowMs, toEpochMs } = require('../../../utils/dateUtils');
+const { nowMs, toEpochMs } = require('../../../utils/clock');
 const licenseSeal = require('./licenseSeal');
 const licenseStore = require('./licenseStore');
 const machineFingerprint = require('./machineFingerprint');

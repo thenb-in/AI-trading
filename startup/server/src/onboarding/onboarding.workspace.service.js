@@ -10,7 +10,7 @@ const onboardingOrderService = require('../services/onboardingOrder.service');
 const walletSubscriptionInterface = require('../../interfaces/wallet/subscriptionInterface');
 const { SYSTEM_ROLE_CONSTANTS } = require('../constants/permissions');
 const { SUBSCRIPTION_WALLET_HEADS } = require('../constants/subscription');
-const { oneYearFromNow } = require('../utils/dateUtils');
+const { oneYearFromNow } = require('../utils/clock');
 
 
 async function syncWorkspaceToWallet({ companyId, companyName, subscriptionId, employeeCount, amount, paymentId }) {

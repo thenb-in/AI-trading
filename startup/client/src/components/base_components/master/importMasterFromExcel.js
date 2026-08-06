@@ -1,5 +1,5 @@
 import { isExportFooterRow } from '@startup/utils/excelImportFooter';
-import { coerceExcelBoolean, loadFirstWorksheet } from '../utils/importParsingEngine';
+import { loadFirstWorksheet } from '../utils/importParsingEngine';
 
 /**
  * Turns a cell back into the value the API wants, using the column definitions the grid was
