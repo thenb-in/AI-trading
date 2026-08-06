@@ -29,14 +29,18 @@ async function fetchActivities({ extraWhere = {}, limit = 100, offset = 0, compa
     if (companyId) {
       where.companyId = companyId;
     }
-    return await Activity.findAll({
+    const query = {
       where,
-      limit: parseInt(limit, 10),
-      offset: parseInt(offset, 10) || 0,
       order: [['timestamp', 'DESC']],
       attributes: ACTIVITY_SUMMARY_ATTRIBUTES,
       include: [ACTIVITY_INCLUDE_CREATED_BY_USER]
-    });
+    };
+    if (limit !== null) {
+      query.limit = parseInt(limit, 10);
+      query.offset = parseInt(offset, 10) || 0;
+    }
+
+    return await Activity.findAll(query);
   } catch (error) {
     logger.error(errorContext, error);
     throw new Error(`${errorMessagePrefix}: ${error.message}`);
@@ -66,6 +70,16 @@ const activityService = {
       extraWhere: { head, objectId: String(objectId) },
       limit, offset, companyId,
       errorContext: `Error fetching activities by head/objectId: head=${head} objectId=${objectId}`,
+      errorMessagePrefix: 'Failed to fetch activities'
+    });
+  },
+
+  async getActivitiesByHeadAndObjectIdInPeriod(head, objectId, start_date, end_date, companyId = null) {
+    return fetchActivities({
+      extraWhere: { head, objectId: String(objectId), created_at: { [Op.between]: [start_date, end_date] } },
+      limit: null,
+      companyId,
+      errorContext: `Error fetching activities by head/objectId in period: head=${head} objectId=${objectId}`,
       errorMessagePrefix: 'Failed to fetch activities'
     });
   },
