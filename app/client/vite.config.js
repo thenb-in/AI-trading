@@ -32,6 +32,8 @@ const filterInstalled = (candidates) =>
 
 const STARTUP_CLIENT_SRC = resolve(__dirname, '../../startup/client/src');
 const APP_CLIENT_SRC = resolve(__dirname, './src');
+// Customer-specific code (custom/) sits outside both, and imports from them.
+const CUSTOM_ROOT = resolve(__dirname, '../../custom');
 
 export default ({ mode }) => {
   process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
@@ -54,7 +56,24 @@ export default ({ mode }) => {
   const serverVersion = serverPackageJson.version || '0.0.0';
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
-  const localServerUrl = 'http://localhost:3000';
+
+  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:8944');
+  // Standalone biometric gateway servers (one process per interface, own port).
+  // Device protocol paths proxy to these; operator/admin /api + /uploads stay on
+  // the app. ZK TCP-pull has no inbound HTTP, so no proxy entry. Override via env
+  // if a gateway runs on a different host/port.
+  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:4002';
+  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:4003';
+  // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
+  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy
+  // here; every other /api/* call stays on the app. Override via env if it runs
+  // on a different host/port.
+  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:4005';
+  // SalaryMitra self-service portal (ios/) — a standalone Vite SPA on its own
+  // dev server (port 5180), served under the /salarymitra subpath. In prod it
+  // ships inside this client bundle and nginx serves it; in dev we proxy the
+  // subpath to its dev server. Override via env if it runs elsewhere.
+  const salaryMitraUrl = process.env.VITE_SALARYMITRA_URL || 'http://localhost:5180';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -69,6 +88,7 @@ export default ({ mode }) => {
       alias: {
         '@startup': STARTUP_CLIENT_SRC,
         '@app': APP_CLIENT_SRC,
+        '@custom': CUSTOM_ROOT,
         '@services': resolve(STARTUP_CLIENT_SRC, 'services'),
         '@context': resolve(STARTUP_CLIENT_SRC, 'context'),
         '@utils': resolve(STARTUP_CLIENT_SRC, 'utils'),
@@ -94,15 +114,48 @@ export default ({ mode }) => {
     },
     server: {
       proxy: {
+        // Biometric DEVICE protocol paths → standalone gateway servers. Devices
+        // use the bare paths; the operator API /api/v1/iclock-terminal stays on
+        // the app via the '/api' rule below. ZK TCP-pull has no inbound HTTP.
+        '/iclock': {
+          target: admsGatewayUrl, // adms_server gateway (ZK iClock push/pull + device file)
+          changeOrigin: true,
+        },
+        '/hdata': {
+          target: biomaxGatewayUrl, // biomax_server gateway (/hdata + /hdata.aspx)
+          changeOrigin: true,
+        },
         '/uploads': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/uploads/, ''), // Optional, remove '/uploads' prefix if needed
         },
+        // wagemaster ingest sub-paths — MUST come before the generic '/api' rule
+        // below, since Vite matches proxy keys in declaration order (first match
+        // wins). Everything else under /api falls through to the app server.
+        '/api/v1/location/tracking/update': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/sendCallLog': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/syncPaymentReminder': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/report-app-version': { target: wagemasterUrl, changeOrigin: true },
+        '/api/v1/callbuddy/report-unsynced-count': { target: wagemasterUrl, changeOrigin: true },
         '/api': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/api/, ''), // Optional, remove '/api' prefix if needed
+        },
+        // socket.io upgrades to websocket on /socket.io — ws:true is
+        // required or the upgrade handshake hits the dev server's HTML 404.
+        '/socket.io': {
+          target: localServerUrl,
+          ws: true,
+          changeOrigin: true,
+        },
+        // SalaryMitra portal → its own dev server. ws:true passes through its
+        // HMR socket so the portal hot-reloads when accessed via this host.
+        '/salarymitra': {
+          target: salaryMitraUrl,
+          changeOrigin: true,
+          ws: true,
         }
       },
     },
@@ -113,7 +166,7 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'NB Next'}</title>`
+            `<title>${clientName || 'SalaryMitra'}</title>`
           );
         },
       },
@@ -126,6 +179,12 @@ export default ({ mode }) => {
         filename: 'sw.js',
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff,woff2}'],
+          // Monaco's language-service workers (esp. ts.worker, ~6 MB) are only
+          // loaded on demand when the formula editor opens, and are already
+          // runtime-cached by the /assets/ CacheFirst rule below. Precaching
+          // them would bloat every user's install and exceeds the size limit
+          // (which otherwise hard-fails the build).
+          globIgnores: ['**/*.worker-*.js'],
           runtimeCaching: [
             {
               urlPattern: /^https?:\/\/[^/]+\/assets\//,
@@ -139,7 +198,9 @@ export default ({ mode }) => {
             },
           ],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
+          // /salarymitra is a separate SPA served at the same origin — keep this
+          // SW's navigation fallback from hijacking its routes to the main app.
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/salarymitra\//],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],

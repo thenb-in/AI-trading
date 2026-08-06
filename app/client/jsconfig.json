@@ -9,9 +9,10 @@
     "baseUrl": ".",
     "paths": {
       "@startup/*": ["../../startup/client/src/*"],
-      "@app/*": ["./src/*"]
+      "@app/*": ["./src/*"],
+      "@custom/*": ["../../custom/*"]
     }
   },
-  "include": ["src/**/*", "vite.config.js"],
+  "include": ["src/**/*", "../../custom/client/**/*", "vite.config.js"],
   "exclude": ["node_modules", "dist"]
 }

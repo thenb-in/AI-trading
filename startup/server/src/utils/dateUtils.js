@@ -1,7 +1,8 @@
 const { parse, parseISO } = require('date-fns');
 const logger = require('../../logger');
 const { TIME_ZONE, DEFAULT_DATE_FORMAT } = require('../constants/auth');
-const { MS_PER_DAY } = require('../constants/time');
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function formatDate(date, format_str) {
   if (!date) {
@@ -200,20 +201,6 @@ function getDaysBetween(start_date, end_date, weekday) {
   return days;
 }
 
-const calculateWorkDays = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  start.setUTCHours(0, 0, 0, 0);
-  end.setUTCHours(0, 0, 0, 0);
-
-  let count = 0;
-  while (start <= end) {
-    count++;
-    start.setUTCDate(start.getUTCDate() + 1);
-  }
-  return count;
-};
-
 function getMonthPercentage(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -256,6 +243,24 @@ function extract_time_only_to_integer(date) {
   return time_only;
 }
 
+
+/**
+ * Whole calendar days from `from` to `to`, never negative. Complements
+ * `getAllDays`/`getDaysBetween`, which return the days themselves — use this
+ * when only the count matters (age of a record, how long something has been
+ * outstanding). Returns null when either end is missing or unparseable.
+ * @param {string|Date} from
+ * @param {string|Date} to
+ * @returns {number|null}
+ */
+function countDaysBetween(from, to) {
+  const start = parseDate(from);
+  const end = parseDate(to);
+  if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+  return Math.max(0, Math.round((end - start) / MS_PER_DAY));
+}
 
 function normalizeToDate(value) {
   if (value instanceof Date) {
@@ -362,6 +367,14 @@ const toDateOnly = (date) => {
 const parseToYmd = (value) => toDateOnly(parseDate(value));
 
 /**
+ * Today as yyyy-MM-dd, from local components rather than via UTC.
+ *
+ * `new Date().toISOString().slice(0, 10)` is the tempting version and it is wrong east of
+ * Greenwich: in IST it returns yesterday for anything happening before 05:30.
+ */
+const todayYmd = () => toDateOnly(new Date());
+
+/**
  * Date-only (yyyy-MM-dd) from a wall-clock value, never via UTC conversion.
  * Use when the input already represents local wall-clock time and the calendar
  * day must be taken as-written (e.g. device punch timestamps).
@@ -450,6 +463,39 @@ const formatTime = (date) => {
   );
 };
 
+
+const shortWeekday = (value) => {
+  const date = parseDate(value);
+  return date ? date.toLocaleString('en-US', { weekday: 'short' }) : null;
+};
+
+const monthName = (value) => {
+  const date = parseDate(value);
+  return date ? date.toLocaleString('en-US', { month: 'long' }) : null;
+};
+
+
+const ageInYears = (birthday, asOf) => {
+  const born = parseDate(birthday);
+  const on = parseDate(asOf);
+  if (!born || !on) {
+    return null;
+  }
+
+  let age = on.getFullYear() - born.getFullYear();
+  const monthDiff = on.getMonth() - born.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && on.getDate() < born.getDate())) {
+    age -= 1;
+  }
+  return age;
+};
+
+
+const yearBounds = (year) => ({
+  start: `${year}-01-01`,
+  end: `${year}-12-31`
+});
+
 /**
  * Formats a date and time to a human-readable format
  * @param {Date|string} date - Date object or date string
@@ -507,9 +553,19 @@ function convert_time_to_str(time) {
   if (!time) {
     return '--';
   }
+  // Materialised timetables and punches carry Dates, but rows read straight off the DB
+  // carry TIME columns as "HH:MM:SS" strings. Both must render as HH:MM.
+  if (typeof time === 'string' && /^\d{1,2}:\d{2}/.test(time)) {
+    const [hours, minutes] = time.split(':');
+    return `${hours.padStart(2, '0')}:${minutes}`;
+  }
+  const date = normalizeToDate(time);
+  if (Number.isNaN(date.getTime())) {
+    return '--';
+  }
   // str for time will be in format HH:MM
-  const hours = time.getHours();
-  const minutes = time.getMinutes();
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
@@ -594,58 +650,13 @@ function extendDateRange(startDate, endDate, daysBefore = 1, daysAfter = 1) {
   return { extendedStart, extendedEnd };
 }
 
-/** Date exactly one year from today — used as the default subscription expiry. */
-function oneYearFromNow() {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() + 1);
-  return date;
-}
-
-/** Current time in epoch milliseconds. */
-function nowMs() {
-  return Date.now();
-}
-
-/** Current time as an ISO-8601 string. */
-function nowIso() {
-  return new Date().toISOString();
-}
-
-/**
- * Coerce any date-ish value (Date, ISO string, epoch ms) to epoch
- * milliseconds. Returns NaN for invalid input.
- */
-function toEpochMs(value) {
-  return normalizeToDate(value).getTime();
-}
-
-/** ISO-8601 string for a date-ish value, or null if it can't be parsed. */
-function toIso(value) {
-  const date = normalizeToDate(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-/**
- * Whole days from now until `value` (rounded up), floored at 0. NaN input
- * yields 0.
- */
-function daysUntil(value) {
-  const ms = toEpochMs(value);
-  if (Number.isNaN(ms)) {
-    return 0;
-  }
-  return Math.max(0, Math.ceil((ms - nowMs()) / MS_PER_DAY));
-}
-
 module.exports = {
-  oneYearFromNow,
-  nowMs,
-  nowIso,
-  toEpochMs,
-  toIso,
-  daysUntil,
   formatDate,
   formatTime,
+  shortWeekday,
+  monthName,
+  ageInYears,
+  yearBounds,
   formatLastActive,
   formatDateToIndian,
   formatDuration,
@@ -654,7 +665,7 @@ module.exports = {
   buildParseDateErrorMessage,
   getAllDays,
   getDaysBetween,
-  calculateWorkDays,
+  countDaysBetween,
   getMonthPercentage,
   getCompleteMonthsPercentage,
   normalizeToDate,
@@ -669,6 +680,7 @@ module.exports = {
   formatDateToString,
   toDateOnly,
   parseToYmd,
+  todayYmd,
   toWallClockDateOnly,
   convert_time_to_str,
   format_duration_hours_minutes,
