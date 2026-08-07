@@ -1,0 +1,221 @@
+name: Create new app → push to fresh repo
+
+# Manual, one-shot bootstrap: takes an empty GitHub repo, runs
+# `npm run create-new-app <repo-url>` against a clean checkout of this
+# template (random ports, renamed package.json, remotes repointed), then
+# pushes the result to that repo using `secrets.STARTUP_SYNC_TOKEN`.
+#
+# The target repo is expected to be EMPTY. Pushing onto a repo that already
+# has commits fails on non-ff unless `force` is checked — that guard is
+# deliberate, since this workflow overwrites whatever is there.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'Fresh repo to push to: owner/repo, or its https:// / git@ URL.'
+        required: true
+        type: string
+      app_name:
+        description: 'App name for package.json / deploy paths. Defaults to the target repo name.'
+        required: false
+        type: string
+      branch:
+        description: 'Branch to create on the target repo.'
+        required: false
+        type: string
+        default: main
+      squash_history:
+        description: 'Push a single initial commit instead of the full template history.'
+        required: false
+        type: boolean
+        default: false
+      force:
+        description: 'Force-push. Needed only if the target repo already has commits — this OVERWRITES them.'
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 'Do everything except the push.'
+        required: false
+        type: boolean
+        default: false
+
+# One bootstrap at a time; two concurrent runs would race on the same target.
+concurrency:
+  group: create-new-app-${{ inputs.target_repo }}
+  cancel-in-progress: false
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read  # only reads this repo; the target push uses STARTUP_SYNC_TOKEN
+
+    steps:
+      - name: Check token is configured
+        env:
+          TOKEN: ${{ secrets.STARTUP_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::secrets.STARTUP_SYNC_TOKEN is not set on this repo."
+            exit 1
+          fi
+
+      # Inputs are never interpolated straight into shell — they arrive as env
+      # vars so a crafted repo name can't inject commands.
+      - name: Normalize target repo
+        id: target
+        env:
+          RAW: ${{ inputs.target_repo }}
+          RAW_APP_NAME: ${{ inputs.app_name }}
+          RAW_BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          SLUG="${RAW}"
+          SLUG="${SLUG%.git}"
+          SLUG="${SLUG#git@github.com:}"
+          SLUG="${SLUG#https://github.com/}"
+          SLUG="${SLUG#http://github.com/}"
+          SLUG="${SLUG#github.com/}"
+          SLUG="${SLUG#/}"
+          SLUG="${SLUG%/}"
+          if [[ ! "${SLUG}" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::Could not parse '${RAW}' as owner/repo."
+            exit 1
+          fi
+
+          REPO_NAME="${SLUG#*/}"
+          APP_NAME="${RAW_APP_NAME:-${REPO_NAME}}"
+          BRANCH="${RAW_BRANCH:-main}"
+          if [[ ! "${BRANCH}" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "::error::Invalid branch name '${BRANCH}'."
+            exit 1
+          fi
+
+          {
+            echo "slug=${SLUG}"
+            echo "url=https://github.com/${SLUG}.git"
+            echo "app_name=${APP_NAME}"
+            echo "branch=${BRANCH}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "[target] repo=${SLUG} app=${APP_NAME} branch=${BRANCH}"
+
+      - name: Checkout template
+        uses: actions/checkout@v5
+        with:
+          # Full history so the generated app inherits the template's history
+          # (unless squash_history is set, which starts an orphan branch).
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Run create-new-app
+        env:
+          TARGET_URL: ${{ steps.target.outputs.url }}
+          APP_NAME: ${{ steps.target.outputs.app_name }}
+        run: |
+          set -euo pipefail
+          # create-app.js prompts for the app name on stdin (readline). Typing
+          # a name directly is accepted at that prompt regardless of which
+          # folder/GitHub options it offers, so we always feed the resolved
+          # name rather than a menu number.
+          printf '%s\n' "${APP_NAME}" | npm run create-new-app -- "${TARGET_URL}"
+
+      - name: Commit generated app
+        id: commit
+        env:
+          SQUASH: ${{ inputs.squash_history }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          APP_NAME: ${{ steps.target.outputs.app_name }}
+        run: |
+          set -euo pipefail
+          git config user.name  'startup-sync-bot'
+          git config user.email 'startup-sync-bot@users.noreply.github.com'
+
+          if [ "${SQUASH}" = "true" ]; then
+            # Orphan branch = no template history, one initial commit.
+            git checkout --orphan "${BRANCH}"
+            git add -A
+            git commit -m "chore: bootstrap ${APP_NAME} from startup template"
+          else
+            git checkout -B "${BRANCH}"
+            git add -A
+            if git diff --cached --quiet; then
+              echo "[commit] create-new-app produced no changes; pushing history as-is"
+            else
+              git commit -m "chore: configure ${APP_NAME} from startup template"
+            fi
+          fi
+
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git --no-pager log --oneline -1
+
+      - name: Push to target repo
+        if: ${{ inputs.dry_run != true }}
+        env:
+          # Push URL only — `origin`'s fetch URL stays token-free so the token
+          # never lands in the pushed .git/config.
+          TOKEN: ${{ secrets.STARTUP_SYNC_TOKEN }}
+          SLUG: ${{ steps.target.outputs.slug }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          git remote set-url --push origin "https://x-access-token:${TOKEN}@github.com/${SLUG}.git"
+
+          PUSH_ARGS=( origin "HEAD:refs/heads/${BRANCH}" )
+          if [ "${FORCE}" = "true" ]; then
+            PUSH_ARGS+=( --force )
+          fi
+
+          # Retry transient network failures only; a non-ff rejection is a real
+          # signal that the target repo isn't empty, so let it fail fast there.
+          ATTEMPT=1
+          DELAY=2
+          until git push "${PUSH_ARGS[@]}"; do
+            if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1 && [ "${FORCE}" != "true" ]; then
+              echo "::error::${SLUG} already has a '${BRANCH}' branch. Re-run with force=true to overwrite it."
+              exit 1
+            fi
+            if [ "${ATTEMPT}" -ge 5 ]; then
+              echo "[push] giving up after ${ATTEMPT} attempts"
+              exit 1
+            fi
+            echo "[push] attempt ${ATTEMPT} failed; retrying in ${DELAY}s"
+            sleep "${DELAY}"
+            ATTEMPT=$((ATTEMPT + 1))
+            DELAY=$((DELAY * 2))
+          done
+
+      - name: Summarize on the run page
+        if: always()
+        env:
+          SLUG: ${{ steps.target.outputs.slug }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          APP_NAME: ${{ steps.target.outputs.app_name }}
+          SHA: ${{ steps.commit.outputs.sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          {
+            echo "## Create new app"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Target repo | \`${SLUG}\` |"
+            echo "| Branch | \`${BRANCH}\` |"
+            echo "| App name | \`${APP_NAME}\` |"
+            echo "| Commit | \`${SHA:-(none)}\` |"
+            echo "| Dry run | ${DRY_RUN:-false} |"
+            echo ""
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "_Dry run — nothing was pushed._"
+            else
+              echo "https://github.com/${SLUG}/tree/${BRANCH}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
