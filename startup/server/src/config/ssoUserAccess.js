@@ -14,7 +14,8 @@ const SSO_USER_ALLOWED_API = [
   /^\/api\/v1\/users(\/|$)/,
   /^\/api\/v1\/auth\/approve(\/|$)/,
   /^\/api\/v1\/auth\/roles(\/|$)/,
-  /^\/api\/v1\/auth\/logout(\/|$)/
+  /^\/api\/v1\/auth\/logout(\/|$)/,
+  /^\/api\/v1\/my-apps(\/|$)/
 ];
 
 /** Let an app add extra request-path patterns SSO users may reach. */

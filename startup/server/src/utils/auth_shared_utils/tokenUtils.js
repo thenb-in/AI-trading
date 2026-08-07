@@ -70,15 +70,34 @@ const clearAuthCookies = (res) => {
   });
 };
 
+/**
+ * The session cookie that belongs to THIS app, out of however many are in the jar.
+ */
+const pickOwnCookie = (cookies = {}, suffix, secret) => {
+
+  const isOurs = (token) => {
+    try {
+      return Boolean(verifyToken(token, secret));
+    } catch (err) {
+      return err.name === 'TokenExpiredError';
+    }
+  };
+  const own = [suffix, ...Object.keys(cookies).filter((name) => name.endsWith(`_${suffix}`))]
+    .find((name) => isOurs(cookies[name]));
+
+  return cookies[own] ?? cookies[suffix];
+};
+
 const extractTokens = (req)=>{
   const authHeader = req.headers.authorization;
   const usingHeaderAuth = authHeader?.startsWith('Bearer ');
+
   const accessToken = usingHeaderAuth
     ? authHeader.slice(7)
-    : req.cookies?.accessToken;
+    : pickOwnCookie(req.cookies, 'accessToken', env.JWT_SECRET);
   const refreshToken = usingHeaderAuth
     ? req.headers['x-refresh-token']
-    : req.cookies?.refreshToken;
+    : pickOwnCookie(req.cookies, 'refreshToken', env.REFRESH_TOKEN_SECRET);
 
   // Log token source and values
   const tokenSource = usingHeaderAuth ? 'header' : 'cookies';

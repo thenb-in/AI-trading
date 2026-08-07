@@ -31,7 +31,7 @@ const findUserWithRoleById = async (userId) => {
   });
 };
 
-const validateUserStatusAndPassword = async (user, password, username, isSsoFlow = false) => {
+const validateUserStatusAndPassword = async (user, password, username) => {
   if (!user) {
     logger.warn(`Login failed: User not found: ${username}`);
     throw { status: 401, message: 'User not found' };
@@ -47,10 +47,7 @@ const validateUserStatusAndPassword = async (user, password, username, isSsoFlow
     logger.warn(`Login failed: Invalid password: ${username}`);
     throw { status: 401, message: 'Invalid credentials' };
   }
-  if (isSsoManagedAccount(user) && !isSsoFlow) {
-    logger.warn(`Login failed: SSO account used on local login: ${user.id}`);
-    throw { status: 403, message: 'This account signs in through single sign-on.' };
-  }
+
   if (!user.isActive) {
     logger.warn(`Login failed: Account not found: ${user.id}`);
     throw { status: 403, message: 'Account not found' };
@@ -113,18 +110,18 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken, profi
  * Find the user and confirm they may sign in with this password. Split out from
  * loginUser so any caller that just needs the vetted user can reuse it.
  */
-const verifyCredentials = async (username, password, isSsoFlow = false) => {
+const verifyCredentials = async (username, password) => {
   const trimmedUsername = normalize(username);
   logger.info(`Looking up user by username: ${trimmedUsername}`);
   const user = await findUserWithRole(trimmedUsername);
-  await validateUserStatusAndPassword(user, password, trimmedUsername, isSsoFlow);
+  await validateUserStatusAndPassword(user, password, trimmedUsername);
   return user;
 };
 
 const loginUser = async (credentials, isSsoFlow = false) => {
   const { username, password } = credentials;
   logger.info(`User login attempt: ${normalize(username)} - SSO: ${isSsoFlow}`);
-  const user = await verifyCredentials(username, password, isSsoFlow);
+  const user = await verifyCredentials(username, password);
   logger.info(`User login successful: ${user.id}`);
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);
   const activeCompany = await companyService.getActiveCompanyForUser(user);
