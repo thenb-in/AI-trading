@@ -13,6 +13,8 @@ const canteenTokenRoutes = require('../routes/canteenTokenRoutes');
 const gatepassRoutes = require('../routes/gatepassRoutes');
 const departmentRoutes = require('../routes/departmentRoutes');
 const positionRoutes = require('../routes/positionRoutes');
+const operationCycleRoutes = require('../routes/operationCycleRoutes');
+const roleResponsibilityRoutes = require('../routes/roleResponsibilityRoutes');
 const assetRoutes = require('../routes/assetRoutes');
 const leaveTypeRoutes = require('../routes/leaveTypeRoutes');
 const allowanceTypeRoutes = require('../routes/allowanceTypeRoutes');
@@ -134,6 +136,8 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/gatepass`, gatepassRoutes);
   app.use(`${prefix}/department`, departmentRoutes);
   app.use(`${prefix}/position`, positionRoutes);
+  app.use(`${prefix}/operation-cycle`, operationCycleRoutes);
+  app.use(`${prefix}/role-responsibility`, roleResponsibilityRoutes);
   app.use(`${prefix}/asset`, assetRoutes);
   app.use(`${prefix}/leave-type`, leaveTypeRoutes);
   app.use(`${prefix}/allowance-type`, allowanceTypeRoutes);

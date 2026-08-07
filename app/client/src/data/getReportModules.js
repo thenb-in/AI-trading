@@ -57,7 +57,7 @@ import {
   TerminalHealthReportFilters,
   AdvanceRecoveryReportFilters,
   NegativeLeaveBalanceReportFilters,
-} from './reportFilterConfig';
+} from '../filter/reportFilterConfig';
 const DEFAULT_REPORT_DATE_RANGE = getDefaultReportDateRange();
 const TODAY_REPORT_DATE_RANGE = {
   start_date: getLocalDateStringYmd(),

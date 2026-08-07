@@ -8,7 +8,7 @@ import {
 } from "@mui/icons-material";
 
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
-import { Assessment as AssessmentIcon, Checklist as ChecklistIcon } from "@mui/icons-material";
+import { Assessment as AssessmentIcon, Checklist as ChecklistIcon, Badge as BadgeIcon } from "@mui/icons-material";
 import { Business as BusinessIcon, Work as WorkIcon, BeachAccess as BeachAccessIcon, AccountBalanceWallet as AccountBalanceWalletIcon, MonetizationOn as MonetizationOnIcon, Category as CategoryIcon, EventNote as EventNoteIcon, ListAlt as ListAltIcon, Merge as MergeIcon, Contacts as ContactsIcon, CalendarToday as CalendarTodayIcon, Devices as DevicesIcon, AccountBalance as AccountBalanceIcon, AccountTree as AccountTreeIcon, Terminal as TerminalCommandsIcon, WhatsApp as WhatsAppIcon, Storage as StorageIcon, SupervisorAccount as ManagementIcon, Build as CommonMastersIcon, Storefront as StorefrontIcon, Restaurant as RestaurantIcon, Inventory2 as InventoryIcon } from "@mui/icons-material";
 import { Headset } from "lucide-react";
 
@@ -33,7 +33,7 @@ const MASTER_CATEGORIES = {
  * All master category buckets — single source of truth for display order AND icon
  * field fall back to `defaultMasterCategoryIcon`.
  */
-const masterCategoryOrder = [
+const appSpecificMasterCategoryOrder = [
   { name: MASTER_CATEGORIES.COMMON_MASTERS, order: 1, icon: CommonMastersIcon },
   { name: MASTER_CATEGORIES.MANAGEMENT, order: 2, icon: ManagementIcon },
   { name: MASTER_CATEGORIES.RAW_DATA, order: 3, icon: StorageIcon },
@@ -46,7 +46,7 @@ const masterCategoryOrder = [
   { name: MASTER_CATEGORIES.DEPRECATED, order: 10 },
 ];
 
-const getMasterModules = (handleOpenMaster) => [
+const getAppSpecificMasterModules = (handleOpenMaster) => [
   {
     title: "Employee Master",
     description:
@@ -324,6 +324,32 @@ const getMasterModules = (handleOpenMaster) => [
     permissionName: "read_performance_parameter",
   },
   {
+    title: "Operation Cycle",
+    description:
+      "Manage the operation cycles employees are assigned to, with cycle code and name.",
+    icon: EventNoteIcon,
+    color: "secondary",
+    onClick: () => handleOpenMaster("operation-cycle"),
+    permissionName: "read_operation_cycle",
+    buttonText: "Manage Operation Cycles",
+    tags: ["Operation", "Cycle", "Shift", "Production"],
+    keywords: "operation cycle production shift rotation batch",
+    category: MASTER_CATEGORIES.COMMON_MASTERS,
+  },
+  {
+    title: "Role & Responsibility",
+    description:
+      "Define roles and the responsibilities each one carries; employees inherit the text from the role they are assigned.",
+    icon: BadgeIcon,
+    color: "secondary",
+    onClick: () => handleOpenMaster("role-responsibility"),
+    permissionName: "read_role_responsibility",
+    buttonText: "Manage Roles",
+    tags: ["Role", "Responsibility", "Duties", "Job"],
+    keywords: "role responsibility duties job description accountability",
+    category: MASTER_CATEGORIES.COMMON_MASTERS,
+  },
+  {
     title: "Purpose Type",
     description:
       "Centralized management of purpose type records including purpose type code, name, and description.",
@@ -564,19 +590,6 @@ const getMasterModules = (handleOpenMaster) => [
 
   },
   {
-  id: "activity",
-  title: "Audit Logs",
-  description: "Track and review all user actions and CRUD operations across every system module and model.",
-  icon: SettingsIcon,
-  color: "success",
-  onClick: () => handleOpenMaster("activity"),
-  buttonText: "View Audit Logs",
-  tags: ["Audit","Activity","Logs","CRUD","Tracking","System"],
-  keywords: "audit logs activity tracking crud operations user actions system history change log",
-  category: MASTER_CATEGORIES.SYSTEM_LOGS,
-  permissionName: "read_activity",
-},
-{
   title: "CallBuddy WhatsApp Templates",
   description: "Manage reusable WhatsApp message templates for CallBuddy. Define a template name and the message body to be sent to contacts.",
   icon: WhatsAppIcon,
@@ -587,19 +600,6 @@ const getMasterModules = (handleOpenMaster) => [
   keywords: "whatsapp template message callbuddy send contact",
   category: MASTER_CATEGORIES.CALLBUDDY,
   permissionName: "read_whatsapp_template",
-},
-{
-  id: "nbnext-drive",
-  title: "NBnext Drive",
-  description: "Upload, view, download, and manage files. Store files with optional object references for future API integration.",
-  icon: CloudUploadIcon,
-  color: "secondary",
-  onClick: () => handleOpenMaster("nbnext-drive"),
-  buttonText: "Open Drive",
-  tags: ["Files","Storage","Upload","Download","Drive","Documents"],
-  keywords: "file storage upload download drive documents files management",
-  category: MASTER_CATEGORIES.FILE_MANAGEMENT,
-  permissionName: "read_personal_nbnext_drive",
 },
 {
   id: "cache",
@@ -624,7 +624,8 @@ const getMasterModules = (handleOpenMaster) => [
 const defaultMasterCategoryIcon = CategoryIcon;
 
 export {
-  getMasterModules,
-  masterCategoryOrder,
+  getAppSpecificMasterModules,
+  appSpecificMasterCategoryOrder,
+  MASTER_CATEGORIES,
   defaultMasterCategoryIcon,
 };

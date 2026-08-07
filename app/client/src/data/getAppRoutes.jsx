@@ -51,7 +51,6 @@ import { HRDashboardContent } from "@app/pages/HRDashboard";
 import { ChecklistContent } from "@app/pages/Checklist";
 import { LogHistory } from "@app/components/wage_master_phone_app_components/LogHistory";
 import { FeedBackForm } from "@app/components/wage_master_phone_app_components/FeedBackForm";
-import { PastReportPage } from "@app/components/report/PastReportPage";
 
 // Routes that render inside the AdminLayout / sidebar.
 const appRoutes = [
@@ -118,9 +117,8 @@ const appRoutesWithoutSidebar = [
   { path: "wagemaster/feedback", element: <FeedBackForm /> },
 ];
 
-// Static report pages that render at fixed slugs under /admin/report.
-const reportStaticPages = [
-  { path: "past-report", element: <PastReportPage /> },
-];
+// Report pages the app owns that are not themselves reports. The Reporting
+// Manager that replaced "past reports" is a framework page and routes itself.
+const reportStaticPages = [];
 
 export { appRoutes, appRoutesWithoutSidebar, reportStaticPages };

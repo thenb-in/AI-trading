@@ -695,6 +695,26 @@ const performanceReviewApi = {
 };
 
 // --------------------------------------------
+// Operation Cycle API
+// --------------------------------------------
+const operationCycleApi = {
+  getAllOperationCycles: (filters = {}) => api.get(`/operation-cycle`, { params: filters }),
+  createOperationCycle: (operationCycleData) => api.post(`/operation-cycle`, operationCycleData),
+  updateOperationCycle: (operationCycleId, operationCycleData) => api.put(`/operation-cycle/${operationCycleId}`, operationCycleData),
+  deleteOperationCycle: (operationCycleId) => api.delete(`/operation-cycle/${operationCycleId}`),
+};
+
+// --------------------------------------------
+// Role & Responsibility API
+// --------------------------------------------
+const roleResponsibilityApi = {
+  getAllRoleResponsibilities: (filters = {}) => api.get(`/role-responsibility`, { params: filters }),
+  createRoleResponsibility: (roleData) => api.post(`/role-responsibility`, roleData),
+  updateRoleResponsibility: (roleId, roleData) => api.put(`/role-responsibility/${roleId}`, roleData),
+  deleteRoleResponsibility: (roleId) => api.delete(`/role-responsibility/${roleId}`),
+};
+
+// --------------------------------------------
 // Service Offering API
 // --------------------------------------------
 const serviceOfferingApi = {
@@ -1172,4 +1192,4 @@ const hrChecklistApi = {
   run: (segment) => runViaRunner(`hr-checklist/${segment}`)
 };
 
-export { api, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
+export { api, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };

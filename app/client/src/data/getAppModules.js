@@ -19,7 +19,7 @@ import {
  * definition itself so the navigator and the signup plan preview both read
  * it straight from here).
  */
-const getEtimeAppModuleDefinitions = () => [
+const getAppSpecificModuleDefinitions = () => [
   {
     id: "biometricPunch",
     title: "Biometric Punch",
@@ -116,4 +116,4 @@ const getEtimeAppModuleDefinitions = () => [
   },
 ];
 
-export { getEtimeAppModuleDefinitions };
+export { getAppSpecificModuleDefinitions };
