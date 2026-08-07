@@ -10,7 +10,6 @@ const { startAllSchedulers, stopAllSchedulers } = require('./scheduler');
 const env = require('./src/config/env');
 const { API_PREFIX } = require('./src/constants/standard_constants');
 const { registerLicenseJobs } = require('./src/license/engine/core/licenseScheduler');
-const { registerOnboardingJobs } = require('./src/onboarding/onboardingScheduler');
 require('./src/license/engine/core/licenseSeal'); // imported for its side effects only
 const licenseService = require('./src/license/licenseService');
 const errorMiddleware = require('./src/middleware/errorMiddleware');
