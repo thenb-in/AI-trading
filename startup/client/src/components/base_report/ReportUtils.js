@@ -1,9 +1,29 @@
 import { toast } from "react-toastify";
-import { getReportApi } from "@startup/data/reportApiRegistry";
+import { reportApi } from "@app/services/api";
 import { sanitizeHTML, formatDate, formatDateTime, formatTime, formatDuration, formatDurationJson } from "@utils/formattingUtils";
 import { parseDateValue } from "@utils/dateTimeUtils";
 import { toValidNumber } from "@utils/toValidNumber";
-import { runReportViaSocket } from "@startup/socket";
+// getStatusClass is imported but not currently used - reserved for future status styling functionality
+//
+// Fetching and grid-application live in ./reportDataSources — handleFiltersApply,
+// loadSavedReportRun and applyReportPayload are exported from there.
+
+// getEmployeeDetails lives in the app that owns the report that uses it — see
+// app/.../detailed_attendance/employeeSummaryUtils.js. Which columns count as
+// "employee info" is an app concern, not a framework one.
+//
+// normalizeEmployeeSummary stays here because fetchReportData below calls it.
+const normalizeEmployeeSummary = (summary) => {
+  if (!summary || typeof summary !== 'object') return {};
+  return {
+    id:summary.id,
+    emp_code: summary.emp_code || summary.employee_code || '',
+    first_name: summary.first_name || summary.employee_name || '',
+    department_name: summary.department_name || summary.employee_department || '',
+    position_name: summary.position_name || '',
+    emp_type: summary.emp_type || ''
+  };
+};
 
 const convertCellToText = (cell, rawValue) => {
   if (rawValue === undefined || rawValue === null) {
@@ -133,6 +153,95 @@ const processApiData = (
   return { gridColumns, gridRows };
 };
 
+// Helper function to check if attendance is locked
+const isAttendanceLocked = (row) => {
+  // First check the is_lock flag (preferred method)
+  if (row.manual_attendance_is_lock === true) {
+    return true;
+  }
+  
+  // Fallback: Check if status contains tick symbol (✓) - for backward compatibility
+  const status = row.status;
+  if (status) {
+    const statusStr = typeof status === 'string' ? status : String(status);
+    return statusStr.includes('✓');
+  }
+  
+  return false;
+};
+
+// Handle status updates for editable reports
+const handleStatusUpdate = async (employeeSummary, rowId, newStatus, field, rows, setRows, statusDefinitions) => {
+  try {
+    const row = rows.find((r) => r.id === rowId);
+    if (!row) {
+      toast.error("Error: Could not find attendance record.");
+      return;
+    }
+
+    // Check if attendance is locked
+    if (isAttendanceLocked(row)) {
+      // Try to extract locked by user name from row data
+      const lockedByUserName = row.manual_attendance_locked_by_user_name || 'Unknown User';
+      toast.error(`Cannot update attendance status. This attendance cannot be changed because it was locked by ${lockedByUserName}.`);
+      return;
+    }
+
+    await reportApi.updateAttendanceStatus({
+      employee_code: row.employee_code || employeeSummary.emp_code,
+      attendance_date:
+        row?.attendance_date instanceof Date && !isNaN(row.attendance_date)
+          ? row.attendance_date.toLocaleDateString('en-CA')
+          : field.split('-').reverse().join('-'),  // field is of type dd-mm-yyyy, convert to yyyy-mm-dd
+      status: newStatus,
+      old_status: row.status,
+    });
+
+    // Format the new value as HTML with the correct color
+    // Try to find status definition by abbreviation first, then by full name
+    const statusDef = Object.values(statusDefinitions).find(def => def.abbr === newStatus) ||
+                     Object.entries(statusDefinitions).find(([_fullName, def]) => def.abbr === newStatus || statusDefinitions[_fullName]?.abbr === newStatus)?.[1];
+    
+    // Add * symbol to indicate the attendance has been modified
+    // Check if it's already locked (has ✓), if so, add * before ✓, otherwise just add *
+    const isLocked = row.manual_attendance_is_lock === true;
+    // Build symbol string: * for modified, ✓ for locked (both can appear together)
+    let symbol = '*'; // Always add * when status is updated
+    if (isLocked) {
+      symbol += '✓'; // Add ✓ if locked
+    }
+    const statusWithSymbol = `${newStatus}${symbol}`;
+    
+    const formattedValue = statusDef
+      ? `<span style='color: ${statusDef.color || "black"}'>${statusWithSymbol}</span>`
+      : `<span style='color: black'>${statusWithSymbol}</span>`;
+
+    setRows((prevRows) =>
+      prevRows.map((r) =>
+        r.id === rowId
+          ? { 
+              ...r, 
+              [field]: formattedValue, // Update any field (status or HTML-type)
+              manual_attendance_modified_by_id: true, // Mark as modified so * symbol persists
+            }
+          : r
+      )
+    );
+
+    toast.success(`Attendance status updated to ${newStatus} successfully!`);
+  } catch (error) {
+    console.error("Error updating status:", error);
+    
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Failed to update attendance status. Please try again.";
+
+    toast.error(errorMessage);
+  }
+
+};
+
 // Get filters from search params
 const getFiltersFromSearchParams = (searchParams) => {
   const filters = {};
@@ -202,11 +311,11 @@ const fetchReportData = async (
   setStatusDefinitions,
   setSearchParams,
   hasStatusDefinitions = false,
-  setSummary
+  setEmployeeSummary
 ) => {
   try {
     setLoading(true);
-    const { reportData, columns: stateColumns, filters: stateFilters, statusDefinitions: stateStatusDefinitions, summary: stateSummary } = locationState || {};
+    const { reportData, columns: stateColumns, filters: stateFilters, statusDefinitions: stateStatusDefinitions, employeeSummary: stateEmployeeSummary } = locationState || {};
 
     if (locationState && reportData && stateColumns) {
       const { gridColumns, gridRows } = processApiData(
@@ -230,11 +339,10 @@ const fetchReportData = async (
         setRows(gridRows);
       }
       
-      if (setSummary && stateSummary) {
-        // Handle array response - take the first entry if an array, otherwise use
-        // the object directly. The caller owns any domain-specific normalization.
-        const summaryData = Array.isArray(stateSummary) ? stateSummary[0] : stateSummary;
-        setSummary(summaryData);
+      if (setEmployeeSummary && stateEmployeeSummary) {
+        // Handle array response - take first employee if array, otherwise use the object directly
+        const employeeData = Array.isArray(stateEmployeeSummary) ? stateEmployeeSummary[0] : stateEmployeeSummary;
+        setEmployeeSummary(normalizeEmployeeSummary(employeeData));
       }
       if (stateFilters) {
         updateSearchParams(stateFilters, setSearchParams);
@@ -249,91 +357,37 @@ const fetchReportData = async (
   }
 };
 
-// Socket RPC path — routes the report through the dedicated runner server.
-// Returns the normalised { apiData, successMessage } shape the shared
-// post-processing in handleFiltersApply consumes.
-const runReportViaReportRunner = async (reportKey, sanitizedFilters) => {
-  const envelope = await runReportViaSocket({ reportKey, filters: sanitizedFilters });
-  return {
-    apiData: envelope?.data ?? envelope,
-    successMessage: 'Report ready',
-  };
-};
 
-// HTTP path — runs the report on the app server directly via reportApi.
-// Same return shape as runReportViaReportRunner so handleFiltersApply stays
-// oblivious to transport.
-const runReportOnMainServer = async (report, sanitizedFilters) => {
-  const response = await getReportApi().getReportData(report.slug, sanitizedFilters);
-  return {
-    apiData: response.data.data,
-    successMessage: response.data.message || 'Filters applied successfully!',
-  };
-};
 
-// Apply filters and load report data into the grid.
-//
-// `transport` picks which path runs the query:
-//   'runner' → runReportViaReportRunner  (socket → dedicated runner process)
-//   'http'   → runReportOnMainServer     (REST → app server, default)
-//
-// `applyData` lets a caller own how the fetched payload maps onto the grid —
-// pass it when the response isn't the standard single `{ data, columns }`
-// shape (e.g. multi-section reports). When omitted, the default
-// processApiData → setColumns/setRows path runs. Everything else (sanitize,
-// URL sync, transport, loading flags, toasts) stays shared.
-const handleFiltersApply = async ({
-  filters,
-  report,
-  setRows,
-  setColumns,
-  setLoading,
-  setIsFiltering,
-  setSearchParams,
-  setStatusDefinitions,
-  hasStatusDefinitions = false,
-  setOriginalColumns = null,
-  transport = 'http',
-  applyData = null,
-}) => {
+// New function specifically for toggling is_attendance boolean field
+const handleAttendanceToggle = async (rowData, rows, setRows, reportActionApi) => {
   try {
-    setIsFiltering(true);
-    setLoading(true);
-
-    const sanitizedFilters = sanitizeFilters(filters);
-
-    updateSearchParams(sanitizedFilters, setSearchParams);
-
-    const { apiData, successMessage } = transport === 'runner'
-      ? await runReportViaReportRunner(report.slug, sanitizedFilters)
-      : await runReportOnMainServer(report, sanitizedFilters);
-
-    if (applyData) {
-      applyData(apiData);
+    const response = await reportActionApi.toggleAttendance(rowData.emp_code, rowData.punch_time);
+    
+    if (response.data.success) {
+      toast.success(response.data.message || 'Attendance toggled successfully!');
+      
+      // Update the specific row using emp_code + punch_time as unique identifier
+      setRows(prevRows => 
+        prevRows.map(row => 
+          (row.emp_code === rowData.emp_code && row.punch_time === rowData.punch_time) 
+            ? { ...row, is_attendance: row.is_attendance === true ? false : true } 
+            : row
+        )
+      );
+      
+      return true; // Success
     } else {
-      if (setOriginalColumns && apiData?.columns) setOriginalColumns(apiData.columns);
-
-      const { gridColumns, gridRows } = processApiData(apiData, setStatusDefinitions, hasStatusDefinitions);
-
-      // Batch column and row updates together to prevent partial renders.
-      // setColumns can be an arity-2 (cols, rows) combined setter from the caller.
-      if (typeof setColumns === 'function' && setColumns.length === 2) {
-        setColumns(gridColumns, gridRows);
-      } else {
-        setColumns(gridColumns);
-        setRows(gridRows);
-      }
+      toast.error(response.message || 'Failed to toggle attendance');
+      return false; // Failed
     }
-
-    toast.success(successMessage);
   } catch (error) {
-    console.error('Error applying filters:', error);
-    toast.error(error?.response?.data?.message || error?.message || 'Failed to fetch report data. Please try again.');
-  } finally {
-    setLoading(false);
-    setIsFiltering(false);
+    console.error('Error toggling attendance:', error);
+    toast.error(error.response?.data?.error || error.message || 'Failed to toggle attendance');
+    return false; // Error
   }
 };
 
 
-export { convertCellToText, filterRelevantData, processApiData, getFiltersFromSearchParams, updateSearchParams, sanitizeFilters, fetchReportData, handleFiltersApply, applyDefaultFiltersToSearchParams };
+
+export { convertCellToText, filterRelevantData, processApiData, handleStatusUpdate, handleAttendanceToggle, getFiltersFromSearchParams, updateSearchParams, sanitizeFilters, fetchReportData, normalizeEmployeeSummary, applyDefaultFiltersToSearchParams };
