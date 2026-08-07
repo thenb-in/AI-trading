@@ -103,12 +103,76 @@ jobs:
 
           echo "[target] repo=${SLUG} app=${APP_NAME} branch=${BRANCH}"
 
+      # Fail before spending a checkout + npm install on a target we can't push
+      # to. GitHub answers 404 (not 403) for private repos a token can't see, so
+      # "not found" is ambiguous by design — spell out both readings here rather
+      # than letting `git push` report it as a bare "Repository not found".
+      - name: Preflight target repo
+        env:
+          TOKEN: ${{ secrets.STARTUP_SYNC_TOKEN }}
+          SLUG: ${{ steps.target.outputs.slug }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          STATUS=$(curl -sS -o /tmp/repo.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${SLUG}")
+
+          case "${STATUS}" in
+            200) ;;
+            401)
+              echo "::error::STARTUP_SYNC_TOKEN was rejected (401). It is invalid, revoked, or expired."
+              exit 1
+              ;;
+            403)
+              echo "::error::STARTUP_SYNC_TOKEN is forbidden from ${SLUG} (403). If the org enforces SAML SSO, authorize the token for '${SLUG%/*}'."
+              exit 1
+              ;;
+            404)
+              echo "::error::${SLUG} is not visible to STARTUP_SYNC_TOKEN (404). GitHub returns 404 for private repos a token cannot see, so this is either: (a) the repo does not exist, or (b) the token has no access to it. Check that the repo exists, and that the token grants Contents: Read and write on ${SLUG} — a fine-grained PAT scoped to 'Only select repositories' must list this repo explicitly."
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected ${STATUS} from the GitHub API for ${SLUG}."
+              cat /tmp/repo.json
+              exit 1
+              ;;
+          esac
+
+          if [ "$(jq -r '.permissions.push // false' /tmp/repo.json)" != "true" ]; then
+            echo "::error::STARTUP_SYNC_TOKEN can read ${SLUG} but cannot push to it. Grant Contents: Read and write."
+            exit 1
+          fi
+
+          # Branch check goes through the push URL, not `origin` — at this point
+          # origin is still the template repo, which always has the branch.
+          if [ "${FORCE}" != "true" ] \
+            && git ls-remote --exit-code --heads "https://x-access-token:${TOKEN}@github.com/${SLUG}.git" "${BRANCH}" >/dev/null 2>&1; then
+            echo "::error::${SLUG} already has a '${BRANCH}' branch. Re-run with force=true to OVERWRITE it."
+            exit 1
+          fi
+
+          echo "[preflight] ${SLUG} is writable and has no '${BRANCH}' branch"
+
       - name: Checkout template
         uses: actions/checkout@v5
         with:
           # Full history so the generated app inherits the template's history
           # (unless squash_history is set, which starts an orphan branch).
           fetch-depth: 0
+          # REQUIRED. Left at the default (true), checkout stores
+          #   http.https://github.com/.extraheader = AUTHORIZATION: basic <GITHUB_TOKEN>
+          # in .git/config, and git sends it on every github.com request from
+          # this clone. An explicit Authorization header OVERRIDES the
+          # `x-access-token:<token>@` credentials in a push URL, so the push
+          # below would authenticate as GITHUB_TOKEN — which is scoped to this
+          # repo only and cannot see the target — and fail with a misleading
+          # "Repository not found". Nothing here re-fetches after checkout, so
+          # dropping the stored credential costs nothing.
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -167,6 +231,15 @@ jobs:
           FORCE: ${{ inputs.force }}
         run: |
           set -euo pipefail
+
+          # Belt and braces for the persist-credentials:false above — if a
+          # stored extraheader ever comes back, it silently outranks the push
+          # URL's credentials and the push fails as a bogus 404. Drop it.
+          if git config --local --name-only --get-regexp '^http\..*\.extraheader$' >/dev/null 2>&1; then
+            echo "[push] clearing checkout-persisted credentials so the push URL's token is used"
+            git config --local --unset-all 'http.https://github.com/.extraheader' || true
+          fi
+
           git remote set-url --push origin "https://x-access-token:${TOKEN}@github.com/${SLUG}.git"
 
           PUSH_ARGS=( origin "HEAD:refs/heads/${BRANCH}" )
@@ -174,15 +247,29 @@ jobs:
             PUSH_ARGS+=( --force )
           fi
 
-          # Retry transient network failures only; a non-ff rejection is a real
-          # signal that the target repo isn't empty, so let it fail fast there.
+          # Retry transient network failures only. Auth/visibility and non-ff
+          # rejections are permanent — retrying them just buries the real cause
+          # under a backoff ladder, so they exit on the first attempt.
           ATTEMPT=1
           DELAY=2
-          until git push "${PUSH_ARGS[@]}"; do
-            if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1 && [ "${FORCE}" != "true" ]; then
-              echo "::error::${SLUG} already has a '${BRANCH}' branch. Re-run with force=true to overwrite it."
-              exit 1
+          while :; do
+            if OUT=$(git push "${PUSH_ARGS[@]}" 2>&1); then
+              echo "${OUT}"
+              break
             fi
+            echo "${OUT}"
+
+            case "${OUT}" in
+              *"Repository not found"*|*"Invalid username or password"*|*"Authentication failed"*|*"Permission to"*|*"403"*)
+                echo "::error::Push to ${SLUG} was rejected for access reasons. STARTUP_SYNC_TOKEN needs Contents: Read and write on ${SLUG} (GitHub reports a private repo it cannot see as 'Repository not found')."
+                exit 1
+                ;;
+              *"non-fast-forward"*|*"fetch first"*|*"[rejected]"*)
+                echo "::error::${SLUG} already has commits on '${BRANCH}'. Re-run with force=true to OVERWRITE them."
+                exit 1
+                ;;
+            esac
+
             if [ "${ATTEMPT}" -ge 5 ]; then
               echo "[push] giving up after ${ATTEMPT} attempts"
               exit 1
