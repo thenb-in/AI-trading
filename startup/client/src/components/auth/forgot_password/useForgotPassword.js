@@ -28,7 +28,9 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '', onSubmi
         return;
       }
 
-      if (response.data.isSso) {
+      // Only accounts with no local password are turned away — an SSO-linked
+      // account that also has a password resets it here like any other.
+      if (response.data.isSsoOnly) {
         const message = 'This account signs in with SSO. Reset your password with sso.';
         setError(message);
         toast.error(message);

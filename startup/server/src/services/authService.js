@@ -115,14 +115,17 @@ const checkAvailability = async ({ type, value }) => {
     const username = normalize(raw);
     const existing = await User.findOne({
       where: { username },
-      attributes: ['id', 'is_totp_enabled', 'wallet_user_id']
+      attributes: ['id', 'is_totp_enabled', 'password']
     });
     return {
       type,
       value: username,
       available: !existing,
       isTotpEnabled: Boolean(existing?.is_totp_enabled),
-      isSso: Boolean(existing?.wallet_user_id)
+      // Whether SSO is the ONLY way in — i.e. there is no local password to
+      // reset. Being SSO-LINKED says nothing here: an account can hold both a
+      // wallet link and a local password, and then both ways in stay open.
+      isSsoOnly: Boolean(existing) && !existing.password
     };
   }
   if (type === 'company') {
