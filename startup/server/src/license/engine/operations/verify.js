@@ -13,9 +13,15 @@ const { runRejectionChecks } = require('../core/licenseHelper');
  *   { ok: true, bypass: true, reason, verifiedAt }        (enforcement off)
  *   { ok: false, reason, verifiedAt, ... }                (missing / invalid)
  *
- * Enforcement is tied to secure cookies: when `isSecureCookie` is false we treat
- * the install as local/dev and bypass the gate; secure cookies (production)
- * enforce it.
+ * Enforcement is tied to secure cookies, and deliberately this way round: a
+ * secure-cookie install is the hosted deployment we run ourselves, which needs no
+ * licence, so it bypasses. Everything else — self-hosted/on-prem, served without
+ * secure cookies — is what licensing exists to gate, so it is enforced.
+ *
+ * Consequence for local dev: with SECURE_COOKIE off the gate is live, so the
+ * server boots LOCKED (`no_pinned_keys`) and every non-recovery endpoint returns
+ * 503 until you supply LICENSE_WALLET_PUBLIC_KEYS (or a licence), or set
+ * SECURE_COOKIE=true.
  */
 async function loadAndVerify() {
   if (env.isSecureCookie) {
