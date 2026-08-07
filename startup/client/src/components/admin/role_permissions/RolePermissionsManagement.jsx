@@ -5,6 +5,7 @@ import { RoleSelector } from './components/RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
 import { CreateRoleModal } from './components/CreateRoleModal';
+import { PermissionLegend } from './components/PermissionLegend';
 import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/useDataContext';
   
@@ -110,6 +111,8 @@ function RolePermissionsManagement() {
         </div>
       ) : (
         <div className="space-y-3">
+          <PermissionLegend isRoleReadOnly={Boolean(selectedRole?.isGlobal) && !userData?.isSupportUser} />
+
           {/* Module Permissions */}
           {organizedPermissions.module.length > 0 && (
             <PermissionCategorySection

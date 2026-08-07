@@ -15,7 +15,7 @@ import { useDataGridReport } from './useDataGridReport';
  *  1. **Default grid** — no children. BaseReport renders a standard
  *     `<NbNextDataGrid>` using the loaded rows/columns and the grid-related
  *     props on this component (`documentName`, `frozenColumns`,
- *     `initialSortFallbackColumns`, `showTotalRow`).
+ *     `initialSortFallbackColumns`, `showTotalRow`, `defaultGroupByField`).
  *
  *  2. **Custom child** — pass a child component (typically a small wrapper).
  *     The child reads state via `useBaseReportState()` and renders whatever
@@ -34,6 +34,7 @@ const BaseReport = ({
   frozenColumns = [],
   initialSortFallbackColumns,
   showTotalRow = false,
+  defaultGroupByField = null,
   children,
 }) => {
   const {
@@ -84,6 +85,7 @@ const BaseReport = ({
             initialSortModel={initialSortModel}
             documentName={documentName}
             showTotalRow={showTotalRow}
+            defaultGroupByField={defaultGroupByField}
             frozenColumns={frozenColumns}
             showExcelExport
             exportReport={{ title: report?.title, slug: report?.slug }}
@@ -104,6 +106,8 @@ BaseReport.propTypes = {
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   initialSortFallbackColumns: PropTypes.arrayOf(PropTypes.string),
   showTotalRow: PropTypes.bool,
+  /** Field to group rows by on open — each group gets a subtotal row. User-toggleable from the header. */
+  defaultGroupByField: PropTypes.string,
   children: PropTypes.node,
 };
 

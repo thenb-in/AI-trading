@@ -32,7 +32,7 @@ const columnMenuStyle = {
   position: "absolute",
   top: 44,
   right: 12,
-  zIndex: 100000,
+  zIndex: 999,
   background: "#fff",
   border: "1px solid rgba(229,231,235,1)",
   boxShadow: "0 6px 18px rgba(14, 30, 37, 0.08)",
@@ -171,6 +171,8 @@ const totalRowStyle = {
   bottom: 0,
   zIndex: 1,
 };
+const ALERT_ROW_CELL_BACKGROUND = "#fef2f2";
+const ALERT_ROW_ACCENT = "#dc2626";
 
 const SECTION_HEADER_CELL_BACKGROUND = "#e6edf7";
 const sectionHeaderCellStyle = {
@@ -197,4 +199,6 @@ export {
   totalRowStyle,
   SECTION_HEADER_CELL_BACKGROUND,
   sectionHeaderCellStyle,
+  ALERT_ROW_CELL_BACKGROUND,
+  ALERT_ROW_ACCENT,
 };

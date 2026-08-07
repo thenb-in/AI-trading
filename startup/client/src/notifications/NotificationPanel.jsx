@@ -27,7 +27,7 @@ function NotificationPanel({ onClose, triggerRef }) {
         onMarkAllRead={markAllRead}
         onClose={onClose}
       />
-      <NotificationList groups={groups} onMarkRead={markRead} />
+      <NotificationList groups={groups} onMarkRead={markRead} onNavigate={onClose} />
       <NotificationFooter onNavigate={onClose} />
     </div>
   );

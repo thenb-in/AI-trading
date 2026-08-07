@@ -11,4 +11,17 @@ const buildFieldChangeHandler = (setState) => (e) => {
   }));
 };
 
-export { buildFieldChangeHandler };
+/**
+ * Same idea for SearchableDropdown, which hands back the selected value rather
+ * than an event — so the field name comes from the caller instead of `name`.
+ * `transform` converts the dropdown's string value into whatever the form state
+ * holds (e.g. `Number` for numeric ids).
+ */
+const buildDropdownChangeHandler = (setState, field, transform) => (value) => {
+  setState((prev) => ({
+    ...prev,
+    [field]: transform ? transform(value) : value,
+  }));
+};
+
+export { buildFieldChangeHandler, buildDropdownChangeHandler };

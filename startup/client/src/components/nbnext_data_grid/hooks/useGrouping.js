@@ -42,6 +42,15 @@ const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGrou
 
       const rawRows = currentGroupRows.map((w) => w._row || w);
       const totals = calculateTotals(rawRows, columnsToUse);
+      // Nothing numeric to total means the row would carry only the group's
+      // label, repeated directly under the rows that already show it. Grouping
+      // such a grid is still useful — it keeps each group's rows together —
+      // but the footer is noise, so leave it out.
+      if (Object.keys(totals).length === 0) {
+        currentGroupRows = [];
+        groupIndex += 1;
+        return;
+      }
       const id = `__group_total__${groupByField}__${String(currentGroupKey)}__${groupIndex}`;
       output.push({
         _row: {

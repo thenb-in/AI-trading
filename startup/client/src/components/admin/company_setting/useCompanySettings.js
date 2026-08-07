@@ -16,6 +16,7 @@ function useCompanySettings() {
     latitude: "",
     longitude: "",
     geofence_radius_meters: "",
+    debug_mode_shortcut: "",
   });
   const [companyDetails, setCompanyDetails] = useState(EMPTY_COMPANY_DETAILS_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
@@ -44,6 +45,7 @@ function useCompanySettings() {
           latitude: response.data.latitude ?? "",
           longitude: response.data.longitude ?? "",
           geofence_radius_meters: response.data.geofence_radius_meters ?? "",
+          debug_mode_shortcut: response.data.debug_mode_shortcut ?? "",
         };
         setCompanySettings(next);
         originalCompanyRef.current = next;
@@ -135,6 +137,7 @@ function useCompanySettings() {
         latitude: companySettings.latitude,
         longitude: companySettings.longitude,
         geofence_radius_meters: companySettings.geofence_radius_meters,
+        debug_mode_shortcut: companySettings.debug_mode_shortcut || null,
       };
 
       await ApiService.updateCompanySettings(companyData);
@@ -197,6 +200,7 @@ function useCompanySettings() {
   const handleLatitudeChange = (e) => handleInputChange("latitude", e.target.value);
   const handleLongitudeChange = (e) => handleInputChange("longitude", e.target.value);
   const handleGeofenceRadiusChange = (e) => handleInputChange("geofence_radius_meters", e.target.value);
+  const handleDebugModeShortcutChange = (shortcut) => handleInputChange("debug_mode_shortcut", shortcut);
 
   const handleLocationAutoFill = (lat, lng) => {
     setCompanySettings((prev) => ({ ...prev, latitude: lat, longitude: lng }));
@@ -232,6 +236,7 @@ function useCompanySettings() {
     handleLatitudeChange,
     handleLongitudeChange,
     handleGeofenceRadiusChange,
+    handleDebugModeShortcutChange,
     handleLocationAutoFill,
   };
 }

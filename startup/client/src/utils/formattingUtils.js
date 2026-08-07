@@ -132,6 +132,18 @@ const formatDuration = (duration) => {
 
 const formatValueOrDash = (value) => (value === null || value === undefined ? '—' : String(value));
 
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+/** A byte count in the largest unit that keeps it readable, e.g. `1.4 MB`. */
+const formatBytes = (bytes, decimals = 1) => {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value < 0) return '—';
+  if (value === 0) return '0 B';
+  const unitIndex = Math.min(Math.floor(Math.log(value) / Math.log(1024)), BYTE_UNITS.length - 1);
+  const scaled = value / 1024 ** unitIndex;
+  return `${unitIndex === 0 ? scaled : scaled.toFixed(decimals)} ${BYTE_UNITS[unitIndex]}`;
+};
+
 const sanitizeHTML = (value) => {
   if (!value) return '-';
   const stringValue = value == null ? '' : String(value);
@@ -163,4 +175,4 @@ const formatDurationJson = (duration) => {
   return formatted.trim();
 };
 
-export { formatDateTime, formatTime, formatDate, formatDuration, formatValueOrDash, sanitizeHTML, getStatusClass, formatDurationJson };
+export { formatDateTime, formatTime, formatDate, formatDuration, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson };

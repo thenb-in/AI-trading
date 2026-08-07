@@ -9,6 +9,8 @@ function normalizeNotification(payload) {
     variant: payload.variant || DEFAULT_VARIANT,
     title: payload.title,
     message: payload.message,
+    // Optional in-app destination; absent for notifications that are pure FYI.
+    link: payload.link || null,
     read: Boolean(payload.read),
     createdAt: payload.createdAt || null,
     time: formatRelativeTime(payload.createdAt),

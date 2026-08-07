@@ -1,2 +1,9 @@
 export { disconnectSocket } from './setup';
-export { runReportViaSocket, runViaRunner } from './runReportViaSocket';
+export {
+  runReportViaSocket,
+  runViaRunner,
+  enqueueSavedReportRun,
+  runSavedReportToCompletion,
+  subscribeToReportRunDone,
+  awaitReportRunById
+} from './runReportViaSocket';

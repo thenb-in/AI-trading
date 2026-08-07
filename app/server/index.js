@@ -14,8 +14,7 @@ require('./src/data/registerAppData');
 //
 // The framework (auth, users, admin, layouts, activity, nbnext-drive,
 // help-support) is composed by buildApp() under /api/v1/*. Everything
-// SalaryMitra-specific (HR, payroll, attendance, ADMS biometric, field sales,
-// reports) is wired here.
+// app-specific is wired here.
 
 const path = require('path');
 const logger = require('@startup/logger');
@@ -25,43 +24,36 @@ const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
 const { piscinaPool } = require('./src/config/piscinaPool');
-const headBaseService = require('@startup/src/services/headBaseService');
-const employeeHeadBaseService = require('./src/services/employeeHeadBaseService');
 const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
 
 // Where this app's billable heads read their history from, for the framework's
-// headbase. Employee is the head the wallet bills SalaryMitra on; a head added
-// to the wallet's rate card and not registered here is reported as unsupported
-// rather than silently skipped.
-headBaseService.registerSource('Employee', employeeHeadBaseService);
+// headbase. A head on the wallet's rate card that is not registered here is
+// reported as unsupported rather than silently skipped. The reference scaffold
+// bills on nothing, so it registers no sources:
+//
+//   const headBaseService = require('@startup/src/services/headBaseService');
+//   headBaseService.registerSource('<Head>', <sourceWithTimelineFn>);
 
 const { server, startServer } = buildApp({
-  // 5MB body limit — header/footer image uploads, base64 face photos.
+  // 5MB body limit — image uploads, base64 photos.
   bodyParserLimit: '5mb',
 
-  // Device-facing paths (/iclock, /hdata) are served only by the standalone
-  // biometric gateway servers now; the edge (nginx/vite) routes device traffic
-  // straight to them, so the HR app no longer reverse-proxies device protocols.
-
-  // App-owned routes that depend on app-specific things (biometric, hr/employee
-  // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
-  // namespace.
+  // App-owned routes that depend on app-specific things but live under the
+  // framework's /api/v1/* namespace.
   extraRoutes: [
     { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
   ],
 
-  // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
-  // formulas, gatepass, reports, masters, etc.). See src/routes/app_routes.js.
+  // All app-specific routes. See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
 
-  // Static files — more specific paths first so they win over /uploads
-  // (which is mounted by the framework). path is absolute to this server.
-  additionalStaticDirs: [
-    { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
-    { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
-  ],
+  // Extra static mounts, beyond the /uploads the framework already serves.
+  // More specific paths must come first so they win over /uploads, and fsPath
+  // must be absolute, e.g.
+  //   { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') }
+  additionalStaticDirs: [],
 
   // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
   // client bundle from this Express server. Path defaults to ../client (the
@@ -72,8 +64,6 @@ const { server, startServer } = buildApp({
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
-  // The ADMS auto-sync loop (employee push to online terminals) was here;
-  // it now runs in adms_server's process — see adms_server/index.js.
   onAfterListen: () => {
     piscinaPool.initialize();
     initAppServerRunnerClient();

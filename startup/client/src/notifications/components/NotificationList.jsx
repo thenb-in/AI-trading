@@ -4,7 +4,7 @@ import { EmptyState } from "./EmptyState";
 import { notificationShape } from "../notificationShape";
 
 // Scrollable body of the bell panel: the shared grouped list, or an empty state.
-function NotificationList({ groups, onMarkRead }) {
+function NotificationList({ groups, onMarkRead, onNavigate }) {
   const isEmpty = groups.every((group) => group.entries.length === 0);
 
   return (
@@ -12,7 +12,7 @@ function NotificationList({ groups, onMarkRead }) {
       {isEmpty ? (
         <EmptyState />
       ) : (
-        <NotificationGroups groups={groups} onMarkRead={onMarkRead} />
+        <NotificationGroups groups={groups} onMarkRead={onMarkRead} onNavigate={onNavigate} />
       )}
     </div>
   );
@@ -26,6 +26,7 @@ NotificationList.propTypes = {
     })
   ).isRequired,
   onMarkRead: PropTypes.func.isRequired,
+  onNavigate: PropTypes.func,
 };
 
 export { NotificationList };

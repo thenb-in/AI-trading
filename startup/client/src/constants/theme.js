@@ -140,6 +140,13 @@ const getColorClasses = (color) => {
       iconBg: 'bg-purple-100',
       accent: 'bg-purple-600'
     },
+    pink: {
+      border: 'border-pink-100',
+      bg: 'bg-pink-50 hover:bg-pink-100',
+      text: 'text-pink-700',
+      iconBg: 'bg-pink-100',
+      accent: 'bg-pink-600'
+    },
   };
   return colors[color] || colors.blue;
 };

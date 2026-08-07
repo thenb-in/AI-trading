@@ -5,7 +5,9 @@ import {
   getCellBackgroundColor,
   totalRowStyle,
   SECTION_HEADER_CELL_BACKGROUND,
-  sectionHeaderCellStyle
+  sectionHeaderCellStyle,
+  ALERT_ROW_CELL_BACKGROUND,
+  ALERT_ROW_ACCENT
 } from "../utils/styles.js";
 import { renderCellContent, getKeyForRow, fallbackColumnWidth, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
@@ -35,6 +37,7 @@ function DataGridBody({
   allColumns = [],
   selection = null,
   isSectionHeaderRow = null,
+  isAlertRow = null,
   density = "comfortable",
 }) {
   const baseCellStyle = cellBaseStyle(rowHeight, autoHeight, density);
@@ -115,9 +118,15 @@ function DataGridBody({
         // The row that opens a section (one employee's set of rows, say) is drawn as
         // its header: a rule above it and a tint, so the section's extent is obvious.
         const isSectionHeader = !isGroupTotal && typeof isSectionHeaderRow === "function" && isSectionHeaderRow(row);
+        // Caller-flagged problem row (duplicate entry, failed record …): tinted red.
+        const isAlert = !isGroupTotal && typeof isAlertRow === "function" && isAlertRow(row);
 
         const rowStyle = {
           ...getRowStyle(isEven, isSelected),
+          ...(isAlert && !isSelected && {
+            background: ALERT_ROW_CELL_BACKGROUND,
+            boxShadow: `inset 3px 0 0 0 ${ALERT_ROW_ACCENT}`,
+          }),
           ...(isGroupTotal && {
             background: "#f3f4f6",
             fontWeight: 600,
@@ -169,6 +178,9 @@ function DataGridBody({
           let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
           if (isSectionHeader && !isSelected) {
             cellBg = SECTION_HEADER_CELL_BACKGROUND;
+          }
+          if (isAlert && !isSelected) {
+            cellBg = ALERT_ROW_CELL_BACKGROUND;
           }
 
           const setCellStyles = (element) => {
@@ -362,6 +374,7 @@ DataGridBody.propTypes = {
     onToggleRow: PropTypes.func,
   }),
   isSectionHeaderRow: PropTypes.func,
+  isAlertRow: PropTypes.func,
   density: PropTypes.oneOf(["compact", "standard", "comfortable"]),
 };
 

@@ -1,9 +1,12 @@
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
+import { SHORTCUTS } from '@startup/constants/shortcuts';
+import { shortcutTitle } from '@utils/keyboardShortcut';
+import { useFormSaveShortcut } from '@startup/hooks/useFormSaveShortcut';
 
 const MasterModal = ({
   isOpen,
@@ -31,22 +34,27 @@ const MasterModal = ({
   const hasTitle = isTitleString ? titleProp !== '' : (isTitleNode || Boolean(titleProp));
   const shouldShowAudit = Boolean(showAudit && auditHead && auditObjectId != null);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
+  const paperRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) setIsAuditOpen(false);
   }, [isOpen]);
 
+  // Save shortcut for forms that render their own footer instead of FormFooter.
+  useFormSaveShortcut(paperRef, { enabled: isOpen });
+
   const ownsScroll = disableContentScroll || fullScreen;
-  const mergedPaperProps = disableContentScroll
-    ? {
-        ...paperPropsFromCaller,
-        sx: {
-          height: '90vh',
-          maxHeight: '90vh',
-          ...(paperPropsFromCaller?.sx || {}),
-        },
-      }
-    : paperPropsFromCaller;
+  const mergedPaperProps = {
+    ...paperPropsFromCaller,
+    ref: paperRef,
+    ...(disableContentScroll && {
+      sx: {
+        height: '90vh',
+        maxHeight: '90vh',
+        ...(paperPropsFromCaller?.sx || {}),
+      },
+    }),
+  };
 
   const baseSidebarSx = getDialogSidebarSx(fullScreen);
   const callerSxArray = Array.isArray(sxFromCaller)
@@ -66,7 +74,7 @@ const MasterModal = ({
         fullScreen={fullScreen}
         {...props}
         sx={mergedSx}
-        {...(mergedPaperProps ? { PaperProps: mergedPaperProps } : {})}
+        PaperProps={mergedPaperProps}
       >
         {hasTitle && (
           <DialogTitle sx={{
@@ -105,13 +113,15 @@ const MasterModal = ({
                 )
               )}
               {showCloseButton && (
-                <IconButton
-                  onClick={onClose}
-                  size="small"
-                  sx={{ ml: 0.5 }}
-                >
-                  <X size={20} />
-                </IconButton>
+                <Tooltip title={shortcutTitle('Close', SHORTCUTS.CANCEL)}>
+                  <IconButton
+                    onClick={onClose}
+                    size="small"
+                    sx={{ ml: 0.5 }}
+                  >
+                    <X size={20} />
+                  </IconButton>
+                </Tooltip>
               )}
             </Box>
           </DialogTitle>

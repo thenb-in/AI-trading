@@ -123,11 +123,11 @@ Main component that orchestrates all report functionality.
 
 ### ReportHeader
 
-Navigation header with back button and optional past report link.
+Navigation header with back button and optional Reporting Manager link.
 
 **Props:**
 - `isFiltering` (required): Boolean indicating if filters are being applied
-- `showPastReport` (optional): Boolean to show/hide past report button (default: true)
+- `showReportingManager` (optional): Boolean to show/hide the Reporting Manager button (default: true)
 - `backPath` (optional): Path for back button (default: "/admin/report")
 
 ### ReportTitleSection

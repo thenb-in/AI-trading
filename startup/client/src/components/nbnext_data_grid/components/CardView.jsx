@@ -15,6 +15,7 @@ function CardView({
   selectedRowId = null,
   handleRowClick,
   getRowIdFunc = null,
+  isAlertRow = null,
 }) {
   if (!rows?.length || !columns?.length) return null;
 
@@ -43,6 +44,15 @@ function CardView({
 
         const titleContent = renderCellContent(titleColumn, row);
 
+        const isAlert = !isSelected && typeof isAlertRow === "function" && isAlertRow(row);
+        const surfaceClass = isSelected
+          ? "border-[var(--grid-row-selected-accent)] ring-2 ring-[var(--grid-row-selected-accent)] ring-opacity-30 bg-[var(--grid-row-selected)]"
+          : isAlert
+            ? "border-red-200 bg-red-50 ring-1 ring-red-100"
+            : "border-gray-200 bg-white";
+        const hoverBorder = isClickable && !isAlert ? " hover:border-gray-300" : "";
+        const hoverClass = isClickable ? `cursor-pointer hover:shadow-md${hoverBorder}` : "";
+
         return (
           <div
             key={rowId ?? index}
@@ -50,13 +60,7 @@ function CardView({
             tabIndex={isClickable ? 0 : undefined}
             onClick={onCardClick}
             onKeyDown={onCardKeyDown}
-            className={`rounded-lg border shadow-sm transition-colors ${
-              isClickable ? "cursor-pointer hover:shadow-md hover:border-gray-300" : ""
-            } ${
-              isSelected
-                ? "border-[var(--grid-row-selected-accent)] ring-2 ring-[var(--grid-row-selected-accent)] ring-opacity-30"
-                : "border-gray-200"
-            } ${isSelected ? "bg-[var(--grid-row-selected)]" : "bg-white"}`}
+            className={`rounded-lg border shadow-sm transition-colors ${hoverClass} ${surfaceClass}`}
           >
             <div
               className="px-4 py-3 border-b text-sm font-semibold text-white truncate bg-[var(--grid-header-bg)]"
@@ -96,6 +100,7 @@ CardView.propTypes = {
   selectedRowId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   handleRowClick: PropTypes.func,
   getRowIdFunc: PropTypes.func,
+  isAlertRow: PropTypes.func,
 };
 
 export { CardView };

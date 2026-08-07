@@ -1,8 +1,8 @@
-// The app's permission surface: the startup framework set composed with
-// etime's HR/payroll set.
+// The app's permission surface: the startup framework set composed with the
+// app's own set.
 //
 // This is what app code imports (`../constants/permissions`). The framework
-// permissions and the composition rule come from startup; the HR-specific
+// permissions and the composition rule come from startup; the app-specific
 // permissions come from `./app_permissions`. startup never imports this file —
 // the dependency only runs app -> startup.
 

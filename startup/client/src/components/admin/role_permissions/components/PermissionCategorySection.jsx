@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Layers, Loader2, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { isPermissionAssigned, getPermissionSubscriptionStatus } from '../utils/permissionUtils';
+import { isPermissionAssigned, getPermissionSubscriptionStatus, getPermissionLabel } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
 import { hasPermission } from '@utils/hasPermission';
 import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS } from '../../permissionCategoryStyles';
@@ -179,10 +179,10 @@ function PermissionCategorySection({
                 const tooltipText = !isSubscribed 
                   ? `You don't have subscription to use this permission. Upgrade to use.`
                   : isHidden && userData?.isSupportUser
-                    ? `${permission.display_name || permission.name} (Hidden permission - visible to superadmins only)`
+                    ? `${getPermissionLabel(permission)} (Hidden permission - visible to superadmins only)`
                     : isRoleReadOnly 
-                      ? `${permission.display_name || permission.name} (Read-only: Only superadmins can modify default roles)` 
-                      : (permission.display_name || permission.name);
+                      ? `${getPermissionLabel(permission)} (Read-only: Only superadmins can modify default roles)` 
+                      : getPermissionLabel(permission);
                 
                 return (
                   <tr key={permission.id} className="border-b border-gray-200 hover:bg-gray-50">
@@ -295,7 +295,7 @@ function PermissionCategorySection({
             <label
               key={permission.id}
               className={`flex items-center gap-1 p-1 bg-white rounded border border-gray-200 hover:border-blue-300 ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              title={tooltipText || (permission.display_name ? permission.display_name : permission.name)}
+              title={tooltipText || getPermissionLabel(permission)}
             >
               <input
                 type="checkbox"
@@ -305,7 +305,7 @@ function PermissionCategorySection({
                 className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
               />
               <span className="text-xs text-gray-700 truncate flex-1">
-                {permission.display_name ? permission.display_name : permission.name}
+                {getPermissionLabel(permission)}
               </span>
             </label>
           );

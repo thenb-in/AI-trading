@@ -7,6 +7,8 @@ const notificationShape = PropTypes.shape({
   variant: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
+  // In-app route this notification points at, when it has one.
+  link: PropTypes.string,
   time: PropTypes.string,
   group: PropTypes.string,
   read: PropTypes.bool.isRequired,

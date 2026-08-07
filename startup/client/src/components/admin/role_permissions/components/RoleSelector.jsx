@@ -1,14 +1,19 @@
-import { Shield } from 'lucide-react';
 import PropTypes from 'prop-types';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 
 function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
-    const handleChange = (e) => {
-    const value = e.target.value;
-    if (value === '') {
-      onSelect(null);
-    } else {
-      onSelect(Number(value));
-    }
+  const roleOptions = roles.map((role) => {
+    const roleLabel = role.description
+      ? `${role.name} - ${role.description}`
+      : role.name;
+    const typeLabel = role.isGlobal
+      ? ' (Global)'
+      : ' (Company)';
+    return { value: String(role.id), label: roleLabel + typeLabel };
+  });
+
+  const handleChange = (value) => {
+    onSelect(value === '' ? null : Number(value));
   };
 
   return (
@@ -16,30 +21,15 @@ function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
       <label className="block text-xs font-medium text-gray-700 mb-1">
         Select Role
       </label>
-      <div className="relative">
-        <select
-          value={selectedRoleId || ''}
-          onChange={handleChange}
-          disabled={loading}
-          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded bg-white text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed appearance-none pr-8"
-        >
-          <option value="">-- Select a role --</option>
-          {roles.map((role) => {
-            const roleLabel = role.description 
-              ? `${role.name} - ${role.description}`
-              : role.name;
-            const typeLabel = role.isGlobal 
-              ? ' (Global)' 
-              : ' (Company)';
-            return (
-              <option key={role.id} value={role.id}>
-                {roleLabel + typeLabel}
-              </option>
-            );
-          })}
-        </select>
-        <Shield className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-      </div>
+      <SearchableDropdown
+        options={roleOptions}
+        selectedValues={selectedRoleId ? String(selectedRoleId) : ''}
+        onChange={handleChange}
+        placeholder="-- Select a role --"
+        multiple={false}
+        disabled={loading}
+        loading={loading}
+      />
     </div>
   );
 }

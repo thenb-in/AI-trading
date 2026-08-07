@@ -31,6 +31,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.SMALLINT,
       allowNull: true,
       comment: '1 for create, 0 for update, -1 for delete'
+    },
+    // Groups the rows written by one user gesture (a 200-row import is 200
+    // requests, hence 200 rows) so the whole gesture can be undone as a unit.
+    batchId: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      field: 'batch_id'
     }
   }, {
     tableName: 'activity',
@@ -60,6 +67,12 @@ module.exports = (sequelize, DataTypes) => {
       },
       {
         fields: ['is_confirmed']
+      },
+      {
+        fields: ['batch_id']
+      },
+      {
+        fields: ['created_by', 'timestamp']
       }
     ]
   });

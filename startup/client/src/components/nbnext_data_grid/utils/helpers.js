@@ -4,6 +4,7 @@ import { sanitizeHTML } from "../../base_report/reportFormatter.js";
 import { toValidNumber } from "@utils/toValidNumber.js";
 import { parseDateValue } from "@utils/dateTimeUtils.js";
 import { DEFAULT_COLUMN_WIDTH } from "./constants.js";
+import { baseWidthFor } from "./layoutMerge.js";
 
 /**
  * Format a cell value for plain-text display (e.g. in Insights panel).
@@ -46,7 +47,11 @@ const formatCellValueForInsight = (columnDef, value) => {
 const normalizeColumns = (columns) => {
   return (columns || []).map((col) => ({
     ...col,
-    width: Number.isFinite(col.width) ? col.width : DEFAULT_COLUMN_WIDTH,
+    // Deliberately left undefined when the server didn't send a width: an
+    // explicit number here counts as "the column asserted its own width" and
+    // would suppress the header-length sizing in `baseWidthFor`, making every
+    // column the same fixed width.
+    width: Number.isFinite(col.width) ? col.width : undefined,
     sortable: col.sortable !== false,
     frozen: col.frozen === true,
     // Support both 'hide' and 'hidden' flags (backend reports use 'hidden')
@@ -54,6 +59,20 @@ const normalizeColumns = (columns) => {
     field: col.field,
     headerName: col.headerName || col.field,
   }));
+};
+
+const HTML_CELL_JUSTIFY = { left: 'flex-start', center: 'center', right: 'flex-end' };
+
+/**
+ * Where an HTML cell's content sits. A column can say via `align`; otherwise anything that
+ * carries its own line breaks is a list or prose and reads left, while a single-line value is
+ * a badge (a status chip, a COF figure) and stays centred as it always has.
+ */
+const htmlCellAlign = (col, html) => {
+  if (col.align) {
+    return col.align;
+  }
+  return /<br\s*\/?>/i.test(html) ? 'left' : 'center';
 };
 
 /**
@@ -73,9 +92,16 @@ const renderCellContent = (col, row) => {
   
   // Handle HTML type columns - render with dangerouslySetInnerHTML
   if (formatCol.type === "html" && typeof rawValue === "string" && rawValue.trim()) {
+    const align = htmlCellAlign(col, rawValue);
     return React.createElement("div", {
       dangerouslySetInnerHTML: { __html: rawValue },
-      style: { display: 'flex', alignItems: 'center', justifyContent: 'center' }
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: HTML_CELL_JUSTIFY[align] || HTML_CELL_JUSTIFY.center,
+        textAlign: align,
+        width: '100%'
+      }
     });
   }
   
@@ -230,8 +256,15 @@ const getNumericComparable = (value, kind) => {
 };
 
 
-const compareStrings = (va, vb) =>
-  String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: "base" });
+// Built once, deliberately. `String.prototype.localeCompare(x, undefined, {...})`
+// constructs a fresh Intl.Collator on every call, and a sort does O(n log n) of
+// them — 16k rows is roughly 220k collator constructions, which measured as the
+// single largest cost in opening a large report. Reusing one collator is the
+// same comparison with the same locale and options, just without rebuilding the
+// machinery each time.
+const COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+const compareStrings = (va, vb) => COLLATOR.compare(String(va), String(vb));
 
 /**
  * Sort rows based on the canonical array sort model `[{ field, sort }, ...]`
@@ -321,14 +354,11 @@ const calculateFrozenOffsets = (frozenColumns, columnWidths) => {
   return offsets;
 };
 
-// Width used by DataGridHeader for cells when `columnWidths[field]` isn't yet
-// populated (transient render before merge has run). Matches `baseWidthFor` in
-// layoutMerge.js so the header and body agree.
-const fallbackColumnWidth = (col) => {
-  if (Number.isFinite(col.width)) return col.width;
-  const n = (col.headerName || col.field || "").length;
-  return Math.max(15 * n + 18 + 22 + 32 + 32, 80, DEFAULT_COLUMN_WIDTH);
-};
+// Width used by DataGridHeader/DataGridBody for cells when `columnWidths[field]`
+// isn't yet populated (transient render before merge has run). It *is*
+// `baseWidthFor` — same function, not a copy — so header and body can never
+// disagree about a column's width.
+const fallbackColumnWidth = baseWidthFor;
 
 /**
  * Calculate totals for numeric columns across all rows

@@ -51,9 +51,14 @@ const companyService = {
 
   async getCompanySettings(id) {
     try {
-      return await findModelByIdOrThrow(Company, id, {
-        attributes: ['id', 'name', 'mobileApp', 'desktopWeb', 'mobileWeb', 'latitude', 'longitude', 'geofence_radius_meters']
+      const company = await findModelByIdOrThrow(Company, id, {
+        attributes: ['id', 'name', 'mobileApp', 'desktopWeb', 'mobileWeb', 'latitude', 'longitude', 'geofence_radius_meters'],
+        include: [{ model: CompanyProfile, as: 'companyProfile', attributes: ['debug_mode_shortcut'], required: false }]
       }, 'Company');
+      return {
+        ...company.get({ plain: true }),
+        debug_mode_shortcut: company.companyProfile?.debug_mode_shortcut ?? null
+      };
     } catch (error) {
       throw new Error(`Failed to fetch company settings: ${error.message}`);
     }
@@ -80,10 +85,25 @@ const companyService = {
         updates.geofence_radius_meters = data.geofence_radius_meters;
       }
       await company.update(updates);
+
+      if (data.debug_mode_shortcut !== undefined) {
+        const [profile] = await CompanyProfile.findOrCreate({ where: { companyId: id }, defaults: { companyId: id } });
+        await profile.update({ debug_mode_shortcut: data.debug_mode_shortcut });
+      }
       return company;
     } catch (error) {
       throw new Error(`Failed to update company settings: ${error.message}`);
     }
+  },
+
+  /**
+   * The profile row that belongs to a company someone else just created. Split
+   * out for callers that own their own transaction (onboarding creates the
+   * company, the profile, the subscription and the first user in one), so they
+   * do not have to reach past the services layer for the model.
+   */
+  async createCompanyProfile(data, transaction) {
+    return CompanyProfile.create(data, { transaction });
   },
 
   async createCompanyAndLink(data, userId) {

@@ -24,16 +24,30 @@ const useFilterState = ({
   const [searchParams, setSearchParams] = useSearchParams();
   const [showDebugFilters, setShowDebugFilters] = useState(() => isDebugMode());
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  // Unit ('month' | 'week' | 'day') the user last stepped in, or null before they touch
+  // the quick-date bar — drives which presets stay prominent.
+  const [quickDateGroup, setQuickDateGroup] = useState(null);
   const [isApplyingViaRunner, setIsApplyingViaRunner] = useState(false);
+  const [debugReloadPrompt, setDebugReloadPrompt] = useState({
+    show: false,
+    debugEnabled: false,
+  });
   const previousSearchParamsRef = useRef(searchParams.toString());
   const mountedRef = useRef(true);
+  const hasAppliedRef = useRef(false);
+  const lastTransportRef = useRef('http');
 
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
 
-  useEffect(() => subscribeToDebugMode((v) => setShowDebugFilters(v)), []);
+  useEffect(() => subscribeToDebugMode((v) => {
+    setShowDebugFilters(v);
+    if (hasAppliedRef.current) {
+      setDebugReloadPrompt({ show: true, debugEnabled: v });
+    }
+  }), []);
 
   const allFilters = useMemo(
     () => (showDebugFilters ? filtersConfig : filtersConfig.filter((f) => !f.debug)),
@@ -101,12 +115,14 @@ const useFilterState = ({
     onFilterChange?.(name, value);
   }, [onFilterChange]);
 
-  const handleSearchableChange = useCallback((config, newValues) => {
+  // `next` is a plain string for single-select filters, an array for multiselect.
+  const handleSearchableChange = useCallback((config, next) => {
     if (isDisabled) return;
     if (!config.multiselect) {
-      updateFilter(config.name, newValues.length > 0 ? newValues[0] : 'all');
+      updateFilter(config.name, next || 'all');
       return;
     }
+    const newValues = next;
     // Reconcile 'all' vs specifics so they're never both selected:
     // adding 'all' on top of specifics → keep only 'all';
     // adding a specific while 'all' was active → drop 'all'.
@@ -142,8 +158,11 @@ const useFilterState = ({
     updateFilter(name, checked);
   }, [isDisabled, updateFilter]);
 
-  const applyDateRange = useCallback((range) => {
+  // `getRange` is resolved against the latest filters so quick-date presets can step
+  // back from the currently selected period instead of always anchoring on today.
+  const applyDateRange = useCallback((getRange) => {
     setFilters((prev) => {
+      const range = getRange({ start_date: prev.start_date, end_date: prev.end_date });
       const next = { ...prev };
       if (allFilters.some((f) => f.name === 'start_date')) {
         next.start_date = range.start_date;
@@ -157,13 +176,27 @@ const useFilterState = ({
     });
   }, [allFilters, onFilterChange]);
 
-  const quickDateActions = useMemo(
-    () => QUICK_DATE_ACTIONS.map(({ label, getRange }) => ({
-      label,
-      onClick: () => { if (!isDisabled) applyDateRange(getRange()); },
-    })),
-    [isDisabled, applyDateRange]
-  );
+  const quickDateActions = useMemo(() => {
+    const currentRange = {
+      start_date: filters.start_date,
+      end_date: filters.end_date,
+    };
+    return QUICK_DATE_ACTIONS
+      .filter(({ isVisible }) => !isVisible || isVisible(currentRange))
+      .map(({ label, group, getRange, isVisible }) => ({
+        label,
+        // Once the user starts stepping through one unit, the other units' presets step
+        // aside — still one click away, just no longer competing for attention.
+        muted: Boolean(quickDateGroup) && group !== quickDateGroup,
+        // Conditional presets mount mid-session, so they get an entrance animation.
+        animateIn: Boolean(isVisible),
+        onClick: () => {
+          if (isDisabled) return;
+          setQuickDateGroup(group);
+          applyDateRange(getRange);
+        },
+      }));
+  }, [filters.start_date, filters.end_date, quickDateGroup, isDisabled, applyDateRange]);
 
   const hasDateFilters = useMemo(
     () =>
@@ -196,6 +229,7 @@ const useFilterState = ({
       return acc;
     }, {});
     setFilters(resetValues);
+    setQuickDateGroup(null);
     Object.entries(resetValues).forEach(([k, v]) => onFilterChange?.(k, v));
     writeValuesToParams(resetValues);
   }, [allFilters, getDefaultDateValue, isDisabled, onFilterChange, writeValuesToParams]);
@@ -220,6 +254,8 @@ const useFilterState = ({
       const appliedFilters = collectAppliedFilters();
       writeValuesToParams(appliedFilters);
       await onFiltersApply?.(appliedFilters, transport);
+      hasAppliedRef.current = true;
+      lastTransportRef.current = transport;
     } catch (error) {
       console.error('Error applying filters:', error);
     } finally {
@@ -234,6 +270,20 @@ const useFilterState = ({
   const applyFiltersViaRunner = useCallback(
     () => doApply('runner', setIsApplyingViaRunner),
     [doApply]
+  );
+
+  const confirmDebugReload = useCallback(() => {
+    setDebugReloadPrompt((prev) => ({ ...prev, show: false }));
+    if (lastTransportRef.current === 'runner') {
+      applyFiltersViaRunner();
+      return;
+    }
+    applyFilters();
+  }, [applyFilters, applyFiltersViaRunner]);
+
+  const dismissDebugReload = useCallback(
+    () => setDebugReloadPrompt((prev) => ({ ...prev, show: false })),
+    []
   );
 
   return {
@@ -251,6 +301,9 @@ const useFilterState = ({
     resetFilters,
     applyFilters,
     applyFiltersViaRunner,
+    debugReloadPrompt,
+    confirmDebugReload,
+    dismissDebugReload,
   };
 };
 

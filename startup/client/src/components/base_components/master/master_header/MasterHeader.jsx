@@ -4,6 +4,9 @@ import { forwardRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
 import { KebabMenu } from '@startup/components/base_components/menu/KebabMenu';
+import { ShortcutHint } from '@startup/components/base_components/ShortcutHint';
+import { SHORTCUTS } from '@startup/constants/shortcuts';
+import { shortcutTitle } from '@utils/keyboardShortcut';
 import { useMasterHeader } from './useMasterHeader';
 
 const MasterHeader = forwardRef(({
@@ -31,7 +34,9 @@ const MasterHeader = forwardRef(({
   importButtonText = "Import",
   onDownloadTemplate,
   templateButtonText = "Template",
-  headerDisabled = false
+  headerDisabled = false,
+  /** Extra buttons rendered in the header action area (a React node). */
+  extraHeaderActions = null
 }, ref) => {
   const navigate = useNavigate();
   const {
@@ -118,18 +123,24 @@ const MasterHeader = forwardRef(({
         {/* Mobile: kebab menu containing ALL actions (including Add) */}
         <KebabMenu actions={mobileMenuActions} className="sm:hidden" />
 
+        {/* Caller-supplied actions that aren't part of the standard set —
+            e.g. managing the container a master's rows belong to. */}
+        {extraHeaderActions}
+
         {/* Desktop (sm+): inline labeled secondary buttons */}
         <div className="hidden sm:flex items-center gap-3">
-          {secondaryActions.map(({ icon: Icon, label, onClick, disabled, spinning }) => (
+          {secondaryActions.map(({ icon: Icon, label, onClick, disabled, spinning, shortcut }) => (
             <button
               key={label}
               type="button"
               onClick={onClick}
               disabled={disabled}
+              title={shortcutTitle(label, shortcut)}
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors whitespace-nowrap"
             >
               <Icon className={`h-4 w-4 mr-2 flex-shrink-0 ${spinning ? 'animate-spin' : ''}`} />
               {label}
+              <ShortcutHint shortcut={shortcut} />
             </button>
           ))}
         </div>
@@ -139,10 +150,12 @@ const MasterHeader = forwardRef(({
           <button
             onClick={onAdd}
             disabled={headerDisabled}
+            title={shortcutTitle(addButtonText, SHORTCUTS.NEW)}
             className="hidden sm:inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors whitespace-nowrap"
           >
             <Plus className="h-4 w-4 mr-2 flex-shrink-0" />
             {addButtonText}
+            <ShortcutHint shortcut={SHORTCUTS.NEW} />
           </button>
         )}
       </div>
@@ -176,7 +189,8 @@ MasterHeader.propTypes = {
   importButtonText: PropTypes.string,
   onDownloadTemplate: PropTypes.func,
   templateButtonText: PropTypes.string,
-  headerDisabled: PropTypes.bool
+  headerDisabled: PropTypes.bool,
+  extraHeaderActions: PropTypes.node
 };
 
 export { MasterHeader };

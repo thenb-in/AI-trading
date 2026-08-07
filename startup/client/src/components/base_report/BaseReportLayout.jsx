@@ -4,6 +4,7 @@ import { ReportHeader } from './ReportHeader';
 import { ReportTitleSection } from './ReportTitleSection';
 import { BaseFilter } from '@startup/components/base_filter/BaseFilter';
 import { LoadingBarReport } from './LoadingBarReport';
+import { ReportRunActivity } from './ReportRunActivity';
 
 /**
  * Shared "report header + filter + body card" chrome. Reports that need to bring their own
@@ -40,6 +41,9 @@ const BaseReportLayout = ({
             showApplyButton={showApplyButton}
             enableRunner
           />
+          {/* Sits with the filters, not below the grid: you decide what to run
+              while looking at what is already running. */}
+          <ReportRunActivity />
         </div>
 
         <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-sm sm:shadow-lg border border-gray-200 overflow-hidden h-full w-full min-w-0">

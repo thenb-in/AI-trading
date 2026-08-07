@@ -11,6 +11,8 @@ import { getMasterModules } from "@data/getMasterModules";
 import { reports, categories as reportCategories } from "@data/getReportModules";
 import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
+import { shortcutLabel } from "@utils/keyboardShortcut";
+import { SHORTCUTS } from "../../constants/shortcuts";
 import { MasterModal, MasterSearchInput } from "../base_components";
 import { SearchResultItem } from "./SearchResultItem";
 import { filterAndSortItems } from "@utils/searchUtils";
@@ -24,10 +26,9 @@ function getReportCategoryLabel(categoryId) {
   return reportCategories.find((c) => c.id === categoryId)?.name || categoryId || "Uncategorized";
 }
 
-function GlobalSearchPalette({ 
-  shortcutLabel = "Alt + S", 
+function GlobalSearchPalette({
   open: externalOpen,
-  onClose: externalOnClose 
+  onClose: externalOnClose
 }) {
   const navigate = useNavigate();
   const dataContext = useDataContext();
@@ -231,7 +232,7 @@ function GlobalSearchPalette({
               whiteSpace: "nowrap",
             }}
           >
-            {shortcutLabel} / Ctrl+K
+            {shortcutLabel(SHORTCUTS.GLOBAL_SEARCH)}
           </Typography>
         </Box>
       }
@@ -280,7 +281,6 @@ function GlobalSearchPalette({
 }
 
 GlobalSearchPalette.propTypes = {
-  shortcutLabel: PropTypes.string,
   open: PropTypes.bool,
   onClose: PropTypes.func,
 };

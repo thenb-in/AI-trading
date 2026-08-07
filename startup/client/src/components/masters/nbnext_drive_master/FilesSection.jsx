@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Upload, X, Camera, Video, Eye } from 'lucide-react';
 import { CameraCapture } from '@/components/common/camera_capture';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
+import { formatBytes } from '@utils/formattingUtils';
 
 /**
  * Reusable file upload section: drag-drop, select file(s), preview, camera/video.
@@ -175,14 +176,6 @@ const FilesSection = ({
     setViewerState({ open: false, blobUrl: '', mimeType: '', title: '' });
   }, []);
 
-  const formatFileSize = (bytes) => {
-    if (bytes == null || bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-  };
-
   const handleFileInputChange = useCallback(
     (e) => {
       const fileList = e.target.files;
@@ -275,7 +268,7 @@ const FilesSection = ({
                   <Upload className="h-5 w-5 text-gray-500 shrink-0" />
                   <div className="text-left min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                    <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                    <p className="text-xs text-gray-500">{formatBytes(file.size)}</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 ml-2">

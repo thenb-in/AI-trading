@@ -26,8 +26,9 @@ const useScrollContainerHeight = (fullScreen, scrollAreaRef, computedContainerHe
     return () => {
       resizeObserver.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fullScreen, computedContainerHeight]);
+    // scrollAreaRef is a ref object, so listing it costs nothing — its identity
+    // is stable across renders and only `.current` moves.
+  }, [fullScreen, computedContainerHeight, scrollAreaRef]);
 
   return scrollContainerHeight;
 };

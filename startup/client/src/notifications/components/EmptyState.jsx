@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { Bell } from "lucide-react";
 
 
-function EmptyState({ title, description }) {
+function EmptyState({ title = "You're all caught up", description = "No new notifications" }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
       <Bell className="h-8 w-8 text-gray-300" />
@@ -15,11 +15,6 @@ function EmptyState({ title, description }) {
 EmptyState.propTypes = {
   title: PropTypes.string,
   description: PropTypes.string,
-};
-
-EmptyState.defaultProps = {
-  title: "You're all caught up",
-  description: "No new notifications",
 };
 
 export { EmptyState };

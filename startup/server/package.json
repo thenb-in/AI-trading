@@ -1,6 +1,6 @@
 {
   "name": "NB Next backend",
-  "version": "1.0.25",
+  "version": "1.0.58",
   "main": "buildApp.js",
   "scripts": {
     "build": "node scripts/build-bytecode.js"
@@ -14,8 +14,8 @@
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
     "sequelize": "^6.37.7",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "speakeasy": "^2.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"

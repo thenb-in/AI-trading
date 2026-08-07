@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { Plus, RefreshCw, Download, Upload, FileText } from 'lucide-react';
 import { hasPermission } from '@utils/hasPermission';
 import { exportMaster, importMaster } from '@utils/masterExportimport.js';
+import { SHORTCUTS } from '@startup/constants/shortcuts';
+import { useShortcut } from '@startup/hooks/useShortcut';
 
 /**
  * Builds the action callbacks + action arrays consumed by MasterHeader.
@@ -60,15 +62,23 @@ const useMasterHeader = ({
 
   const canAdd = onAdd && (!permissionKey || hasPermission(userData, permissionKey));
 
+  // Header shortcuts stand down while a dialog is open (see useShortcut), so
+  // Alt+N can't reset a record the user is editing in the modal.
+  useShortcut(SHORTCUTS.NEW, onAdd, { enabled: Boolean(canAdd) && !headerDisabled });
+  useShortcut(SHORTCUTS.REFRESH, onRefresh, { enabled: Boolean(showRefresh && onRefresh) && !headerDisabled });
+  useShortcut(SHORTCUTS.EXPORT, onExportClick, { enabled: Boolean(showExport) && !headerDisabled });
+  useShortcut(SHORTCUTS.IMPORT, onImportClick, { enabled: Boolean(showImport) && !isImporting });
+
   const secondaryActions = [
-    showRefresh && onRefresh && { icon: RefreshCw, label: refreshButtonText, onClick: onRefresh, disabled: headerDisabled },
-    showExport && { icon: Download, label: exportButtonText, onClick: onExportClick, disabled: headerDisabled },
+    showRefresh && onRefresh && { icon: RefreshCw, label: refreshButtonText, onClick: onRefresh, disabled: headerDisabled, shortcut: SHORTCUTS.REFRESH },
+    showExport && { icon: Download, label: exportButtonText, onClick: onExportClick, disabled: headerDisabled, shortcut: SHORTCUTS.EXPORT },
     showImport && {
       icon: isImporting ? RefreshCw : Upload,
       label: isImporting ? 'Importing...' : importButtonText,
       onClick: onImportClick,
       disabled: isImporting,
       spinning: isImporting,
+      shortcut: SHORTCUTS.IMPORT,
     },
     onDownloadTemplate && { icon: FileText, label: templateButtonText, onClick: onDownloadTemplate, disabled: headerDisabled },
   ].filter(Boolean);

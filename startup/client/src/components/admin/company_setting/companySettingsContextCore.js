@@ -1,11 +1,13 @@
 import { createContext, useContext } from "react";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { LocationTab } from "./tabs/LocationTab";
+import { EngineeringTab } from "./tabs/EngineeringTab";
 
 
 const TAB_COMPONENTS = {
   general: GeneralTab,
   location: LocationTab,
+  engineering: EngineeringTab,
 };
 
 const CompanySettingsContext = createContext(null);

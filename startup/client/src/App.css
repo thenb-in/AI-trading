@@ -172,6 +172,33 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Toast auto-dismiss countdown. The bar drains over the toast's own duration so
+   the toast never disappears without warning, and pauses with the dismiss timer
+   while the toast is hovered or focused — so it can be read, or clicked, without
+   racing it. */
+.toast-timer-bar {
+  transform-origin: left;
+  animation: toast-countdown var(--toast-duration, 5000ms) linear forwards;
+  animation-play-state: var(--toast-timer-state, running);
+}
+
+@keyframes toast-countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* Quick-date presets that only show up part-way through a session (e.g. "Next Month",
+   once the period has been stepped back far enough) grow in instead of popping, so a
+   button appearing under the cursor doesn't read as a layout glitch. */
+.quick-date-enter {
+  animation: quick-date-enter 180ms ease-out;
+}
+
+@keyframes quick-date-enter {
+  from { opacity: 0; transform: translateX(-6px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Data grid cell styles with dynamic properties */
 .data-grid-cell-frozen {
   position: sticky;

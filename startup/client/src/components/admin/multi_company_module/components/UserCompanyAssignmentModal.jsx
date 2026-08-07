@@ -124,7 +124,7 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
                 selectedUser={selectedUser}
                 assigning={assigning}
                 loading={loading}
-                onSelectUser={(e) => setSelectedUser(e.target.value)}
+                onSelectUser={setSelectedUser}
                 onAssign={handleAssignUser}
                 availableUsers={getAvailableUsers}
               />

@@ -3,7 +3,7 @@ import { NotificationItem } from "./NotificationItem";
 import { notificationShape } from "../notificationShape";
 
 
-function NotificationGroups({ groups, onMarkRead }) {
+function NotificationGroups({ groups, onMarkRead, onNavigate }) {
   return groups.map(({ label, entries }) => (
     <section key={label}>
       <h4 className="sticky top-0 z-10 bg-gray-50/95 px-5 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 backdrop-blur">
@@ -11,7 +11,12 @@ function NotificationGroups({ groups, onMarkRead }) {
       </h4>
       <ul className="divide-y divide-gray-100">
         {entries.map((item) => (
-          <NotificationItem key={item.id} item={item} onMarkRead={onMarkRead} />
+          <NotificationItem
+            key={item.id}
+            item={item}
+            onMarkRead={onMarkRead}
+            onNavigate={onNavigate}
+          />
         ))}
       </ul>
     </section>
@@ -26,6 +31,7 @@ NotificationGroups.propTypes = {
     })
   ).isRequired,
   onMarkRead: PropTypes.func.isRequired,
+  onNavigate: PropTypes.func,
 };
 
 export { NotificationGroups };

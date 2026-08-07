@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
+import { runAsBatch } from '@startup/services/batchContext';
 
 const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
@@ -81,32 +82,37 @@ const useBulkActions = ({
       let succeeded = 0;
       let failed = 0;
 
-      for (const row of targetRows) {
-        if (cancellable && cancelRef.current) {
-          toast.info(`${capitalize(mode.verb || modeKey)} cancelled`);
-          break;
-        }
-        try {
-          const result = await mode.run(row, ctx);
-          // Treat undefined/true as success; explicit false as failure. Anything
-          // shaped like an axios response is unwrapped via .data.success.
-          let ok = true;
-          if (result === false) ok = false;
-          else if (result && typeof result === 'object' && 'data' in result) {
-            ok = Boolean(result.data?.success);
+      // One bulk run is one action to the user, however many requests it makes;
+      // the shared batch id keeps it as one entry in the activity log rather
+      // than N unrelated ones, and is what an undo of the run would target.
+      const { batchId } = await runAsBatch(async () => {
+        for (const row of targetRows) {
+          if (cancellable && cancelRef.current) {
+            toast.info(`${capitalize(mode.verb || modeKey)} cancelled`);
+            break;
           }
-          if (ok) succeeded++;
-          else failed++;
-        } catch (err) {
-          failed++;
-          // Surface the first error so the user has a clue; the summary toast
-          // still fires after the loop finishes.
-          if (failed === 1) {
-            const msg = err?.response?.data?.message || err?.message;
-            if (msg) toast.error(msg);
+          try {
+            const result = await mode.run(row, ctx);
+            // Treat undefined/true as success; explicit false as failure. Anything
+            // shaped like an axios response is unwrapped via .data.success.
+            let ok = true;
+            if (result === false) ok = false;
+            else if (result && typeof result === 'object' && 'data' in result) {
+              ok = Boolean(result.data?.success);
+            }
+            if (ok) succeeded++;
+            else failed++;
+          } catch (err) {
+            failed++;
+            // Surface the first error so the user has a clue; the summary toast
+            // still fires after the loop finishes.
+            if (failed === 1) {
+              const msg = err?.response?.data?.message || err?.message;
+              if (msg) toast.error(msg);
+            }
           }
         }
-      }
+      });
 
       setProcessingMode(null);
       setSelectedIds([]);
@@ -124,7 +130,7 @@ const useBulkActions = ({
         }
       }
 
-      return { ranOnEmpty: false, succeeded, failed };
+      return { ranOnEmpty: false, succeeded, failed, batchId };
     },
     [modes, rows, selectedIds, selectedRows, cancellable, onAfter]
   );

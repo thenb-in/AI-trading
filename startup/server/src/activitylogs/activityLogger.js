@@ -4,9 +4,13 @@ const {
   normalizeRecord,
   getActivityType,
   getObjectId,
+  getBatchId,
   getActivityMessage,
   buildLogPayloadForAction
 } = require('./activityLogUtils');
+
+/** Label for error logs — a dynamic action has no name until the response exists. */
+const describeAction = (action) => (typeof action === 'function' ? '(dynamic)' : action);
 
 /**
  * Lowest-level generic activity log middleware factory.
@@ -16,7 +20,8 @@ const {
  */
 const createActivityLogger = ({
   objectName,
-  action,
+  /** 'CREATE' | 'UPDATE' | 'DELETE' | ..., or ({ req, user, data }) => one of those. */
+  action: configuredAction,
   buildHead = null,
   buildLogPayload = null
 }) => {
@@ -24,7 +29,7 @@ const createActivityLogger = ({
     try {
       const { user } = req;
       if (!user) {
-        logger.warn(`Activity logger used without authenticated user for ${objectName} ${action}`);
+        logger.warn(`Activity logger used without authenticated user for ${objectName}`);
       }
 
       const originalJson = res.json.bind(res);
@@ -50,6 +55,22 @@ const createActivityLogger = ({
           const rawData = responseBody && Object.prototype.hasOwnProperty.call(responseBody, 'data')
             ? responseBody.data
             : responseBody;
+
+          // Some routes only know which action they performed once it is done —
+          // an upsert creates for one employee and updates for the next. Those
+          // pass a function and decide from the response; the rest pass a
+          // string, as before. Logging "created" for an update would make undo
+          // offer to delete a record the user never created.
+          const action = typeof configuredAction === 'function'
+            ? configuredAction({ req, user, data: rawData })
+            : configuredAction;
+
+          // A resolver returning nothing means "this request wrote nothing" —
+          // a validate-only probe, say. Recording it would put phantom entries
+          // in the audit trail and offer undos for records that don't exist.
+          if (!action) {
+            return;
+          }
 
           const head = typeof buildHead === 'function'
             ? buildHead({ req, user, action, objectName, data: rawData })
@@ -107,26 +128,28 @@ const createActivityLogger = ({
                 afterData,
                 buildLogPayload,
                 req,
-                user
+                user,
+                objectId
               });
 
-          await activityService.createActivity(
+          await activityService.createActivity({
             head,
-            JSON.stringify(logPayload),
-            message,
+            log: JSON.stringify(logPayload),
+            objectName: message,
             objectId,
             createdBy,
             companyId,
-            activityType
-          );
+            type: activityType,
+            batchId: getBatchId(req)
+          });
         } catch (error) {
-          logger.error(`Error creating activity log for ${objectName} ${action}`, error);
+          logger.error(`Error creating activity log for ${objectName} ${describeAction(configuredAction)}`, error);
         }
       });
 
       return next();
     } catch (error) {
-      logger.error(`Activity logger middleware error for ${objectName} ${action}`, error);
+      logger.error(`Activity logger middleware error for ${objectName} ${describeAction(configuredAction)}`, error);
       return next();
     }
   };

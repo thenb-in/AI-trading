@@ -4,6 +4,16 @@ import {
   HELP_SUPPORT_CATEGORIES,
   HELP_SUPPORT_PRIORITIES
 } from './helpSupportConstants';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+
+const PRIORITY_OPTIONS = HELP_SUPPORT_PRIORITIES.map((priority) => ({
+  value: priority,
+  label: priority
+}));
+const CATEGORY_OPTIONS = HELP_SUPPORT_CATEGORIES.map((category) => ({
+  value: category,
+  label: category
+}));
 
 function HelpSupportTicketForm({
   formData,
@@ -14,6 +24,9 @@ function HelpSupportTicketForm({
   isSubmitting,
   screenshotCaptured
 }) {
+  const handlePriorityChange = (value) => onFieldChange('priority', value);
+  const handleCategoryChange = (value) => onFieldChange('category', value);
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <section className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -38,39 +51,29 @@ function HelpSupportTicketForm({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="ticket-priority">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Priority
             </label>
-            <select
-              id="ticket-priority"
-              value={formData.priority}
-              onChange={(e) => onFieldChange('priority', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              {HELP_SUPPORT_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </select>
+            <SearchableDropdown
+              options={PRIORITY_OPTIONS}
+              selectedValues={formData.priority}
+              onChange={handlePriorityChange}
+              placeholder="Select priority"
+              multiple={false}
+            />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="ticket-category">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Category
             </label>
-            <select
-              id="ticket-category"
-              value={formData.category}
-              onChange={(e) => onFieldChange('category', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              {HELP_SUPPORT_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+            <SearchableDropdown
+              options={CATEGORY_OPTIONS}
+              selectedValues={formData.category}
+              onChange={handleCategoryChange}
+              placeholder="Select category"
+              multiple={false}
+            />
           </div>
         </div>
 

@@ -1,7 +1,6 @@
-const cellText = (row, colNumber) => {
-  const value = row.getCell(colNumber).value;
-  return String(value ?? '').trim();
-};
+const { getCellText } = require('./excelCellValue');
+
+const cellText = (row, colNumber) => getCellText(row.getCell(colNumber).value);
 
 /** Skip rows produced by excelRenderer.addFooterInfo (Report / Date / Filters in cols A–C). */
 const isExportFooterRow = (row) => {

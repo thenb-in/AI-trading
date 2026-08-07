@@ -3,7 +3,8 @@ const logger = require('../../logger');
 const {
   ACTIVITY_TYPE_TO_ACTION,
   ACTION_TO_ACTIVITY_TYPE,
-  ACTION_TO_MESSAGE_LABEL
+  ACTION_TO_MESSAGE_LABEL,
+  BATCH_ID_PATTERN
 } = require('../constants/activity');
 
 /**
@@ -163,6 +164,23 @@ const getObjectId = (afterData, req) => {
 };
 
 /**
+ * Read the client-supplied batch id off the request.
+ *
+ * One user gesture can be many requests — a monthly-attendance import POSTs
+ * once per row — and the client tags every request in a gesture with the same
+ * `x-batch-id`. That tag is what makes "undo the last thing" mean the import
+ * rather than its 200th row. Untagged requests get no batch and simply aren't
+ * offered as undoable.
+ */
+const getBatchId = (req) => {
+  const raw = req && req.headers ? req.headers['x-batch-id'] : null;
+  if (typeof raw !== 'string' || !BATCH_ID_PATTERN.test(raw)) {
+    return null;
+  }
+  return raw;
+};
+
+/**
  * Build the minimal payload we store in the Activity.log field.
  * - UPDATE: { action, changes }
  * - CREATE: { action, createdIds }
@@ -175,8 +193,19 @@ const buildLogPayloadForAction = ({
   afterData,
   buildLogPayload,
   req,
-  user
+  user,
+  // The id the activity row itself is filed under. Used when the response body
+  // nests its record (e.g. `{ success, record: { id } }`) so `extractIds` finds
+  // nothing — without it the log would say "created" but list nothing to undo.
+  objectId = null
 }) => {
+  const idsOrFallback = (ids) => {
+    if (ids.length > 0) {
+      return ids;
+    }
+    return objectId === null || objectId === undefined ? [] : [objectId];
+  };
+
   if (action === 'UPDATE') {
     const changes = computeChanges(beforeData, afterData);
 
@@ -196,7 +225,7 @@ const buildLogPayloadForAction = ({
   }
 
   if (action === 'CREATE') {
-    const createdIds = extractIds(afterData);
+    const createdIds = idsOrFallback(extractIds(afterData));
 
     if (typeof buildLogPayload === 'function') {
       return buildLogPayload({
@@ -214,7 +243,7 @@ const buildLogPayloadForAction = ({
   }
 
   if (action === 'DELETE') {
-    const deletedIds = extractIds(beforeData);
+    const deletedIds = idsOrFallback(extractIds(beforeData));
 
     if (typeof buildLogPayload === 'function') {
       return buildLogPayload({
@@ -245,6 +274,7 @@ module.exports = {
   decodeActivityType,
   getActivityMessage,
   getObjectId,
+  getBatchId,
   buildLogPayloadForAction
 };
 

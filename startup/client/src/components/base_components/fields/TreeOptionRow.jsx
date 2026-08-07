@@ -38,6 +38,7 @@ function TreeOptionRow({
   isLastChild,
   showChevron,
   showConnectors,
+  isActive = false,
   onSelect,
   onToggleCollapse,
 }) {
@@ -48,10 +49,15 @@ function TreeOptionRow({
 
   return (
     <div
+      role="option"
+      aria-selected={checked}
+      data-active={isActive}
       onClick={onSelect}
       className={`flex items-stretch text-sm cursor-pointer mx-1 rounded-sm hover:bg-blue-50 ${
         option.hasChildren ? 'bg-gray-50' : ''
-      } ${isSelectedish ? 'text-blue-700' : 'text-gray-700'}`}
+      } ${isSelectedish ? 'text-blue-700' : 'text-gray-700'} ${
+        isActive ? 'ring-1 ring-inset ring-blue-400 bg-blue-50' : ''
+      }`}
     >
       {showConnectors &&
         Array.from({ length: depth }).map((_, level) => {
@@ -110,6 +116,7 @@ TreeOptionRow.propTypes = {
   isLastChild: PropTypes.bool,
   showChevron: PropTypes.bool,
   showConnectors: PropTypes.bool,
+  isActive: PropTypes.bool,
   onSelect: PropTypes.func.isRequired,
   onToggleCollapse: PropTypes.func.isRequired,
 };

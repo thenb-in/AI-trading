@@ -1,6 +1,11 @@
 const STORAGE_KEY = 'help_support_console_logs';
 const MAX_LOG_ENTRIES = 400;
 const CONSOLE_METHODS = ['log', 'info', 'warn', 'error', 'debug'];
+// Persisting on every console call meant re-serialising the whole buffer and
+// doing a synchronous sessionStorage write per log line — O(buffer) work for
+// each of them, and the app logs every API request. Writes are coalesced onto a
+// timer instead, with a flush when the page goes away so nothing is lost.
+const SAVE_DEBOUNCE_MS = 1000;
 import { convertToISOString } from '@utils/dateTimeUtils';
 
 class ConsoleLogBufferService {
@@ -8,6 +13,25 @@ class ConsoleLogBufferService {
     this.started = false;
     this.originalConsole = {};
     this.entries = this.loadFromSessionStorage();
+    this.saveTimer = null;
+  }
+
+  // Coalesce persistence: the in-memory buffer is always current, and the
+  // sessionStorage copy catches up shortly after the logging settles.
+  scheduleSave() {
+    if (this.saveTimer || typeof window === 'undefined') return;
+    this.saveTimer = window.setTimeout(() => {
+      this.saveTimer = null;
+      this.saveToSessionStorage();
+    }, SAVE_DEBOUNCE_MS);
+  }
+
+  flush() {
+    if (this.saveTimer && typeof window !== 'undefined') {
+      window.clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    this.saveToSessionStorage();
   }
 
   loadFromSessionStorage() {
@@ -58,11 +82,17 @@ class ConsoleLogBufferService {
     if (this.entries.length > MAX_LOG_ENTRIES) {
       this.entries = this.entries.slice(this.entries.length - MAX_LOG_ENTRIES);
     }
-    this.saveToSessionStorage();
+    this.scheduleSave();
   }
 
   start() {
     if (this.started || typeof window === 'undefined') return;
+    // A tab can be closed or hidden between debounce ticks; both are the last
+    // chance to persist what has been logged.
+    window.addEventListener('pagehide', this.flush.bind(this));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flush();
+    });
     CONSOLE_METHODS.forEach((method) => {
       const original = window.console?.[method];
       if (typeof original !== 'function') return;

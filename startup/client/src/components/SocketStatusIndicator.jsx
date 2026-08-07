@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { subscribeSocketStatus } from "../socket/setup";
+import { ensureSocketReady, subscribeSocketStatus } from "../socket/setup";
 
 
 function SocketStatusIndicator() {
@@ -7,6 +7,11 @@ function SocketStatusIndicator() {
 
   useEffect(() => {
     const unsubscribe = subscribeSocketStatus(setConnected);
+    // The indicator is the socket's first use: without this the connection is
+    // only opened when some feature happens to need it (notifications, running
+    // a report), so the dot reads red for users who never trigger one.
+    // Failures need no handling — the status listener already shows red.
+    ensureSocketReady().catch(() => { /* stays red */ });
     return unsubscribe;
   }, []);
 

@@ -1,4 +1,11 @@
 import PropTypes from "prop-types";
+import { SearchableDropdown } from "@startup/components/base_components/fields/SearchableDropdown";
+
+const LAYOUT_TYPE_OPTIONS = [
+  { value: "private", label: "Private" },
+  { value: "public", label: "Public" },
+  { value: "temp", label: "Temporary" },
+];
 
 function SaveLayoutDialog({
   selectedLayout,
@@ -35,15 +42,15 @@ function SaveLayoutDialog({
         placeholder="Layout name"
         className="w-full border border-gray-200 rounded text-xs box-border mb-2 py-1 px-2"
       />
-      <select
-        value={newLayoutType}
-        onChange={(e) => onTypeChange(e.target.value)}
-        className="w-full border border-gray-200 rounded text-xs box-border bg-white cursor-pointer mb-2 py-1 px-2"
-      >
-        <option value="private">Private</option>
-        <option value="public">Public</option>
-        <option value="temp">Temporary</option>
-      </select>
+      <div className="mb-2">
+        <SearchableDropdown
+          options={LAYOUT_TYPE_OPTIONS}
+          selectedValues={newLayoutType}
+          onChange={onTypeChange}
+          placeholder="Layout type"
+          multiple={false}
+        />
+      </div>
       <label className="flex items-center gap-2 text-xs text-gray-700 mb-3 cursor-pointer select-none">
         <input
           type="checkbox"

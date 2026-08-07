@@ -2,9 +2,15 @@ import PropTypes from 'prop-types';
 import {
   QUICK_DATE_BTN_BASE,
   QUICK_DATE_BTN_ENABLED,
+  QUICK_DATE_BTN_MUTED,
   QUICK_DATE_BTN_DISABLED,
 } from './constants';
 
+
+const buttonVariant = (disabled, muted) => {
+  if (disabled) return QUICK_DATE_BTN_DISABLED;
+  return muted ? QUICK_DATE_BTN_MUTED : QUICK_DATE_BTN_ENABLED;
+};
 
 const QuickDateBar = ({ actions, disabled }) => (
   <div className="mt-2 p-2.5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-md border-2 border-blue-400 shadow-sm">
@@ -16,15 +22,15 @@ const QuickDateBar = ({ actions, disabled }) => (
         </label>
       </div>
     </div>
-    <div className="flex flex-wrap gap-2">
-      {actions.map(({ label, onClick }) => (
+    <div className="flex flex-wrap items-center gap-2">
+      {actions.map(({ label, onClick, muted, animateIn }) => (
         <button
           key={label}
           type="button"
           onClick={onClick}
           disabled={disabled}
-          className={`${QUICK_DATE_BTN_BASE} ${
-            disabled ? QUICK_DATE_BTN_DISABLED : QUICK_DATE_BTN_ENABLED
+          className={`${QUICK_DATE_BTN_BASE} ${buttonVariant(disabled, muted)} ${
+            animateIn ? 'quick-date-enter' : ''
           }`}
         >
           {label}
@@ -39,6 +45,8 @@ QuickDateBar.propTypes = {
     PropTypes.shape({
       label: PropTypes.string.isRequired,
       onClick: PropTypes.func.isRequired,
+      muted: PropTypes.bool,
+      animateIn: PropTypes.bool,
     })
   ).isRequired,
   disabled: PropTypes.bool,

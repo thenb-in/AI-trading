@@ -11,3 +11,4 @@ export { BaseFilter } from '../base_filter/BaseFilter';
 export { MasterSearch } from './master/MasterSearch';
 export { MasterSearch as MasterSearchInput } from './master/MasterSearch';
 export { MasterModalActions } from './master/MasterModalActions';
+export { ShortcutHint } from './ShortcutHint.jsx';

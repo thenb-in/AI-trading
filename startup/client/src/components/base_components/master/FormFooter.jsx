@@ -1,5 +1,10 @@
 import PropTypes from 'prop-types';
+import { useRef } from 'react';
 import { Save } from 'lucide-react';
+import { ShortcutHint } from '@startup/components/base_components/ShortcutHint';
+import { SHORTCUTS } from '@startup/constants/shortcuts';
+import { shortcutTitle } from '@utils/keyboardShortcut';
+import { useShortcut } from '@startup/hooks/useShortcut';
 
 const CheckmarkIcon = () => (
   <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,34 +43,50 @@ const FormFooter = ({
   submitDisabled = false,
   submitColor = 'blue',
   hideIcon = false,
-}) => (
-  <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-    <button
-      type="button"
-      onClick={onClose}
-      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
-    >
-      {cancelLabel}
-    </button>
-    <button
-      type="submit"
-      disabled={isLoading || submitDisabled}
-      className={`flex items-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${SUBMIT_COLOR_CLASSES[submitColor]}`}
-    >
-      {isLoading ? (
-        <>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-          {savingLabel ?? (isEditMode ? updatingLabel : creatingLabel)}
-        </>
-      ) : (
-        <>
-          {!hideIcon && (icon ?? ICON_VARIANTS[iconVariant])}
-          {isEditMode ? updateLabel : createLabel}
-        </>
-      )}
-    </button>
-  </div>
-);
+}) => {
+  const submitRef = useRef(null);
+  const submitLabel = isEditMode ? updateLabel : createLabel;
+  const canSubmit = !isLoading && !submitDisabled;
+
+  // Clicking the button (rather than calling onSubmit) keeps the browser's own
+  // required-field validation in play, exactly as a pointer click would.
+  const submitViaShortcut = () => submitRef.current?.click();
+  useShortcut(SHORTCUTS.SAVE, submitViaShortcut, { enabled: canSubmit });
+
+  return (
+    <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+      <button
+        type="button"
+        onClick={onClose}
+        title={shortcutTitle(cancelLabel, SHORTCUTS.CANCEL)}
+        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+      >
+        {cancelLabel}
+        <ShortcutHint shortcut={SHORTCUTS.CANCEL} />
+      </button>
+      <button
+        ref={submitRef}
+        type="submit"
+        disabled={!canSubmit}
+        title={shortcutTitle(submitLabel, SHORTCUTS.SAVE)}
+        className={`flex items-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${SUBMIT_COLOR_CLASSES[submitColor]}`}
+      >
+        {isLoading ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            {savingLabel ?? (isEditMode ? updatingLabel : creatingLabel)}
+          </>
+        ) : (
+          <>
+            {!hideIcon && (icon ?? ICON_VARIANTS[iconVariant])}
+            {submitLabel}
+            <ShortcutHint shortcut={SHORTCUTS.SAVE} />
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
 
 FormFooter.propTypes = {
   onClose: PropTypes.func.isRequired,

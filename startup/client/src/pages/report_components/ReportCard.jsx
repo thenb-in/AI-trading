@@ -34,7 +34,8 @@ const ReportCard = ({ report }) => {
 
 ReportCard.propTypes = {
   report: PropTypes.shape({
-    id: PropTypes.number.isRequired,
+    // Report ids are slugs ('detailed-attendance-report'), not numbers.
+    id: PropTypes.string.isRequired,
     title: PropTypes.string.isRequired,
     slug: PropTypes.string.isRequired,
     desc: PropTypes.string.isRequired,

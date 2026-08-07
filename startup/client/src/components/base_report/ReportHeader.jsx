@@ -2,18 +2,24 @@ import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import RestorePageIcon from '@mui/icons-material/RestorePage';
+import { REPORTS_ROOT_PATH, REPORTING_MANAGER_PATH } from '@startup/constants/reportRuns';
 
 /**
  * Generic ReportHeader component for navigation and report actions.
  * Can be customized by passing custom props or replaced entirely in BaseReport.
  */
-const ReportHeader = ({ isFiltering, showPastReport = true, backPath = "/admin/report" }) => {
+const ReportHeader = ({
+  isFiltering,
+  showReportingManager = true,
+  backPath = REPORTS_ROOT_PATH
+}) => {
   const navigate = useNavigate();
+  const goToReportingManager = () => navigate(REPORTING_MANAGER_PATH);
 
   return (
     <div className="bg-white shadow-sm border-b">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between gap-3 h-16">
           <button
             onClick={() => navigate(backPath)}
             disabled={isFiltering}
@@ -24,9 +30,9 @@ const ReportHeader = ({ isFiltering, showPastReport = true, backPath = "/admin/r
             <ArrowLeft size={18} />
             <span className="font-medium">Back to Reports</span>
           </button>
-          {showPastReport && (
+          {showReportingManager && (
           <button
-            onClick={() => navigate("/admin/report/past-report")}
+            onClick={goToReportingManager}
             disabled={isFiltering}
             className={`flex items-center gap-2 transition-colors ${
               isFiltering
@@ -35,7 +41,7 @@ const ReportHeader = ({ isFiltering, showPastReport = true, backPath = "/admin/r
               }`}
           >
             <RestorePageIcon size={18} />
-            <span className="font-medium">Past Report</span>
+            <span className="font-medium">Reporting Manager</span>
           </button>
           )}
         </div>
@@ -46,7 +52,7 @@ const ReportHeader = ({ isFiltering, showPastReport = true, backPath = "/admin/r
 
 ReportHeader.propTypes = {
   isFiltering: PropTypes.bool.isRequired,
-  showPastReport: PropTypes.bool,
+  showReportingManager: PropTypes.bool,
   backPath: PropTypes.string,
 };
 

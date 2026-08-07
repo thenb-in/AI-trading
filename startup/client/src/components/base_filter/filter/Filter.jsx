@@ -1,13 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import { toggleDebugMode } from '@services/debugModeService';
+import { SHORTCUTS } from '@startup/constants/shortcuts';
+import { useShortcut } from '@startup/hooks/useShortcut';
 import { useFilterState } from './useFilterState';
-import { useFilterShortcuts } from './useFilterShortcuts';
 import { useFilterOptionResolver } from './useFilterOptionResolver';
 import { FilterHeader } from './FilterHeader';
 import { FilterActions } from './FilterActions';
 import { QuickDateBar } from './QuickDateBar';
 import { BusyOverlay } from './BusyOverlay';
+import { DebugReloadDialog } from './DebugReloadDialog';
 import { FilterCell } from './FilterCell';
 import { sortByOrder } from './helpers';
 import { FILTER_GRID_CLASS } from './constants';
@@ -40,13 +42,20 @@ const Filter = ({
     resetFilters,
     applyFilters,
     applyFiltersViaRunner,
+    debugReloadPrompt,
+    confirmDebugReload,
+    dismissDebugReload,
   } = useFilterState({ filtersConfig, onFilterChange, onFiltersApply, isLoading });
 
-  useFilterShortcuts({
-    containerRef: filterContainerRef,
-    onApply: applyFilters,
-    disabled,
-  });
+  // Alt+Enter applies from anywhere on the page — the panel's own fields, a
+  // dropdown that portals its popup outside the panel, or the grid below it.
+  // When the runner is offered it is the primary way to run the report, so the
+  // shortcut follows it rather than the in-app apply.
+  useShortcut(
+    SHORTCUTS.APPLY_FILTERS,
+    enableRunner ? applyFiltersViaRunner : applyFilters,
+    { enabled: !disabled && !isDisabled },
+  );
 
   const handleFiltersLabelClick = useCallback((e) => {
     if (e.detail === 3) toggleDebugMode();
@@ -109,6 +118,13 @@ const Filter = ({
       }`}
     >
       {isBusy && <BusyOverlay isApplyingFilters={isApplyingFilters} />}
+
+      <DebugReloadDialog
+        show={debugReloadPrompt.show}
+        debugEnabled={debugReloadPrompt.debugEnabled}
+        onConfirm={confirmDebugReload}
+        onCancel={dismissDebugReload}
+      />
 
       <FilterHeader
         activeFiltersCount={activeFiltersCount}
@@ -176,7 +192,8 @@ Filter.propTypes = {
       options: PropTypes.array,
       multiselect: PropTypes.bool,
       searchable: PropTypes.bool,
-      clearable: PropTypes.bool,
+      optionsLoading: PropTypes.bool,
+      onOpenOptions: PropTypes.func,
       placeholder: PropTypes.string,
       is_standard: PropTypes.bool,
       order: PropTypes.number,

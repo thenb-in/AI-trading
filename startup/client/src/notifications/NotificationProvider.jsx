@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { VIEW_NOTIFICATION_PERMISSION } from "../constants/notifications";
 import { useToast } from "../components/toast";
@@ -11,12 +12,29 @@ import { countUnread, groupNotifications } from "./notificationUtils";
 
 const PAGE_SIZE = 20;
 
+/**
+ * Is the user already on the page this notification points at?
+ *
+ * Compares pathname only: a saved-run link carries ?runId=, and someone sitting
+ * on the report they just ran is "already there" whether or not that parameter
+ * has landed in the URL yet.
+ */
+function isViewingLinkTarget(link) {
+  if (!link || typeof window === 'undefined') return false;
+  try {
+    return new URL(link, window.location.origin).pathname === window.location.pathname;
+  } catch {
+    return false;
+  }
+}
+
 
 function NotificationProvider({ children }) {
   const dataContext = useDataContext();
   const canViewNotifications = hasPermission(VIEW_NOTIFICATION_PERMISSION, dataContext);
   const { userData } = dataContext;
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const activeCompanyId = userData?.companyId || userData?.company?.id || null;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,49 +77,6 @@ function NotificationProvider({ children }) {
       cancelled = true;
     };
   }, [activeCompanyId, canViewNotifications]);
-
-  // Live socket subscription — prepend new notifications as they arrive.
-  useEffect(() => {
-    if (!canViewNotifications) {
-      return undefined;
-    }
-
-    let cancelled = false;
-    let unsubscribe = null;
-
-    subscribeToNotifications((payload) => {
-      if (activeCompanyId && payload?.companyId && payload.companyId !== activeCompanyId) {
-        return;
-      }
-      const incoming = normalizeNotification(payload);
-      if (shownToastIds.current.has(incoming.id)) {
-        return;
-      }
-      shownToastIds.current.add(incoming.id);
-
-      setItems((prev) =>
-        prev.some((n) => n.id === incoming.id) ? prev : [incoming, ...prev]
-      );
-      showToast({
-        id: incoming.id,
-        title: incoming.title,
-        message: incoming.message,
-        variant: incoming.variant,
-      });
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unsubscribe = fn;
-      })
-      .catch(() => {
-        // Socket unavailable — REST history still works.
-      });
-
-    return () => {
-      cancelled = true;
-      if (unsubscribe) unsubscribe();
-    };
-  }, [activeCompanyId, canViewNotifications, showToast]);
 
   // Fetch the next page for the "View all" screen.
   const loadMore = useCallback(async () => {
@@ -147,6 +122,70 @@ function NotificationProvider({ children }) {
       // Keep the optimistic update; next reload reconciles.
     }
   }, [canViewNotifications]);
+
+  // Live socket subscription — prepend new notifications as they arrive and pop
+  // a toast. Declared after markRead so the toast's open action can use it.
+  useEffect(() => {
+    if (!canViewNotifications) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let unsubscribe = null;
+
+    subscribeToNotifications((payload) => {
+      if (activeCompanyId && payload?.companyId && payload.companyId !== activeCompanyId) {
+        return;
+      }
+      const incoming = normalizeNotification(payload);
+      if (shownToastIds.current.has(incoming.id)) {
+        return;
+      }
+      shownToastIds.current.add(incoming.id);
+
+      setItems((prev) =>
+        prev.some((n) => n.id === incoming.id) ? prev : [incoming, ...prev]
+      );
+
+      // A toast announcing the page you are already looking at is noise — the
+      // report filling in on screen is the notification. It still goes to the
+      // bell, so it is there if you leave and want it later.
+      //
+      // window.location rather than useLocation(): this listener is registered
+      // once, and a router hook would either resubscribe on every navigation or
+      // be read through a stale closure. window.location is always current.
+      if (isViewingLinkTarget(incoming.link)) {
+        return;
+      }
+
+      showToast({
+        id: incoming.id,
+        title: incoming.title,
+        message: incoming.message,
+        variant: incoming.variant,
+        // A toast that names a finished report should be the shortest path to
+        // it. Only notifications that carry a destination get one.
+        onOpen: incoming.link
+          ? () => {
+            markRead(incoming.id);
+            navigate(incoming.link);
+          }
+          : undefined,
+      });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unsubscribe = fn;
+      })
+      .catch(() => {
+        // Socket unavailable — REST history still works.
+      });
+
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [activeCompanyId, canViewNotifications, showToast, markRead, navigate]);
 
   const value = useMemo(
     () => ({

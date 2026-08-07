@@ -10,6 +10,8 @@ const commonFieldPropTypes = {
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   label: PropTypes.string,
+  /** Guidance under the field; an error replaces it while present. */
+  hint: PropTypes.node,
   error: PropTypes.string,
   disabled: PropTypes.bool,
   required: PropTypes.bool,

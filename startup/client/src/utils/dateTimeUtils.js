@@ -129,6 +129,85 @@ const formatDurationCompact = (minutes) => {
   return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
 };
 
+/**
+ * Units a duration reads in, largest first. `maxSeconds` covers units whose real
+ * length varies — a month is 30 *or* 31 days, a year 365 *or* 366 — so a value
+ * landing anywhere in that span is stated flatly instead of approximated.
+ */
+const DURATION_UNITS = [
+  { key: 'year', seconds: 365 * 86400, maxSeconds: 366 * 86400, one: 'year', many: 'years' },
+  { key: 'month', seconds: 30 * 86400, maxSeconds: 31 * 86400, one: 'month', many: 'months' },
+  { key: 'week', seconds: 7 * 86400, one: 'week', many: 'weeks' },
+  { key: 'day', seconds: 86400, one: 'day', many: 'days' },
+  { key: 'hour', seconds: 3600, one: 'hr', many: 'hrs' },
+  { key: 'minute', seconds: 60, one: 'min', many: 'mins' },
+  { key: 'second', seconds: 1, one: 'sec', many: 'secs' },
+];
+
+const UNIT_SECONDS = Object.fromEntries(DURATION_UNITS.map((unit) => [unit.key, unit.seconds]));
+
+/**
+ * How close to a whole unit a value must get to be summarized as that unit, so a
+ * few days short of a month still reads "~1 month" rather than dropping to weeks.
+ */
+const NEAR_UNIT_RATIO = 0.9;
+
+const unitLabel = (unit, count) => `${count} ${count === 1 ? unit.one : unit.many}`;
+
+/** True when the value lands on a whole number of the unit, variable length allowed. */
+const isExactSpan = (unit, count, seconds) =>
+  seconds >= count * unit.seconds && seconds <= count * (unit.maxSeconds ?? unit.seconds);
+
+/**
+ * A duration in words. `unit` is the granularity of `value` and doubles as the
+ * floor — a value given in days never breaks down into hours.
+ *
+ * `maxUnits: 1` rounds to the nearest single unit, so "~" appears on both sides
+ * of it — a few days either way of a month both read "~1 month":
+ *   humanizeDuration(30,  { unit: 'day', maxUnits: 1 })  -> "1 month"
+ *   humanizeDuration(31,  { unit: 'day', maxUnits: 1 })  -> "1 month"
+ *   humanizeDuration(33,  { unit: 'day', maxUnits: 1 })  -> "~1 month"
+ *   humanizeDuration(28,  { unit: 'day', maxUnits: 1 })  -> "~1 month"
+ *   humanizeDuration(365, { unit: 'day', maxUnits: 1 })  -> "1 year"
+ *
+ * Above that it breaks down instead, exactly, and only marks "~" when the cap
+ * drops a non-zero remainder:
+ *   humanizeDuration(3900, { unit: 'second' })           -> "1 hr 5 mins"
+ *   humanizeDuration(400,  { unit: 'day' })              -> "~1 year 1 month"
+ *
+ * @param {number|string} value
+ * @param {{unit?: string, maxUnits?: number, emptyLabel?: string}} [options]
+ * @returns {string} `emptyLabel` (default '') for blank/zero/negative input
+ */
+const humanizeDuration = (value, { unit = 'minute', maxUnits = 2, emptyLabel = '' } = {}) => {
+  const perUnit = UNIT_SECONDS[unit];
+  const total = Math.round(Number(value) * perUnit);
+  if (!perUnit || !Number.isFinite(total) || total <= 0) return emptyLabel;
+
+  const usable = DURATION_UNITS.filter((candidate) => candidate.seconds >= perUnit);
+
+  if (maxUnits === 1) {
+    const chosen = usable.find((candidate) => total >= candidate.seconds * NEAR_UNIT_RATIO)
+      ?? usable[usable.length - 1];
+    const count = Math.max(1, Math.round(total / chosen.seconds));
+    const prefix = isExactSpan(chosen, count, total) ? '' : '~';
+    return `${prefix}${unitLabel(chosen, count)}`;
+  }
+
+  let rest = total;
+  const parts = [];
+  for (const candidate of usable) {
+    if (parts.length === maxUnits) break;
+    const count = Math.floor(rest / candidate.seconds);
+    if (!count) continue;
+    parts.push(unitLabel(candidate, count));
+    rest -= count * candidate.seconds;
+  }
+
+  if (!parts.length) return emptyLabel;
+  return `${rest > 0 ? '~' : ''}${parts.join(' ')}`;
+};
+
 // Parse duration input (handle "1 hr 40 min" format)
 const parseDurationInput = (input) => {
   if (!input) return "";
@@ -183,16 +262,118 @@ const formatLastActive = (lastActive) => {
  * @param {number} [dayOffset=0]
  * @returns {{ start: Date, end: Date }}
  */
-/** Previous calendar month's full range (first day → last day) as YYYY-MM-DD strings. */
-const getPreviousMonthRange = () => {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+/**
+ * 'YYYY-MM-DD' → local-midnight Date, null for anything else. Unlike `new Date(str)`
+ * (which reads the string as UTC) the calendar day never shifts across timezones.
+ */
+const parseYmd = (value) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value ?? '').trim());
+  if (!match) return null;
+  const [, year, month, day] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  return isNaN(date.getTime()) ? null : date;
+};
+
+/** New Date shifted by whole calendar days, at local midnight. */
+const shiftDays = (date, days) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+
+/** Day the week starts on for quick-date ranges (0 = Sunday, 1 = Monday). */
+const WEEK_START_DAY = 1;
+
+/** Full week (WEEK_START_DAY → +6 days) containing `date`, as a filter range. */
+const getWeekFullRange = (date) => {
+  const start = shiftDays(date, -((date.getDay() - WEEK_START_DAY + 7) % 7));
   return {
-    start_date: getLocalDateStringYmd(firstDay),
-    end_date: getLocalDateStringYmd(lastDay),
+    start_date: getLocalDateStringYmd(start),
+    end_date: getLocalDateStringYmd(shiftDays(start, 6)),
   };
 };
+
+/** Single-day filter range for `date`. */
+const getDayRange = (date) => {
+  const ymd = getLocalDateStringYmd(date);
+  return { start_date: ymd, end_date: ymd };
+};
+
+/**
+ * The units a date range can be stepped in. Each unit knows how to recognise a range of
+ * its own shape — so stepping continues from the selected period rather than from today
+ * — and how to build the range `offset` units away from an anchor date. Adding a unit
+ * (quarter, year, ...) here is all a new pair of prev/next presets needs.
+ */
+const DATE_RANGE_UNITS = {
+  month: {
+    hasShape: (start, end) =>
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === 1 &&
+      end.getDate() === getLastDayOfMonth(end.getFullYear(), end.getMonth()),
+    rangeAt: (anchor, offset) => {
+      const { start, end } = getMonthFullRange(
+        new Date(anchor.getFullYear(), anchor.getMonth() + offset, 1)
+      );
+      return { start_date: start, end_date: end };
+    },
+  },
+  week: {
+    hasShape: (start, end) => {
+      const week = getWeekFullRange(start);
+      return week.start_date === getLocalDateStringYmd(start) &&
+        week.end_date === getLocalDateStringYmd(end);
+    },
+    rangeAt: (anchor, offset) => getWeekFullRange(shiftDays(anchor, offset * 7)),
+  },
+  day: {
+    hasShape: (start, end) => start.getTime() === end.getTime(),
+    rangeAt: (anchor, offset) => getDayRange(shiftDays(anchor, offset)),
+  },
+};
+
+/** True when a range has the given unit's shape (whole month / whole week / single day). */
+const matchesUnitShape = (range, unit) => {
+  const start = parseYmd(range?.start_date);
+  const end = parseYmd(range?.end_date);
+  return Boolean(start && end && DATE_RANGE_UNITS[unit].hasShape(start, end));
+};
+
+/** Today at local midnight. */
+const getStartOfToday = () => shiftDays(new Date(), 0);
+
+/** True when the range's last day is already past — i.e. the period has fully elapsed. */
+const hasRangeElapsed = (range) => {
+  const end = parseYmd(range?.end_date);
+  return Boolean(end && end < getStartOfToday());
+};
+
+/**
+ * The range `offset` units away from `range`: measured from the range's own period when
+ * it already has that unit's shape — so repeated steps walk the calendar (Jan → Dec →
+ * Nov) — and from today otherwise.
+ * @param {'month'|'week'|'day'} unit
+ * @param {{start_date: string, end_date: string}} [range] currently selected period
+ * @param {number} offset units to move, negative for backwards
+ */
+const getSteppedRange = (unit, range, offset) => {
+  const anchor = matchesUnitShape(range, unit) ? parseYmd(range.start_date) : new Date();
+  return DATE_RANGE_UNITS[unit].rangeAt(anchor, offset);
+};
+
+/**
+ * Whether a step is worth offering as a button: only from a period that already has the
+ * unit's shape, and only onto a period that has fully elapsed. Stepping onto the running
+ * month/week/day is never offered — one step back from today already sits there, and
+ * "This Month" / "Today" cover it.
+ */
+const canStepRange = (unit, range, offset) =>
+  matchesUnitShape(range, unit) && hasRangeElapsed(getSteppedRange(unit, range, offset));
+
+/**
+ * Previous calendar month's full range (first day → last day) as YYYY-MM-DD strings.
+ * When `range` is already a whole calendar month it steps back from that month
+ * (Jan → Dec) rather than from today.
+ */
+const getPreviousMonthRange = (range) => getSteppedRange('month', range, -1);
 
 /** Full calendar-month range (1st → last day) for the month containing `date`, as YYYY-MM-DD strings. */
 const getMonthFullRange = (date) => {
@@ -260,16 +441,7 @@ const getThisMonthRange = () => {
 };
 
 /** Single-day range for today (as YYYY-MM-DD). */
-const getTodayRange = () => {
-  const ymd = getLocalDateStringYmd();
-  return { start_date: ymd, end_date: ymd };
-};
-
-/** Single-day range for yesterday (as YYYY-MM-DD). */
-const getYesterdayRange = () => {
-  const ymd = getYesterdayYmd();
-  return { start_date: ymd, end_date: ymd };
-};
+const getTodayRange = () => getDayRange(new Date());
 
 const getDayBounds = (dayOffset = 0) => {
   const start = new Date();
@@ -607,9 +779,12 @@ export {
   getNextMonthFullRange,
   getOneYearFromTodayRange,
   getPreviousMonthRange,
+  getSteppedRange,
+  canStepRange,
+  parseYmd,
+  shiftDays,
   getThisMonthRange,
   getTodayRange,
-  getYesterdayRange,
   getDayBounds,
   dateFromExcelSerial,
   excelDateToLocalIsoString,
@@ -620,6 +795,7 @@ export {
   calculateEndTime,
   formatDurationDisplay,
   formatDurationCompact,
+  humanizeDuration,
   parseDurationInput,
   formatDateTime,
   formatLastActive,

@@ -1,6 +1,47 @@
 const logger = require('../../logger');
 const { ACTIVITY_MISSING_REQUIRED_FIELDS } = require('../constants/errors');
 const activityController = require('../controllers/activityController');
+const { sendSuccess, sendError } = require('../utils/response');
+const {
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_FORBIDDEN
+} = require('../constants/http');
+
+/** Undo one gesture: delete the records that batch created. */
+async function undoBatch(req, res) {
+  try {
+    const { batchId } = req.params;
+    const result = await activityController.undoBatch(batchId, req.user);
+
+    if (!result.ok) {
+      return sendError(res, {
+        // An expired window is a refusal, not a malformed request.
+        statusCode: result.expired ? HTTP_STATUS_FORBIDDEN : HTTP_STATUS_BAD_REQUEST,
+        message: result.reason
+      });
+    }
+
+    // Say what was skipped and why. A silent "undone" over records that were
+    // left behind is how someone concludes a wrong mark is gone when it isn't.
+    const notes = [];
+    if (result.blocked > 0) {
+      const why = result.blockedReasons.length > 0 ? ` (${result.blockedReasons.join('; ')})` : '';
+      notes.push(`${result.blocked} left in place${why}`);
+    }
+    if (result.failed > 0) {
+      notes.push(`${result.failed} could not be removed`);
+    }
+    const suffix = notes.length > 0 ? `, ${notes.join(', ')}` : '';
+
+    return sendSuccess(res, {
+      data: { undone: result.undone, failed: result.failed, blocked: result.blocked },
+      message: `Undone — removed ${result.undone} record(s)${suffix}`
+    });
+  } catch (error) {
+    logger.error(`Undo batch error: ${req.params?.batchId}. ${error.message}`, error);
+    return sendError(res, { error });
+  }
+}
 
 
 async function getAllActivities(req, res) {
@@ -87,6 +128,7 @@ module.exports = {
   getAllActivities,
   getActivitiesByHead,
   getActivitiesByHeadAndObjectId,
+  undoBatch,
   createActivity
 };
 

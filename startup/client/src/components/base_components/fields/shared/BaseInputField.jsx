@@ -29,6 +29,7 @@ function BaseInputField({
   onChange,
   placeholder = '',
   label = '',
+  hint = '',
   error = '',
   disabled = false,
   required = false,
@@ -126,6 +127,7 @@ function BaseInputField({
       label={label}
       required={required}
       disabled={disabled}
+      hint={hint}
       error={error}
       errorId={errorId}
       className={containerClassName}
@@ -177,6 +179,7 @@ BaseInputField.propTypes = {
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   label: PropTypes.string,
+  hint: PropTypes.node,
   error: PropTypes.string,
   disabled: PropTypes.bool,
   required: PropTypes.bool,

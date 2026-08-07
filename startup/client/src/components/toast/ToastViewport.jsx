@@ -12,7 +12,7 @@ function resolveAnchorElement(anchorRef) {
   return null;
 }
 
-function ToastViewport({ toasts, anchorRef, onDismiss }) {
+function ToastViewport({ toasts, anchorRef, onDismiss, onPause, onResume }) {
   const viewportRef = useRef(null);
   const [position, setPosition] = useState(null);
 
@@ -60,10 +60,15 @@ function ToastViewport({ toasts, anchorRef, onDismiss }) {
       {toasts.map((toast) => (
         <ToastCard
           key={toast.id}
+          id={toast.id}
           title={toast.title}
           message={toast.message}
           variant={toast.variant}
-          onDismiss={() => onDismiss(toast.id)}
+          duration={toast.duration}
+          onOpen={toast.onOpen}
+          onDismiss={onDismiss}
+          onPause={onPause}
+          onResume={onResume}
         />
       ))}
     </div>,
@@ -78,10 +83,14 @@ ToastViewport.propTypes = {
       title: PropTypes.string,
       message: PropTypes.string,
       variant: PropTypes.string,
+      duration: PropTypes.number,
+      onOpen: PropTypes.func,
     })
   ).isRequired,
   anchorRef: PropTypes.shape({ current: PropTypes.any }),
   onDismiss: PropTypes.func.isRequired,
+  onPause: PropTypes.func.isRequired,
+  onResume: PropTypes.func.isRequired,
 };
 
 export { ToastViewport };

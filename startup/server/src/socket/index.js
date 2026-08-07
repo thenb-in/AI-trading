@@ -11,7 +11,20 @@
 require('./init_setup');
 
 const { initClientAppServerSocket, getAppServerIo } = require('./client_appserver');
-const { initAppServerRunnerClient } = require('./appserver_runner');
+const { initAppServerRunnerClient: connectToRunner } = require('./appserver_runner');
+const { registerRunnerAnnouncements } = require('./init_setup/reports/runnerAnnouncements');
+
+/**
+ * Open the outbound link to the runner and listen for what it announces.
+ *
+ * Composed here rather than inside the transport: creating the socket is the
+ * transport's job, deciding that finished runs become user notifications is not.
+ */
+function initAppServerRunnerClient() {
+  const client = connectToRunner();
+  registerRunnerAnnouncements(client);
+  return client;
+}
 
 module.exports = {
   initAppServerRunnerClient,

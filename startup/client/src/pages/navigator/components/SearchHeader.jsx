@@ -2,6 +2,7 @@ import { memo } from "react";
 import PropTypes from "prop-types";
 import { Lock, LockOpen, Filter } from "lucide-react";
 import { MasterSearchInput } from "@startup/components/base_components";
+import { SearchableDropdown } from "@startup/components/base_components/fields/SearchableDropdown";
 
 const SearchHeader = ({
   searchTerm,
@@ -11,6 +12,11 @@ const SearchHeader = ({
   allCategories,
   headerRef
 }) => {
+  const categoryOptions = allCategories.map((category) => ({
+    value: category.id,
+    label: category.name
+  }));
+
   return (
     <div 
       ref={headerRef}
@@ -45,17 +51,15 @@ const SearchHeader = ({
           {/* Category Filter */}
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-gray-500" />
-            <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryFilterChange(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
-            >
-              {allCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <div className="min-w-[200px]">
+              <SearchableDropdown
+                options={categoryOptions}
+                selectedValues={categoryFilter}
+                onChange={onCategoryFilterChange}
+                placeholder="All categories"
+                multiple={false}
+              />
+            </div>
           </div>
 
           {/* Search */}

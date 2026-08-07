@@ -4,6 +4,7 @@ import {
   groupMasterPermissionsByOperation,
   groupReportPermissionsByOperation,
   getOperationDisplayName,
+  getPermissionLabel,
   isPermissionAssigned,
   getPermissionSubscriptionStatus,
 } from '../utils/permissionUtils';
@@ -169,9 +170,7 @@ function PermissionTable({
                             // Hidden means subscribed but hidden - enable for superadmins
                             const isSubscribed = subscriptionStatus === 'subscribed' || (isHidden && userData?.isSupportUser);
                             const isDisabled = updating || !selectedRole || isRoleReadOnly || !isSubscribed;
-                            const displayName = permission.display_name 
-                              ? permission.display_name 
-                              : (permission.name || 'Unknown Permission');
+                            const displayName = getPermissionLabel(permission) || 'Unknown Permission';
                             let tooltipText = isLinked 
                               ? `${displayName} (Linked to Module Permission - toggling this will also toggle the module permission)`
                               : displayName;

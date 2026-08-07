@@ -4,7 +4,10 @@ import { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { openHelpSupportNav } from "../utils/openHelpSupportNav";
+import { shortcutTitle } from "../utils/keyboardShortcut";
 import { ROUTE_HELP_SUPPORT } from "../constants/routes";
+import { SHORTCUTS } from "../constants/shortcuts";
+import { ShortcutHint } from "./base_components/ShortcutHint";
 
 const HELP_SUPPORT_PERMISSION = "view_help_and_support";
 
@@ -31,7 +34,7 @@ function HelpSupportButton({ collapsed }) {
     <button
       type="button"
       onClick={handleClick}
-      title="Help & Support"
+      title={shortcutTitle("Help & Support", SHORTCUTS.HELP_SUPPORT)}
       aria-label="Help & Support"
       className={`w-full flex items-center justify-center rounded-lg transition-colors font-medium ${
         isActive
@@ -40,7 +43,12 @@ function HelpSupportButton({ collapsed }) {
       } ${collapsed ? "p-2" : "p-3"}`}
     >
       <Headset className="w-5 h-5 flex-shrink-0" size={20} />
-      {!collapsed && <span className="ml-2">Help & Support</span>}
+      {!collapsed && (
+        <>
+          <span className="ml-2">Help & Support</span>
+          <ShortcutHint shortcut={SHORTCUTS.HELP_SUPPORT} />
+        </>
+      )}
     </button>
   );
 }

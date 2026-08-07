@@ -1,7 +1,12 @@
 const activityFormatter = require('../data_formatters/activity_formatter');
 const activityService = require('../services/activityService');
+const undoService = require('../undo/undoService');
 
 const activityController = {
+
+  async undoBatch(batchId, user) {
+    return await undoService.undoBatch(batchId, user);
+  },
 
   async getAllActivities(limit, offset, companyId) {
     const activities = await activityService.getAllActivities(limit, offset, companyId);
@@ -21,7 +26,9 @@ const activityController = {
 
 
   async createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId, type = null, isConfirmed = null) {
-    return await activityService.createActivity(head, log, timestamp, objectName, objectId, createdBy, companyId, type, isConfirmed);
+    void timestamp;
+    void isConfirmed;
+    return await activityService.createActivity({ head, log, objectName, objectId, createdBy, companyId, type });
   }
 };
 

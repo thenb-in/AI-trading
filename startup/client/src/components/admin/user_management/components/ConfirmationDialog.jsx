@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { AlertTriangle } from 'lucide-react';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 
 const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, roles = [], extraContent = null }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
@@ -63,6 +64,15 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
     }
   };
 
+  const roleOptions = roles.map((role) => ({
+    value: String(role.id),
+    label: role.description ? `${role.name} - ${role.description}` : role.name,
+  }));
+
+  const handleRoleChange = (value) => {
+    setSelectedRoleId(value ? Number(value) : null);
+  };
+
   const handleCancel = () => {
     setRequirePasswordReset(false);
     setSelectedRoleId(null);
@@ -84,19 +94,13 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Role <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={selectedRoleId || ''}
-                  onChange={(e) => setSelectedRoleId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">-- Select a role --</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name} {role.description ? `- ${role.description}` : ''}
-                    </option>
-                  ))}
-                </select>
+                <SearchableDropdown
+                  options={roleOptions}
+                  selectedValues={selectedRoleId ? String(selectedRoleId) : ''}
+                  onChange={handleRoleChange}
+                  placeholder="-- Select a role --"
+                  multiple={false}
+                />
               </div>
             )}
             <label className="flex items-center gap-2 cursor-pointer">

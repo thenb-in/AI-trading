@@ -11,6 +11,9 @@ import {
   TOOLBAR_DIVIDER_CLASS,
   TOOLBAR_HIGHLIGHT_BTN_CLASS,
 } from "../utils/toolbarStyles.js";
+import { ShortcutHint } from "@startup/components/base_components/ShortcutHint";
+import { SHORTCUTS } from "@startup/constants/shortcuts";
+import { shortcutTitle } from "@utils/keyboardShortcut";
 
 function Toolbar({
   totalRows,
@@ -176,11 +179,12 @@ function Toolbar({
               type="button"
               onClick={onToggleFullScreen}
               className={TOOLBAR_BTN_CLASS}
-              title={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={shortcutTitle(fullScreen ? "Exit fullscreen" : "Enter fullscreen", SHORTCUTS.FULL_SCREEN)}
               aria-label={fullScreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {fullScreen ? <Minimize2 size={14} strokeWidth={2} /> : <Maximize2 size={14} strokeWidth={2} />}
               <span className="hidden sm:inline">{fullScreen ? "Exit" : "Fullscreen"}</span>
+              <ShortcutHint shortcut={SHORTCUTS.FULL_SCREEN} className="ml-1" />
             </button>
           </>
         )}

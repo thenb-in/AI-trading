@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { parse } from 'date-fns';
 import PropTypes from 'prop-types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -48,6 +48,20 @@ const FilterField = ({
     [isDisabled]
   );
 
+  // Dynamic option lists load when their dropdown is opened. A filter that
+  // already holds something other than the default came from the URL, a saved
+  // run or a deep link, and its label only exists inside that list — so it has
+  // to load without waiting to be opened. `onOpenOptions` is idempotent.
+  const loadOptions = config.onOpenOptions;
+  const valueKey = Array.isArray(value) ? value.join(',') : String(value ?? '');
+  useEffect(() => {
+    if (!loadOptions) return;
+    const hasNonDefaultValue = valueKey
+      .split(',')
+      .some((v) => v && v !== 'all');
+    if (hasNonDefaultValue) loadOptions();
+  }, [loadOptions, valueKey]);
+
   switch (config.type) {
     case 'date': {
       const dateValue = value ? parse(value, 'yyyy-MM-dd', new Date()) : null;
@@ -71,20 +85,22 @@ const FilterField = ({
       const options = Array.isArray(config.options) ? config.options : [];
       const isMulti = !!config.multiselect;
       const showSearch = config.searchable === true || config.multiselect === true;
-      // For both single and multi: surface 'all' as a chip so the user
-      // sees the active default ("All Employees") instead of placeholder.
+      // Surface 'all' rather than the placeholder so the user sees the active
+      // default ("All Employees"). Multi wants an array, single a plain string.
       const selected = isMulti
         ? (Array.isArray(value) ? value : [String(value || 'all')])
-        : [String(value || 'all')];
+        : String(value || 'all');
       return (
         <SearchableDropdown
           options={options}
           selectedValues={selected}
-          onChange={(newValues) => onSearchableChange(config, newValues)}
+          onChange={(next) => onSearchableChange(config, next)}
           placeholder={config.placeholder || `Select ${config.label || ''}`.trim()}
           disabled={isDisabled}
           multiple={isMulti}
           searchable={showSearch}
+          loading={!!config.optionsLoading}
+          onOpen={loadOptions}
         />
       );
     }
@@ -123,6 +139,8 @@ FilterField.propTypes = {
     options: PropTypes.array,
     multiselect: PropTypes.bool,
     searchable: PropTypes.bool,
+    optionsLoading: PropTypes.bool,
+    onOpenOptions: PropTypes.func,
     placeholder: PropTypes.string,
   }).isRequired,
   value: PropTypes.any,
