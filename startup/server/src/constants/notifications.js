@@ -4,16 +4,18 @@ const NOTIFICATION_TYPES = {
   USER_LOGIN: 'user_login',
   APPROVAL_PENDING: 'approval_pending',
   APPROVAL_APPROVED: 'approval_approved',
-  APPROVAL_REJECTED: 'approval_rejected'
+  APPROVAL_REJECTED: 'approval_rejected',
+  REPORT_READY: 'report_ready',
+  REPORT_FAILED: 'report_failed'
 };
 
-// App-specific notification types need no entry here — anything unmapped
-// falls back to DEFAULT_VARIANT.
 const VARIANT_BY_TYPE = {
   [NOTIFICATION_TYPES.USER_LOGIN]: 'info',
   [NOTIFICATION_TYPES.APPROVAL_PENDING]: 'warning',
   [NOTIFICATION_TYPES.APPROVAL_APPROVED]: 'success',
-  [NOTIFICATION_TYPES.APPROVAL_REJECTED]: 'error'
+  [NOTIFICATION_TYPES.APPROVAL_REJECTED]: 'error',
+  [NOTIFICATION_TYPES.REPORT_READY]: 'success',
+  [NOTIFICATION_TYPES.REPORT_FAILED]: 'error'
 };
 
 const DEFAULT_VARIANT = 'info';

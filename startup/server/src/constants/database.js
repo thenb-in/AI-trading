@@ -1,11 +1,8 @@
-// Database pagination constants
-const DB_DEFAULT_PAGE_SIZE = 10;
-const DB_MAX_PAGE_SIZE = 100;
-const DB_DEFAULT_SORT_ORDER = 'ASC';
+// Dialect whose server-side features the framework uses by name — today only
+// cancelling a query that is already running (pg_cancel_backend).
+const POSTGRES_DIALECT = 'postgres';
 
 module.exports = {
-  DB_DEFAULT_PAGE_SIZE,
-  DB_MAX_PAGE_SIZE,
-  DB_DEFAULT_SORT_ORDER
+  POSTGRES_DIALECT
 };
 
