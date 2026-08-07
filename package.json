@@ -1,6 +1,6 @@
 {
   "name": "nbnext-startup-app",
-  "version": "2.0.3",
+  "version": "3.0.0",
   "description": "NB Next application with client and server made with Startup App Template",
   "main": "index.js",
   "scripts": {
@@ -9,6 +9,7 @@
     "setup-hooks": "node scripts/setup-hooks.js",
     "setup-env": "node scripts/setup-env.js",
     "create-new-app": "node scripts/create-app.js",
+    "ports": "node scripts/port-allocator.js",
     "update-starter-app": "node scripts/update-starter-app.js",
     "migrate": "node scripts/migrate.js",
     "prepare": "husky",
