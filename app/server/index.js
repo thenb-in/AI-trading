@@ -17,13 +17,11 @@ require('./src/data/registerAppData');
 // app-specific is wired here.
 
 const path = require('path');
-const logger = require('@startup/logger');
 const env = require('@startup/src/config/env');
 const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
-const { piscinaPool } = require('./src/config/piscinaPool');
 const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
 
 // Where this app's billable heads read their history from, for the framework's
@@ -65,18 +63,8 @@ const { server, startServer } = buildApp({
 
   // Initialise heavy app-level resources once the HTTP server is up.
   onAfterListen: () => {
-    piscinaPool.initialize();
     initAppServerRunnerClient();
     initClientAppServerSocket(server);
-  },
-
-  // Drain app-level resources before the framework stops schedulers.
-  onBeforeShutdown: async () => {
-    try {
-      await piscinaPool.shutdown();
-    } catch (err) {
-      logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
-    }
   }
 });
 

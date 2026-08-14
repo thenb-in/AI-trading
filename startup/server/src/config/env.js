@@ -1,6 +1,5 @@
 // Centralized environment configuration
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { PARSE_INT_RADIX } = require('../constants/standard_constants');
 const { PRODUCTION_ENV } = require('../constants/standard_constants');
@@ -86,9 +85,6 @@ if (secretDir) {
   logger.info(`SECRET_DIR is set to default: ${secretDir}`);
 }
 
-const PISCINA_MAX_THREADS = process.env.PISCINA_MAX_THREADS === '0' ? 0 : parseInt(process.env.PISCINA_MAX_THREADS, PARSE_INT_RADIX) || Math.max(1, os.cpus().length - 1);
-const PISCINA_MIN_THREADS = process.env.PISCINA_MIN_THREADS === '0' ? 0 : parseInt(process.env.PISCINA_MIN_THREADS, PARSE_INT_RADIX) || Math.max(1, Math.floor(os.cpus().length / 2));
-
 module.exports = {
   // Server configuration
   NODE_ENV: process.env.NODE_ENV,
@@ -105,15 +101,6 @@ module.exports = {
   // Database configuration
   DATABASE_URL: process.env.DATABASE_URL,
   DB_DIALECT: process.env.DB_DIALECT,
-  // Connection string for Postgres dblink to the source HRMS DB
-  DBLINK_CONNECTION: process.env.DBLINK_CONNECTION,
-
-  // Sync configuration
-  SYNC_TRANSACTION_BATCH_SIZE: parseInt(process.env.SYNC_TRANSACTION_BATCH_SIZE, PARSE_INT_RADIX) || 1000,
-  SYNC_TRANSACTION_CRON: process.env.SYNC_TRANSACTION_CRON || '0 * * * * *',  // every hour at 0 min by default
-
-  SYNC_TERMINAL_COMMANDS_BATCH_SIZE: parseInt(process.env.SYNC_TERMINAL_COMMANDS_BATCH_SIZE, PARSE_INT_RADIX) || 500,
-  SYNC_TERMINAL_COMMANDS_CRON: process.env.SYNC_TERMINAL_COMMANDS_CRON || '*/10 * * * *', // Every 10 minutes by default
 
   // JWT configuration
   JWT_SECRET: process.env.JWT_SECRET,
@@ -133,9 +120,6 @@ module.exports = {
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
   REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
   REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
-  // How many saved report runs the runner computes at once. Saved runs finish in
-  // the background so they queue; the synchronous path is not bounded by this.
-  REPORT_RUNNER_CONCURRENCY: parseInt(process.env.REPORT_RUNNER_CONCURRENCY, PARSE_INT_RADIX) || 2,
 
   // License configuration
   // License enforcement follows SECURE_COOKIE: a non-secure-cookie install is
@@ -155,47 +139,10 @@ module.exports = {
   // Secret directory configuration
   SECRET_DIR: secretDir,
 
-  // EasyWDMS API configuration
-  EASYWDMS_INTERNAL_API_URL: process.env.INTERNAL_EASYWDMS_URL,
-  EASYWDMS_EXTERNAL_API_URL: process.env.EXTERNAL_EASYWDMS_URL,
-
-  //OPENROUTESERVICE_API_KEY
-  OPENROUTESERVICE_API_KEY: process.env.OPENROUTESERVICE_API_KEY,
-
-  // Razorpay (self-serve onboarding checkout). KEY_ID is public (sent to the
-  // browser to open the modal); KEY_SECRET is server-only and must NEVER reach
-  // the client. RAZORPAY_DEFAULT_AMOUNT is the order amount in paise used while
-  // plans have no per-plan price column yet (sync runs alter:false).
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
-  RAZORPAY_DEFAULT_AMOUNT: parseInt(process.env.RAZORPAY_DEFAULT_AMOUNT, PARSE_INT_RADIX) || 49900,
-  // Razorpay webhook signing secret (Dashboard → Settings → Webhooks). Required
-  // for the server-to-server payment.captured event that makes provisioning
-  // resilient to the browser dying after payment. When unset, the webhook
-  // endpoint rejects calls and the reconcile cron still acts as the safety net.
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
-  // Reconcile sweep: refunds any order captured but not provisioned. Cron cadence,
-  // the grace window before an open order is examined, and the age after which an
-  // un-paid (abandoned) order is marked failed.
-  ONBOARDING_RECONCILE_CRON: process.env.ONBOARDING_RECONCILE_CRON || '*/15 * * * *',
-  ONBOARDING_ORDER_GRACE_MINUTES:
-    parseInt(process.env.ONBOARDING_ORDER_GRACE_MINUTES, PARSE_INT_RADIX) || 15,
-  ONBOARDING_ORDER_EXPIRY_MINUTES:
-    parseInt(process.env.ONBOARDING_ORDER_EXPIRY_MINUTES, PARSE_INT_RADIX) || 1440,
-
-  // Face Detection API configuration
-  FACE_API: process.env.FACE_API,
-
-  // Terminal configuration
-  TERMINAL_NAME: process.env.TERMINAL_NAME,
   // External services configuration
   WALLET_SERVER_URL: process.env.WALLET_SERVER_URL,
   // Optional: used by migrate:sso-users CLI (eTime → Wallet accounts).
   WALLET_DATABASE_URL: process.env.WALLET_DATABASE_URL,
-
-  // whatsapp-sender app. WHATSAPP_SENDER_URL
-  WHATSAPP_SENDER_URL: (process.env.WHATSAPP_SENDER_URL || '').trim() || null,
-  WHATSAPP_SENDER_APP_KEY: (process.env.WHATSAPP_SENDER_APP_KEY || '').trim() || null,
 
   // OIDC RP / Wallet SSO (ADR 001)
   OIDC_ISSUER: process.env.OIDC_ISSUER,
@@ -206,30 +153,6 @@ module.exports = {
   OIDC_REDIRECT_URI: process.env.OIDC_REDIRECT_URI,
   OIDC_SCOPES: process.env.OIDC_SCOPES || 'openid profile offline_access',
   OIDC_POST_LOGOUT_REDIRECT_URI: process.env.OIDC_POST_LOGOUT_REDIRECT_URI || process.env.FRONTEND_URL,
-
-  // Shared secret guarding the internal service-to-service API
-  // (/api/v1/internal). The standalone biometric gateways send it in the
-  // `x-internal-secret` header; when unset (local/dev) the check is skipped.
-  MAIN_APP_INTERNAL_SECRET: process.env.MAIN_APP_INTERNAL_SECRET,
-
-  // ADMS coalesce windows. See biometric_gateway/adms_server/src/constants/adms.js
-  // for the rationale behind each window. Env-overridable for tests.
-  ADMS_REFRESH_QUERY_COALESCE_MS:
-    Number(process.env.ADMS_REFRESH_QUERY_COALESCE_MS) || 30 * 1000,
-  ADMS_FANOUT_COALESCE_MS:
-    Number(process.env.ADMS_FANOUT_COALESCE_MS) || 30 * 1000,
-
-  // checkin/checkout aggregator batch size. No default — the consumer
-  // treats undefined as "no batching" and falls back to its own limit.
-  EMPLOYEE_BATCH_SIZE: process.env.EMPLOYEE_BATCH_SIZE,
-
-  // Piscina worker pool configuration
-  // CPU-based defaults: leave 1 core for main thread; keep at least half of cores warm
-  PISCINA_MAX_THREADS: PISCINA_MAX_THREADS,
-  PISCINA_MIN_THREADS: PISCINA_MIN_THREADS,
-  PISCINA_MAX_QUEUE: parseInt(process.env.PISCINA_MAX_QUEUE, PARSE_INT_RADIX) || 5000,
-  PISCINA_IDLE_TIMEOUT: parseInt(process.env.PISCINA_IDLE_TIMEOUT, PARSE_INT_RADIX) || 30000,
-  PISCINA_WORKER_DIR: process.env.PISCINA_WORKER_DIR || path.join(__dirname, '../workers'),
 
   // Helper functions
   isProduction,
