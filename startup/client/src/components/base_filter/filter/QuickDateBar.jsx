@@ -12,33 +12,39 @@ const buttonVariant = (disabled, muted) => {
   return muted ? QUICK_DATE_BTN_MUTED : QUICK_DATE_BTN_ENABLED;
 };
 
-const QuickDateBar = ({ actions, disabled }) => (
-  <div className="mt-2 p-2.5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-md border-2 border-blue-400 shadow-sm">
-    <div className="flex items-center justify-between mb-2">
-      <div className="flex items-center gap-2">
-        <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
-        <label className="text-xs font-bold uppercase tracking-wide text-gray-900">
-          Quick Dates
-        </label>
+const QuickDateBar = ({ actions, disabled, inline = false }) => {
+  const buttons = actions.map(({ label, onClick, muted, animateIn }) => (
+    <button
+      key={label}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`${QUICK_DATE_BTN_BASE} ${buttonVariant(disabled, muted)} ${
+        animateIn ? 'quick-date-enter' : ''
+      }`}
+    >
+      {label}
+    </button>
+  ));
+
+  if (inline) {
+    return <div className="flex flex-wrap items-center gap-2">{buttons}</div>;
+  }
+
+  return (
+    <div className="mt-2 p-2.5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-md border-2 border-blue-400 shadow-sm">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-1 h-4 bg-blue-600 rounded-full"></div>
+          <label className="text-xs font-bold uppercase tracking-wide text-gray-900">
+            Quick Dates
+          </label>
+        </div>
       </div>
+      <div className="flex flex-wrap items-center gap-2">{buttons}</div>
     </div>
-    <div className="flex flex-wrap items-center gap-2">
-      {actions.map(({ label, onClick, muted, animateIn }) => (
-        <button
-          key={label}
-          type="button"
-          onClick={onClick}
-          disabled={disabled}
-          className={`${QUICK_DATE_BTN_BASE} ${buttonVariant(disabled, muted)} ${
-            animateIn ? 'quick-date-enter' : ''
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 QuickDateBar.propTypes = {
   actions: PropTypes.arrayOf(
@@ -50,6 +56,7 @@ QuickDateBar.propTypes = {
     })
   ).isRequired,
   disabled: PropTypes.bool,
+  inline: PropTypes.bool,
 };
 
 export { QuickDateBar };

@@ -75,6 +75,18 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false
     },
+    // Account deletion requested from the Call Buddy mobile app. Access is
+    // revoked at request time (is_approved -> false); these two record the
+    // request so the purge can run on the published 30-day cycle. See
+    // db-scripts/20260817_02_add_account_deletion_to_users.sql.
+    deletion_requested_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
+    deletion_scheduled_purge_at: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     // Which person on the payroll this login is. Null for plenty of accounts on purpose —
     // an HR operator, a support login or an integration is not an employee — and employee
     // self-service answers those accounts with an empty page rather than an error.

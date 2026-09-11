@@ -6,7 +6,7 @@ import { DateTypeField } from './DateTypeField';
  * employee history items (ExperienceTab, insurance_item) where the two dates are the standard
  * pair on the form.
  */
-const FromToDateFields = ({ fromValue, toValue, onFromChange, onToChange }) => (
+const FromToDateFields = ({ fromValue, toValue, onFromChange, onToChange, disabled = false, maxToday = false }) => (
   <>
     <div className="w-full [&_.MuiFormControl-root]:w-full">
       <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
@@ -14,7 +14,8 @@ const FromToDateFields = ({ fromValue, toValue, onFromChange, onToChange }) => (
         name="from_date"
         value={fromValue ?? ''}
         onChange={(_, value) => onFromChange(value)}
-        maxToday={false}
+        disabled={disabled}
+        maxToday={maxToday}
       />
     </div>
     <div className="w-full [&_.MuiFormControl-root]:w-full">
@@ -23,7 +24,8 @@ const FromToDateFields = ({ fromValue, toValue, onFromChange, onToChange }) => (
         name="to_date"
         value={toValue ?? ''}
         onChange={(_, value) => onToChange(value)}
-        maxToday={false}
+        disabled={disabled}
+        maxToday={maxToday}
       />
     </div>
   </>
@@ -34,6 +36,8 @@ FromToDateFields.propTypes = {
   toValue: PropTypes.string,
   onFromChange: PropTypes.func.isRequired,
   onToChange: PropTypes.func.isRequired,
+  disabled: PropTypes.bool,
+  maxToday: PropTypes.bool,
 };
 
 export { FromToDateFields };

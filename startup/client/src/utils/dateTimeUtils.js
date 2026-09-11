@@ -330,6 +330,21 @@ const DATE_RANGE_UNITS = {
   },
 };
 
+
+const eachDayInRange = (startValue, endValue) => {
+  const start = parseDateValue(startValue);
+  const end = parseDateValue(endValue);
+  if (!start || !end || start > end) return [];
+
+  const days = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  while (cursor <= end) {
+    days.push(getLocalDateStringYmd(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
+};
+
 /** True when a range has the given unit's shape (whole month / whole week / single day). */
 const matchesUnitShape = (range, unit) => {
   const start = parseYmd(range?.start_date);
@@ -655,6 +670,20 @@ const formatTimeForDisplay = (dateValue) => {
   });
 };
 
+/**
+ * "10:30 AM - 11:45 AM"
+ */
+const formatTimeRangeForDisplay = (startValue, endValue, collapseWithinMinutes = 1) => {
+  const startDate = parseDateValue(startValue);
+  const endDate = parseDateValue(endValue);
+  const minutesApart =
+    startDate && endDate ? (endDate.getTime() - startDate.getTime()) / 60000 : 0;
+  if (minutesApart <= collapseWithinMinutes) {
+    return formatTimeForDisplay(startValue);
+  }
+  return `${formatTimeForDisplay(startValue)} - ${formatTimeForDisplay(endValue)}`;
+};
+
 /** "2 Jan 2025 10:30:45" — short-month date plus 24h hh:mm:ss. Returns "-" for falsy/unparseable input. */
 const formatDateTimeForDisplay = (dateValue) => {
   if (!dateValue) return "-";
@@ -808,6 +837,8 @@ export {
   buildYearOptions,
   formatDateForDisplay,
   formatTimeForDisplay,
+  formatTimeRangeForDisplay,
+  eachDayInRange,
   formatDateTimeForDisplay,
   formatRelativeTime,
   getDayGroupLabel,

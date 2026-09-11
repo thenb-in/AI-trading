@@ -102,14 +102,28 @@ fetch_latest_artifact() {
 
     log_info "Looking for latest run of \"$workflow_name\" that contains artifact \"$artifact_name\" on branch '$target_branch'..."
 
+    # The repo-wide /actions/runs endpoint returns 404 on repos with a large
+    # accumulated run history, so resolve the workflow by name first and query
+    # its own runs endpoint — stable, and already filtered to this workflow so
+    # its runs can't be crowded out of a mixed 50-run page by other workflows.
+    local workflow_id
+    workflow_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/workflows?per_page=100" \
+        | jq -r "(.workflows // [])[] | select(.name==\"$workflow_name\") | .id" \
+        | head -n1)
+
+    if [[ -z "$workflow_id" || "$workflow_id" == "null" ]]; then
+        error_exit "Workflow '$workflow_name' not found in $GITHUB_OWNER/$GITHUB_REPO — check the name matches the workflow's 'name:' field."
+    fi
+
     local runs_json
     runs_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/runs?branch=$target_branch&per_page=50")
+        "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/actions/workflows/$workflow_id/runs?branch=$target_branch&per_page=50")
 
     local run_ids
     mapfile -t run_ids < <(
         echo "$runs_json" \
-        | jq -r "(.workflow_runs // [])[] | select(.name==\"$workflow_name\") | .id"
+        | jq -r "(.workflow_runs // [])[] | .id"
     )
 
     if [[ ${#run_ids[@]} -eq 0 ]]; then

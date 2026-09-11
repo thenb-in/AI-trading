@@ -1,5 +1,36 @@
 import { toast } from "react-toastify";
 import { showUndoToast } from "@startup/components/base_components/undo/UndoToast";
+import { convertToISOString } from "@utils/dateTimeUtils";
+
+
+const cellText = (value) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value !== 'object') {
+    return String(value);
+  }
+  if (value instanceof Date) {
+    return convertToISOString(value) ?? '';
+  }
+  // Hyperlink: what was typed is `text`, the mailto:/http: form is the machine's addition.
+  if (typeof value.text === 'string') {
+    return value.text;
+  }
+  // Rich text: one cell split into runs because part of it is bold, coloured, ...
+  if (Array.isArray(value.richText)) {
+    return value.richText.map((run) => run.text ?? '').join('');
+  }
+  // Formula: the computed value is what the reader sees, not the expression.
+  if (value.formula !== undefined) {
+    return value.result === null || value.result === undefined ? '' : String(value.result);
+  }
+  // An #N/A-style error cell has no usable text.
+  if (value.error !== undefined) {
+    return '';
+  }
+  return String(value);
+};
 
 // Generic handleImport function for bulk uploads
 const handleImport = async ({
@@ -237,4 +268,4 @@ const handleExport = async ({
   }
 };
 
-export { handleImport, handleExport };
+export { handleImport, handleExport, cellText };
