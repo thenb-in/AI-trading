@@ -16,6 +16,10 @@ const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_NOT_FOUND = 404;
 const HTTP_STATUS_CONFLICT = 409;
 const HTTP_STATUS_INTERNAL_ERROR = 500;
+// Upstream failures. A third-party API that is down or unconfigured is not a
+// bug in this server, and answering 500 tells the caller the wrong thing.
+const HTTP_STATUS_BAD_GATEWAY = 502;
+const HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
 
 // Generic placeholder when a response body cannot be safely stringified
 const UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER = '[unstringifiable response body]';
@@ -36,6 +40,8 @@ module.exports = {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_CONFLICT,
   HTTP_STATUS_INTERNAL_ERROR,
+  HTTP_STATUS_BAD_GATEWAY,
+  HTTP_STATUS_SERVICE_UNAVAILABLE,
   UNSTRINGIFIABLE_RESPONSE_BODY_PLACEHOLDER
 };
 

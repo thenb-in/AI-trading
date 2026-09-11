@@ -71,6 +71,9 @@ const performanceCycleRoutes = require('../routes/performanceCycleRoutes');
 const performanceParameterRoutes = require('../routes/performanceParameterRoutes');
 const performanceReviewRoutes = require('../routes/performanceReviewRoutes');
 const employeeAreaAssignmentRoutes = require('../routes/employeeAreaAssignmentRoutes');
+// Consent-based identity KYC (DigiLocker via Deepvue). Prefills the employee
+// master; stores nothing of its own.
+const kycRoutes = require('../routes/kycRoutes');
 // Internal service-to-service API (shared-secret, not user-JWT). The standalone
 // biometric gateways POST here to resolve/create HR Employee shells.
 const internalRoutes = require('../routes/internalRoutes');
@@ -198,6 +201,7 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/adms-queue`, admsQueueRoutes);
   app.use(`${prefix}/personnel-areas`, personnelAreaRoutes);
   app.use(`${prefix}/employee-area-assignments`, employeeAreaAssignmentRoutes);
+  app.use(`${prefix}/kyc`, kycRoutes);
   // Performance management: the cycle, what people are scored on, and the appraisals
   app.use(`${prefix}/performance-cycle`, performanceCycleRoutes);
   app.use(`${prefix}/performance-parameter`, performanceParameterRoutes);

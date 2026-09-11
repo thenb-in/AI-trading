@@ -72,11 +72,15 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} error:`, {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
-    });
+    // Put the status and the server's own message in the log LINE, not only in
+    // the object — the console collapses an object argument to "Object", which
+    // is exactly the detail a support engineer needs and cannot see. The object
+    // still follows for the full body.
+    const serverSaid = error.response?.data?.message || error.message;
+    console.error(
+      `❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} error: HTTP ${error.response?.status ?? 'no response'} — ${serverSaid}`,
+      { status: error.response?.status, data: error.response?.data, message: error.message }
+    );
 
     // Handle 400 Bad Request - validation errors
     if (error.response?.status === 400 && error.response?.data?.errors) {
@@ -87,22 +91,8 @@ api.interceptors.response.use(
       });
     }
 
-    const onSsoInteraction = new URLSearchParams(window.location.search).has('interaction');
-
-    // A 401 from an auth endpoint is a failed sign-in — a wrong password, a bad
-    // TOTP code — not an expired session. The screen that made the call is
-    // already showing the reason, and reloading the page here would throw that
-    // message away before it could be read. This matters because the sign-in
-    // screen renders in place over whatever protected route was requested, so
-    // the pathname check below does not catch it.
-    const isAuthAttempt = /\/auth\//.test(error.config?.url || '');
-
-    if (
-      error.response?.status === 401
-      && !isAuthAttempt
-      && window.location.pathname !== '/'
-      && !onSsoInteraction
-    ) {
+    // Handle 401 Unauthorized responses (skip if already on login page to avoid reload loop)
+    if (error.response?.status === 401 && window.location.pathname !== '/') {
       console.log('Received 401 Unauthorized, logging out...');
       window.location.href = '/'
     }

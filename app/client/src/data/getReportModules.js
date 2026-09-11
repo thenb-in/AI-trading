@@ -15,6 +15,7 @@ import {
     UtensilsCrossed,
     BadgeCheck,
     CalendarCheck,
+    ShieldAlert,
     Hourglass,
     Router,
     LockOpen,
@@ -57,6 +58,7 @@ import { NegativeLeaveBalanceReport } from '../components/report/reports/readine
 import { CUSTOM_REPORTS } from '@custom/client';
 import {
   PayrollReadinessReportFilters,
+  EmploymentAgeComplianceReportFilters,
   RosterCoverageReportFilters,
   PendingApprovalsReportFilters,
   TerminalHealthReportFilters,
@@ -484,6 +486,22 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       verdictColumn: 'readiness',
       defaultSortField: 'missing_count',
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'employment-age-compliance-report',
+      title: 'Employment Age Compliance Report',
+      slug: 'employment-age-compliance-report',
+      permissionName: 'read_employment-age-compliance-report',
+      desc: 'Employees the statutory age rules bite on — anyone below the minimum employment age, and every adolescent whose certificate of fitness is missing or expired',
+      // Sits with PF and ESIC: it answers to the Child Labour Act and the
+      // Factories Act, not to an internal HR process.
+      category: 'india-compliance',
+      color: 'red',
+      icon: ShieldAlert,
+      component: ReadinessReport,
+      filtersConfig: EmploymentAgeComplianceReportFilters,
+      verdictColumn: 'compliance',
+      defaultSortField: 'age',
     },
     {
       id: 'roster-coverage-report',

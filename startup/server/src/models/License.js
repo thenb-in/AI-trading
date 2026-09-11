@@ -43,11 +43,21 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0
     },
-    // Per-plan grant mirrored from the token: [{ id, name, permissions: [...] }].
-    plan: {
+    subscriptionId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'subscription_id'
+    },
+    permissions: {
       type: DataTypes.JSONB,
       allowNull: false,
       defaultValue: []
+    },
+    permissionCaps: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: {},
+      field: 'permission_caps'
     },
     notBefore: {
       type: DataTypes.DATE,
@@ -64,15 +74,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'renewal_after'
     },
+    // Plain string + validation, not an ENUM: a postgres enum cannot take over a
+    // varchar column that already carries a default, so `sync({ alter })` dies
+    // with "default for column renewal_mode cannot be cast automatically". A
+    // string also lets the license server add a mode without a type migration on
+    // every installed site.
     renewalMode: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(32),
       allowNull: false,
       defaultValue: 'online',
       field: 'renewal_mode',
       validate: {
         isIn: {
           args: [['online', 'airgap', 'manual']],
-          msg: 'renewalMode must be one of: online, airgap, manual'
+          msg: 'renewal_mode must be one of: online, airgap, manual'
         }
       }
     },

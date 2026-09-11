@@ -79,6 +79,8 @@ router.get('/roster-coverage-report',   requirePermission(REPORT_PERMISSION_CONS
 router.get('/pending-approvals-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PENDING_APPROVALS_REPORT.name), readinessReports.getPendingApprovalsReport);
 router.get('/terminal-health-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.TERMINAL_HEALTH_REPORT.name),   readinessReports.getTerminalHealthReport);
 router.get('/advance-recovery-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.ADVANCE_RECOVERY_REPORT.name),  readinessReports.getAdvanceRecoveryReport);
+// Carries dates of birth for minors, so it is granted separately from the rest.
+router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
 router.get('/call-buddy-report', getCallBuddyReport);
 router.get(
   '/canteen-report',

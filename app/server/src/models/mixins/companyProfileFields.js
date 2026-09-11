@@ -2,6 +2,10 @@ const {
   DEFAULT_REVIEW_FREQUENCY,
   DEFAULT_APPRAISAL_FREQUENCY
 } = require('../../constants/hr/performance');
+const {
+  DEFAULT_MIN_EMPLOYMENT_AGE,
+  DEFAULT_ADOLESCENT_AGE_LIMIT
+} = require('../../constants/hr/employment_age');
 
 const companyProfileFields = (DataTypes) => ({
   service_offering_id: {
@@ -91,11 +95,15 @@ const companyProfileFields = (DataTypes) => ({
     defaultValue: 'new',
     comment: 'Income-tax regime for TDS estimation: \'new\' (115BAC default) or \'old\''
   },
-  // Auto-deactivation rule for long-leave employees (nightly scheduler).
-  consecutive_leave_deactivation_days: {
+  // Auto-deactivation rule for employees who have stopped punching (nightly scheduler).
+  // Counts from the last punch, or from the joining date for someone who never punched.
+  // Leave days carry no punch, so a long leave trips this rule the way it used to trip the
+  // leave-streak rule this replaced — and an employee who simply stopped showing up without
+  // ever filing leave is now caught too.
+  no_punch_deactivation_days: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    comment: 'Auto-deactivate active employees after more than this many consecutive leave days; null disables the scheduler rule'
+    comment: 'Auto-deactivate active employees after more than this many days without a punch; null disables the scheduler rule'
   },
   // Drives how the ADMS deactivate flow disposes of an employee on devices:
   //   'identity_card'  → emp_code = personal identifier (e.g. national ID),
@@ -109,6 +117,15 @@ const companyProfileFields = (DataTypes) => ({
     type: DataTypes.ENUM('identity_card', 'serial_number'),
     allowNull: false,
     defaultValue: 'identity_card'
+  },
+  // Whether a master is identified by its code or by its name. Companies that run on codes
+  // (DEPT01, LOC02) want the code shown and matched wherever a master is picked, listed or
+  // imported; companies that never assign codes want the name to carry that job instead.
+  masters_code_based: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+    comment: 'Masters are identified by code (true, the default) or by name (false)'
   },
   // A joining date after today is refused unless a company turns this on, which catches a
   // mistyped year on import. Companies that record a rejoining before the day it happens —
@@ -139,6 +156,21 @@ const companyProfileFields = (DataTypes) => ({
   // --- Performance management ---
   // Which shape this company grades in. Presentation only: the band values below are free
   // text either way, so nothing branches on this when a score is turned into a band.
+  // Statutory employment-age lines. Defaults are the Indian statutory floor;
+  // sectors with a higher one (Mines Act: 18 flat) raise the minimum here rather
+  // than in code. See constants/hr/employment_age.js for what each line means.
+  min_employment_age: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: DEFAULT_MIN_EMPLOYMENT_AGE,
+    comment: 'Below this age employment is prohibited and the employee cannot be saved'
+  },
+  adolescent_age_limit: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: DEFAULT_ADOLESCENT_AGE_LIMIT,
+    comment: 'Below this age an employee is an adolescent: no hazardous work, fitness certificate required'
+  },
   performance_rating_style: {
     type: DataTypes.STRING(20),
     allowNull: false,

@@ -1095,6 +1095,8 @@ const iclockTerminalApi = {
   runCommand: (terminalId, content) => api.post(`/iclock-terminal/${terminalId}/run-command`, { content }),
   changeTerminalCompany: (terminalId, companyId) => api.put(`/iclock-terminal/${terminalId}/change-company`, { company_id: companyId }),
   setTerminalEnabled: (terminalId, enabled) => api.put(`/iclock-terminal/${terminalId}/enabled`, { enabled }),
+  // Recorded ONLINE/OFFLINE history for one terminal over the last `days`.
+  getTerminalAvailability: (terminalId, days) => api.get(`/iclock-terminal/${terminalId}/availability`, { params: { days } }),
   // TCP-pull mode (server initiates connection to device on port 4370 by
   // default, configurable per-terminal via pull_port). Coexists with the
   // iClock push path on the same terminal.
@@ -1207,4 +1209,26 @@ const hrChecklistApi = {
   run: (segment) => runViaRunner(`hr-checklist/${segment}`)
 };
 
-export { api, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, pastReportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
+// Consent-based identity KYC. Two calls because DigiLocker is two-legged: open a
+// session, send the employee to `authorization_url` to authorise it, then read
+// the result back. Calling `fetchAadhaarDetails` before the employee has
+// finished simply fails — there is nothing to poll and nothing is cached.
+const kycApi = {
+  // Cache probe. A number fetched before comes straight back from our DB, so the
+  // repeat lookup needs no consent round-trip and no vendor charge.
+  getCachedAadhaarDetails: (adhaarNo) => {
+    if (!adhaarNo) throw new Error('Aadhaar number is required');
+    return api.post('/kyc/aadhaar/cached', { adhaar_no: adhaarNo });
+  },
+  startDigilockerSession: () => api.post('/kyc/digilocker/session'),
+  fetchAadhaarDetails: (transactionId, adhaarNo) => {
+    if (!transactionId) throw new Error('DigiLocker transaction id is required');
+    if (!adhaarNo) throw new Error('Aadhaar number is required');
+    return api.post('/kyc/digilocker/aadhaar', {
+      transaction_id: transactionId,
+      adhaar_no: adhaarNo
+    });
+  }
+};
+
+export { api, kycApi, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, pastReportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };

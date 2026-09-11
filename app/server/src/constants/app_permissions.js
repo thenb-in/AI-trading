@@ -118,6 +118,18 @@ const APP_MASTER_PERMISSION_CONSTANTS = {
       description: 'Permission to perform device management actions on terminals (reboot, initial sync, timezone, custom commands, TCP test, enable/disable)'
     }
   },
+  // Pulling an employee's Aadhaar demographics out of DigiLocker is a separate
+  // authority from editing the employee master: it spends money per call and it
+  // reads government identity data. A single `manage` entry, like the terminal
+  // feature flags above, because there is no CRUD shape to grant here.
+  EMPLOYEE_KYC_LOOKUP: {
+    manage: {
+      name: 'manage_employee_kyc_lookup',
+      display_name: 'Fetch Employee Details from DigiLocker',
+      description:
+        'Permission to fetch an employee Aadhaar details via DigiLocker consent and prefill the employee master'
+    }
+  },
   ACTIVITY: create_master_permission('activity'),
   NBNEXT_DRIVE: {
     create: {
@@ -258,6 +270,9 @@ const APP_REPORT_PERMISSION_CONSTANTS = {
   // permissions because payroll readiness exposes bank and statutory numbers
   // that roster coverage does not.
   PAYROLL_READINESS_REPORT: create_report_permission('payroll-readiness-report'),
+  // Statutory age compliance. Separate permission because the grid carries dates
+  // of birth for minors — a narrower audience than general readiness data.
+  EMPLOYMENT_AGE_COMPLIANCE_REPORT: create_report_permission('employment-age-compliance-report'),
   ROSTER_COVERAGE_REPORT: create_report_permission('roster-coverage-report'),
   PENDING_APPROVALS_REPORT: create_report_permission('pending-approvals-report'),
   TERMINAL_HEALTH_REPORT: create_report_permission('terminal-health-report'),

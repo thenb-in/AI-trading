@@ -93,6 +93,20 @@ function SearchableDropdown({
   // it has not been asked yet.
   const isEmpty = options.length === 0 && !loading && !onOpen;
   const isMuted = disabled || isEmpty;
+  // A value the field is holding that no option describes — a master that was
+  // deleted, deactivated, or filtered out from under it. Chips/labels are built
+  // from the options, so such a value renders as *nothing*: the field looks
+  // empty while still submitting the stale value. Only judge this once there is
+  // a list to judge against — one still loading, or one that fetches on open
+  // (`onOpen`) and hasn't been asked yet, has said nothing so far. Sitting on
+  // the default ("all") is not a value either; it may legitimately have no row.
+  const unknownSelections = useMemo(
+    () => (loading || options.length === 0 || isOnlyDefaultSelected
+      ? []
+      : selected.filter((value) => !optionByValue.has(value))),
+    [loading, options.length, isOnlyDefaultSelected, selected, optionByValue]
+  );
+  const hasUnknownSelection = !disabled && unknownSelections.length > 0;
   const lastChildSet = useMemo(() => getLastChildValues(treeNodes), [treeNodes]);
   const visibleTreeNodes = useMemo(
     () => (isTree ? getVisibleNodes(treeNodes, { collapsed, searchTerm }) : []),
@@ -446,9 +460,10 @@ function SearchableDropdown({
     const values = isTree
       ? getSelectedRoots(selected, optionByValue)
       : selected;
-    return values
-      .map((value) => ({ value, label: optionByValue.get(value)?.label }))
-      .filter((chip) => chip.label);
+    // A value no option describes still has to be visible — dropping it left the
+    // field looking empty while it was holding (and submitting) that value. Show
+    // the raw value; the red border says it needs looking at.
+    return values.map((value) => ({ value, label: optionByValue.get(value)?.label ?? value }));
   }, [isTree, selected, optionByValue]);
 
   // Sitting on the default ("All …") means nothing has actually been chosen, so
@@ -473,6 +488,15 @@ function SearchableDropdown({
   // Only offer to clear what the field is actually showing — an ✕ beside a
   // field emptied for typing has nothing visible to act on.
   const showClear = !disabled && (multiple ? fieldChips.length > 0 : showSingleLabel);
+  // Border states, most specific first: an open menu owns the field, then a
+  // selection the list can't account for — a red outline, no icon or banner,
+  // just enough to say "look at this one" — then the resting border. Hover
+  // travels with each state, or the hover rule would repaint the red grey.
+  const fieldBorderClass = isOpen
+    ? 'border-blue-500 ring-1 ring-blue-500'
+    : hasUnknownSelection
+      ? 'border-red-500 hover:border-red-600'
+      : `border-gray-300 ${disabled ? '' : 'hover:border-gray-400'}`;
   // Combobox semantics and the tab stop belong on whatever the user types into,
   // so they move onto the inline search box when there is one.
   const comboboxProps = {
@@ -490,11 +514,16 @@ function SearchableDropdown({
         ref={triggerRef}
         {...(searchable ? {} : { ...comboboxProps, onKeyDown: handleTriggerKeyDown })}
         onClick={handleFieldClick}
+        title={
+          hasUnknownSelection
+            ? 'Selected value not in the current list: ' + unknownSelections.join(', ')
+            : undefined
+        }
         className={`flex items-center w-full min-h-[38px] px-2 py-1.5 text-sm border rounded text-gray-900 focus-within:outline-none focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 ${
           isMuted ? 'bg-gray-100 opacity-60' : 'bg-white'
         } ${
-          disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:border-gray-400'
-        } ${isOpen ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-300'}`}
+          disabled ? 'cursor-not-allowed' : 'cursor-pointer'
+        } ${fieldBorderClass}`}
       >
         <div className="flex flex-1 min-w-0 items-center flex-wrap gap-1">
           {/* Single-select has exactly one value, so show it as plain text — the
