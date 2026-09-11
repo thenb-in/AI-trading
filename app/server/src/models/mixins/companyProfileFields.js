@@ -1,3 +1,8 @@
+const {
+  DEFAULT_REVIEW_FREQUENCY,
+  DEFAULT_APPRAISAL_FREQUENCY
+} = require('../../constants/hr/performance');
+
 const companyProfileFields = (DataTypes) => ({
   service_offering_id: {
     type: DataTypes.INTEGER,
@@ -139,6 +144,19 @@ const companyProfileFields = (DataTypes) => ({
     allowNull: false,
     defaultValue: 'alphabetic',
     comment: 'How an appraisal result reads: \'alphabetic\' (A, B, C) or \'numeric\' (5, 4, 3)'
+  },
+  // Default cadences. A department may override either; most never do.
+  review_frequency: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: DEFAULT_REVIEW_FREQUENCY,
+    comment: 'Default performance review cadence for departments that do not set their own'
+  },
+  appraisal_frequency: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: DEFAULT_APPRAISAL_FREQUENCY,
+    comment: 'Default appraisal cadence for departments that do not set their own'
   },
   // The only thing scoring reads. Empty means the built-in default applies, so a company
   // that never opens the setting keeps grading exactly as it did.

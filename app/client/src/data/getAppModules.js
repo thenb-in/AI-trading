@@ -6,7 +6,9 @@ import {
   Activity as ActivityIcon,
   Gauge,
   ListChecks,
+  Trophy,
 } from "lucide-react";
+import { getGenericAppModuleDefinitions } from "@startup/data/getAppModules";
 
 /**
  * etime-specific app modules (sidebar / top nav): searchable alongside
@@ -19,7 +21,7 @@ import {
  * definition itself so the navigator and the signup plan preview both read
  * it straight from here).
  */
-const getAppSpecificModuleDefinitions = () => [
+const getEtimeAppModuleDefinitions = () => [
   {
     id: "biometricPunch",
     title: "Biometric Punch",
@@ -48,6 +50,21 @@ const getAppSpecificModuleDefinitions = () => [
     // sidebar sorts `order` numerically, so a fraction slots it in without
     // renumbering the nine modules below it.
     order: 1.5,
+  },
+  {
+    id: "myAppraisal",
+    title: "My Appraisal",
+    description: "Your own appraisals, and the ones you review for your team.",
+    category: "Attendance",
+    color: "warning",
+    tags: ["Appraisal", "Performance", "KRA", "Self Service"],
+    keywords: "my appraisal performance kra kpi self review rating band self service module",
+    permissionName: "view_my_appraisal_module",
+    navigatePath: "/admin/my-appraisal",
+    icon: Trophy,
+    // Sits just under the worklist: it is a personal page rather than an administrative
+    // one, so it belongs above the HR modules an ordinary employee has no permission for.
+    order: 1.6,
   },
   {
     id: "hrDashboard",
@@ -116,4 +133,13 @@ const getAppSpecificModuleDefinitions = () => [
   },
 ];
 
-export { getAppSpecificModuleDefinitions };
+/**
+ * Full app module list: framework generics + etime-specific modules.
+ * Consumers (sidebar, navigator, search, route titles) read this.
+ */
+const getAppModuleDefinitions = () => [
+  ...getGenericAppModuleDefinitions(),
+  ...getEtimeAppModuleDefinitions(),
+];
+
+export { getAppModuleDefinitions, getEtimeAppModuleDefinitions };

@@ -56,5 +56,20 @@ pre-commit hook: to not be in pre-push hook
 - Do not allow use of enum in model. use sequelize constraints instead.
 - Allow access to company only after that company access has been approved. Currently user just enters company id on frontend, and becomes a part of that company.
 
+- also, there are 2 types - one is user pic which is saved in employee photo. and employee template - this is interface specific. but frontend only has 1, it should have 2 - one is device section and user pic
+
+
+## need to fix --- generic filtering logic
 
 - we have recently broken to use hook based structure. now i am thinking company wise overrides over existing components. like Filters can mean startup/filters and if mentioned in app, we will import startup/filters itself. but can we have hooks so that company level filters can be coded? this will allow every company to have its own customization in it's own folders outside app, say customization folder? then they can be separately managed using submodules or something
+
+
+- time offset should be in minutes, not seconds. also, if more than current time, don't consider time offset. time has been fixed manually
+
+- i also want you to write a test where an company id is switched for a terminal, and test is that its older commands are cleared and new commands are being sent to terminal
+
+- internal should not be marked as /api/v1. also, auth needed?
+
+
+- Migrate users from etime to wallet using fdw (postgres)
+

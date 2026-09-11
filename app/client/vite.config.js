@@ -108,7 +108,11 @@ export default ({ mode }) => {
         // <Helmet> (imported from startup/client/seo/PageMeta.jsx) end up
         // using two different React Context instances, so Helmet reads the
         // default (unprovided) context and crashes with `r.add` on undefined.
-        'react-helmet-async'
+        'react-helmet-async',
+        // custom/ lives outside app/client, so a bare import from there cannot resolve
+        // upwards to app/client/node_modules and the production build fails on it. dedupe
+        // forces resolution from the project root, which is where the only copy is.
+        'lucide-react'
       ],
       preserveSymlinks: false
     },
