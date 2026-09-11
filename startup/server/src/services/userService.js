@@ -100,6 +100,25 @@ const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId =
     .filter((id) => id !== excludeUserId);
 };
 
+/**
+ * Every active login belonging to one employee.
+ *
+ * A list rather than a single id, because two logins legitimately point at one person — a
+ * desktop account and a shared kiosk login — and a notification addressed to that person
+ * should reach both.
+ */
+const getActiveUserIdsByEmployeeId = async (companyId, employeeId) => {
+  if (!companyId || !employeeId) {
+    return [];
+  }
+  const users = await User.findAll({
+    where: { company_id: companyId, employee_id: employeeId, isActive: true },
+    attributes: ['id']
+  });
+
+  return users.map((user) => user.id);
+};
+
 const getActiveUserIdsByPermissionName = async (companyId, permissionName, { excludeUserId = null } = {}) => {
   if (!companyId || !permissionName) {
     return [];
@@ -226,7 +245,7 @@ const updateUserBasic = async (userId, fields = {}) => {
 
 const checkUserActive = async (userId) => {
   const user = await User.findByPk(userId, {
-    attributes: ['id', 'is_approved', 'username', 'wallet_user_id']
+    attributes: ['is_approved', 'username']
   });
   if (!user || !user.is_approved) {
     return { isActive: false, user };
@@ -309,6 +328,7 @@ module.exports = {
   getAllUsers,
   getUserById,
   getActiveUserIdsByRoleName,
+  getActiveUserIdsByEmployeeId,
   getActiveUserIdsByPermissionName,
   getUserByUsername,
   deleteUser,

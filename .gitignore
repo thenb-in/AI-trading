@@ -1,6 +1,9 @@
 node_modules
 .env
 
+# Config, license and state of a local `npm run docker:prod` stack.
+docker_data/
+
 .DS_Store
 logs/
 uploads/
@@ -10,3 +13,4 @@ playwright-report/
 
 .claude
 
+screenshots

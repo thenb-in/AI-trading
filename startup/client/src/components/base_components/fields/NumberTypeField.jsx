@@ -103,6 +103,11 @@ function NumberTypeField(props) {
     min,
     max,
     clamp = false,
+    // Everything the normalizer is configured with is pulled out of the props that get
+    // forwarded: they are this component's settings, not attributes, and React writes
+    // unrecognised ones straight onto the element — `clamp` as a boolean is exactly the case
+    // it warns about.
+    ...forwardedProps
   } = props;
 
   const normalize = useMemo(() => {
@@ -121,7 +126,9 @@ function NumberTypeField(props) {
 
   return (
     <BaseInputField
-      {...props}
+      {...forwardedProps}
+      min={min}
+      max={max}
       // We intentionally use `type="text"` (not `type="number"`) for production UX:
       // - Browsers allow scientific notation (e/E) in <input type="number"> (not desired here)
       // - Better control over normalization (int/float) and range clamping

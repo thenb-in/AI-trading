@@ -673,6 +673,9 @@ const purposeTypeApi = {
 // --------------------------------------------
 const performanceCycleApi = {
   getAllPerformanceCycles: (filters = {}) => api.get(`/performance-cycle`, { params: filters }),
+  // Opens the rounds the configured cadence says are due. Re-runnable: a period that already
+  // has a cycle is counted as present rather than duplicated.
+  generatePerformanceCycles: (payload = {}) => api.post(`/performance-cycle/generate`, payload),
   createPerformanceCycle: (cycleData) => api.post(`/performance-cycle`, cycleData),
   updatePerformanceCycle: (cycleId, cycleData) => api.put(`/performance-cycle/${cycleId}`, cycleData),
   deletePerformanceCycle: (cycleId) => api.delete(`/performance-cycle/${cycleId}`),
@@ -706,6 +709,11 @@ const performanceReviewApi = {
   getMyReview: (reviewId) => api.get(`/performance-review/my/${reviewId}`),
   saveMySelfAppraisal: (reviewId, payload) => api.put(`/performance-review/my/${reviewId}`, payload),
   submitMySelfAppraisal: (reviewId) => api.post(`/performance-review/my/${reviewId}/submit`),
+  // The other half of the same page: scoring the people who report to you. Separate calls
+  // from the two above because they are reachable by a different person and write a
+  // different column — the appraisee must never be able to reach their own reviewer score.
+  saveMyReviewerScores: (reviewId, payload) => api.put(`/performance-review/my/${reviewId}/review`, payload),
+  submitMyReview: (reviewId) => api.post(`/performance-review/my/${reviewId}/submit-review`),
 };
 
 // --------------------------------------------
@@ -1183,6 +1191,7 @@ const employeeAreaAssignmentApi = {
 const hrDashboardApi = {
   getTrends: () => runViaRunner('hr-dashboard/trends'),
   getActivityHeatmap: () => runViaRunner('hr-dashboard/activity-heatmap'),
+  getPerformanceTrend: () => runViaRunner('hr-dashboard/performance-trend'),
   getAttendanceCorrectionDeptWise: () => runViaRunner('hr-dashboard/attendance-correction-dept-wise'),
   getShiftDisciplineDeptWise: () => runViaRunner('hr-dashboard/shift-discipline-dept-wise'),
   getEmployeesNotSeenRecently: () => runViaRunner('hr-dashboard/employees-not-seen-recently'),
@@ -1192,7 +1201,9 @@ const hrDashboardApi = {
     onLeaveToday:    () => runViaRunner('hr-dashboard/snapshot/on-leave-today'),
     yesterday:       () => runViaRunner('hr-dashboard/snapshot/yesterday'),
     activeTerminals: () => runViaRunner('hr-dashboard/snapshot/active-terminals'),
-    appraisalCycle:  () => runViaRunner('hr-dashboard/snapshot/appraisal-cycle')
+    appraisalCycle:  () => runViaRunner('hr-dashboard/snapshot/appraisal-cycle'),
+    areaHeadcount:   () => runViaRunner('hr-dashboard/snapshot/area-headcount'),
+    campusNow:       () => runViaRunner('hr-dashboard/snapshot/campus-now')
   },
   upcoming: {
     birthdays:     () => runViaRunner('hr-dashboard/upcoming/birthdays'),

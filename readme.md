@@ -126,7 +126,16 @@ npm run validate-commit
 # Repository management
 npm run create-app <new-app-url>  # Create new app from template
 npm run update-starter-app         # Update from starter template
+
+# In Docker (Postgres included)
+npm run docker:dev   # working tree as-is: nodemon + Vite, live reload
+npm run docker:prod  # the shipped bytecode image, built from this tree
 ```
+
+Both compose files carry their own header explaining which configuration files
+you have to place and where: [docker-compose.dev.yml](docker-compose.dev.yml)
+and [docker-compose.prod.yml](docker-compose.prod.yml). What a customer site
+actually installs is in [deploy/windows/docker/](deploy/windows/docker/).
 
 ## 📁 Project Structure
 

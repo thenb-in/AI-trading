@@ -8,6 +8,7 @@ export { MasterSearch, MasterSearch as MasterSearchInput } from './MasterSearch'
 export { BaseMaster } from './BaseMaster';
 export { importMasterFromExcel } from './importMasterFromExcel';
 export { FormFooter } from './FormFooter';
+export { MasterHeaderAction } from './MasterHeaderAction';
 export { MasterFieldsForm } from './MasterFieldsForm';
 export { useMasterPageOnboarding } from './useMasterPageOnboarding';
 export { useBulkActions } from './bulk_actions/useBulkActions';

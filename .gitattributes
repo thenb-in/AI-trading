@@ -9,6 +9,12 @@
 *.sh        text eol=lf
 *.bash      text eol=lf
 
+# The mirror image: batch/PowerShell files are consumed by Windows, where a
+# .bat with LF endings breaks label jumps and multi-line blocks. Pin CRLF so
+# they survive a checkout on a Linux CI runner that stages the install kit.
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+
 # Service / config files consumed by Linux daemons. Same reasoning.
 *.service   text eol=lf
 *.conf      text eol=lf

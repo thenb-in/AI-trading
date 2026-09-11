@@ -7,6 +7,7 @@ import {
   sortRows,
 } from "../utils/helpers";
 import { detectConstantColumns } from "../utils/constantColumnsUtils";
+import { groupRows } from "./useGrouping";
 import {
   handleExport as handleExcelExportToFile,
   handleMultiSheetExport,
@@ -86,6 +87,7 @@ const buildSheetFromRaw = (
     showTotalRow,
     showInsightsAsHeader,
     showEmptyColumns,
+    groupByField,
   }
 ) => {
   const normalized = normalizeColumns(rawColumns || []);
@@ -102,7 +104,8 @@ const buildSheetFromRaw = (
   const indexed = indexRows(rawRows || []);
   const filtered = filterRows(indexed, filterModel || {}, colsToUse);
   const sorted = sortRows(filtered, sortModel || { field: null, sort: null }, colsToUse);
-  const unwrapped = sorted.map((w) => w._row || w);
+  const grouped = groupRows(colsToUse, sorted, groupByField);
+  const unwrapped = grouped.map((w) => w._row || w);
 
   // Respect the user's column visibility toggles. Unknown fields (not in the
   // state map) default to visible.
@@ -111,8 +114,10 @@ const buildSheetFromRaw = (
     : colsToUse
   ).filter((c) => c.is_export !== false);
 
+
+  const dataRowsOnly = unwrapped.filter((r) => !r?._isGroupTotal);
   const totalRow =
-    showTotalRow && unwrapped.length > 1 ? calculateTotals(unwrapped, visibleCols) : null;
+    showTotalRow && dataRowsOnly.length > 1 ? calculateTotals(dataRowsOnly, visibleCols) : null;
 
   return {
     rows: unwrapped,
@@ -151,6 +156,7 @@ const useGridExport = ({
   sortModel,
   columnVisibility,
   hideConstantColumns,
+  groupByField,
 }) => {
   const exportColumns = resolveExportVisibleColumns(
     showInsightsAsHeader,
@@ -240,6 +246,7 @@ const useGridExport = ({
       showTotalRow,
       showInsightsAsHeader,
       showEmptyColumns,
+      groupByField,
     };
 
     return tabs.map((tab) => {
@@ -273,6 +280,7 @@ const useGridExport = ({
     showTotalRow,
     showInsightsAsHeader,
     showEmptyColumns,
+    groupByField,
   ]);
 
   const [isExcelExporting, setIsExcelExporting] = useState(false);

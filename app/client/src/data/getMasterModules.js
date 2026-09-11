@@ -283,32 +283,63 @@ const getAppSpecificMasterModules = (handleOpenMaster) => [
     keywords: "salary structure components formula payroll earnings deductions contributions variable pay leave",
     category: MASTER_CATEGORIES.PAYROLL_CALCULATIONS,
   },
+  // Reviews and appraisals are different events on independent timelines — the recurring
+  // conversation and the rating that drives increments — so each gets its own pair of
+  // entries. One combined screen means every list has to be read with a Type column in mind,
+  // which is how an annual appraisal ends up saved as a monthly review.
+  {
+    title: "Performance Review Cycle",
+    description:
+      "Define recurring review rounds — the period they cover, how often they come round, whether a self appraisal is required, and when they are open. Opening a round's reviews for every active employee is one click from here.",
+    icon: EventNoteIcon,
+    color: "info",
+    onClick: () => handleOpenMaster("performance-review-cycle"),
+    buttonText: "Manage Review Cycles",
+    tags: ["Performance", "Review", "Cycle", "Period"],
+    keywords: "performance review cycle period round monthly quarterly recurring generate cadence",
+    category: MASTER_CATEGORIES.PERFORMANCE_MANAGEMENT,
+    permissionName: "read_performance_cycle",
+  },
   {
     title: "Performance Review",
     description:
-      "Appraisals for a cycle: self and reviewer scores against each KRA, the weighted result and its rating band, and sign-off. Generate a whole round from the Appraisal Cycle master.",
+      "The recurring performance conversation, scored: self and reviewer scores against each KRA, the weighted result and its rating band, and sign-off. Generate a whole round from the Performance Review Cycle master.",
     icon: AssessmentIcon,
     color: "primary",
     onClick: () => handleOpenMaster("performance-review"),
-    buttonText: "Manage Appraisals",
-    tags: ["Performance", "Appraisal", "Review", "Rating", "KRA"],
+    buttonText: "Manage Reviews",
+    tags: ["Performance", "Review", "Rating", "KRA"],
     keywords:
-      "performance review appraisal rating kra competency score band reviewer self appraisal increment",
+      "performance review rating kra competency score band reviewer self review monthly quarterly",
     category: MASTER_CATEGORIES.PERFORMANCE_MANAGEMENT,
     permissionName: "read_performance_review",
   },
   {
     title: "Appraisal Cycle",
     description:
-      "Define appraisal rounds — the period they cover, whether a self appraisal is required, and when they are open. Opening a cycle's reviews for every active employee is one click from here.",
+      "Define appraisal rounds — the periodic rating that drives increments. The period they cover, how often they come round, whether a self appraisal is required, and when they are open.",
     icon: EventNoteIcon,
     color: "info",
-    onClick: () => handleOpenMaster("performance-cycle"),
-    buttonText: "Manage Cycles",
-    tags: ["Performance", "Appraisal", "Cycle", "Period"],
-    keywords: "appraisal cycle performance period review round half yearly annual generate",
+    onClick: () => handleOpenMaster("appraisal-cycle"),
+    buttonText: "Manage Appraisal Cycles",
+    tags: ["Appraisal", "Cycle", "Period", "Annual"],
+    keywords: "appraisal cycle period round half yearly annual increment generate cadence",
     category: MASTER_CATEGORIES.PERFORMANCE_MANAGEMENT,
     permissionName: "read_performance_cycle",
+  },
+  {
+    title: "Appraisal",
+    description:
+      "The periodic rating that drives increments: self and reviewer scores against each KRA, the weighted result and its rating band, and sign-off. Generate a whole round from the Appraisal Cycle master.",
+    icon: AssessmentIcon,
+    color: "primary",
+    onClick: () => handleOpenMaster("appraisal"),
+    buttonText: "Manage Appraisals",
+    tags: ["Appraisal", "Rating", "KRA", "Increment"],
+    keywords:
+      "appraisal rating kra competency score band reviewer self appraisal increment annual",
+    category: MASTER_CATEGORIES.PERFORMANCE_MANAGEMENT,
+    permissionName: "read_performance_review",
   },
   {
     title: "Performance Parameter",
@@ -626,6 +657,5 @@ const defaultMasterCategoryIcon = CategoryIcon;
 export {
   getAppSpecificMasterModules,
   appSpecificMasterCategoryOrder,
-  MASTER_CATEGORIES,
   defaultMasterCategoryIcon,
 };

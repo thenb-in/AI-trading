@@ -17,8 +17,15 @@ const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGrou
     promoteToPrimarySort(groupByField);
   }, [groupByField, promoteToPrimarySort]);
 
-  // Inject a synthetic "group total" row after each contiguous group of rows.
-  const groupedRows = useMemo(() => {
+  const groupedRows = useMemo(
+    () => groupRows(columnsToUse, sortedRows, groupByField),
+    [sortedRows, groupByField, columnsToUse]
+  );
+
+  return { groupByField, toggleGroupBy, groupedRows };
+};
+
+const groupRows = (columnsToUse, sortedRows, groupByField) => {
     if (!groupByField) return sortedRows;
     const groupCol = columnsToUse.find((c) => c.field === groupByField);
     if (!groupCol) return sortedRows;
@@ -91,9 +98,6 @@ const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGrou
 
     flushGroup();
     return output;
-  }, [sortedRows, groupByField, columnsToUse]);
-
-  return { groupByField, toggleGroupBy, groupedRows };
 };
 
-export { useGrouping };
+export { useGrouping, groupRows };

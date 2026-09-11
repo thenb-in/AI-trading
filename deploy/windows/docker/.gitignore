@@ -1,0 +1,5 @@
+# Everything below is produced on the customer's machine at install time.
+.env
+docker_data/
+salarymitra-server-*.tar
+salarymitra-server-*.tar.gz
