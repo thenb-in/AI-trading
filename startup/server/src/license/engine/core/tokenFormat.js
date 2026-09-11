@@ -66,19 +66,31 @@ function verifyToken(token, publicKey) {
   const keys = Array.isArray(publicKey) ? publicKey : [publicKey];
   const signingInput = Buffer.from(`${LICENSE_TOKEN_HEADER}.${payloadB64}`, 'utf8');
 
+  // A pinned PEM that OpenSSL cannot decode makes createPublicKey throw, which
+  // would break this function's NEVER-throws contract and surface on the
+  // installer as a bare `DECODER routines::unsupported`. Catch it per key, keep
+  // trying the rest of the set, and report what was wrong with which key.
   let validKeyIndex = -1;
+  const keyErrors = [];
   for (let i = 0; i < keys.length; i++) {
     const k = keys[i];
     if (!k) {
       continue;
     }
-    const keyObj = typeof k === 'string'
-      ? crypto.createPublicKey({ key: k, format: 'pem' })
-      : k;
-    if (crypto.verify(null, signingInput, keyObj, sig)) {
-      validKeyIndex = i;
-      break;
+    try {
+      const keyObj = typeof k === 'string'
+        ? crypto.createPublicKey({ key: k, format: 'pem' })
+        : k;
+      if (crypto.verify(null, signingInput, keyObj, sig)) {
+        validKeyIndex = i;
+        break;
+      }
+    } catch (err) {
+      keyErrors.push(`pinned key ${i} is unusable (${err.message})`);
     }
+  }
+  if (validKeyIndex === -1 && keyErrors.length > 0) {
+    return { ok: false, reason: `unusable-pinned-key: ${keyErrors.join('; ')}` };
   }
   if (validKeyIndex === -1) {
     return { ok: false, reason: 'bad-signature' };

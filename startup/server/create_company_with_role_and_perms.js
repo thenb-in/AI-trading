@@ -8,6 +8,8 @@ const frameworkPermissionSets = require('./src/constants/permissions');
 const { SYSTEM_ROLE_CONSTANTS } = frameworkPermissionSets;
 const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
+const licenseService = require('./src/license/licenseService');
+const companyService = require('./src/services/companyService');
 // signup moved out of authService into the services/auth barrel with the SSO
 // work; approveUser stayed behind. Importing both from authService left signup
 // undefined here, so seeding died with "undefined is not a function" the moment
@@ -40,17 +42,61 @@ const askQuestion = (query) =>
 const reasonOf = (err) =>
   err?.message || (err && typeof err === 'object' ? JSON.stringify(err) : String(err));
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Decide the id the company is created with.
+ *
+ * A license grants its plans to ONE company: subscriptionResolvers refuses to
+ * serve them to any id other than the token's `customer_id` (the wallet tenant
+ * that bought the license). At an airgapped site there is no wallet to ask and
+ * no SSO provisioning to align the two, so the id has to be supplied when the
+ * company is made — `npm run create-new-company <company_id>` — or taken from a
+ * license that is already installed.
+ *
+ * Getting this wrong is silent and expensive: the company is created, the
+ * sadmin user gets every permission, and then every login resolves to ZERO
+ * permissions because the license refuses the company. So both mismatches are
+ * refused here, while the id is still free to choose.
+ */
+async function resolveCompanyId(requestedId) {
+  if (requestedId && !UUID_PATTERN.test(requestedId)) {
+    throw new Error(`Company id "${requestedId}" is not a UUID — pass the wallet customer_id the license was issued for`);
+  }
+
+  let licensedId = null;
+  try {
+    const snapshot = await licenseService.getStatusSnapshot();
+    licensedId = snapshot?.ok ? snapshot.customer_id : null;
+  } catch (err) {
+    logger.warn(`Could not read the installed license to check the company id: ${reasonOf(err)}`);
+  }
+
+  if (requestedId && licensedId && requestedId.toLowerCase() !== licensedId.toLowerCase()) {
+    throw new Error(`Company id ${requestedId} does not match the installed license, which was issued for customer ${licensedId} — a company created under ${requestedId} would get no permissions at all`);
+  }
+  if (!requestedId && licensedId) {
+    logger.info(`No company id given; using the installed license's customer id ${licensedId}`);
+    return licensedId;
+  }
+  if (!requestedId) {
+    logger.info(`No company id given and no license installed — the database will generate one. Install the license FIRST, or pass its customer_id, if this install is licensed.`);
+  }
+  return requestedId || null;
+}
+
 /**
  * Create a company
  */
-async function createCompany(transaction, userRole) {
+async function createCompany(transaction, userRole, companyId) {
   const companyNameInput = await askQuestion(`Enter company name (${env.DEFAULT_COMPANY}): `);
   const companyName = companyNameInput || env.DEFAULT_COMPANY;
   logger.info(`Checking for existing company: ${companyName}`);
 
-  // Check if company already exists
+  // Check if company already exists. When an id was supplied it is the identity
+  // that matters — the same company may well be re-run under a different name.
   const existingCompany = await db.Company.findOne({
-    where: { name: companyName },
+    where: companyId ? { id: companyId } : { name: companyName },
     transaction
   });
 
@@ -59,16 +105,14 @@ async function createCompany(transaction, userRole) {
     return existingCompany;
   }
 
-  logger.info(`Creating company: ${companyName}`);
-  const company = await db.Company.create(
-    {
-      name: companyName,
-      mobileApp: false,
-      desktopWeb: true,
-      mobileWeb: false,
-      role_id: userRole.id
-    },
-    { transaction }
+  logger.info(`Creating company: ${companyName}${companyId ? ` with ID ${companyId}` : ''}`);
+  // companyService.createCompany is what the frontend's create-company flow
+  // uses: it takes the id when one is given and generates a UUID when it is
+  // not, and its defaults (mobileApp off, desktopWeb on, mobileWeb off) are
+  // the ones this seeder wants anyway.
+  const company = await companyService.createCompany(
+    { id: companyId, name: companyName, role_id: userRole.id },
+    transaction
   );
   logger.info(`Company created with ID: ${company.id}`);
   return company;
@@ -149,8 +193,12 @@ const noopStartingAppData = async () => {};
  */
 async function main({
   permissionSets = frameworkPermissionSets,
-  createStartingAppData = noopStartingAppData
+  createStartingAppData = noopStartingAppData,
+  // `npm run create-new-company <company_id>` — npm forwards the positional
+  // through to the script, so it lands here whichever entrypoint was used.
+  companyId = process.argv[2]
 } = {}) {
+  const resolvedCompanyId = await resolveCompanyId(companyId);
   const transaction = await db.sequelize.transaction();
   let transactionCommitted = false;
   try {
@@ -158,7 +206,7 @@ async function main({
     const sadminRole = roles.find((r) => r.name === SYSTEM_ROLE_CONSTANTS.SUPER_ADMIN.name);
     const userRole = roles.find((r) => r.name === SYSTEM_ROLE_CONSTANTS.USER.name);
 
-    const company = await createCompany(transaction, userRole);
+    const company = await createCompany(transaction, userRole, resolvedCompanyId);
     const permissions = await createDefaultPermissions(transaction, permissionSets);
 
     // Assign permissions to sadmin role without removing existing ones

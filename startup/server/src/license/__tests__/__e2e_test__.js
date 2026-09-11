@@ -29,7 +29,7 @@ const privatePem = privateKey.export({ type: 'pkcs8', format: 'pem' });
 process.env.LICENSE_WALLET_PUBLIC_KEYS = JSON.stringify([publicPem]);
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/app/server/src/services/license/tokenFormat.js'
 ));
 const mf = require('../engine/core/machineFingerprint');
 

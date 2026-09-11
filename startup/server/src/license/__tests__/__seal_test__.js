@@ -46,7 +46,7 @@ const pinnedKeys = require('../engine/core/pinnedKeys');
 pinnedKeys._reset();
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/app/server/src/services/license/tokenFormat.js'
 ));
 const seal = require('../engine/core/licenseSeal');
 

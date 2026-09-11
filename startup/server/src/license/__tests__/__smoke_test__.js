@@ -15,7 +15,7 @@ const path = require('path');
 const verifierFmt = require('../engine/core/tokenFormat');
 
 const issuerFmt = require(path.resolve(
-  __dirname, '../../../../../../nbnext_wallet/server/src/services/license/tokenFormat.js'
+  __dirname, '../../../../../../nbnext_wallet/app/server/src/services/license/tokenFormat.js'
 ));
 
 let pass = 0;

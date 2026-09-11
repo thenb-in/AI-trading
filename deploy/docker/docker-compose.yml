@@ -73,19 +73,35 @@ services:
       # A container cannot see the host's NICs or machine-id, so the license
       # binds to what the installer stamped in here. See host-fingerprint.ps1.
       HOST_MACHINE_FILE: /srv/config/host_machine.json
+      # Where the installed license token, its seal and the pinned wallet keys
+      # are written (env.js exposes it as SECRET_DIR, reading SECRETS_PATH).
+      # Unset, it defaults to startup/server/secret INSIDE the bundle - which is
+      # not under docker_data/, so the license escapes the one folder the README
+      # tells operators to back up, and is DESTROYED by the bundle replacement
+      # that an update performs. On Ubuntu the git-overlay update.sh preserves it
+      # via startup/server/.gitignore; a Windows file copy has no such rule.
+      # Set here rather than in config/.env because it is a fact about the
+      # container layout, not an operator choice - same as the two above.
+      SECRETS_PATH: /srv/config/secret
     ports:
       - "${APP_PORT}:3000"
     # What status.bat's "(healthy)" and the README's "wait for it" actually mean.
     # node, not curl: the image ships no HTTP client, and adding one for this
-    # would be a package to keep patched. start_period covers the long first
-    # boot - the bundle's dependencies install and SYNC_DB creates the schema
-    # before anything answers - and failures during it are not counted.
+    # would be a package to keep patched.
+    #
+    # start_period is 10 minutes because the boot that matters is the SLOW one:
+    # on a first install or after a bundle swap the entrypoint reinstalls every
+    # dependency onto a bind mount, then SYNC_DB builds the schema, and nothing
+    # answers until that finishes. Measured at ~6 minutes on a Windows host, so
+    # a 5-minute window marked a perfectly healthy update "(unhealthy)" for a
+    # couple of minutes before it recovered - exactly the false alarm this
+    # healthcheck exists to prevent. Failures inside the window are not counted.
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/api/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 300s
+      start_period: 600s
     # Left of the colon is a folder on THIS machine, right of it is the path
     # inside the container — which is Linux whatever the host is. Everything on
     # the host side is under docker_data/, next to this file.

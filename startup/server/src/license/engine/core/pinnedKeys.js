@@ -19,6 +19,7 @@
 //
 // At least one PEM must resolve from somewhere, or boot fails fast.
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../../../../logger');
@@ -34,9 +35,7 @@ const { WALLET_KEYS_FILENAME } = require('../../../constants/license');
 // During development, leaving this empty is OK as long as
 // LICENSE_WALLET_PUBLIC_KEYS or the keys file is provided.
 const BAKED_KEYS = Object.freeze([
-  // -----BEGIN PUBLIC KEY-----
-  // ...
-  // -----END PUBLIC KEY-----
+  '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAR8N7By4sf8XGHc40VbXUn09qKET8cOI75QXriLYoct8=\n-----END PUBLIC KEY-----\n'
 ]);
 
 function parseFromEnv() {
@@ -80,25 +79,48 @@ function parseFromFile() {
 
 let cached = null;
 
+// Licenses are signed with Ed25519, so a PEM that OpenSSL cannot decode — or
+// one carrying any other algorithm — can never verify a license. Pinning it
+// anyway is worse than pinning nothing: the trust set looks configured, the
+// gate arms, and every license is then rejected. Drop such keys here, naming
+// the source that supplied them so a support engineer can see which file or
+// env var to fix.
+function usableKeys(pems, source) {
+  return (pems || []).filter((pem) => {
+    try {
+      const type = crypto.createPublicKey({ key: pem, format: 'pem' }).asymmetricKeyType;
+      if (type !== 'ed25519') {
+        logger.warn(`[license] ignoring a ${type} public key from ${source}; licenses are signed with Ed25519`);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      logger.warn(`[license] ignoring an undecodable public key from ${source}: ${err.message}`);
+      return false;
+    }
+  });
+}
+
 function load() {
   if (cached) {
     return cached;
   }
-  const fromEnv = parseFromEnv();
-  if (fromEnv && fromEnv.length > 0) {
+  const fromEnv = usableKeys(parseFromEnv(), 'LICENSE_WALLET_PUBLIC_KEYS');
+  if (fromEnv.length > 0) {
     logger.info(`[license] loaded ${fromEnv.length} wallet public key(s) from env`);
     cached = fromEnv;
     return cached;
   }
-  const fromFile = parseFromFile();
-  if (fromFile && fromFile.length > 0) {
+  const fromFile = usableKeys(parseFromFile(), path.join(env.SECRET_DIR, WALLET_KEYS_FILENAME));
+  if (fromFile.length > 0) {
     logger.info(`[license] loaded ${fromFile.length} wallet public key(s) from secrets file`);
     cached = fromFile;
     return cached;
   }
-  if (BAKED_KEYS.length > 0) {
-    logger.info(`[license] using ${BAKED_KEYS.length} baked-in wallet public key(s)`);
-    cached = [...BAKED_KEYS];
+  const baked = usableKeys(BAKED_KEYS, 'the baked-in BAKED_KEYS set');
+  if (baked.length > 0) {
+    logger.info(`[license] using ${baked.length} baked-in wallet public key(s)`);
+    cached = baked;
     return cached;
   }
   // Returning empty here is deliberate. The license service detects the
