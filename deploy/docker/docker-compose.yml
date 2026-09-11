@@ -68,7 +68,7 @@ x-gateway-env: &gateway-env
   APP_ROLE: gateway
   # The gateway opens its OWN Sequelize pool against the same database as the
   # app. Given here rather than read from docker_data/config/.env because
-  # dotenv (loaded by shared/setupAliases from the working directory) never
+  # dotenv (loaded by bootstrap/setupAliases from the working directory) never
   # overrides a variable already in the environment — so what compose sets wins,
   # which is what makes PORT below take effect over the app's own PORT=3000.
   DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/${DB_NAME}

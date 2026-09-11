@@ -35,7 +35,6 @@
 const { AsyncLocalStorage } = require('node:async_hooks');
 
 const logger = require('@startup/logger');
-const env = require('@startup/src/config/env');
 const { sequelize, canCancelQueries, cancelBackends } = require('@startup/src/services/databaseService');
 const { RUN_STOPPED_ERROR } = require('../constants');
 const { dropPending } = require('./jobQueue');
@@ -78,7 +77,7 @@ function installQueryTracking() {
   });
 
   if (!canCancelQueries()) {
-    logger.warn(`[report-runner] dialect=${env.DB_DIALECT} cannot cancel a query already running: a stopped run ends at its next query instead`);
+    logger.warn(`[report-runner] dialect=${sequelize.getDialect()} cannot cancel a query already running: a stopped run ends at its next query instead`);
   }
 }
 

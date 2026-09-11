@@ -1,15 +1,15 @@
 const { sequelize } = require('../models');
-const env = require('../config/env');
 const logger = require('../../logger');
 const { POSTGRES_DIALECT } = require('../constants/database');
 
 /**
  * Whether this database can be asked to stop a query that is already running.
  * Cancelling in-flight work is a server-side operation, so it exists only where
- * the dialect provides it.
+ * the dialect provides it. Read from the live connection (derived from the
+ * DATABASE_URL scheme) rather than a separate env that could disagree with it.
  */
 function canCancelQueries() {
-  return env.DB_DIALECT === POSTGRES_DIALECT;
+  return sequelize.getDialect() === POSTGRES_DIALECT;
 }
 
 /**

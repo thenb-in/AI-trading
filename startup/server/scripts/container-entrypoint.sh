@@ -85,7 +85,7 @@ install_deps() {
 # the same — the exact concurrent-install corruption the gateways' `depends_on:
 # app: service_healthy` exists to avoid. It needs nothing extra from there
 # either: by the time it starts, the healthy app has already installed the
-# express/sequelize/pg that shared/setupAliases.addPath resolves out of
+# express/sequelize/pg that bootstrap/setupAliases.addPath resolves out of
 # app/server and startup/server.
 if [ "$APP_ROLE" != "gateway" ]; then
   DEPS_MARKER="$APP_SERVER/node_modules/.bundle_sha"

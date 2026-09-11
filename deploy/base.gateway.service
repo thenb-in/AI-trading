@@ -1,0 +1,32 @@
+[Unit]
+# Template for a single biometric gateway runnable (one systemd unit per
+# gateway process). Substitute the %PLACEHOLDER% tokens per gateway:
+#   %GATEWAY_DESC% — human name (e.g. "biomax", "Matrix COSEC LAN pull")
+#   %GATEWAY_DIR%  — folder under biometric_gateway/ (e.g. biomax_server, lan_cosec_centra)
+#   %GATEWAY_ID%   — syslog identifier slug (e.g. biomax, cosec)
+# See deploy/gateway/README.md. Kept in sync with deploy/base.service so both
+# app and gateway units share the same node path, restart and shutdown policy.
+Description=NB Next %GATEWAY_DESC% connector
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Environment=PATH=/home/ubuntu/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin
+WorkingDirectory=/home/ubuntu/etime-payroll/biometric_gateway/%GATEWAY_DIR%
+ExecStart=/home/ubuntu/.nvm/versions/node/v22.19.0/bin/npm start
+Restart=always
+RestartSec=5
+# Max time to wait for SIGTERM handler (process.exit after graceful shutdown).
+# Lower than systemd default so a stuck process does not block restart for ~90s.
+TimeoutStopSec=30
+User=ubuntu
+Environment=NODE_ENV=production
+Environment=LOG_LEVEL=info
+Environment=SYNC_DB=false
+# journald, filterable by SyslogIdentifier.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nbnext_%GATEWAY_ID%_connector
+
+[Install]
+WantedBy=multi-user.target

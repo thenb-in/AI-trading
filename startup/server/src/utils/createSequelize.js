@@ -9,8 +9,7 @@ const env = require('../config/env');
 const { createSequelize: createNucleusSequelize } = require('@nucleus/db/createSequelize');
 
 const createSequelize = () => createNucleusSequelize({
-  databaseUrl: env.DATABASE_URL,
-  dialect: env.DB_DIALECT
+  databaseUrl: env.DATABASE_URL
 });
 
 module.exports = { createSequelize };
