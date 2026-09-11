@@ -11,6 +11,7 @@ import noInlineArrowFunctions from './rules/no-inline-arrow-functions.js';
 import namedExportsOnly from './rules/named-exports-only.js';
 import bottomExportsOnly from './rules/bottom-exports-only.js';
 import enforceDateTimeUtils from './rules/enforce-date-time-utils.js';
+import useSearchableDropdown from './rules/use-searchable-dropdown.js';
 
 // Combine all rules into a single object
 const customRules = {
@@ -24,6 +25,7 @@ const customRules = {
   ...namedExportsOnly,
   ...bottomExportsOnly,
   ...enforceDateTimeUtils,
+  ...useSearchableDropdown,
 };
 
 export default {

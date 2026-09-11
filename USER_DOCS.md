@@ -384,7 +384,31 @@
 
 ---
 
-## 8. Company Switching
+## 8. Keyboard Shortcuts
+
+Every shortcut below is advertised on the button that performs the same action —
+hover a button to see it, and desktop buttons carry the combination as a small badge.
+Mac spellings are shown first; Windows/Linux in brackets.
+
+| Action | Mac | Windows / Linux | Where |
+| --- | --- | --- | --- |
+| New record | ⌥N | Alt+N | Any master page |
+| Save / submit | ⌘S | Ctrl+S | Any open form or form dialog |
+| Close dialog | Esc | Esc | Any dialog |
+| Refresh | ⌥R | Alt+R | Any master page |
+| Export | ⌥E | Alt+E | Master pages offering export |
+| Import | ⌥I | Alt+I | Master pages offering import |
+| Apply filters | ⌥↩ | Alt+Enter | Any filter panel — runs via the report-runner when that button is offered |
+| Global search | ⌥S / ⌘K | Alt+S / Ctrl+K | Anywhere |
+| Help & Support | ⌥H / F1 | Alt+H / F1 | Anywhere |
+| Grid fullscreen | ⌥F | Alt+F | Any data grid |
+
+Page-level shortcuts stand down while a dialog is open, so New never discards the
+record you are editing.
+
+---
+
+## 9. Company Switching
 
 **What it does:** Switch your active company context.
 
@@ -403,7 +427,7 @@
 
 ---
 
-## 9. API Usage Guide (For Developers)
+## 10. API Usage Guide (For Developers)
 
 All API endpoints require the `accessToken` cookie to be present (set automatically after login) unless marked as public.
 

@@ -335,7 +335,7 @@ function DataAccessSelector({ userId, initialAccess, onSaved, departments: provi
           position: 'fixed',
           top: dropdownPos.top,
           left: dropdownPos.left,
-          zIndex: 999,
+          zIndex: 100000,
           visibility: isPositioned ? 'visible' : 'hidden'
         };
         return createPortal(

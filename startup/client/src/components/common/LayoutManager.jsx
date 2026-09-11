@@ -28,7 +28,7 @@ import {
   FolderOpen as LoadIcon,
   Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { ApiService as layoutApi } from '@services/ApiService';
+import { layoutApi } from '@app/services/api';
 import { getLayoutTypeIcon, getLayoutTypeColor } from './layoutTypeHelpers';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 

@@ -68,6 +68,8 @@ export default [
       'custom/no-direct-to-iso-string': 'error',
       'custom/no-unsafe-new-date': 'error',
       'custom/no-manual-iso-string-concat': 'error',
+      // Every select box goes through the base SearchableDropdown
+      'custom/use-searchable-dropdown': 'error',
     },
   },
 

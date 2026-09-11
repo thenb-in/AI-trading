@@ -96,6 +96,7 @@ module.exports = [
       }],
       'custom/no-env-outside-env-js': 'error',
       'custom/no-startup-imports-app': 'error',
+      'custom/no-paranoid-models': 'error',
 
       // Import/export rules
       'import/no-unresolved': 'error',

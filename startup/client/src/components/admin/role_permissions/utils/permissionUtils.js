@@ -2,7 +2,7 @@ import { getReportDisplayName } from '@data/getReportModules';
 
 /**
  * Convert a snake_case or kebab-case string to Title Case
- * e.g. "role_permission" -> "Role Permission", "detailed-sales" -> "Detailed Sales"
+ * e.g. "role_permission" -> "Role Permission", "detailed-attendance" -> "Detailed Attendance"
  */
 function toTitleCase(str) {
   return str
@@ -154,8 +154,8 @@ function organizePermissions(permissions, companySubscriptions = null, userData 
  * Extracts report identifier from permission name
  * Uses the report permission name map from getReportModules.js for accurate mapping
  * Examples:
- * - "read_detailed-sales-report" -> "Detailed Sales Report"
- * - "read_monthly-summary-report" -> "Monthly Summary Report"
+ * - "read_detailed-attendance-report" -> "Detailed Attendance Report"
+ * - "read_checkin-checkout-report" -> "Check-in/Check-out Report"
  * - "read_report_1" -> "Report 1"
  * - "read_report-2" -> "Report 2"
  * - "view_report_user" -> "User Report"
@@ -172,12 +172,12 @@ function extractReportId(permissionName) {
   }
   
   // If display_name is provided and it's in format "Read <Report Name>", extract the report name
-  // Example: "Read detailed-sales-report" -> "Detailed Sales Report"
+  // Example: "Read detailed-attendance-report" -> "Detailed Attendance Report"
   if (permissionName.toLowerCase().startsWith('read ')) {
     return toTitleCase(permissionName.substring(5));
   }
   
-  // Pattern: read_<report-name-with-hyphens> (e.g., read_detailed-sales-report)
+  // Pattern: read_<report-name-with-hyphens> (e.g., read_detailed-attendance-report)
   // This handles the server pattern: read_<report-name>
   const hyphenReportPattern = /^(?:read|download|view|export)_([a-z0-9-]+)$/i;
   const hyphenMatch = permissionName.match(hyphenReportPattern);

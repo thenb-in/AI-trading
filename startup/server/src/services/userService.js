@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 // User is the primary model for this service
 // UserProfile is tightly coupled with User (one-to-one relationship)
 const db = require('../models');
-const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
+const { User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
 
@@ -55,9 +55,9 @@ const getAllUsers = async (companyId) => {
   if (!companyId) {
     throw new Error(`Company ID is required ${companyId}.`);
   }
-  const rows = await User.findAll({
+  const users = await User.findAll({
     where: { isActive: true, company_id: companyId },
-    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'wallet_user_id'],
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
       // description is what tells an admin what a role like `company_admin`
@@ -66,11 +66,6 @@ const getAllUsers = async (companyId) => {
       { model: UserProfile, as: 'userProfile', required: false }
     ],
     order: [['last_active', 'DESC']]
-  });
-
-  const users = rows.map((row) => {
-    const { wallet_user_id: walletUserId, ...user } = row.toJSON();
-    return { ...user, isSso: Boolean(walletUserId) };
   });
 
   // Fetch all roles separately - get global roles (companyId is null) and company-specific roles
@@ -91,12 +86,6 @@ const getAllUsers = async (companyId) => {
 
 const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
-};
-
-/** Whether the given user is a support (superadmin) user. */
-const isSupportUser = async (userId) => {
-  const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
-  return !!user.isSupportUser;
 };
 
 const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId = null } = {}) => {
@@ -157,14 +146,6 @@ const getUserByUsername = async (username, transaction) => {
   return User.findOne({ where: { username }, transaction });
 };
 
-/** The local account for a Wallet user, by their OIDC `sub`. Null if none. */
-const getUserByWalletUserId = async (walletUserId) => {
-  if (!walletUserId) {
-    return null;
-  }
-  return User.findOne({ where: { wallet_user_id: walletUserId } });
-};
-
 const updateUserProfile = async (userId, userProfile) => {
   const user = await findModelByIdOrThrow(User, userId, {
     include: [
@@ -200,11 +181,7 @@ const updateUserProfile = async (userId, userProfile) => {
 
 const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
   const [updated] = await User.update(
-    {
-      refresh_token: refreshToken,
-      last_active: new Date(),
-      tokens_valid_after: null
-    },
+    { refresh_token: refreshToken, last_active: new Date() },
     { where: { id: userId }, returning: true }
   );
 
@@ -255,57 +232,6 @@ const checkUserActive = async (userId) => {
     return { isActive: false, user };
   }
   return { isActive: true, user };
-};
-
-
-const createSsoUser = async ({ username, name, phone = null, companyId, walletUserId }) => {
-  const company = await findModelByIdOrThrow(Company, companyId, {}, 'Company');
-
-  return sequelize.transaction(async (transaction) => {
-    const user = await User.create({
-      username,
-      name,
-      phone,
-      password: null,
-      company_id: companyId,
-      wallet_user_id: walletUserId,
-      isActive: true,
-      is_approved: true,
-      refresh_token: null,
-      mobileApp: company.mobileApp,
-      desktopWeb: company.desktopWeb,
-      mobileWeb: company.mobileWeb
-    }, { transaction });
-
-    await UserProfile.create({
-      userId: user.id,
-      currentCompany: companyId
-    }, { transaction });
-
-    await MultiCompanyModule.create({
-      userId: user.id,
-      companyId
-    }, { transaction });
-
-    return user;
-  });
-};
-
-/**
- * End every session this user currently holds.
- */
-const invalidateSessions = async (userId) => {
-  await User.update(
-    { tokens_valid_after: new Date(), refresh_token: null },
-    { where: { id: userId } }
-  );
-};
-
-const getTokensValidAfter = async (userId) => {
-  const user = await User.findByPk(userId, {
-    attributes: ['tokens_valid_after']
-  });
-  return user?.tokens_valid_after || null;
 };
 
 const getUserByPkWithLock = async (userId, options = {}) => {
@@ -382,11 +308,9 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getUserById,
-  isSupportUser,
   getActiveUserIdsByRoleName,
   getActiveUserIdsByPermissionName,
   getUserByUsername,
-  getUserByWalletUserId,
   deleteUser,
   updateUserRole,
   updateUserDeviceAccess,
@@ -394,9 +318,6 @@ module.exports = {
   updateUserBasic,
   updateUserRefreshTokenAndLastActive,
   checkUserActive,
-  createSsoUser,
-  invalidateSessions,
-  getTokensValidAfter,
   getUserByPkWithLock,
   updateUserRefreshToken,
   revokeRefreshToken,

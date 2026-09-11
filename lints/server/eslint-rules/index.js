@@ -13,6 +13,7 @@ const noDirectModelImports = require('./rules/no-direct-model-imports');
 const namedExportsOnly = require('./rules/named-exports-only');
 const noEnvOutsideEnvJs = require('./rules/no-env-outside-env-js');
 const noStartupImportsApp = require('./rules/no-startup-imports-app');
+const noParanoidModels = require('./rules/no-paranoid-models');
 
 // Combine all rules into a single object
 const customRules = {
@@ -27,7 +28,8 @@ const customRules = {
   ...noDirectModelImports,
   ...namedExportsOnly,
   ...noEnvOutsideEnvJs,
-  ...noStartupImportsApp
+  ...noStartupImportsApp,
+  ...noParanoidModels
 };
 
 module.exports = {
