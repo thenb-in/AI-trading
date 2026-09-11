@@ -664,6 +664,7 @@ const formatTimeForDisplay = (dateValue) => {
   const date = parseDateValue(dateValue);
   if (!date) return "—";
   return date.toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
