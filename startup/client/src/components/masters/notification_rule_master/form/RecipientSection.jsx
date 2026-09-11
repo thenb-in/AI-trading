@@ -5,38 +5,41 @@ import { RECIPIENT_MODE } from '../constants';
 import { RuleSection } from './RuleSection';
 import { FieldRow } from './FieldRow';
 import { AddressesField } from './AddressesField';
+import { DeliveryModeChoice } from './DeliveryModeChoice';
+import { AudienceSummary } from './AudienceSummary';
+import { audienceSummary } from './audienceSummary';
 
-// Step 2 — the framework's five audiences plus whatever the app registered, all
-// unioned. Duplicates across them are collapsed on the server, so somebody caught
-// by two still gets one message.
-// The self option is stored in the same list as the named ones -- one audience, one
-// value on the rule -- so the checkbox and the dropdown each edit their own half of it.
-const toggleValue = (values, value) =>
-  (values.includes(value) ? values.filter((v) => v !== value) : [...values, value]);
-
-const namedValues = (values, source) =>
-  (source.selfOption ? values.filter((v) => v !== source.selfOption.value) : values);
-
-const withSelf = (named, previous, source) =>
-  (source.selfOption && previous.includes(source.selfOption.value)
-    ? [source.selfOption.value, ...named]
-    : named);
 
 const RecipientSection = ({
-  rule, audience, recipientCount, totalRecipients, isLoading, onChange
+  rule, audience, recipientCount, totalRecipients, isLoading, onChange, onPatch
 }) => {
   const recipients = rule.recipients || {};
+  const onlyTheSubject = Boolean(rule.only_the_subject);
   const valuesFor = (mode) => recipients[mode] || [];
   const isOn = (mode) => recipientCount(mode) > 0;
+  const summary = audienceSummary(recipients, recipientCount);
 
   return (
     <RuleSection
       step={2}
       title="Who gets it"
-      hint="Pick at least one. Nobody gets two copies."
+      hint="Pick people any way you like — the lists add up."
       count={totalRecipients}
     >
-      <FieldRow icon={Building2} label="Company" active={isOn(RECIPIENT_MODE.COMPANY)}>
+      <AudienceSummary summary={summary} onlyTheSubject={onlyTheSubject} />
+
+      <DeliveryModeChoice
+        onlyTheSubject={onlyTheSubject}
+        onChange={(value) => onPatch({ only_the_subject: value })}
+      />
+
+      <FieldRow
+        icon={Building2}
+        label="Company"
+        hint="Everyone who has a login."
+        hintTone="red"
+        active={Boolean(recipients[RECIPIENT_MODE.COMPANY])}
+      >
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
@@ -51,7 +54,8 @@ const RecipientSection = ({
       <FieldRow
         icon={Shield}
         label="By role"
-        hint="Stays right as people join and leave."
+        hint="Anyone who has this role."
+        hintTone="red"
         active={isOn(RECIPIENT_MODE.ROLE)}
       >
         <SearchableDropdown
@@ -67,7 +71,8 @@ const RecipientSection = ({
       <FieldRow
         icon={KeyRound}
         label="By permission"
-        hint="Whoever holds the permission."
+        hint="Anyone who has this permission."
+        hintTone="red"
         active={isOn(RECIPIENT_MODE.PERMISSION)}
       >
         <SearchableDropdown
@@ -80,7 +85,13 @@ const RecipientSection = ({
         />
       </FieldRow>
 
-      <FieldRow icon={UserRound} label="Specific users" active={isOn(RECIPIENT_MODE.USERS)}>
+      <FieldRow
+        icon={UserRound}
+        label="Specific users"
+        hint="Pick people by name."
+        hintTone="red"
+        active={isOn(RECIPIENT_MODE.USERS)}
+      >
         <SearchableDropdown
           options={audience.userOptions}
           selectedValues={valuesFor(RECIPIENT_MODE.USERS)}
@@ -91,40 +102,11 @@ const RecipientSection = ({
         />
       </FieldRow>
 
-      {audience.sources?.map((source) => (
-        <FieldRow
-          key={source.key}
-          icon={source.icon}
-          label={source.label}
-          hint={source.hint}
-          active={isOn(source.key)}
-        >
-          {source.selfOption && (
-            <label className="mb-2 flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-              <input
-                type="checkbox"
-                checked={valuesFor(source.key).includes(source.selfOption.value)}
-                onChange={() => onChange(source.key, toggleValue(valuesFor(source.key), source.selfOption.value))}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              {source.selfOption.label}
-            </label>
-          )}
-          <SearchableDropdown
-            options={source.options}
-            selectedValues={namedValues(valuesFor(source.key), source)}
-            multiple
-            loading={isLoading}
-            placeholder={source.placeholder || `Select ${source.label.toLowerCase()}…`}
-            onChange={(value) => onChange(source.key, withSelf(value, valuesFor(source.key), source))}
-          />
-        </FieldRow>
-      ))}
-
       <FieldRow
         icon={AtSign}
         label="Other"
-        hint="Emails or mobile numbers, comma separated. Each is used only by the channel it suits."
+        hint="Email ids or mobile numbers, separated by a comma."
+        hintTone="red"
         active={isOn(RECIPIENT_MODE.ADDRESSES)}
       >
         <AddressesField
@@ -133,6 +115,7 @@ const RecipientSection = ({
           onChange={(value) => onChange(RECIPIENT_MODE.ADDRESSES, value)}
         />
       </FieldRow>
+
     </RuleSection>
   );
 };
@@ -143,7 +126,8 @@ RecipientSection.propTypes = {
   recipientCount: PropTypes.func.isRequired,
   totalRecipients: PropTypes.number.isRequired,
   isLoading: PropTypes.bool,
-  onChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
+  onPatch: PropTypes.func.isRequired
 };
 
 export { RecipientSection };

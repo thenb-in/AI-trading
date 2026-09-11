@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 
-// One numbered step: a header and a divided list of rows.
+
 const RuleSection = ({ step, title, hint, count, children }) => (
-  <section className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-    <header className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-4 py-3">
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+  <section className="py-6 first:pt-0 last:pb-0">
+    <header className="flex items-center gap-3 px-1 pb-3">
+      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-semibold text-white">
         {step}
       </span>
       <div className="min-w-0 flex-1">

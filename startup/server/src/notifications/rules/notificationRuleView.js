@@ -64,7 +64,7 @@ async function deleteRule(req, res) {
 async function sendRuleNow(req, res) {
   try {
     const { id } = req.params;
-    const summary = await notificationRuleController.sendNow(id, req.user?.company_id);
+    const summary = await notificationRuleController.sendNow(id, req.user?.company_id, req.user?.id);
     if (!summary) {
       return sendError(res, {
         statusCode: HTTP_STATUS_NOT_FOUND,

@@ -20,7 +20,7 @@ function ruleProblem(rule = {}) {
     return 'This rule has no name — pick the action it should fire on.';
   }
 
-  if (!hasAudience(rule.recipients)) {
+  if (!rule.only_the_subject && !hasAudience(rule.recipients)) {
     return `${rule.name} has nobody to notify — pick a role, a permission, a user or an address.`;
   }
 

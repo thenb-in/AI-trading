@@ -32,6 +32,13 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: {}
     },
+    // Who a message is for
+    onlyTheSubject: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      field: 'only_the_subject'
+    },
     createdBy: {
       type: DataTypes.UUID,
       allowNull: true,

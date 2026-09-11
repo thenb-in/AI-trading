@@ -1,4 +1,4 @@
-import { dateFiltersYesterday, commonFilters, userBasedFilters, TODAY } from './filterConfig';
+import { dateFiltersYesterday, dateFiltersToday, commonFilters, userBasedFilters, TODAY } from './filterConfig';
 
 const standardReportFilters = [...dateFiltersYesterday, ...commonFilters];
 const userBasedReportFilters = [...dateFiltersYesterday, ...userBasedFilters];
@@ -363,6 +363,29 @@ const KraAnalysisReportFilters = [performanceCycleFilter];
 
 const CycleProgressReportFilters = [performanceCycleFilter];
 
+const NotificationLogReportFilters = [
+  ...dateFiltersToday,
+  ...userBasedFilters.filter((filter) => filter.name === 'user_id'),
+  {
+    name: 'status', label: 'Status', type: 'select', default: 'all', is_standard: true, order: 4,
+    options: [
+      { value: 'all', label: 'All' },
+      { value: 'sent', label: 'Sent' },
+      { value: 'failed', label: 'Failed' },
+      { value: 'skipped', label: 'Skipped' }
+    ]
+  },
+  {
+    name: 'channel', label: 'Channel', type: 'select', default: 'all', is_standard: true, order: 5,
+    options: [
+      { value: 'all', label: 'All' },
+      { value: 'in_app', label: 'In-App' },
+      { value: 'email', label: 'Mail' },
+      { value: 'whatsapp', label: 'WhatsApp' }
+    ]
+  }
+];
+
 export {
   PayrollReadinessReportFilters,
   EmploymentAgeComplianceReportFilters,
@@ -404,4 +427,5 @@ export {
   BandDistributionReportFilters,
   KraAnalysisReportFilters,
   CycleProgressReportFilters,
+  NotificationLogReportFilters,
 };

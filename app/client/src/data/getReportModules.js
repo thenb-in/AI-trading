@@ -29,6 +29,7 @@ import {
     RadioTower,
     Soup,
     Camera,
+    BellRing,
   } from 'lucide-react';
 import { getDefaultReportDateRange, getPrevMonthStartYesterdayRange, getLocalDateStringYmd } from '@utils/dateTimeUtils';
 
@@ -67,6 +68,7 @@ import { EmploymentAgeComplianceReport } from '@app/components/report/reports/re
 import { RosterCoverageReport } from '@app/components/report/reports/readiness/RosterCoverageReport';
 import { PendingApprovalsReport } from '@app/components/report/reports/readiness/PendingApprovalsReport';
 import { TerminalHealthReport } from '@app/components/report/reports/readiness/TerminalHealthReport';
+import { NotificationLogReport } from '../components/report/reports/notification_log/NotificationLogReport';
 import { AdvanceRecoveryReport } from '@app/components/report/reports/readiness/AdvanceRecoveryReport';
 import { AreaHeadcountReport } from '@app/components/report/reports/readiness/AreaHeadcountReport';
 import { CampusPresenceReport } from '@app/components/report/reports/readiness/CampusPresenceReport';
@@ -620,6 +622,17 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       color: 'orange',
       icon: Hourglass,
       component: PendingApprovalsReport,
+    },
+    {
+      id: 'notification-log-report',
+      title: 'Notification Log Report',
+      slug: 'notification-log-report',
+      permissionName: 'read_notification-log-report',
+      desc: 'Every message a notification rule sent, over which channel it went, who it was for and whether it arrived',
+      category: 'administration',
+      color: 'blue',
+      icon: BellRing,
+      component: NotificationLogReport,
     },
     {
       id: 'terminal-health-report',

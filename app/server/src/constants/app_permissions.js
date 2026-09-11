@@ -308,6 +308,7 @@ const APP_REPORT_PERMISSION_CONSTANTS = {
   ROSTER_COVERAGE_REPORT: create_report_permission('roster-coverage-report'),
   PENDING_APPROVALS_REPORT: create_report_permission('pending-approvals-report'),
   TERMINAL_HEALTH_REPORT: create_report_permission('terminal-health-report'),
+  NOTIFICATION_LOG_REPORT: create_report_permission('notification-log-report'),
   ADVANCE_RECOVERY_REPORT: create_report_permission('advance-recovery-report'),
   // Headcount per site. Its own permission because an area's staffing is an
   // operational fact a site manager needs and a payroll clerk does not, and the

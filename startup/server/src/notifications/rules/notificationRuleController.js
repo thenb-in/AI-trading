@@ -1,6 +1,7 @@
 const notificationRuleService = require('../../services/notificationRuleService');
 const userService = require('../../services/userService');
-const { deliverRule } = require('./delivery/deliverRule');
+const { notifyByRule } = require('./delivery/notifyByRule');
+const { fromUser } = require('./delivery/recipients');
 const {
   formatNotificationRule,
   formatNotificationRules
@@ -37,12 +38,14 @@ const notificationRuleController = {
     return notificationRuleService.remove(id, companyId);
   },
 
-  async sendNow(id, companyId) {
+
+  async sendNow(id, companyId, userId) {
     const rule = await notificationRuleService.getById(id, companyId);
     if (!rule) {
       return null;
     }
-    return deliverRule(rule);
+    const tester = userId ? await userService.getUserById(userId) : null;
+    return notifyByRule(rule, { recipients: tester ? [fromUser(tester)] : [] });
   }
 };
 

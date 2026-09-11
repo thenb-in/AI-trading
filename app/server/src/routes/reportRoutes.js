@@ -13,6 +13,7 @@ const { getDeactivationUserReport } = require('../views/reports/deactivationUser
 const { getEmployeeLifecycleReport } = require('../views/reports/employeeLifecycleReport');
 const { getShiftSummaryReport } = require('../views/reports/shiftSummaryReport');
 const { getSalaryRegisterReport } = require('../views/reports/salaryRegisterReport');
+const { getNotificationLogReport } = require('../views/reports/notificationLogReport');
 const { getSalaryChangeReport } = require('../views/reports/salaryChangeReport');
 const { getPFReport } = require('../views/reports/pfReport');
 const { getESICReport } = require('../views/reports/esicReport');
@@ -87,6 +88,7 @@ router.get('/payroll-readiness-report', requirePermission(REPORT_PERMISSION_CONS
 router.get('/roster-coverage-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.ROSTER_COVERAGE_REPORT.name),   readinessReports.getRosterCoverageReport);
 router.get('/pending-approvals-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PENDING_APPROVALS_REPORT.name), readinessReports.getPendingApprovalsReport);
 router.get('/terminal-health-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.TERMINAL_HEALTH_REPORT.name),   readinessReports.getTerminalHealthReport);
+router.get('/notification-log-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.NOTIFICATION_LOG_REPORT.name),  getNotificationLogReport);
 router.get('/advance-recovery-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.ADVANCE_RECOVERY_REPORT.name),  readinessReports.getAdvanceRecoveryReport);
 // Where the workforce sits, and whether anything at each site collects its attendance. Its
 // own permission: an area's staffing is an operational fact a site manager needs and a

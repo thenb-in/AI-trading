@@ -1,6 +1,5 @@
 const { formatDateToString, formatTime } = require('../../../utils/dateUtils');
 const { VARIABLE_PATTERN } = require('../../../constants/notificationRules');
-const { ACTION_TO_MESSAGE_LABEL } = require('../../../constants/activity');
 
 
 function readPath(source, path) {
@@ -11,15 +10,12 @@ function readPath(source, path) {
 }
 
 
-function buildContext({ rule, action, record, company, report } = {}) {
+function buildContext({ record, company } = {}) {
   const now = new Date();
 
   return {
-    action: action ? (ACTION_TO_MESSAGE_LABEL[action] || action.toLowerCase()) : '',
-    master: rule?.sourceKey || '',
     record: record || {},
     company: { name: company?.name || '' },
-    report: report || {},
     date: formatDateToString(now),
     time: formatTime(now)
   };
@@ -71,4 +67,4 @@ function renderNamedValues(template, context) {
   }, {});
 }
 
-module.exports = { buildContext, renderTemplate, renderRule, renderNamedValues, readPath };
+module.exports = { buildContext, renderRule, renderNamedValues };

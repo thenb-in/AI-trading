@@ -1,7 +1,6 @@
 const userService = require('../../../services/userService');
 const { normalizeEmail, normalizePhone } = require('../../../utils/normalizeUtils');
 const { RECIPIENT_MODE } = require('../../../constants/notificationRules');
-const { getRecipientSource } = require('./recipientSourceRegistry');
 
 
 // The email column is the address; the username is read only while it is still unset.
@@ -26,7 +25,37 @@ function fromAddress(address) {
 }
 
 
+/**
+ * The one person a record is about, named by the login they sign in with.
+ */
+function findSubject(allUsers, record) {
+  const username = String(record?.subject || '').trim();
+  if (!username) {
+    return null;
+  }
+
+  const user = allUsers.find((candidate) => String(candidate.username || '').trim() === username);
+  return user ? fromUser(user) : null;
+}
+
+/**
+ * The same person, whichever way the two were addressed.
+ */
+function isSamePerson(recipient, subject) {
+  if (subject.key && recipient.key === subject.key) {
+    return true;
+  }
+  if (subject.userId && recipient.userId && String(recipient.userId) === String(subject.userId)) {
+    return true;
+  }
+  if (subject.email && recipient.email === subject.email) {
+    return true;
+  }
+  return Boolean(subject.phone) && recipient.phone === subject.phone;
+}
+
 async function resolveRecipients(rule, { record } = {}) {
+
   const recipients = rule.recipients || {};
   const byKey = new Map();
   const add = (recipient) => {
@@ -69,20 +98,18 @@ async function resolveRecipients(rule, { record } = {}) {
 
   (recipients[RECIPIENT_MODE.ADDRESSES] || []).forEach((address) => add(fromAddress(address)));
 
-  // Anything left is an audience the app registered
-  const builtIn = new Set(Object.values(RECIPIENT_MODE));
-  const appKeys = Object.keys(recipients).filter((key) => !builtIn.has(key));
-  for (const key of appKeys) {
-    const source = getRecipientSource(key);
-    const value = recipients[key];
-    if (!source || !value || (Array.isArray(value) && value.length === 0)) {
-      continue;
+  const audience = [...byKey.values()];
+  if (rule.onlyTheSubject) {
+    const subject = findSubject(allUsers, record);
+    if (!subject) {
+      return [];
     }
-    const resolved = await source.resolve({ companyId: rule.companyId, value, record });
-    (resolved || []).forEach(add);
+    return audience.length === 0 || audience.some((person) => isSamePerson(person, subject))
+      ? [subject]
+      : [];
   }
 
-  return [...byKey.values()];
+  return audience;
 }
 
-module.exports = { resolveRecipients };
+module.exports = { resolveRecipients, fromUser };

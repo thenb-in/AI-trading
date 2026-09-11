@@ -28,6 +28,21 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: false
     },
+    // How it was sent — in_app, email or whatsapp. Every writer says which.
+    channel: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    // How it went — sent, skipped or failed.
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    // Why it failed or was skipped, or what went where when it went through.
+    log: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
     // Free-form context (actor id/name, related object, etc.).
     meta: {
       type: DataTypes.JSON,
@@ -51,7 +66,9 @@ module.exports = (sequelize, DataTypes) => {
       { fields: ['user_id'] },
       { fields: ['company_id'] },
       { fields: ['is_read'] },
-      { fields: ['created_at'] }
+      { fields: ['created_at'] },
+      { fields: ['channel'] },
+      { fields: ['status'] }
     ]
   });
 

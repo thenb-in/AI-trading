@@ -1,8 +1,10 @@
-const { Notification } = require('../models');
+const { Op } = require('sequelize');
+const { Notification, User } = require('../models');
 const allowedPermissions = require('../utils/allowedPermissions');
 const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const logger = require('../../logger');
 const { NOTIFICATION_LOG_PREFIX } = require('../constants/notifications');
+const { RULE_CHANNEL, DELIVERY_STATUS } = require('../constants/notificationRules');
 
 const notificationService = {
   async create(row) {
@@ -22,8 +24,14 @@ const notificationService = {
       return null;
     }
 
-    return Notification.create(row);
+    return Notification.create({
+      channel: RULE_CHANNEL.IN_APP,
+      status: DELIVERY_STATUS.SENT,
+      ...row
+    });
   },
+
+  record: (row) => Notification.create(row),
 
   async listForUser(userId, companyId, { limit = 20, offset = 0 } = {}) {
     if (!userId || !companyId) {
@@ -31,10 +39,41 @@ const notificationService = {
     }
 
     return Notification.findAll({
-      where: { userId, companyId },
+      where: {
+        userId,
+        companyId,
+        channel: RULE_CHANNEL.IN_APP,
+        status: DELIVERY_STATUS.SENT
+      },
       order: [['created_at', 'DESC']],
       limit: Number(limit),
       offset: Number(offset)
+    });
+  },
+
+  // The delivery log, read back: every attempt in a window, newest first.
+  async listDeliveries(companyId, { startDate, endDate, userId, status, channel } = {}) {
+    if (!companyId) {
+      return [];
+    }
+
+    const where = { companyId, createdAt: { [Op.between]: [startDate, endDate] } };
+    if (userId) {
+      where.userId = userId;
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (channel) {
+      where.channel = channel;
+    }
+
+    return Notification.findAll({
+      where,
+      include: [{ model: User, as: 'user', attributes: ['id', 'name', 'username'], required: false }],
+      order: [['created_at', 'DESC']],
+      raw: true,
+      nest: true
     });
   },
 
@@ -49,7 +88,7 @@ const notificationService = {
   async markAllRead(userId, companyId) {
     const [count] = await Notification.update(
       { isRead: true, readAt: new Date() },
-      { where: { userId, companyId, isRead: false } }
+      { where: { userId, companyId, isRead: false, channel: RULE_CHANNEL.IN_APP } }
     );
     return count;
   }

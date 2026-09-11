@@ -24,7 +24,8 @@ const RULE_WIRE_TO_MODEL = {
   name: 'name',
   is_active: 'isActive',
   recipients: 'recipients',
-  channels: 'channels'
+  channels: 'channels',
+  only_the_subject: 'onlyTheSubject'
 };
 
 // {{variables}} in a message body.
@@ -33,6 +34,7 @@ const VARIABLE_PATTERN = /\{\{\s*([\w.]+)\s*\}\}/g;
 
 const NO_RECIPIENTS_LABEL = 'Nobody yet';
 
+const SUBJECT_RECIPIENT_LABEL = 'whoever each message is about';
 const COMPANY_RECIPIENT_LABEL = 'everyone in the company';
 
 const DELIVERY_STATUS = {
@@ -48,6 +50,7 @@ module.exports = {
   RULE_WIRE_TO_MODEL,
   VARIABLE_PATTERN,
   NO_RECIPIENTS_LABEL,
+  SUBJECT_RECIPIENT_LABEL,
   COMPANY_RECIPIENT_LABEL,
   DELIVERY_STATUS
 };

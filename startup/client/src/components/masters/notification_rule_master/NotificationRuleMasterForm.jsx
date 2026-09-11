@@ -33,24 +33,27 @@ const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) =
         </button>
       </div>
 
-      <RuleNameSection
-        rule={form.rule}
-        permissions={form.permissions}
-        selectedPermission={form.selectedPermission}
-        isLoading={form.isLoadingOptions}
-        onChange={form.patchRule}
-      />
+      <div className="divide-y-2 divide-gray-200">
+        <RuleNameSection
+          rule={form.rule}
+          permissions={form.permissions}
+          selectedPermission={form.selectedPermission}
+          isLoading={form.isLoadingOptions}
+          onChange={form.patchRule}
+        />
 
-      <RecipientSection
-        rule={form.rule}
-        audience={form.audience}
-        recipientCount={form.recipientCount}
-        totalRecipients={form.totalRecipients}
-        isLoading={form.isLoadingOptions}
-        onChange={form.setRecipient}
-      />
+        <RecipientSection
+          rule={form.rule}
+          audience={form.audience}
+          onPatch={form.patchRule}
+          recipientCount={form.recipientCount}
+          totalRecipients={form.totalRecipients}
+          isLoading={form.isLoadingOptions}
+          onChange={form.setRecipient}
+        />
 
-      <ChannelSection rule={form.rule} onChange={form.setChannel} />
+        <ChannelSection rule={form.rule} onChange={form.setChannel} />
+      </div>
 
       <FormFooter
         onClose={onClose}
@@ -60,7 +63,7 @@ const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) =
         updateLabel="Update Rule"
         creatingLabel="Saving..."
         iconVariant="checkmark"
-      />
+        />
     </form>
   );
 };

@@ -1,5 +1,6 @@
 const {
   RULE_CHANNEL_LABEL,
+  SUBJECT_RECIPIENT_LABEL,
   RECIPIENT_MODE,
   NO_RECIPIENTS_LABEL,
   COMPANY_RECIPIENT_LABEL
@@ -7,38 +8,25 @@ const {
 const permissionService = require('../../services/permissionService');
 const { formatResponse } = require('../../data_formatters/formatResponse');
 const notificationRuleColumns = require('../../constants/columns/notificationRuleColumns');
-const { getRecipientSource } = require('./delivery/recipientSourceRegistry');
 
 const plural = (items, one, many) => `${items.length} ${items.length > 1 ? many : one}`;
 
-function recipientsLabel(recipients = {}, roleNames = {}) {
+function recipientsLabel(recipients = {}, roleNames = {}, onlyTheSubject = false) {
+  if (onlyTheSubject) {
+    return SUBJECT_RECIPIENT_LABEL;
+  }
+
   const listFor = (mode) => recipients[mode] || [];
   const permissions = listFor(RECIPIENT_MODE.PERMISSION);
   const users = listFor(RECIPIENT_MODE.USERS);
   const addresses = listFor(RECIPIENT_MODE.ADDRESSES);
-
-  // An app's own audiences read the same way: "2 employees", from the label it
-  // registered, so the grid never has to know what an app keeps.
-  const builtIn = new Set(Object.values(RECIPIENT_MODE));
-  const appParts = Object.entries(recipients)
-    .filter(([mode, value]) => !builtIn.has(mode) && Array.isArray(value) && value.length > 0)
-    .flatMap(([mode, value]) => {
-      const source = getRecipientSource(mode);
-      const label = source?.label || mode;
-      const named = value.filter((entry) => !source?.valueLabels?.[entry]);
-      return [
-        ...value.filter((entry) => source?.valueLabels?.[entry]).map((entry) => source.valueLabels[entry]),
-        named.length > 0 && plural(named, label, `${label}s`)
-      ].filter(Boolean);
-    });
 
   const parts = [
     recipients[RECIPIENT_MODE.COMPANY] && COMPANY_RECIPIENT_LABEL,
     ...listFor(RECIPIENT_MODE.ROLE).map((id) => roleNames[String(id)] || `role ${id}`),
     permissions.length && `anyone who can ${permissions.join(' or ').replace(/_/g, ' ')}`,
     users.length && plural(users, 'user', 'users'),
-    addresses.length && plural(addresses, 'address', 'addresses'),
-    ...appParts
+    addresses.length && plural(addresses, 'address', 'addresses')
   ].filter(Boolean);
 
   return parts.length ? parts.join(', ') : NO_RECIPIENTS_LABEL;
@@ -52,7 +40,7 @@ function formatNotificationRule(row, { roleNames = {}, permissionLabels = new Ma
     id: rule.id,
     name: permissionLabels.get(rule.name) || rule.name,
     is_active: rule.isActive,
-    recipientsLabel: recipientsLabel(rule.recipients, roleNames),
+    recipientsLabel: recipientsLabel(rule.recipients, roleNames, rule.onlyTheSubject),
     channelsLabel: Object.entries(channels)
       .filter(([, config]) => config?.enabled)
       .map(([channel]) => RULE_CHANNEL_LABEL[channel] || channel)
@@ -62,6 +50,7 @@ function formatNotificationRule(row, { roleNames = {}, permissionLabels = new Ma
 
     // What the form edits — rule_name is the raw permission its dropdown stores.
     rule_name: rule.name,
+    only_the_subject: Boolean(rule.onlyTheSubject),
     recipients: rule.recipients || {},
     channels
   };

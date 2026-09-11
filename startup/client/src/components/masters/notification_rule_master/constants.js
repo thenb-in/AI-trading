@@ -56,6 +56,7 @@ const CHANNEL_LOOK = {
 const EMPTY_RULE = {
   name: '',
   is_active: true,
+  only_the_subject: false,
   recipients: {
     [RECIPIENT_MODE.COMPANY]: false,
     [RECIPIENT_MODE.ROLE]: [],
