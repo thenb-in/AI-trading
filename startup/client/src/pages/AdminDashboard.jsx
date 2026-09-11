@@ -4,27 +4,22 @@ import { UserManagement } from "../components/admin/user_management/UserManageme
 import { CompanySettings } from "../components/admin/company_setting/CompanySettings";
 import { RolePermissionsManagement } from "../components/admin/role_permissions";
 import { MultiCompanyModule } from "../components/admin/multi_company_module/MultiCompanyModule";
+// Import extra App routes
+import { appRoutes } from "./AppDashboard";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
+import { DashboardContent } from "@app/pages/Dashboards";
 import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
 import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
 import { AppGuide } from "./AppGuide";
+import { appRoutesWithoutSidebar } from "./AppDashboardWithoutSidebar";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
 import { NotificationsPage } from "../notifications/NotificationsPage";
-// App-provided routes and dashboard content, plugged in via the registry.
-import {
-  getAppRoutes,
-  getAppRoutesWithoutSidebar,
-  getDashboardContent,
-} from "../data/appRouteRegistry";
 
 const AdminDashboard = () => {
-  const appRoutes = getAppRoutes();
-  const appRoutesWithoutSidebar = getAppRoutesWithoutSidebar();
-  const DashboardContent = getDashboardContent();
   return (
     <Routes>
       <Route element={<AdminLayout />}>
@@ -32,8 +27,8 @@ const AdminDashboard = () => {
         {/* TODO: Show first route based on user permission */}
         <Route index element={<Navigator />} />
         <Route path="navigator" element={<Navigator />} />
-        <Route path="dashboards" element={DashboardContent ? <DashboardContent /> : null} />
-        <Route path="dashboard/*" element={DashboardContent ? <DashboardContent /> : null} />
+        <Route path="dashboards" element={<DashboardContent />} />
+        <Route path="dashboard/*" element={<DashboardContent />} />
         <Route path="reports" element={<ReportContent />} />
         <Route path="report/*" element={<ReportContent />} />
 

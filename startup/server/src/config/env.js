@@ -120,6 +120,12 @@ module.exports = {
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
   REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
   REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
+  // How many saved report runs the runner computes at once. Saved runs finish in
+  // the background so they queue; the synchronous path is not bounded by this.
+  REPORT_RUNNER_CONCURRENCY: parseInt(process.env.REPORT_RUNNER_CONCURRENCY, PARSE_INT_RADIX) || 2,
+  // Connection string for Postgres dblink to the source HRMS DB, read by the
+  // sync_transaction scheduler.
+  DBLINK_CONNECTION: process.env.DBLINK_CONNECTION,
 
   // License configuration
   // License enforcement follows SECURE_COOKIE: a non-secure-cookie install is
