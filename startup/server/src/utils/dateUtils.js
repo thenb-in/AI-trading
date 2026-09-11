@@ -515,21 +515,15 @@ const formatLastActive = (date) => {
   if (!date) {
     return 'N/A';
   }
-
-  const dateObj = new Date(date);
-  const options = {
+  return normalizeToDate(date).toLocaleString('en-IN', {
+    timeZone: TIME_ZONE,
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
-    timeZone: 'UTC'
-  };
-
-  const formattedDate = dateObj.toLocaleString('en-US', options);
-  const hours = dateObj.getUTCHours() % 12 || 12;
-  const minutes = String(dateObj.getUTCMinutes()).padStart(2, '0');
-  const ampm = dateObj.getUTCHours() >= 12 ? 'PM' : 'AM';
-
-  return `${formattedDate} at ${hours}:${minutes} ${ampm}`;
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
 };
 
 /**

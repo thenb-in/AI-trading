@@ -1,7 +1,7 @@
 name: Build Biometric Gateways
 
 # Standalone biometric gateway runnables (adms_server / biomax_server /
-# lan_zk). Each is bytecode-compiled (bytenode, like startup/app)
+# vyom_server / lan_zk / lan_cosec_centra). Each is bytecode-compiled (bytenode, like startup/app)
 # together with the shared device layers it needs (@nucleus, the
 # biometric-interface common/ + shared/ bootstrap) and staged in the SAME
 # source-relative directory layout so the runtime aliases + relative requires
@@ -24,9 +24,9 @@ on:
   workflow_dispatch:
     inputs:
       interfaces:
-        description: 'Comma-separated gateways to build (adms_server,biomax_server,lan_zk)'
+        description: 'Comma-separated gateways to build (adms_server,biomax_server,vyom_server,lan_zk,lan_cosec_centra). Each is standalone — build only what a client bought.'
         required: true
-        default: 'adms_server,biomax_server'
+        default: 'adms_server,biomax_server,vyom_server'
       platforms:
         description: 'Comma-separated platforms (linux_x64,windows_x64)'
         required: true

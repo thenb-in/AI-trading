@@ -17,7 +17,7 @@ gateway artifact into the same install root as `app/server` + `startup/server`.
   app/server/                   (from the app/site bundle — provides @appServer, @biometric)
   biometric_gateway/
     common/  shared/  package.json   (from gateway artifact)
-    adms_server/  biomax_server/  lan_zk/   (only those built)
+    adms_server/  biomax_server/  vyom_server/  lan_zk/   (only those built)
 ```
 
 Run `npm install --omit=dev` once in `biometric_gateway/` (and each interface
@@ -31,7 +31,7 @@ come from the shared `startup`/`app` `node_modules`.
 | placeholder      | value                                            |
 |------------------|--------------------------------------------------|
 | `nbnext_app_name`| app/repo name (matches the app's unit)           |
-| `gateway_name`   | `adms_server` \| `biomax_server` \| `lan_zk` |
+| `gateway_name`   | `adms_server` \| `biomax_server` \| `vyom_server` \| `lan_zk` |
 | `server_path`    | absolute install root                            |
 | `nvm_path`       | Node install prefix (dir containing `bin/node`)  |
 | `npm_path`       | absolute path to `npm`                            |
@@ -49,7 +49,8 @@ systemctl daemon-reload && systemctl enable --now etime-adms_server
 ```
 
 Each gateway listens on its own port (`ADMS_SERVER_PORT=4002`,
-`BIOMAX_SERVER_PORT=4003`, `ZKTECO_TCP_SERVER_PORT=4004`) from its `.env`.
+`BIOMAX_SERVER_PORT=4003`, `ZKTECO_TCP_SERVER_PORT=4004`,
+`VYOM_SERVER_PORT=4006`) from its `.env`. (4005 is wagemaster.)
 
 ## Windows (nssm)
 

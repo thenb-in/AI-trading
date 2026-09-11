@@ -76,6 +76,27 @@ jobs:
         env:
           CI: true
 
+  shell-scripts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Deploy scripts are the on-site Linux install path (0setup → 1build → 2link
+      # + update.sh). A broken one only surfaces on a customer's bare server, so
+      # gate them here: bash -n catches syntax breakage, shellcheck catches real
+      # bugs (severity=error keeps style noise out of the gate).
+      - name: Syntax-check deploy shell scripts
+        run: |
+          for f in deploy/*.sh; do
+            echo "bash -n $f"
+            bash -n "$f"
+          done
+
+      - name: ShellCheck deploy shell scripts
+        run: shellcheck --severity=error deploy/*.sh
+
   duplications:
     needs: setup
     runs-on: ubuntu-latest

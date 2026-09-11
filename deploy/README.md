@@ -5,14 +5,14 @@ or Amazon Linux / RHEL. The `app/server` runs under `npm start` (using the
 exact Node version baked into the build — see `VERSION` at the bundle root,
 matching the `.jsc` bytenode artifacts).
 
-> Windows installs are documented separately: [`windows/README.md`](windows/README.md)
-> (NSSM + pinned Node, on the host) and [`windows/docker/README.md`](windows/docker/README.md)
-> (Docker, same bytecode inside a Linux container).
+> Docker installs (Windows, or any OS) run the same bytecode inside a Linux
+> container — documented separately in [`docker/README.md`](docker/README.md).
 
 ## Files (shipped in the bundle)
 
 | File                                  | Purpose                                                      |
 | ------------------------------------- | ------------------------------------------------------------ |
+| `deploy/0setup_ubuntu.sh`             | Provisions a **bare** Ubuntu/Debian box (deploy user, ssh, localsend, netbird, PostgreSQL 16). Run once, before everything else. |
 | `deploy/base.conf`                    | nginx site template (placeholders).                          |
 | `deploy/base.service`                 | systemd unit template (placeholders).                        |
 | `deploy/1build_deploy_files.sh`       | Renders `base.*` → `<app>.conf` + `<app>.service`.           |
@@ -40,6 +40,22 @@ sudo apt update && sudo apt install -y nginx unzip git
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 22.19.0 && nvm use 22.19.0
 ```
+
+## Provision (bare server, once)
+
+On a fresh Ubuntu/Debian machine, run the provisioning script first. It creates
+the deploy user (default `nbnext`), installs openssh, localsend, netbird (remote
+login) and PostgreSQL 16. It is idempotent — safe to re-run — and Debian-family
+only (Windows uses the Docker path in [`docker/`](docker/README.md)).
+
+```bash
+sudo bash deploy/0setup_ubuntu.sh
+# override the user, or skip pieces already present:
+SETUP_USER=nbnext SKIP_LOCALSEND=1 sudo bash deploy/0setup_ubuntu.sh
+```
+
+Afterwards: `netbird up` to join your network, then create the app's Postgres
+role + database and point `app/server/.env` at it. Then continue below.
 
 ## Install (first time)
 

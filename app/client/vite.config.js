@@ -64,24 +64,13 @@ export default ({ mode }) => {
   // if a gateway runs on a different host/port.
   const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:8948';
   const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:8949';
+  const vyomGatewayUrl = process.env.VITE_VYOM_GATEWAY_URL || 'http://localhost:8950';
   // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
-  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy
-  // here; every other /api/* call stays on the app. Override via env if it runs
-  // on a different host/port.
-  let wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:8947';
-  // check if wagemaster url is reachable, if not fallback to local server url
-  const isWagemasterReachable = async () => {
-    try {
-      const response = await fetch(wagemasterUrl);
-      return response.ok;
-    } catch (error) {
-      console.warn(`Wagemaster server not reachable at ${wagemasterUrl}, falling back to local server.`);
-      return false;
-    }
-  };
-  if (!isWagemasterReachable()) {
-    wagemasterUrl = localServerUrl;
-  }
+  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy here;
+  // every other /api/* call stays on the app. Without VITE_WAGEMASTER_URL those
+  // paths stay on the app server too — the app serves them, so a dev machine that
+  // never starts wagemaster still works.
+  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || localServerUrl;
 
 
   // SalaryMitra self-service portal (ios/) — a standalone Vite SPA on its own
@@ -142,6 +131,10 @@ export default ({ mode }) => {
         },
         '/hdata': {
           target: biomaxGatewayUrl, // biomax_server gateway (/hdata + /hdata.aspx)
+          changeOrigin: true,
+        },
+        '/vyom': {
+          target: vyomGatewayUrl, // vyom_server gateway (Matrix COSEC PUSH API)
           changeOrigin: true,
         },
         '/uploads': {

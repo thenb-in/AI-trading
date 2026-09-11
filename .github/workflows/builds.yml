@@ -264,7 +264,7 @@ jobs:
         # boot without them. Reuse the gateway builder — it compiles nucleus +
         # biometric_gateway (common, shared + the named interfaces) to bytecode
         # in the exact source-relative layout the aliases resolve to.
-        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server"
+        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server,lan_cosec_centra"
 
       - name: Resolve version + bundle name
         id: meta
@@ -325,7 +325,7 @@ jobs:
         run: |
           mkdir -p _bundle/deploy _bundle/scripts
           cp deploy/base.conf deploy/base.service _bundle/deploy/
-          cp deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
+          cp deploy/0setup_ubuntu.sh deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
           cp deploy/README.md _bundle/deploy/
           cp deploy/update.sh _bundle/
           # Docker deploy: the Dockerfile at the bundle root + its .dockerignore,
