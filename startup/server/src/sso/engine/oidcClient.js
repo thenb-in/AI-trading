@@ -122,10 +122,8 @@ async function buildEndSessionUrl({ idToken = null, postLogoutRedirectUri = null
   if (state) {
     params.set('state', state);
   }
-  const postLogout = postLogoutRedirectUri
-    || env.OIDC_POST_LOGOUT_REDIRECT_URI
-    || env.FRONTEND_URL
-    || null;
+
+  const postLogout = postLogoutRedirectUri || env.OIDC_POST_LOGOUT_REDIRECT_URI || null;
   if (postLogout) {
     params.set('post_logout_redirect_uri', postLogout.replace(/\/$/, ''));
   }

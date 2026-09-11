@@ -23,6 +23,22 @@ const skipped = (reason) => {
   return { success: true, skipped: true };
 };
 
+/**
+ * Pull the `data` array out of a wallet response. A 200 whose body is not the
+ * shape we expect is an upstream failure, NOT "zero results" — surface it as an
+ * error (502) and log it, so it can never masquerade as a legitimately empty
+ * list. Callers that want to degrade (validation, badges) already catch.
+ */
+function unwrapWalletData(response, context) {
+  const data = response.data?.data;
+  if (!Array.isArray(data)) {
+    const bodyKeys = Object.keys(response.data || {}).join(', ') || 'none';
+    logger.error(`Wallet returned an unexpected shape for ${context} (HTTP ${response.status}, body keys: ${bodyKeys}) — expected data[] array, treating as failure not empty`);
+    throw { status: 502, message: `Wallet returned an unexpected response for ${context}` };
+  }
+  return data;
+}
+
 /** Single place for the shared wallet HTTP call (URL build, logging, timeout, headers). */
 async function walletRequest(method, path, { data, params, log, base } = {}) {
   const url = buildWalletUrl(path, base);
@@ -60,7 +76,7 @@ async function fetchPlansFromWallet(appKey) {
     params: { appKey },
     log: `Fetching plans from wallet appKey:${appKey}`
   });
-  return response.data?.data || [];
+  return unwrapWalletData(response, `plans (appKey ${appKey})`);
 }
 
 /** company's full set of subscriptions on the wallet (adds new, removes dropped). */
@@ -85,7 +101,7 @@ async function fetchAvailableSubscriptionsFromWallet(appKey, companyId) {
     params: { appKey, companyId },
     log: `Fetching available subscriptions from wallet (company ${companyId})`
   });
-  return response.data?.data || [];
+  return unwrapWalletData(response, `available subscriptions (company ${companyId})`);
 }
 
 /** Fetch a company's actual subscriptions (with permissions) — what it HAS, for validation. */
@@ -98,7 +114,7 @@ async function fetchCompanySubscriptionsFromWallet(appKey, companyId) {
     params: { appKey },
     log: `Fetching company subscriptions from wallet (company ${companyId})`
   });
-  return response.data?.data || [];
+  return unwrapWalletData(response, `company subscriptions (company ${companyId})`);
 }
 
 module.exports = {

@@ -12,10 +12,11 @@
 import { toast } from "react-toastify";
 
 import { getReportApi } from "@startup/data/reportApiRegistry";
+import { sanitizeFilterValues, writeFilterValuesToParams } from "@startup/components/base_filter/filter/helpers";
 import { reportRunService } from "@services/reportRunService";
 import { runSavedReportToCompletion, awaitReportRunById } from "@startup/socket";
 import { SAVED_RUN_PARAM, REPORT_RUN_IN_PROGRESS } from "@startup/constants/reportRuns";
-import { processApiData, sanitizeFilters, updateSearchParams } from "./ReportUtils";
+import { processApiData } from "./ReportUtils";
 
 /**
  * Map a fetched report payload onto the grid.
@@ -85,7 +86,7 @@ const loadSavedReportRun = async ({
 
     // Filters first — they describe the run whether or not its rows exist yet.
     if (run?.filters && setSearchParams) {
-      updateSearchParams({ ...run.filters, [SAVED_RUN_PARAM]: runId }, setSearchParams);
+      writeFilterValuesToParams({ ...run.filters, [SAVED_RUN_PARAM]: runId }, setSearchParams);
     }
 
     if (run && REPORT_RUN_IN_PROGRESS.includes(run.status)) {
@@ -189,9 +190,9 @@ const handleFiltersApply = async ({
     setIsFiltering(true);
     setLoading(true);
 
-    const sanitizedFilters = sanitizeFilters(filters);
+    const sanitizedFilters = sanitizeFilterValues(filters);
 
-    updateSearchParams(sanitizedFilters, setSearchParams);
+    writeFilterValuesToParams(filters, setSearchParams);
 
     const { apiData, successMessage } = transport === 'runner'
       ? await runReportViaReportRunner(report, sanitizedFilters)

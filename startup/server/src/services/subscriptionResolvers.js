@@ -69,7 +69,7 @@ const validateSubscriptionsWithWallet = async (companyId, localSubs) => {
 
   const localById = new Map(localSubs.map((sub) => [sub.id, sub]));
 
-  return walletPlans
+  const validated = walletPlans
     .filter((plan) => localById.has(plan.id))
     .map((plan) => {
       const localSub = localById.get(plan.id);
@@ -94,6 +94,15 @@ const validateSubscriptionsWithWallet = async (companyId, localSubs) => {
         permissions
       };
     });
+
+  // A mismatch (wallet has none of the local plans, or a subset) silently
+  // strips a company's subscriptions — the exact "I see nothing" symptom. Make
+  // the drop loud so support can see local-vs-wallet divergence in the logs.
+  if (validated.length !== localSubs.length) {
+    logger.warn(`Wallet validation dropped subscriptions for company ${companyId}: license had ${localSubs.length} plan(s) [${[...localById.keys()].join(', ') || 'none'}], wallet returned ${walletPlans.length} [${walletPlans.map((plan) => plan.id).join(', ') || 'none'}], kept ${validated.length} after intersection`);
+  }
+
+  return validated;
 };
 
 module.exports = {

@@ -8,10 +8,7 @@ export { LoadingBarReport } from './LoadingBarReport';
 export {
   fetchReportData,
   processApiData,
-  getFiltersFromSearchParams,
-  updateSearchParams,
   convertCellToText,
-  filterRelevantData,
 } from './ReportUtils';
 export {
   applyReportPayload,

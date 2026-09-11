@@ -12,6 +12,7 @@ const { notifyCompanyAdminsOfLogin } = require('../../notifications/dispatchers'
 const companyService = require('../companyService');
 const userService = require('../userService');
 const { isSsoManagedAccount } = require('../../config/ssoUserAccess');
+const env = require('../../config/env');
 
 const normalize = (val) => val?.trim().toLowerCase();
 
@@ -91,6 +92,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken, profi
       default_screen_mode: profile?.default_screen_mode,
       company: activeCompany ? { id: activeCompany.id, name: activeCompany.name, longitude: activeCompany.longitude, latitude: activeCompany.latitude } : null,
       isSupportUser: userData.isSupportUser,
+      enableReportRunner: env.ENABLE_REPORT_RUNNER,
       isSso: Boolean(userData.wallet_user_id),
       ssoManaged: isSsoManagedAccount(userData),
       is_totp_enabled: userData.is_totp_enabled,

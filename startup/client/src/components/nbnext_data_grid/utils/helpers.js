@@ -492,6 +492,23 @@ const calculateIsSummaryTotals = (rows, columns) => {
   return totals;
 };
 
+/**
+ * Grouping wraps every row in an envelope ({ _row, ... }) and appends a
+ * synthetic group-total line ({ _isGroupTotal: true }); an ungrouped grid hands
+ * the rows over as they are. Anything that consumes "the rows the grid is
+ * showing" — exports, toolbar actions, totals — has to undo that first, so it
+ * lives here once instead of in each consumer.
+ */
+
+/** One row, unwrapped from its grouping envelope. Already-plain rows pass through. */
+const unwrapGridRow = (wrapped) => wrapped?._row || wrapped;
+
+/** Unwrapped rows, group-total lines still included (what export payloads carry). */
+const unwrapGridRows = (rows) => (rows || []).map(unwrapGridRow).filter(Boolean);
+
+/** Only the real data rows: unwrapped, group totals dropped. Safe to re-apply. */
+const getGridDataRows = (rows) => unwrapGridRows(rows).filter((row) => !row._isGroupTotal);
+
 export {
   getColumnFormatType,
   getColumnForFormatting,
@@ -507,4 +524,7 @@ export {
   calculateIsSummaryTotals,
   formatCellValueForInsight,
   toValidNumber,
+  unwrapGridRow,
+  unwrapGridRows,
+  getGridDataRows,
 };

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { convertCellToText } from "../../base_report/ReportUtils";
-import { calculateTotals, getColumnForFormatting } from "../utils/helpers";
+import { calculateTotals, getColumnForFormatting, unwrapGridRows } from "../utils/helpers";
 
 const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGroupByField = null, isSectionHeaderRow = null) => {
   const [groupByField, setGroupByField] = useState(initialGroupByField);
@@ -47,7 +47,7 @@ const groupRows = (columnsToUse, sortedRows, groupByField, isSectionHeaderRow = 
       if (currentGroupRows.length === 0) return;
       currentGroupRows.forEach((w) => output.push(w));
 
-      const rawRows = currentGroupRows.map((w) => w._row || w);
+      const rawRows = unwrapGridRows(currentGroupRows);
       const totals = calculateTotals(rawRows, columnsToUse);
       // Nothing numeric to total means the row would carry only the group's
       // label, repeated directly under the rows that already show it. Grouping

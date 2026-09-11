@@ -13,12 +13,15 @@ const TOOLBAR_BTN_VARIANT_CLASS = {
   default: "",
   rose: "hover:bg-rose-50 hover:border-rose-200 hover:text-rose-800",
   emerald: "hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-800",
+  // For actions that undo or reopen something already signed off (unlock, reset).
+  amber: "hover:bg-amber-50 hover:border-amber-200 hover:text-amber-800",
 };
 
 const TOOLBAR_ICON_TONE_CLASS = {
   default: "text-slate-600",
   rose: "text-rose-600",
   emerald: "text-emerald-600",
+  amber: "text-amber-600",
 };
 
 export {

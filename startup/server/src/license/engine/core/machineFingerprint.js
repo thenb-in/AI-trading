@@ -20,11 +20,21 @@
 // virtualized NIC) AND should change machine-id (cloud-init regen). A
 // careless clone that copies both is a deliberate attempt to evade
 // licensing, which we punish with a verification failure.
+//
+// Containerised installs (see deploy/docker/) are the one case where
+// the process genuinely cannot see the host: every container gets a synthetic
+// docker-bridge MAC and a per-image /etc/machine-id, so compute() would bind
+// the license to a container that is thrown away on the next update. There the
+// installer stamps the real host's NICs + machine-id into HOST_MACHINE_FILE and
+// we read our inputs from it instead — same filter, same canonical form, so a
+// token issued against a bare-metal install keeps verifying after the move to
+// Docker.
 
 const { execSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
+const env = require('../../../config/env');
 const { LICENSE_ERRORS } = require('../../../constants/license');
 
 const VIRTUAL_PREFIXES = [
@@ -52,19 +62,68 @@ function isPhysicalMac(mac, ifaceName) {
   return true;
 }
 
-function getPhysicalMacAddresses() {
-  const ifaces = os.networkInterfaces();
-  const macs = new Set();
-  for (const [name, addrs] of Object.entries(ifaces)) {
+/**
+ * Reads HOST_MACHINE_FILE when it is configured. Shape:
+ *
+ *   { "interfaces": [{ "name": "Ethernet", "mac": "aa:bb:cc:dd:ee:ff" }],
+ *     "machineId": "b1f0…" }
+ *
+ * The file lists every interface the host reports — it is deliberately NOT
+ * pre-filtered, so the virtual-NIC rules below stay the single source of truth
+ * and a containerised install produces the exact same fingerprint the same
+ * hardware would produce natively.
+ *
+ * Configured-but-unreadable is fatal: falling back to the container's own
+ * (useless) identity would silently rebind the license.
+ */
+function readHostMachineFile() {
+  const file = env.HOST_MACHINE_FILE;
+  if (!file) {
+    return null;
+  }
+  if (!fs.existsSync(file)) {
+    throw new Error(`HOST_MACHINE_FILE points at ${file}, which does not exist — re-run the installer to stamp this host's identity`);
+  }
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return {
+    interfaces: (parsed.interfaces || []).map(i => ({
+      name: i.name,
+      // Windows reports MACs as AA-BB-CC-DD-EE-FF; canonicalise to the
+      // colon-lowercase form os.networkInterfaces() uses on every platform.
+      mac: String(i.mac || '').replace(/-/g, ':').toLowerCase(),
+      internal: false
+    })),
+    machineId: String(parsed.machineId || '').toLowerCase() || null
+  };
+}
+
+/**
+ * Flattens whichever identity source we're using into one list of
+ * `{ name, mac, internal }`, so the filtering below is written once.
+ */
+function listInterfaces(host) {
+  if (host) {
+    return host.interfaces;
+  }
+  const flat = [];
+  for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
     for (const a of addrs || []) {
-      if (a.internal) {
-        continue;
-      }
-      if (!isPhysicalMac(a.mac, name)) {
-        continue;
-      }
-      macs.add(a.mac.toLowerCase());
+      flat.push({ name, mac: a.mac, internal: a.internal });
     }
+  }
+  return flat;
+}
+
+function getPhysicalMacAddresses(host) {
+  const macs = new Set();
+  for (const { name, mac, internal } of listInterfaces(host)) {
+    if (internal) {
+      continue;
+    }
+    if (!isPhysicalMac(mac, name)) {
+      continue;
+    }
+    macs.add(mac.toLowerCase());
   }
   return [...macs].sort();
 }
@@ -122,11 +181,12 @@ function getMachineId() {
  * design.
  */
 function compute() {
-  const macs = getPhysicalMacAddresses();
+  const host = readHostMachineFile();
+  const macs = getPhysicalMacAddresses(host);
   if (macs.length === 0) {
     throw new Error(LICENSE_ERRORS.FP_NO_MACS);
   }
-  const machineId = getMachineId();
+  const machineId = host ? host.machineId : getMachineId();
   if (!machineId) {
     throw new Error(LICENSE_ERRORS.FP_NO_MACHINE_ID);
   }

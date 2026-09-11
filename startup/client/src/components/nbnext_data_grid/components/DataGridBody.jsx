@@ -9,7 +9,7 @@ import {
   ALERT_ROW_CELL_BACKGROUND,
   ALERT_ROW_ACCENT
 } from "../utils/styles.js";
-import { renderCellContent, getKeyForRow, fallbackColumnWidth, calculateTotals, getColumnForFormatting } from "../utils/helpers.js";
+import { renderCellContent, getKeyForRow, fallbackColumnWidth, calculateTotals, getColumnForFormatting, unwrapGridRows } from "../utils/helpers.js";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
 
 function DataGridBody({
@@ -51,7 +51,7 @@ function DataGridBody({
 
   // Calculate totals if total row is enabled
   const totals = shouldShowTotalRow && allRows.length > 0 
-    ? calculateTotals(allRows.map(w => w._row || w), allColumns)
+    ? calculateTotals(unwrapGridRows(allRows), allColumns)
     : {};
 
   const setOffsetHeight = (el) => {
