@@ -118,7 +118,7 @@ module.exports = {
 
   // Report runner
   REPORT_RUNNER_URL: process.env.REPORT_RUNNER_URL,
-  REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 4001,
+  REPORT_RUNNER_PORT: parseInt(process.env.REPORT_RUNNER_PORT, PARSE_INT_RADIX) || 8945,
   REPORT_RUNNER_HOST: process.env.REPORT_RUNNER_HOST || '0.0.0.0',
   // How many saved report runs the runner computes at once. Saved runs finish in
   // the background so they queue; the synchronous path is not bounded by this.

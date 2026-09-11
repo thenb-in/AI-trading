@@ -62,13 +62,28 @@ export default ({ mode }) => {
   // Device protocol paths proxy to these; operator/admin /api + /uploads stay on
   // the app. ZK TCP-pull has no inbound HTTP, so no proxy entry. Override via env
   // if a gateway runs on a different host/port.
-  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:4002';
-  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:4003';
+  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:8948';
+  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:8949';
   // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
   // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy
   // here; every other /api/* call stays on the app. Override via env if it runs
   // on a different host/port.
-  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:4005';
+  let wagemasterUrl = process.env.VITE_WAGEMASTER_URL || 'http://localhost:8947';
+  // check if wagemaster url is reachable, if not fallback to local server url
+  const isWagemasterReachable = async () => {
+    try {
+      const response = await fetch(wagemasterUrl);
+      return response.ok;
+    } catch (error) {
+      console.warn(`Wagemaster server not reachable at ${wagemasterUrl}, falling back to local server.`);
+      return false;
+    }
+  };
+  if (!isWagemasterReachable()) {
+    wagemasterUrl = localServerUrl;
+  }
+
+
   // SalaryMitra self-service portal (ios/) — a standalone Vite SPA on its own
   // dev server (port 5180), served under the /salarymitra subpath. In prod it
   // ships inside this client bundle and nginx serves it; in dev we proxy the
