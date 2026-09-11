@@ -17,6 +17,7 @@ const SearchFilter = ({
   searchTerm,
   onSearchChange,
   onClear,
+  onEnter,
   totalCards,
   filteredCount,
 }) => {
@@ -25,6 +26,12 @@ const SearchFilter = ({
 
   const handleTextFieldChange = (e) => {
     onSearchChange(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      onEnter();
+    }
   };
 
   return (
@@ -40,6 +47,7 @@ const SearchFilter = ({
           variant="outlined"
           value={searchTerm}
           onChange={handleTextFieldChange}
+          onKeyDown={handleKeyDown}
           sx={{
             width: isMobile ? "100%" : 500,
             "& .MuiOutlinedInput-root": {
@@ -90,6 +98,7 @@ SearchFilter.propTypes = {
   searchTerm: PropTypes.string.isRequired,
   onSearchChange: PropTypes.func.isRequired,
   onClear: PropTypes.func.isRequired,
+  onEnter: PropTypes.func.isRequired,
   totalCards: PropTypes.number.isRequired,
   filteredCount: PropTypes.number.isRequired,
 };

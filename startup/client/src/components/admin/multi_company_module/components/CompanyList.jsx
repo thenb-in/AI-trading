@@ -106,19 +106,17 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
     e.preventDefault();
     const query = (searchText || '').trim().toLowerCase();
     if (!query) return;
-    const exactMatch = (companies || []).find(
-      (c) => (c.name || '').toLowerCase() === query
-    );
-    if (!exactMatch) {
-      toast.warning('No company found with that name');
+    // Debug mode partial-searches, so Enter switches to the first match; otherwise require the full name
+    const target = debug
+      ? (companies || []).find((c) => (c.name || '').toLowerCase().includes(query))
+      : (companies || []).find((c) => (c.name || '').toLowerCase() === query);
+    if (!target) {
+      toast.warning('No company found matching "' + searchText + '"');
       return;
     }
-    const isActive =
-      (activeCompanyId && exactMatch.id === activeCompanyId) ||
-      (activeCompanyName && exactMatch.name === activeCompanyName);
-    if (isActive) return;
-    handleSwitchClick(exactMatch.id);
-  }, [companies, searchText, activeCompanyId, activeCompanyName, handleSwitchClick]);
+    // Always switch on Enter — if already in this company, force a reswitch
+    handleSwitchClick(target.id);
+  }, [companies, searchText, debug, handleSwitchClick]);
 
   const handleAssignClick = (company) => {
     setSelectedCompany(company);

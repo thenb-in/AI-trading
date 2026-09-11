@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import {
   Box,
@@ -15,7 +15,17 @@ const REPORT = "Report";
 const SearchResultItem = ({ item, idx, activeIndex, onMouseEnter, onClick, query }) => {
   const isQueryReport = query.toLowerCase().includes("report");
   const isItemReport = item.type === REPORT;
-  
+  const itemRef = useRef(null);
+  const isActive = idx === activeIndex;
+
+  // Keep the keyboard-selected item scrolled into view. block: "nearest" makes
+  // this a no-op when the item is already visible (e.g. on mouse hover).
+  useEffect(() => {
+    if (isActive && itemRef.current) {
+      itemRef.current.scrollIntoView({ block: "nearest" });
+    }
+  }, [isActive]);
+
   const handleMouseEnter = useCallback(() => {
     onMouseEnter(idx);
   }, [idx, onMouseEnter]);
@@ -35,7 +45,8 @@ const SearchResultItem = ({ item, idx, activeIndex, onMouseEnter, onClick, query
 
   return (
     <ListItemButton
-      selected={idx === activeIndex}
+      ref={itemRef}
+      selected={isActive}
       onMouseEnter={handleMouseEnter}
       onClick={handleClick}
       sx={{

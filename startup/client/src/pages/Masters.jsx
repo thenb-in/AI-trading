@@ -79,8 +79,24 @@ const MasterContent = () => {
     return filtered;
   }, [searchTerm, selectedCategory, masterModules]);
 
+  // Only modules the user can actually see (after permission check) count as results
+  const visibleMasterModules = useMemo(
+    () =>
+      filteredMasterModules.filter(
+        (master) =>
+          master.skipPermissionCheck ||
+          hasPermission(getModulePermissionName(master), dataContext)
+      ),
+    [filteredMasterModules, dataContext]
+  );
+
   const handleSearchChange = (value) => {
     setSearchTerm(value);
+  };
+
+  // Pressing Enter opens the master when the search narrows to a single result
+  const handleSearchEnter = () => {
+    visibleMasterModules[0].onClick();
   };
 
   const handleClearSearch = () => {
@@ -169,6 +185,7 @@ const MasterContent = () => {
             searchTerm={searchTerm}
             onSearchChange={handleSearchChange}
             onClear={handleClearSearch}
+            onEnter={handleSearchEnter}
             totalCards={masterModules.length}
             filteredCount={filteredMasterModules.length}
           />

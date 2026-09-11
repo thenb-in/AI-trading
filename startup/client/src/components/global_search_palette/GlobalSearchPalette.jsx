@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { getMasterModules } from "@data/getMasterModules";
 import { reports, categories as reportCategories } from "@data/getReportModules";
+import { getAppModuleSearchItems } from "@data/getAppModules";
 import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { shortcutLabel } from "@utils/keyboardShortcut";
@@ -103,7 +104,12 @@ function GlobalSearchPalette({
         };
       });
 
-    return [...masters, ...reportItems];
+    const moduleItems = getAppModuleSearchItems(
+      { navigate },
+      { hasPermissionFn: hasPermission, dataContext, userData: dataContext.userData }
+    );
+
+    return [...masters, ...reportItems, ...moduleItems];
   }, [dataContext, navigate]);
 
   const { items: filtered, total: totalFound } = useMemo(() => 
@@ -242,7 +248,7 @@ function GlobalSearchPalette({
           ref={inputRef}
           value={query}
           onChange={setQuery}
-          placeholder="Type to search masters and reports…"
+          placeholder="Type to search masters, reports and modules…"
           className="md:max-w-none"
         />
         {query.trim() && (
