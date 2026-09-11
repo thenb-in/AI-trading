@@ -36,16 +36,16 @@ function HelpSupportButton({ collapsed }) {
       onClick={handleClick}
       title={shortcutTitle("Help & Support", SHORTCUTS.HELP_SUPPORT)}
       aria-label="Help & Support"
-      className={`w-full flex items-center justify-center rounded-lg transition-colors font-medium ${
+      className={`w-full flex items-center rounded-lg transition-colors font-medium ${
         isActive
           ? "bg-blue-600 text-white"
           : "hover:bg-gray-700 text-gray-300"
-      } ${collapsed ? "p-2" : "p-3"}`}
+      } ${collapsed ? "p-2 justify-center" : "py-3 justify-start"}`}
     >
       <Headset className="w-5 h-5 flex-shrink-0" size={20} />
       {!collapsed && (
         <>
-          <span className="ml-2">Help & Support</span>
+          <span className="ml-2">Support</span>
           <ShortcutHint shortcut={SHORTCUTS.HELP_SUPPORT} />
         </>
       )}

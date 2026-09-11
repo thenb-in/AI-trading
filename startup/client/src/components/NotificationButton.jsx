@@ -40,9 +40,9 @@ function NotificationButton({ collapsed }) {
         onClick={toggleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`relative w-full flex items-center justify-center rounded-lg transition-colors font-medium ${
+        className={`relative w-full flex items-center rounded-lg transition-colors font-medium ${
           open ? "bg-gray-700 text-white" : "hover:bg-gray-700 text-gray-300"
-        } ${collapsed ? "p-2" : "p-3"}`}
+        } ${collapsed ? "p-2 justify-center" : "py-3 justify-start"}`}
         title="Notification"
         aria-label="Notification"
       >

@@ -1,21 +1,25 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import PropTypes from 'prop-types';
-import { useDataContext } from "@context/useDataContext";
-import { runAppLogoutHandlers } from "@startup/data/authHandlerRegistry";
+import { ApiService } from "@services/ApiService";
+import { useOnLogout } from "@app/hooks/useOnLogout";
 
 function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const { logout } = useDataContext();
+  const navigate = useNavigate();
+  const onLogout = useOnLogout();
 
   const confirmLogout = async () => {
-    setShowConfirm(false);
     try {
-      runAppLogoutHandlers();
-      await logout();
+      await ApiService.logout();
+      onLogout();
+      navigate("/");
     } catch {
-      // AuthContext.logout handles navigation and SSO end_session redirect
+      // Handle logout error silently
+    } finally {
+      setShowConfirm(false);
     }
   };
 
@@ -23,7 +27,7 @@ function LogoutButton({ collapsed }) {
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className={`w-full flex items-center justify-center rounded-lg hover:bg-red-100 text-red-500 transition-colors font-bold ${collapsed ? 'p-2' : 'p-3'}`}
+        className={`w-full flex items-center rounded-lg hover:bg-red-100 text-red-500 transition-colors font-bold ${collapsed ? 'p-2 justify-center' : 'py-3 justify-start'}`}
       >
         <LogOut className="w-5 h-5 flex-shrink-0" size={20} />
         {!collapsed && <span className="ml-2">Logout</span>}

@@ -13,7 +13,7 @@ function SearchButton({ collapsed }) {
     <>
       <button
         onClick={() => setShowSearchPalette(true)}
-        className={`w-full flex items-center justify-center rounded-lg hover:bg-gray-700 text-gray-300 transition-colors font-medium ${collapsed ? 'p-2' : 'p-3'}`}
+        className={`w-full flex items-center rounded-lg hover:bg-gray-700 text-gray-300 transition-colors font-medium ${collapsed ? 'p-2 justify-center' : 'py-3 justify-start'}`}
         title={shortcutTitle("Global Search", SHORTCUTS.GLOBAL_SEARCH)}
       >
         <Search className="w-5 h-5 flex-shrink-0" size={20} />

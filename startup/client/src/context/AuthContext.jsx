@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ApiService } from "@services/ApiService";
 import { setCacheScope } from "@services/cacheManager";
 import { isAllowedDevice } from "../utils/deviceUtils";
@@ -154,11 +154,21 @@ const DataProvider = ({ children }) => {
                 : ""}
             </b>
           </p>
-          {/* The session is still alive on this blocked device, so give the
-              user the only useful action left - log out and sign in as
-              someone else (or from an allowed device). */}
+          {/* With a live session on this blocked device the only useful action
+              left is logging out and signing in as someone else (or from an
+              allowed device). Without a session there is nothing to log out
+              of, so send the user to the login page instead. */}
           <div className="mt-4">
-            <LogoutButton collapsed={false} />
+            {userData ? (
+              <LogoutButton collapsed={false} />
+            ) : (
+              <Link
+                to="/"
+                className="block w-full p-3 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors font-bold"
+              >
+                Go to login
+              </Link>
+            )}
           </div>
         </div>
       </div>

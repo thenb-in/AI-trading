@@ -158,6 +158,12 @@ const useFilterState = ({
     updateFilter(name, checked);
   }, [isDisabled, updateFilter]);
 
+  const handleNumberChange = useCallback((e) => {
+    if (isDisabled) return;
+    const { name, value } = e.target;
+    updateFilter(name, value);
+  }, [isDisabled, updateFilter]);
+
   // `getRange` is resolved against the latest filters so quick-date presets can step
   // back from the currently selected period instead of always anchoring on today.
   const applyDateRange = useCallback((getRange) => {
@@ -298,6 +304,7 @@ const useFilterState = ({
     handleSearchableChange,
     handleDateChange,
     handleCheckboxChange,
+    handleNumberChange,
     resetFilters,
     applyFilters,
     applyFiltersViaRunner,

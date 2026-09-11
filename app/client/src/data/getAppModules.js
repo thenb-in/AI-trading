@@ -1,13 +1,12 @@
 import {
-  Fingerprint,
   LayoutDashboard,
   ScanFace,
   MapPinCheckInside,
-  Activity as ActivityIcon,
   Gauge,
   ListChecks,
   Trophy,
 } from "lucide-react";
+import { getGenericAppModuleDefinitions } from "@startup/data/getAppModules";
 
 /**
  * etime-specific app modules (sidebar / top nav): searchable alongside
@@ -21,7 +20,7 @@ import {
  * definition itself so the navigator and the signup plan preview both read
  * it straight from here).
  */
-const getAppSpecificModuleDefinitions = () => [
+const getEtimeAppModuleDefinitions = () => [
   {
     id: "biometricPunch",
     title: "Biometric Punch",
@@ -105,32 +104,15 @@ const getAppSpecificModuleDefinitions = () => [
     icon: MapPinCheckInside,
     order: 9,
   },
-  {
-    id: "activitiesLogs",
-    title: "Activities Logs",
-    description: "Review activity and audit logs.",
-    category: "WageMaster",
-    color: "warning",
-    tags: ["Activities", "Logs", "Audit"],
-    keywords: "activities logs audit trail module wagemaster",
-    permissionName: "view_activities_module",
-    navigatePath: "/admin/wagemaster/activities",
-    icon: ActivityIcon,
-    order: 10,
-  },
-  {
-    id: "identifyOfficer",
-    title: "Identify Officer",
-    description: "Identify and verify officer records.",
-    category: "WageMaster",
-    color: "warning",
-    tags: ["Officer", "Identify", "Fingerprint"],
-    keywords: "identify officer fingerprint verification module",
-    permissionName: "view_identify_officer_module",
-    navigatePath: "/admin/identify-officer",
-    icon: Fingerprint,
-    order: 11,
-  },
 ];
 
-export { getAppSpecificModuleDefinitions };
+/**
+ * Full app module list: framework generics + etime-specific modules.
+ * Consumers (sidebar, navigator, search, route titles) read this.
+ */
+const getAppModuleDefinitions = () => [
+  ...getGenericAppModuleDefinitions(),
+  ...getEtimeAppModuleDefinitions(),
+];
+
+export { getAppModuleDefinitions, getEtimeAppModuleDefinitions };

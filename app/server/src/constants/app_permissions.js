@@ -257,6 +257,12 @@ const APP_REPORT_PERMISSION_CONSTANTS = {
   FINAL_WAGE_REPORT_FOR_CONTRACTOR: create_report_permission('final-wage-report-for-contractor'),
   DAILY_SALES_PERSON_REPORT: create_report_permission('daily-sales-person-report'),
   SALES_ACTIVITY_REPORT: create_report_permission('sales-activity-report'),
+  // The movement trail at event grain. Its own permission because it names where
+  // an individual physically was, minute by minute — a narrower audience than the
+  // distance and visit roll-ups built on the same rows.
+  LOCATION_LOG_REPORT: create_report_permission('location-log-report'),
+  HALT_POINTS_REPORT: create_report_permission('halt-points-report'),
+  IDENTIFY_OFFICER_REPORT: create_report_permission('identify-officer-report'),
   VASTRAM_DAILY_PERFORMANCE_REPORT: create_report_permission('vastram-daily-performance-report'),
   CANTEEN_REPORT: create_report_permission('canteen-report'),
   // Performance management. Separate permissions because the appraisal summary carries
@@ -277,6 +283,19 @@ const APP_REPORT_PERMISSION_CONSTANTS = {
   PENDING_APPROVALS_REPORT: create_report_permission('pending-approvals-report'),
   TERMINAL_HEALTH_REPORT: create_report_permission('terminal-health-report'),
   ADVANCE_RECOVERY_REPORT: create_report_permission('advance-recovery-report'),
+  // Headcount per site. Its own permission because an area's staffing is an
+  // operational fact a site manager needs and a payroll clerk does not, and the
+  // HR dashboard's headcount section is gated on this same grant.
+  AREA_HEADCOUNT_REPORT: create_report_permission('area-headcount-report'),
+  // Multi-location HR. Granted separately from each other on purpose: campus presence names
+  // who is on site right this minute, which is a security-desk fact rather than an HR one,
+  // while the site comparison and coverage views are aggregate and the movement report names
+  // individuals against the places they were not meant to be.
+  CAMPUS_PRESENCE_REPORT: create_report_permission('campus-presence-report'),
+  SITE_ATTENDANCE_REPORT: create_report_permission('site-attendance-report'),
+  CROSS_SITE_MOVEMENT_REPORT: create_report_permission('cross-site-movement-report'),
+  SITE_COVERAGE_REPORT: create_report_permission('site-coverage-report'),
+  CANTEEN_BY_SITE_REPORT: create_report_permission('canteen-by-site-report'),
   // Filter presets over existing reports. No server route of their own — the
   // client points them at the base report's slug — but each needs a permission
   // so it can be granted or withheld like any other report.

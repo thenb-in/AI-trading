@@ -39,6 +39,7 @@ const Filter = ({
     handleSearchableChange,
     handleDateChange,
     handleCheckboxChange,
+    handleNumberChange,
     resetFilters,
     applyFilters,
     applyFiltersViaRunner,
@@ -94,6 +95,7 @@ const Filter = ({
     onSearchableChange: handleSearchableChange,
     onDateChange: handleDateChange,
     onCheckboxChange: handleCheckboxChange,
+    onNumberChange: handleNumberChange,
   };
 
 
@@ -187,7 +189,7 @@ Filter.propTypes = {
     PropTypes.shape({
       name: PropTypes.string.isRequired,
       label: PropTypes.string,
-      type: PropTypes.oneOf(['date', 'select', 'checkbox']).isRequired,
+      type: PropTypes.oneOf(['date', 'select', 'checkbox', 'number']).isRequired,
       default: PropTypes.any,
       options: PropTypes.array,
       multiselect: PropTypes.bool,

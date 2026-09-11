@@ -6,6 +6,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { colors, fontSize } from '@startup/constants/theme';
 import { SearchableDropdown } from '../../base_components/fields/SearchableDropdown';
+import { NumberTypeField } from '../../base_components/fields/NumberTypeField';
 
 const buildDatePickerSlotProps = (isDisabled) => ({
   textField: {
@@ -42,6 +43,7 @@ const FilterField = ({
   onSearchableChange,
   onDateChange,
   onCheckboxChange,
+  onNumberChange,
 }) => {
   const datePickerSlotProps = useMemo(
     () => buildDatePickerSlotProps(isDisabled),
@@ -105,6 +107,22 @@ const FilterField = ({
       );
     }
 
+    case 'number':
+      return (
+        <NumberTypeField
+          name={config.name}
+          value={value ?? ''}
+          onChange={onNumberChange}
+          disabled={isDisabled}
+          numberMode={config.numberMode || 'int'}
+          min={config.min}
+          max={config.max}
+          clamp={config.min !== undefined || config.max !== undefined}
+          placeholder={config.placeholder || config.label}
+          className="h-9 text-sm"
+        />
+      );
+
     case 'checkbox':
       return (
         <label
@@ -135,19 +153,23 @@ FilterField.propTypes = {
   config: PropTypes.shape({
     name: PropTypes.string.isRequired,
     label: PropTypes.string,
-    type: PropTypes.oneOf(['date', 'select', 'checkbox']).isRequired,
+    type: PropTypes.oneOf(['date', 'select', 'checkbox', 'number']).isRequired,
     options: PropTypes.array,
     multiselect: PropTypes.bool,
     searchable: PropTypes.bool,
     optionsLoading: PropTypes.bool,
     onOpenOptions: PropTypes.func,
     placeholder: PropTypes.string,
+    numberMode: PropTypes.oneOf(['int', 'float']),
+    min: PropTypes.number,
+    max: PropTypes.number,
   }).isRequired,
   value: PropTypes.any,
   isDisabled: PropTypes.bool,
   onSearchableChange: PropTypes.func,
   onDateChange: PropTypes.func,
   onCheckboxChange: PropTypes.func,
+  onNumberChange: PropTypes.func,
 };
 
 export { FilterField };

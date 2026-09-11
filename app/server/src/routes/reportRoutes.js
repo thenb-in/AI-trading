@@ -29,10 +29,15 @@ const { getCallBuddyReport } = require('../views/reports/callBuddyReport');
 const { getFinalWageReportForContractor } = require('../views/reports/finalWageReportForContractor');
 const { getDailySalesPersonReport } = require('../views/reports/dailySalesPersonReport');
 const { getSalesActivityReport } = require('../views/reports/salesActivityReport');
+const { getLocationLogReport } = require('../views/reports/locationLogReport');
+const { getHaltPointsReport } = require('../views/reports/haltPointsReport');
+const { getIdentifyOfficerReport } = require('../views/reports/identifyOfficerReport');
 const { getVastramDailyPerformanceReport } = require('../views/reports/vastramDailyPerformanceReport');
 const { getCanteenReport } = require('../views/reports/canteenReport');
 // Readiness reports — the data-quality gates the checklist reads from.
 const readinessReports = require('../views/reports/readiness');
+const { getAreaHeadcountReport } = require('../views/reports/areaHeadcountReport');
+const siteReports = require('../views/reports/site');
 // Customer-specific reports. They live outside the product's report set but
 // register onto this router, so they are reached at /reports/<slug> like any
 // other report and the socket runner picks them up the same way.
@@ -79,6 +84,20 @@ router.get('/roster-coverage-report',   requirePermission(REPORT_PERMISSION_CONS
 router.get('/pending-approvals-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PENDING_APPROVALS_REPORT.name), readinessReports.getPendingApprovalsReport);
 router.get('/terminal-health-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.TERMINAL_HEALTH_REPORT.name),   readinessReports.getTerminalHealthReport);
 router.get('/advance-recovery-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.ADVANCE_RECOVERY_REPORT.name),  readinessReports.getAdvanceRecoveryReport);
+// Where the workforce sits, and whether anything at each site collects its attendance. Its
+// own permission: an area's staffing is an operational fact a site manager needs and a
+// payroll clerk does not.
+router.get('/area-headcount-report',    requirePermission(REPORT_PERMISSION_CONSTANTS.AREA_HEADCOUNT_REPORT.name),    getAreaHeadcountReport);
+
+// Multi-location HR. A permission each, because they are not one audience: campus presence
+// names who is on site this minute (a gate desk reads it), the site comparison and coverage
+// views are aggregate, and cross-site movement names individuals against places they were
+// not assigned to.
+router.get('/campus-presence-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CAMPUS_PRESENCE_REPORT.name),     siteReports.getCampusPresenceReport);
+router.get('/site-attendance-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_ATTENDANCE_REPORT.name),     siteReports.getSiteAttendanceReport);
+router.get('/cross-site-movement-report', requirePermission(REPORT_PERMISSION_CONSTANTS.CROSS_SITE_MOVEMENT_REPORT.name), siteReports.getCrossSiteMovementReport);
+router.get('/site-coverage-report',       requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_COVERAGE_REPORT.name),       siteReports.getSiteCoverageReport);
+router.get('/canteen-by-site-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_BY_SITE_REPORT.name),     siteReports.getCanteenBySiteReport);
 // Carries dates of birth for minors, so it is granted separately from the rest.
 router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
 router.get('/call-buddy-report', getCallBuddyReport);
@@ -134,6 +153,22 @@ router.get(
   getSalesActivityReport
 );
 
+router.get(
+  '/location-log-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.LOCATION_LOG_REPORT.name),
+  getLocationLogReport
+);
+router.get(
+  '/halt-points-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.HALT_POINTS_REPORT.name),
+  getHaltPointsReport
+);
+router.get(
+  '/identify-officer-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.IDENTIFY_OFFICER_REPORT.name),
+  getIdentifyOfficerReport
+);
+
 // Field-sales reports (GPS tracking + dealer visits + wage)
 router.get('/field-sales/daily', fieldSalesReports.getDailyReport);
 router.get('/field-sales/monthly', fieldSalesReports.getMonthlyReport);
@@ -145,7 +180,6 @@ router.get('/field-sales/best-worst-employees', fieldSalesReports.getBestWorstRe
 router.get('/field-sales/lead-follow-up', fieldSalesReports.getLeadFollowUpReport);
 router.get('/field-sales/sales-trend', fieldSalesReports.getSalesTrendReport);
 router.get('/field-sales/dealer-satisfaction', fieldSalesReports.getDealerSatisfactionReport);
-router.get('/field-sales/halt-points', fieldSalesReports.getHaltPointsReport);
 
 registerCustomReportRoutes(router);
 
