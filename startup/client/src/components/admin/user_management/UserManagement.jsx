@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserPlus, UserMinus, Search, Users, Menu, Trash2, QrCode } from 'lucide-react';
 import { useUserManagement } from './hooks/useUserManagement';
 import { useDataContext } from '@context/useDataContext';
+import { Loader } from '@/components/common/Loader';
 import { UserTable } from './components/UserTable';
 import { getUserManagementExtraColumns, useApproveExtension } from '@data/userManagementRegistry';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
@@ -123,7 +124,7 @@ function UserManagement() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <Loader message="Loading users..." />;
   }
 
 

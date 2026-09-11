@@ -43,4 +43,12 @@ const numberOrNull = (rawValue) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull };
+/**
+ * `part` as a percentage of `whole`, to two decimals. Null when there is nothing
+ * to divide by: "0% of a roster that does not exist" is not a reading, and a
+ * report that printed it would rank its emptiest sites as its worst ones. A
+ * caller that does want a zero says so with `?? 0`.
+ */
+const percentOf = (part, whole) => (whole > 0 ? Number(((part / whole) * 100).toFixed(2)) : null);
+
+module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf };

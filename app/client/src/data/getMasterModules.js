@@ -3,14 +3,14 @@ import {
   Calculate as CalculateIcon,
   CurrencyRupee as CurrencyRupeeIcon,
   Settings as SettingsIcon,
-  CloudUpload as CloudUploadIcon,
   Memory as MemoryIcon
 } from "@mui/icons-material";
 
 import FingerprintIcon from "@mui/icons-material/Fingerprint";
 import { Assessment as AssessmentIcon, Checklist as ChecklistIcon, Badge as BadgeIcon } from "@mui/icons-material";
-import { Business as BusinessIcon, Work as WorkIcon, BeachAccess as BeachAccessIcon, AccountBalanceWallet as AccountBalanceWalletIcon, MonetizationOn as MonetizationOnIcon, Category as CategoryIcon, EventNote as EventNoteIcon, ListAlt as ListAltIcon, Merge as MergeIcon, Contacts as ContactsIcon, CalendarToday as CalendarTodayIcon, Devices as DevicesIcon, AccountBalance as AccountBalanceIcon, AccountTree as AccountTreeIcon, Terminal as TerminalCommandsIcon, WhatsApp as WhatsAppIcon, Storage as StorageIcon, SupervisorAccount as ManagementIcon, Build as CommonMastersIcon, Storefront as StorefrontIcon, Restaurant as RestaurantIcon, Inventory2 as InventoryIcon } from "@mui/icons-material";
+import { Business as BusinessIcon, Work as WorkIcon, BeachAccess as BeachAccessIcon, AccountBalanceWallet as AccountBalanceWalletIcon, MonetizationOn as MonetizationOnIcon, Category as CategoryIcon, EventNote as EventNoteIcon, ListAlt as ListAltIcon, Merge as MergeIcon, Contacts as ContactsIcon, CalendarToday as CalendarTodayIcon, Devices as DevicesIcon, AccountBalance as AccountBalanceIcon, AccountTree as AccountTreeIcon, Terminal as TerminalCommandsIcon, WhatsApp as WhatsAppIcon, Storage as StorageIcon, SupervisorAccount as ManagementIcon, Build as CommonMastersIcon, Storefront as StorefrontIcon, Restaurant as RestaurantIcon, Inventory2 as InventoryIcon, Archive as ArchiveIcon } from "@mui/icons-material";
 import { Headset } from "lucide-react";
+import { GENERIC_MASTER_CATEGORIES } from "@startup/data/genericMasterModules";
 
 
 /**
@@ -24,8 +24,6 @@ const MASTER_CATEGORIES = {
   PAYROLL_CALCULATIONS: "Payroll & Calculations",
   PERFORMANCE_MANAGEMENT: "Performance Management",
   CALLBUDDY: "CallBuddy",
-  FILE_MANAGEMENT: "File Management",
-  SYSTEM_LOGS: "System Logs",
   DEPRECATED: "Deprecated",
 };
 
@@ -41,9 +39,7 @@ const appSpecificMasterCategoryOrder = [
   { name: MASTER_CATEGORIES.PAYROLL_CALCULATIONS, order: 5, icon: AccountBalanceIcon },
   { name: MASTER_CATEGORIES.PERFORMANCE_MANAGEMENT, order: 6, icon: AssessmentIcon },
   { name: MASTER_CATEGORIES.CALLBUDDY, order: 7, icon: Headset },
-  { name: MASTER_CATEGORIES.FILE_MANAGEMENT, order: 8, icon: CloudUploadIcon },
-  { name: MASTER_CATEGORIES.SYSTEM_LOGS, order: 9 },
-  { name: MASTER_CATEGORIES.DEPRECATED, order: 10 },
+  { name: MASTER_CATEGORIES.DEPRECATED, order: 10, icon: ArchiveIcon },
 ];
 
 const getAppSpecificMasterModules = (handleOpenMaster) => [
@@ -642,7 +638,7 @@ const getAppSpecificMasterModules = (handleOpenMaster) => [
   buttonText: "Open Cache Manager",
   tags: ["Cache","Session","Performance","Filters","Refresh"],
   keywords: "cache session storage memory bust clear refresh stale filters options performance",
-  category: MASTER_CATEGORIES.SYSTEM_LOGS,
+  category: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS,
   // Client-side only: it shows sizes and expiry, never cached values, and the
   // worst a bust can do is make the next page load slower. No server permission
   // exists to check against.

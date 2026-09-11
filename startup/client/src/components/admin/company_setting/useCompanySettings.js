@@ -21,6 +21,7 @@ function useCompanySettings() {
   const [companyDetails, setCompanyDetails] = useState(EMPTY_COMPANY_DETAILS_FORM);
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
   const [companyLogoPreview, setCompanyLogoPreview] = useState(null);
+  const [isFetching, setIsFetching] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -34,7 +35,7 @@ function useCompanySettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        setIsLoading(true);
+        setIsFetching(true);
         const response = await ApiService.getCompanySettings();
 
         const next = {
@@ -50,10 +51,10 @@ function useCompanySettings() {
         setCompanySettings(next);
         originalCompanyRef.current = next;
 
-        setIsLoading(false);
+        setIsFetching(false);
       } catch (err) {
         toast.error(err.error || "Failed to load company settings");
-        setIsLoading(false);
+        setIsFetching(false);
       }
     };
     fetchSettings();
@@ -216,6 +217,7 @@ function useCompanySettings() {
     companyDetails,
     companyLogoFile,
     companyLogoPreview,
+    isFetching,
     isLoading,
     showFeedback,
     isDirty,

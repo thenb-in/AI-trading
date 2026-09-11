@@ -2,6 +2,7 @@ import {
   Settings as SettingsIcon,
   CloudUpload as CloudUploadIcon,
   Category as CategoryIcon,
+  History as HistoryIcon,
 } from "@mui/icons-material";
 
 
@@ -13,7 +14,7 @@ const GENERIC_MASTER_CATEGORIES = {
 
 const genericMasterCategoryOrder = [
   { name: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT, order: 7, icon: CloudUploadIcon },
-  { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 8 },
+  { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 8, icon: HistoryIcon },
 ];
 
 const defaultMasterCategoryIcon = CategoryIcon;

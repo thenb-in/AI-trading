@@ -58,32 +58,32 @@ import { HaltPointsReport } from '../components/report/reports/halt_points/HaltP
 import { IdentifyOfficerReport } from '../components/report/reports/identify_officer/IdentifyOfficerReport';
 import { VastramDailyPerformanceReport } from '../components/report/reports/vastram_daily_performance/VastramDailyPerformanceReport';
 import { CanteenReport } from '../components/report/reports/canteen/CanteenReport';
-import { ReadinessReport } from '../components/report/reports/readiness/ReadinessReport';
+import { PayrollReadinessReport } from '@app/components/report/reports/readiness/PayrollReadinessReport';
+import { EmploymentAgeComplianceReport } from '@app/components/report/reports/readiness/EmploymentAgeComplianceReport';
+import { RosterCoverageReport } from '@app/components/report/reports/readiness/RosterCoverageReport';
+import { PendingApprovalsReport } from '@app/components/report/reports/readiness/PendingApprovalsReport';
+import { TerminalHealthReport } from '@app/components/report/reports/readiness/TerminalHealthReport';
+import { AdvanceRecoveryReport } from '@app/components/report/reports/readiness/AdvanceRecoveryReport';
+import { AreaHeadcountReport } from '@app/components/report/reports/readiness/AreaHeadcountReport';
+import { CampusPresenceReport } from '@app/components/report/reports/readiness/CampusPresenceReport';
+import { SiteAttendanceReport } from '@app/components/report/reports/readiness/SiteAttendanceReport';
+import { CrossSiteMovementReport } from '@app/components/report/reports/readiness/CrossSiteMovementReport';
+import { SiteCoverageReport } from '@app/components/report/reports/readiness/SiteCoverageReport';
+import { CanteenBySiteReport } from '@app/components/report/reports/readiness/CanteenBySiteReport';
 import { UnlockedAttendanceReport } from '../components/report/reports/readiness/UnlockedAttendanceReport';
 import { NegativeLeaveBalanceReport } from '../components/report/reports/readiness/NegativeLeaveBalanceReport';
 // Customer-specific reports. They are declared in custom/ and spread in at the
 // end of the list, so this file never grows an entry per customer.
 import { CUSTOM_REPORTS } from '@custom/client';
 import {
-  PayrollReadinessReportFilters,
-  EmploymentAgeComplianceReportFilters,
-  RosterCoverageReportFilters,
-  PendingApprovalsReportFilters,
-  TerminalHealthReportFilters,
-  AdvanceRecoveryReportFilters,
-  AreaHeadcountReportFilters,
-  CampusPresenceReportFilters,
-  SiteAttendanceReportFilters,
-  CrossSiteMovementReportFilters,
-  SiteCoverageReportFilters,
-  CanteenBySiteReportFilters,
   NegativeLeaveBalanceReportFilters,
-} from './reportFilterConfig';
+} from '../filter/reportFilterConfig';
 const DEFAULT_REPORT_DATE_RANGE = getDefaultReportDateRange();
 const TODAY_REPORT_DATE_RANGE = {
   start_date: getLocalDateStringYmd(),
   end_date: getLocalDateStringYmd(),
 };
+const TODAY_REPORT_DATE = { start_date: getLocalDateStringYmd() };
 const PREV_MONTH_START_YESTERDAY_RANGE = getPrevMonthStartYesterdayRange();
 
 const MONTHLY_ATTENDANCE_DEFAULT_FILTERS = {
@@ -531,10 +531,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'finance',
       color: 'red',
       icon: BadgeCheck,
-      component: ReadinessReport,
-      filtersConfig: PayrollReadinessReportFilters,
-      verdictColumn: 'readiness',
-      defaultSortField: 'missing_count',
+      component: PayrollReadinessReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
@@ -548,10 +545,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'india-compliance',
       color: 'red',
       icon: ShieldAlert,
-      component: ReadinessReport,
-      filtersConfig: EmploymentAgeComplianceReportFilters,
-      verdictColumn: 'compliance',
-      defaultSortField: 'age',
+      component: EmploymentAgeComplianceReport,
     },
     {
       id: 'roster-coverage-report',
@@ -562,11 +556,8 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'attendance',
       color: 'red',
       icon: CalendarCheck,
-      component: ReadinessReport,
-      filtersConfig: RosterCoverageReportFilters,
-      verdictColumn: 'coverage',
-      defaultSortField: 'gap_count',
-      defaultFilters: TODAY_REPORT_DATE_RANGE,
+      component: RosterCoverageReport,
+      defaultFilters: TODAY_REPORT_DATE,
     },
     {
       id: 'pending-approvals-report',
@@ -577,9 +568,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'administration',
       color: 'orange',
       icon: Hourglass,
-      component: ReadinessReport,
-      filtersConfig: PendingApprovalsReportFilters,
-      defaultSortField: 'waiting_days',
+      component: PendingApprovalsReport,
     },
     {
       id: 'terminal-health-report',
@@ -590,11 +579,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'administration',
       color: 'purple',
       icon: Router,
-      component: ReadinessReport,
-      filtersConfig: TerminalHealthReportFilters,
-      verdictColumn: 'health',
-      defaultSortField: 'silent_hours',
-      frozenColumns: ['terminal_name'],
+      component: TerminalHealthReport,
     },
     {
       id: 'advance-recovery-report',
@@ -605,10 +590,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'finance',
       color: 'green',
       icon: IndianRupee,
-      component: ReadinessReport,
-      filtersConfig: AdvanceRecoveryReportFilters,
-      verdictColumn: 'recovery_state',
-      defaultSortField: 'days_past_closure',
+      component: AdvanceRecoveryReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
 
@@ -621,11 +603,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'administration',
       color: 'blue',
       icon: MapPin,
-      component: ReadinessReport,
-      filtersConfig: AreaHeadcountReportFilters,
-      verdictColumn: 'coverage',
-      defaultSortField: 'headcount',
-      frozenColumns: ['area_name'],
+      component: AreaHeadcountReport,
     },
 
     // Multi-location HR. Every other report in the product answers per employee or
@@ -640,11 +618,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'attendance',
       color: 'blue',
       icon: Building2,
-      component: ReadinessReport,
-      filtersConfig: CampusPresenceReportFilters,
-      verdictColumn: 'presence',
-      defaultSortField: 'inside_now',
-      frozenColumns: ['area_name'],
+      component: CampusPresenceReport,
     },
     {
       id: 'site-attendance-report',
@@ -655,11 +629,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'attendance',
       color: 'orange',
       icon: MapPin,
-      component: ReadinessReport,
-      filtersConfig: SiteAttendanceReportFilters,
-      verdictColumn: 'standing',
-      defaultSortField: 'present_rate',
-      frozenColumns: ['area_name'],
+      component: SiteAttendanceReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
@@ -671,11 +641,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'attendance',
       color: 'purple',
       icon: Route,
-      component: ReadinessReport,
-      filtersConfig: CrossSiteMovementReportFilters,
-      verdictColumn: 'movement',
-      defaultSortField: 'off_area_punches',
-      frozenColumns: ['emp_code'],
+      component: CrossSiteMovementReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
     {
@@ -687,11 +653,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'administration',
       color: 'red',
       icon: RadioTower,
-      component: ReadinessReport,
-      filtersConfig: SiteCoverageReportFilters,
-      verdictColumn: 'coverage',
-      defaultSortField: 'turnout_percent',
-      frozenColumns: ['area_name'],
+      component: SiteCoverageReport,
       defaultFilters: TODAY_REPORT_DATE_RANGE,
     },
     {
@@ -703,11 +665,7 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       category: 'administration',
       color: 'green',
       icon: Soup,
-      component: ReadinessReport,
-      filtersConfig: CanteenBySiteReportFilters,
-      verdictColumn: 'uptake',
-      defaultSortField: 'meals',
-      frozenColumns: ['area_name'],
+      component: CanteenBySiteReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
     },
 

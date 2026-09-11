@@ -24,12 +24,19 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "[entrypoint] seeding $ENV_FILE from $BOOT_DIR/.env.example"
   mkdir -p "$CONFIG_DIR"
   # `|` as the sed delimiter — the substituted URLs are full of slashes.
+  # REPORT_RUNNER_URL is blanked, not pointed somewhere: this stack has no
+  # runner container, and .env.example's http://localhost:8945 resolves inside
+  # the app container to nothing, so the socket client retries and logs a warn
+  # every few seconds forever. Empty is the framework's supported "runner
+  # disabled, fallback only" path (src/socket/appserver_runner). An operator
+  # who does run a runner sets the URL in config/.env and restarts.
   sed -e "s|^NODE_ENV=.*|NODE_ENV=production|" \
       -e "s|^PORT=.*|PORT=${PORT:-3000}|" \
       -e "s|^SECURE_COOKIE.*|SECURE_COOKIE = false|" \
       -e "s|^DATABASE_URL=.*|DATABASE_URL=${SEED_DATABASE_URL:-}|" \
       -e "s|^FRONTEND_URL=.*|FRONTEND_URL=${SEED_APP_URL:-}|" \
       -e "s|^SERVER_URL=.*|SERVER_URL=${SEED_APP_URL:-}|" \
+      -e "s|^REPORT_RUNNER_URL=.*|REPORT_RUNNER_URL=|" \
       -e "s|^JWT_SECRET=.*|JWT_SECRET=$(random_secret)|" \
       -e "s|^REFRESH_TOKEN_SECRET=.*|REFRESH_TOKEN_SECRET=$(random_secret)|" \
       "$BOOT_DIR/.env.example" > "$ENV_FILE"

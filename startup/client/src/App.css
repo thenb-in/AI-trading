@@ -158,20 +158,6 @@
   width: var(--battery-width, 0%);
 }
 
-/* Circular loading bar with dynamic properties */
-.circular-loading-bar {
-  width: var(--loading-size, 24px);
-  height: var(--loading-size, 24px);
-  border: var(--loading-thickness, 5px) solid var(--loading-color-opacity, rgba(46, 125, 50, 0.125));
-  border-top: var(--loading-thickness, 5px) solid var(--loading-color, #2e7d32);
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Toast auto-dismiss countdown. The bar drains over the toast's own duration so
    the toast never disappears without warning, and pauses with the dismiss timer
    while the toast is hovered or focused — so it can be read, or clicked, without

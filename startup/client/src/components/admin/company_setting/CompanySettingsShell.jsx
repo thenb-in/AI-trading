@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useDataContext } from "@context/useDataContext";
 import { motion } from "framer-motion";
-import { Building2, Save, Loader2, RotateCcw, Menu } from "lucide-react";
+import { Building2, Save, RotateCcw, Menu } from "lucide-react";
+import { Loader } from "@/components/common/Loader";
 import { useCompanySettingsContext, TAB_COMPONENTS } from "./companySettingsContextCore";
 import { COMPANY_SETTINGS_TABS, ENGINEERING_SETTINGS_TAB } from "./companySettingsConstants";
 import { useTripleClick } from "../../../hooks/useTripleClick";
@@ -25,6 +26,7 @@ function CompanySettingsShell() {
   const tabs = showEngineeringTab ? [...COMPANY_SETTINGS_TABS, ENGINEERING_SETTINGS_TAB] : COMPANY_SETTINGS_TABS;
 
   const {
+    isFetching,
     isLoading,
     isDirty,
     showFeedback,
@@ -38,6 +40,10 @@ function CompanySettingsShell() {
   const handleDiscard = () => {
     if (canSave && !isLoading) handleDiscardAll();
   };
+
+  if (isFetching) {
+    return <Loader message="Loading company settings..." />;
+  }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
@@ -103,7 +109,7 @@ function CompanySettingsShell() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader size="xs" message="" inline />
                     Saving…
                   </>
                 ) : (
@@ -142,8 +148,6 @@ function CompanySettingsShell() {
           </div>
         </div>
 
-        {/* Indeterminate progress line while saving/loading */}
-        <div className={`h-0.5 bg-indigo-500 transition-opacity ${isLoading ? "animate-pulse opacity-100" : "opacity-0"}`} />
       </header>
 
       {/* Scrollable content, centred and width-capped */}

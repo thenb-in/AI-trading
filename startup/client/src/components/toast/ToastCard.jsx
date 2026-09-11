@@ -28,8 +28,6 @@ function ToastCard({
   const barRef = useRef(null);
   const [paused, setPaused] = useState(false);
 
-  // Same CSS-variable pattern the rest of the app uses for animations driven by
-  // runtime values (see .circular-loading-bar in App.css).
   useEffect(() => {
     if (!barRef.current) return;
     barRef.current.style.setProperty("--toast-duration", `${duration}ms`);

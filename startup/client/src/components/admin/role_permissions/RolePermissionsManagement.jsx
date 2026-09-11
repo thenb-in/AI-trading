@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Shield, Loader2, Plus, Globe, Building2 } from 'lucide-react';
+import { Shield, Plus, Globe, Building2 } from 'lucide-react';
+import { Loader } from '@/components/common/Loader';
 import { useRolePermissions } from './hooks/useRolePermissions';
 import { RoleSelector } from './components/RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
@@ -31,14 +32,7 @@ function RolePermissionsManagement() {
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="text-center">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <Loader message="Loading roles and permissions..." />;
   }
 
   return (

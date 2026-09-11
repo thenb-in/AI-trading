@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { Loader } from "../components/common/Loader";
 
 
 function SigningOutOverlay() {
@@ -24,9 +25,8 @@ function SigningOutOverlay() {
 
 function AuthCheckingScreen() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 space-y-4">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
-      <p className="text-gray-600">Checking authentication status...</p>
+    <div className="min-h-screen bg-gray-50">
+      <Loader message="Checking your session..." />
     </div>
   );
 }

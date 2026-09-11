@@ -75,6 +75,17 @@ services:
       HOST_MACHINE_FILE: /srv/config/host_machine.json
     ports:
       - "${APP_PORT}:3000"
+    # What status.bat's "(healthy)" and the README's "wait for it" actually mean.
+    # node, not curl: the image ships no HTTP client, and adding one for this
+    # would be a package to keep patched. start_period covers the long first
+    # boot - the bundle's dependencies install and SYNC_DB creates the schema
+    # before anything answers - and failures during it are not counted.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/api/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 300s
     # Left of the colon is a folder on THIS machine, right of it is the path
     # inside the container — which is Linux whatever the host is. Everything on
     # the host side is under docker_data/, next to this file.

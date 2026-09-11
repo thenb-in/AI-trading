@@ -158,7 +158,7 @@ const Filter = ({
           {nonStandardFilters.length > 0 && (
             <div className="space-y-2">
               <div className={FILTER_GRID_CLASS}>
-                {nonStandardFilters.map((c) => renderCell(c, false))}
+                {nonStandardFilters.map((c) => renderCell(c, true))}
               </div>
             </div>
           )}

@@ -100,15 +100,28 @@ if (-not (Test-Path (Join-Path $PSScriptRoot '..\..\app\server\index.js'))) {
     throw "No application bundle found. This install.bat must sit in <bundle>\deploy\docker\ inside the extracted release bundle (app\, startup\, Dockerfile at its root). Re-extract the release and run install.bat again."
 }
 # bytenode locks the .jsc to the exact Node/V8 it was built with; read that from
-# the bundle's VERSION so the image is built with the SAME Node and boots. Falls
-# back to the Dockerfile default only if VERSION is somehow missing.
+# the bundle's VERSION so the image is built with the SAME Node and boots.
 $versionFile = Join-Path $PSScriptRoot '..\..\VERSION'
 $nodeVersion = $existing['NODE_VERSION']
+$nodeSource = 'from .env'
 if (Test-Path $versionFile) {
     $nv = Select-String -Path $versionFile -Pattern '^node_version=' | Select-Object -First 1
-    if ($nv) { $nodeVersion = ($nv.Line -replace '^node_version=v?', '').Trim() }
+    if ($nv) { $nodeVersion = ($nv.Line -replace '^node_version=v?', '').Trim(); $nodeSource = 'from VERSION' }
 }
-Write-Host "      Bundle found; image $image will be built on Node $nodeVersion (from VERSION)."
+# No VERSION file (e.g. a source checkout rather than a built release bundle) and
+# nothing carried over from a previous .env: ask, defaulting to the host's Node.
+# Writing a blank NODE_VERSION makes the Dockerfile base image `node:-bookworm-slim`
+# and the compose build fails on its `${NODE_VERSION:?...}` guard, so refuse to.
+if ([string]::IsNullOrWhiteSpace($nodeVersion) -and -not $Quiet) {
+    $hostNode = ''
+    try { $hostNode = ((& node -v 2>$null) -replace '^v', '').Trim() } catch {}
+    $nodeVersion = Ask 'Node version to build the image on (no bundle VERSION found - match the bytecode ABI)' $hostNode
+    $nodeSource = 'entered'
+}
+if ([string]::IsNullOrWhiteSpace($nodeVersion)) {
+    throw "NODE_VERSION is unknown - no 'node_version=' in $versionFile and none in .env. Set NODE_VERSION in .env to the bundle's Node version and run install.bat again."
+}
+Write-Host "      Bundle found; image $image will be built on Node $nodeVersion ($nodeSource)."
 
 # -- Answers -----------------------------------------------------------------
 Write-Host '[3/6] Configuration...'
@@ -128,7 +141,7 @@ if ($Quiet) {
 if (-not $ServerHost) { $ServerHost = Ask 'Server IP address or host name staff will browse to' $(if ($existing['SERVER_HOST']) { $existing['SERVER_HOST'] } else { $defaultHost }) }
 if (-not $AppPort)    { $AppPort    = [int](Ask 'HTTP port to publish' $(if ($existing['APP_PORT']) { $existing['APP_PORT'] } else { '80' })) }
 if (-not $TimeZone)   { $TimeZone   = Ask 'Time zone (IANA name - attendance and payroll are stamped in it)' $(if ($existing['TZ']) { $existing['TZ'] } else { 'Asia/Kolkata' }) }
-if (-not $DbPassword) { $DbPassword = if ($existing['DB_PASSWORD']) { $existing['DB_PASSWORD'] } else { New-Password } }
+if (-not $DbPassword) { $DbPassword = if ($existing['DB_PASSWORD']) { $existing['DB_PASSWORD'] } else { '123456' } }
 
 $appUrl = if ($AppPort -eq 80) { "http://$ServerHost" } else { "http://${ServerHost}:$AppPort" }
 
@@ -177,7 +190,12 @@ $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" 
 function Register-Task([string]$Name, [string]$Execute, [string]$Argument, $Trigger, [string]$OnFailure) {
     try {
         $action = New-ScheduledTaskAction -Execute $Execute -Argument $Argument -WorkingDirectory $PSScriptRoot
-        Register-ScheduledTask -TaskName $Name -Action $action -Trigger $Trigger -Principal $principal -Force | Out-Null
+        # -ErrorAction Stop, or the CIM "Access is denied" this raises when the
+        # install is not elevated stays non-terminating, skips the catch, and the
+        # success line below prints anyway - telling the operator the logon task
+        # is registered when it is not, so the stack silently never comes back
+        # after a reboot.
+        Register-ScheduledTask -TaskName $Name -Action $action -Trigger $Trigger -Principal $principal -Force -ErrorAction Stop | Out-Null
         Write-Host "      '$Name' registered for $env:USERDOMAIN\$env:USERNAME."
     } catch {
         Write-Warning "Could not register '$Name' ($($_.Exception.Message)). $OnFailure"

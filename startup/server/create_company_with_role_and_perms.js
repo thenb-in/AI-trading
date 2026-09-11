@@ -8,7 +8,13 @@ const frameworkPermissionSets = require('./src/constants/permissions');
 const { SYSTEM_ROLE_CONSTANTS } = frameworkPermissionSets;
 const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
-const { signup, approveUser } = require('./src/services/authService');
+// signup moved out of authService into the services/auth barrel with the SSO
+// work; approveUser stayed behind. Importing both from authService left signup
+// undefined here, so seeding died with "undefined is not a function" the moment
+// it tried to create the sadmin user - after the company and permissions had
+// already been committed.
+const { signup } = require('./src/services/auth');
+const { approveUser } = require('./src/services/authService');
 
 
 // Non-TTY (CI, piped stdin): readline would hit EOF immediately and close,
@@ -23,6 +29,16 @@ const askQuestion = (query) =>
   isInteractive
     ? new Promise((resolve) => rl.question(query, resolve))
     : Promise.resolve('');
+
+// The auth layer throws plain `{ status, message }` objects for validation
+// failures (see services/auth/passwordPolicy.js), not Errors. Passed to
+// logger.error(msg, meta) those vanish: winston takes the first argument as the
+// message and the meta's own `message` key never surfaces, so a rejected
+// password printed as a bare "Error occurred during setup" with no cause at all.
+// Concatenating the reason into the message is what tells the operator - or the
+// engineer reading a production log - what actually went wrong.
+const reasonOf = (err) =>
+  err?.message || (err && typeof err === 'object' ? JSON.stringify(err) : String(err));
 
 /**
  * Create a company
@@ -178,12 +194,12 @@ async function main({
     logger.info(`Setup completed successfully for ${company.name}!`);
     rl?.close();
   } catch (err) {
-    logger.error('Error occurred during setup', err);
+    logger.error(`Error occurred during setup: ${reasonOf(err)}`, err);
     if (!transactionCommitted) {
       try {
         await transaction.rollback();
       } catch (rollbackErr) {
-        logger.error('Error rolling back transaction', rollbackErr);
+        logger.error(`Error rolling back transaction: ${reasonOf(rollbackErr)}`, rollbackErr);
       }
     }
     rl?.close();
@@ -202,7 +218,7 @@ const runToExit = (options) =>
     // exitCode rather than exit(1): the success path already relies on the
     // process ending by itself once readline is closed and the pool goes idle,
     // and killing it here would cut off the log writes we just queued.
-    logger.error('Setup failed', err);
+    logger.error(`Setup failed: ${reasonOf(err)}`, err);
     process.exitCode = 1;
   });
 

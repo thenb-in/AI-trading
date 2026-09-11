@@ -33,6 +33,9 @@ const BaseReport = ({
   applyDefaultFilters = false,
   frozenColumns = [],
   initialSortFallbackColumns,
+  defaultSortField,
+  defaultSortDirection = 'desc',
+  decorateColumns,
   showTotalRow = false,
   defaultGroupByField = null,
   children,
@@ -52,19 +55,29 @@ const BaseReport = ({
     applyDefaultFilters,
   });
 
-  const initialSortModel = getInitialSortModel(columns, initialSortFallbackColumns);
+  const gridColumns = useMemo(
+    () => (decorateColumns ? decorateColumns(columns ?? []) : columns),
+    [columns, decorateColumns],
+  );
+
+  const initialSortModel = useMemo(
+    () => (defaultSortField && gridColumns?.some((column) => column.field === defaultSortField)
+      ? [{ field: defaultSortField, sort: defaultSortDirection }]
+      : getInitialSortModel(gridColumns, initialSortFallbackColumns)),
+    [gridColumns, defaultSortField, defaultSortDirection, initialSortFallbackColumns],
+  );
 
   const contextValue = useMemo(
     () => ({
       rows,
-      columns,
+      columns: gridColumns,
       setRows,
       setColumns,
       isFiltering,
       isLoadingData,
       dataGridRef,
     }),
-    [rows, columns, setRows, setColumns, isFiltering, isLoadingData, dataGridRef],
+    [rows, gridColumns, setRows, setColumns, isFiltering, isLoadingData, dataGridRef],
   );
 
   return (
@@ -81,7 +94,7 @@ const BaseReport = ({
           <NbNextDataGrid
             ref={dataGridRef}
             rows={rows}
-            columns={columns}
+            columns={gridColumns}
             initialSortModel={initialSortModel}
             documentName={documentName}
             showTotalRow={showTotalRow}
@@ -105,6 +118,9 @@ BaseReport.propTypes = {
   applyDefaultFilters: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   initialSortFallbackColumns: PropTypes.arrayOf(PropTypes.string),
+  defaultSortField: PropTypes.string,
+  defaultSortDirection: PropTypes.oneOf(['asc', 'desc']),
+  decorateColumns: PropTypes.func,
   showTotalRow: PropTypes.bool,
   /** Field to group rows by on open — each group gets a subtotal row. User-toggleable from the header. */
   defaultGroupByField: PropTypes.string,

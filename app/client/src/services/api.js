@@ -86,11 +86,6 @@ const employeeApi = {
       responseType: 'blob' 
     });
   },
-  downloadTemplate: () => {
-    return api.get('/employees/import-template', {
-      responseType: 'blob'
-    });
-  },
   deactivateEmployee: (empCode, options = {}) => {
     if (!empCode) throw new Error('Employee code is required');
     const emp_code = Array.isArray(empCode) ? empCode : [empCode];
@@ -478,6 +473,16 @@ const reportApi = {
       console.error('API Error:', errorMessage);
       throw new Error(errorMessage);
     }
+  },
+
+  // Reverse of lockAttendance
+  unlockAttendance: async ({ employee_code, attendance_date }) => {
+    const response = await api.post('/report-actions/attendance/unlock', {
+      emp_code: employee_code,
+      att_date: attendance_date
+    });
+
+    return response.data;
   }
 };
 
@@ -565,11 +570,6 @@ const biotemplateReportApi = {
   },
 };
 
-const pastReportApi = {
-  getAllPastReports: () => api.get('/pastreport/get_all_past_report'),
-  getReportById: (id) => api.get(`/pastreport/get_report/${id}`),
-};
-
 // --------------------------------------------
 // Gate Pass API
 // --------------------------------------------
@@ -599,6 +599,20 @@ const positionApi = {
   createPosition: (positionData) => api.post(`/position`, positionData),
   updatePosition: (positionId, positionData) => api.put(`/position/${positionId}`, positionData),
   deletePosition: (positionId) => api.delete(`/position/${positionId}`),
+};
+
+// --------------------------------------------
+// Organization Structure API
+// --------------------------------------------
+const organizationStructureApi = {
+  getStructure: (params = {}) => api.get(`/organization-structure`, { params }),
+  getAssignmentEmployees: (assignmentId, params = {}) => api.get(`/organization-structure/position/${assignmentId}/employees`, { params }),
+  assignPositions: (payload) => api.post(`/organization-structure/position`, payload),
+  getEmployeePlacementAndAccess: (employeeId) => api.get(`/organization-structure/employee/${encodeURIComponent(employeeId)}`),
+  getEmployeeDataAccess: (employeeId) => api.get(`/organization-structure/employee/${encodeURIComponent(employeeId)}/data-access`),
+  saveEmployeePlacementAndAccess: (employeeId, payload) => api.put(`/organization-structure/employee/${encodeURIComponent(employeeId)}`, payload),
+  updateAssignment: (assignmentId, payload) => api.put(`/organization-structure/position/${assignmentId}`, payload),
+  removeAssignment: (assignmentId) => api.delete(`/organization-structure/position/${assignmentId}`),
 };
 
 // --------------------------------------------
@@ -803,6 +817,7 @@ const employeeMergeApi = {
   createEmployeeAndMerge: (data) => api.post('/employee-merge/create-and-merge', data),
   getAllEmployeeMerges: (filters = {}) => api.get('/employee-merge', { params: filters }),
   deleteEmployeeMerge: (id) => api.delete(`/employee-merge/${id}`),
+  redoEmployeeMerge: (id) => api.post(`/employee-merge/${id}/redo`),
 };
 // --------------------------------------------
 // Weekly Off API
@@ -998,7 +1013,7 @@ const reimbursementApi = {
 const wageMasterApi = {
   // GET /api/v1/wagemaster/wagemaster-dashboard?date=YYYY-MM-DD
   getDashboard: (params = {}) => api.get('/wagemaster/wagemaster-dashboard', { params }),
-  // GET /api/v1/wagemaster/details/:userId?timeFrame=day|week|month|year&currentDate=YYYY-MM-DD
+  // GET /api/v1/wagemaster/details/:userId?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
   getUserDetails: (userId, params = {}) => api.get(`/wagemaster/details/${userId}`, { params }),
   // PUT /api/v1/wagemaster/wage/:wageId
   updateWage: (wageId, { distance, da, ta }) => api.put(`/wagemaster/wage/${wageId}`, { distance, da, ta }),
@@ -1006,10 +1021,6 @@ const wageMasterApi = {
   approveCallDuration: (userId, { date, approvedDuration }) => api.post(`/wagemaster/executive/${userId}/approve-duration`, { date, approvedDuration }),
   // GET /api/v1/wagemaster/coordinates?userId=...&date=...
   getCoordinates: (params = {}) => api.get('/wagemaster/coordinates', { params }),
-  // GET /api/v1/wagemaster/activity-log?userId=...&startDate=...&endDate=...
-  getActivityLog: (params = {}) => api.get('/wagemaster/activity-log', { params }),
-  // GET /api/v1/wagemaster/identifyimages?layout=...&startDate=...&endDate=...
-  getIdentifyImages: (params = {}) => api.get('/wagemaster/identifyimages', { params }),
   // POST /api/v1/wagemaster/trigger-sync/:userId
   triggerSync: (userId) => api.post(`/wagemaster/trigger-sync/${userId}`),
 };
@@ -1213,11 +1224,15 @@ const hrDashboardApi = {
 };
 
 // The checklist worklist — its own page, its own permission, its own prefix.
-// Every item shares one response shape, so it takes the segment
+// Every check shares one response shape, so it takes the check id
 // ('daily/no-shift', 'monthly/payroll-bank', …) rather than repeating fifteen
-// identical wrappers. Segments live in CHECKLIST_ITEMS.
+// identical wrappers. The ids live in CHECKS, and the server knows them by the
+// same name.
 const hrChecklistApi = {
-  run: (segment) => runViaRunner(`hr-checklist/${segment}`)
+  // `filters` carries the date range picked at the top of the checklist. Checks
+  // that declare a fixed window (the forward-looking and financial-year ones)
+  // ignore it server-side.
+  run: (checkId, filters) => runViaRunner(`hr-checklist/${checkId}`, filters)
 };
 
 // Consent-based identity KYC. Two calls because DigiLocker is two-legged: open a
@@ -1242,4 +1257,4 @@ const kycApi = {
   }
 };
 
-export { api, kycApi, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, pastReportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
+export { api, kycApi, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, organizationStructureApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
