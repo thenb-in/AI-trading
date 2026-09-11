@@ -155,7 +155,21 @@ const useFilterState = ({
   const handleCheckboxChange = useCallback((e) => {
     if (isDisabled) return;
     const { name, checked } = e.target;
-    updateFilter(name, checked);
+    const group = allFilters.find((config) => config.name === name)?.exclusive_group;
+    if (!group) {
+      updateFilter(name, checked);
+      return;
+    }
+    if (!checked) return;
+    allFilters
+      .filter((config) => config.exclusive_group === group)
+      .forEach((config) => updateFilter(config.name, config.name === name));
+  }, [allFilters, isDisabled, updateFilter]);
+
+  const handleNumberChange = useCallback((e) => {
+    if (isDisabled) return;
+    const { name, value } = e.target;
+    updateFilter(name, value);
   }, [isDisabled, updateFilter]);
 
   const handleNumberChange = useCallback((e) => {
