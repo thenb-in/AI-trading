@@ -19,6 +19,7 @@ const BaseReportLayout = ({
   filtersConfig,
   isFilterLoading,
   onFiltersApply,
+  toolbar,
   children,
 }) => {
   const { userData } = useDataContext() || {};
@@ -52,6 +53,11 @@ const BaseReportLayout = ({
 
         <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-sm sm:shadow-lg border border-gray-200 overflow-hidden h-full w-full min-w-0">
           <LoadingBarReport isVisible={isLoadingData} isFiltering={isFiltering} />
+          {toolbar ? (
+            <div className="flex flex-wrap items-center justify-end gap-2 border-b border-gray-200 px-3 py-2 sm:px-4">
+              {toolbar}
+            </div>
+          ) : null}
           {children}
         </div>
       </div>
@@ -66,6 +72,7 @@ BaseReportLayout.propTypes = {
   filtersConfig: PropTypes.array,
   isFilterLoading: PropTypes.bool,
   onFiltersApply: PropTypes.func.isRequired,
+  toolbar: PropTypes.node,
   children: PropTypes.node,
 };
 

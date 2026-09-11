@@ -12,7 +12,40 @@ const SalaryChangeReportFilters = [
 
 // Reports scoped by system user (field sales, call buddy) — drop Employee /
 // Department / Cost Center, surface a single User picker instead.
-const CallBuddyReportFilters = userBasedReportFilters;
+// Internal team calls (a number dialled that belongs to a team member) are
+// excluded by default; tick to bring them into the log.
+const CallBuddyReportFilters = [
+  ...userBasedReportFilters,
+  { name: 'skip_short_calls', label: 'Skip Calls Under 10s', type: 'checkbox', default: true, is_standard: false, order: 1 },
+  { name: 'include_internal', label: 'Include Internal Calls', type: 'checkbox', default: false, is_standard: false, order: 2 },
+];
+
+// Lead Conversion Report — scoped by the agent who owns the lead, so it uses
+// the same single User picker as the other call-buddy / field-sales reports.
+// The date range is read against when the lead was added (the intake cohort).
+const LeadConversionReportFilters = userBasedReportFilters;
+
+// Repeated Calls Report — the per-step ceiling is business-set, not assumed:
+// "Calls Per Step" drives it (New tolerates 1×, Work In Progress 2×, Quotation
+// Sent 3×, and so on).
+const RepeatedCallsReportFilters = [
+  ...userBasedReportFilters,
+  { name: 'calls_per_step', label: 'Calls Per Step', type: 'number', default: 5, is_standard: true, order: 1 },
+];
+
+// Shared Contacts Report — about overlap across callers, so there is no single
+// user picker; "Min Callers" is the business-set bar for what counts as shared.
+const CommonContactsReportFilters = [
+  ...dateFiltersYesterday,
+  { name: 'min_callers', label: 'Min Callers', type: 'number', default: 2, is_standard: true, order: 1 },
+];
+
+// Contact Followup — 
+const ContactFollowupReportFilters = [
+  ...userBasedFilters,
+  { name: 'lead_status', label: 'Status', type: 'select', options: [], is_standard: true, order: 5, hidden: true },
+  { name: 'query', label: 'Search', type: 'text', default: '', is_standard: true, order: 6, placeholder: 'Name, phone, address', hidden: true },
+];
 
 const LocationLogReportFilters = userBasedReportFilters;
 
@@ -359,6 +392,10 @@ export {
   FinalWageReportForContractorFilters,
   DailySalesPersonReportFilters,
   CallBuddyReportFilters,
+  LeadConversionReportFilters,
+  RepeatedCallsReportFilters,
+  CommonContactsReportFilters,
+  ContactFollowupReportFilters,
   LocationLogReportFilters,
   HaltPointsReportFilters,
   IdentifyOfficerReportFilters,

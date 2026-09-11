@@ -143,6 +143,13 @@ if (-not $AppPort)    { $AppPort    = [int](Ask 'HTTP port to publish' $(if ($ex
 if (-not $TimeZone)   { $TimeZone   = Ask 'Time zone (IANA name - attendance and payroll are stamped in it)' $(if ($existing['TZ']) { $existing['TZ'] } else { 'Asia/Kolkata' }) }
 if (-not $DbPassword) { $DbPassword = if ($existing['DB_PASSWORD']) { $existing['DB_PASSWORD'] } else { '123456' } }
 
+# The biometric terminals push to these, not to the app port. Not asked for:
+# the defaults are what the device configuration in the field already uses, and
+# an operator who genuinely has a clash edits .env and runs start.bat. Carried
+# over from a previous run so a re-install never moves a port under live devices.
+$admsPort   = if ($existing['ADMS_PORT'])   { $existing['ADMS_PORT'] }   else { '8948' }
+$biomaxPort = if ($existing['BIOMAX_PORT']) { $existing['BIOMAX_PORT'] } else { '8949' }
+
 $appUrl = if ($AppPort -eq 80) { "http://$ServerHost" } else { "http://${ServerHost}:$AppPort" }
 
 Write-TextFile $envPath @"
@@ -154,6 +161,10 @@ NODE_VERSION=$nodeVersion
 APP_PORT=$AppPort
 APP_URL=$appUrl
 SERVER_HOST=$ServerHost
+# Biometric terminals push here - ADMS is ZK iClock (/iclock), Biomax is
+# Anviz/Biomax (/hdata). The device configuration has to match.
+ADMS_PORT=$admsPort
+BIOMAX_PORT=$biomaxPort
 DB_NAME=etime
 DB_PASSWORD=$DbPassword
 TZ=$TimeZone
@@ -170,7 +181,13 @@ foreach ($d in @('config', 'config\secret', 'uploads', 'logs', 'backups')) {
 # -- Up ----------------------------------------------------------------------
 # --build builds the env image on first run and picks up any Dockerfile change
 # on an update; an unchanged image is cached, so this is cheap on re-runs.
-Write-Host '[5/6] Building the image and starting the stack (first run takes a few minutes)...'
+#
+# All four services: db, app and the two biometric gateways. The gateways wait
+# on the app being healthy, so this call does not return until the app answers
+# - on a first install or after a bundle swap that is the dependency install and
+# schema build, several minutes of "Waiting" against the app before the gateways
+# start. That is the wait it used to take anyway, just visible here now.
+Write-Host '[5/6] Building the image and starting the stack (first run takes several minutes - it waits for the app to answer before starting the biometric gateways)...'
 Invoke-Docker compose up -d --build
 if ($LASTEXITCODE -ne 0) { throw 'docker compose up failed - see the output above.' }
 
@@ -217,7 +234,14 @@ Register-Task 'SalaryMitra Database Backup' 'cmd.exe' `
 
 Write-Host ''
 Write-Host "SalaryMitra is up at $appUrl"
-Write-Host '  status.bat   service state and health'
+Write-Host ''
+Write-Host 'Point the biometric terminals at THIS machine:'
+Write-Host "  ADMS   (ZK iClock, /iclock)   http://${ServerHost}:$admsPort"
+Write-Host "  Biomax (Anviz, /hdata)        http://${ServerHost}:$biomaxPort"
+Write-Host '  Both answer /health with {"ok":true} once they are up. Open these'
+Write-Host '  ports on the Windows firewall for the terminal VLAN.'
+Write-Host ''
+Write-Host '  status.bat   service state and health (all four containers)'
 Write-Host '  logs.bat     live server logs'
 Write-Host '  backup.bat   database dump into data\backups\ (also runs nightly at 01:00)'
 Write-Host ''

@@ -26,6 +26,10 @@ const { getBiotemplateReport, registerBiotemplate, pushBiotemplate, deleteBiotem
 // Field-sales report handlers (daily/monthly/dealer + analytics + halt points)
 const fieldSalesReports = require('../views/reports/field_sales');
 const { getCallBuddyReport } = require('../views/reports/callBuddyReport');
+const { getLeadConversionReport } = require('../views/reports/leadConversionReport');
+const { getRepeatedCallsReport } = require('../views/reports/repeatedCallsReport');
+const { getCommonContactsReport } = require('../views/reports/commonContactsReport');
+const { getContactFollowupReport } = require('../views/reports/contactFollowupReport');
 const { getFinalWageReportForContractor } = require('../views/reports/finalWageReportForContractor');
 const { getDailySalesPersonReport } = require('../views/reports/dailySalesPersonReport');
 const { getSalesActivityReport } = require('../views/reports/salesActivityReport');
@@ -101,6 +105,12 @@ router.get('/canteen-by-site-report',     requirePermission(REPORT_PERMISSION_CO
 // Carries dates of birth for minors, so it is granted separately from the rest.
 router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
 router.get('/call-buddy-report', getCallBuddyReport);
+// Same call-buddy contact data as call-buddy-report, so it shares that report's
+// permission for visibility and stays ungated at REST like its sibling.
+router.get('/lead-conversion-report', getLeadConversionReport);
+router.get('/repeated-calls-report', getRepeatedCallsReport);
+router.get('/common-contacts-report', getCommonContactsReport);
+router.get('/contact-followup-report', getContactFollowupReport);
 router.get(
   '/canteen-report',
   requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_REPORT.name),

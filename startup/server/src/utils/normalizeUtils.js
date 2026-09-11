@@ -67,4 +67,14 @@ const applyRounding = (value, roundingType) => {
   }
 };
 
-module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf, applyRounding };
+/**
+ * The last ten digits of a phone number, with everything that is not a digit dropped.
+ *
+ * Ten because that is what an Indian subscriber number is: the same person's number arrives
+ * as `+91 98765 43210`, `098765-43210` or `9876543210` depending on who typed it, and only
+ * the last ten agree. Returns fewer than ten characters for anything shorter, so callers that
+ * need a real number check the length.
+ */
+const lastTenDigits = (value) => String(value || '').replace(/\D/g, '').slice(-10);
+
+module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf, applyRounding, lastTenDigits };

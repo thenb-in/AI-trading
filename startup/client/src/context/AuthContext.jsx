@@ -12,11 +12,22 @@ import {
   UnauthorizedScreen,
 } from "./AuthScreens";
 
+
+const isAnonymousPath = (path, publicPaths = []) =>
+  path === "/" ||
+  path === "/login" ||
+  path === "/signup" ||
+  path === "/forgot-password" ||
+  path.startsWith("/signup/") ||
+  path.startsWith("/forgot-password/") ||
+  publicPaths.some((entry) => path === entry || path.startsWith(`${entry.replace(/\/$/, "")}/`));
+
 /**
  * `publicPaths` lets an app declare entry paths of its own that an anonymous
  * visitor may land on — app-owned routes passed to <App extraRoutes>, which the
- * framework's own list below cannot know about (e.g. a self-serve signup page).
- * Without it those routes bounce to "/" before they ever render.
+ * framework's own list above cannot know about (e.g. a self-serve signup page,
+ * or an employee's own onboarding form). Without it those routes bounce to "/"
+ * before they ever render.
  */
 const DataProvider = ({ children, publicPaths = [] }) => {
   const [userData, setUserData] = useState(null);
@@ -32,14 +43,7 @@ const DataProvider = ({ children, publicPaths = [] }) => {
   useEffect(() => {
     const entryPath = window.location.pathname;
     const isLoginPage = entryPath === "/";
-    const isPublicPath =
-      entryPath === "/" ||
-      entryPath === "/signup" ||
-      entryPath ==='/login'||
-      entryPath === "/forgot-password" ||
-      entryPath.startsWith("/signup/") ||
-      entryPath.startsWith("/forgot-password/") ||
-      publicPaths.includes(entryPath);
+    const isPublicPath = isAnonymousPath(entryPath, publicPaths);
 
     let cancelled = false;
 
@@ -150,11 +154,7 @@ const DataProvider = ({ children, publicPaths = [] }) => {
     [userData, loading, error, hamburgerMenu, logout, isLoggingOut]
   );
 
-  const publicExact = new Set(["/", "/signup", "/forgot-password"]);
-  const isPublicPath =
-    publicExact.has(location.pathname) ||
-    location.pathname.startsWith("/signup/") ||
-    location.pathname.startsWith("/forgot-password/");
+  const isPublicPath = isAnonymousPath(location.pathname, publicPaths);
 
   if (!authChecked && !isPublicPath) {
     return <AuthCheckingScreen />;

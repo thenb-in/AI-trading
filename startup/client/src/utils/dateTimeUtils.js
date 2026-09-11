@@ -111,22 +111,39 @@ const calculateEndTime = (startTime, durationMinutes) => {
   return `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}`;
 };
 
-// Format duration display (show hours and minutes if > 60)
-const formatDurationDisplay = (minutes) => {
-  if (!minutes || minutes <= 0) return "";
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  if (remainingMinutes === 0) return `${hours} hr`;
-  return `${hours} hr ${remainingMinutes} min`;
+// One duration formatter for the whole app. Give it a value in `from` units
+// ('seconds' | 'minutes') and choose which parts to show with `units` — any
+// combination of 'h', 'm', 's' (e.g. 'hms', 'hm', 'ms', 'm', 's'), or 'auto'
+// (hours+minutes over an hour, else minutes+seconds). The largest shown unit
+// absorbs any overflow; the value floors into the units below it. `zero`
+// overrides what a zero/negative value renders as.
+const buildDurationParts = (totalSeconds, units) => {
+  let remaining = totalSeconds;
+  const parts = [];
+  if (units.includes('h')) {
+    const h = Math.floor(remaining / 3600);
+    remaining -= h * 3600;
+    parts.push(`${h}h`);
+  }
+  if (units.includes('m')) {
+    const m = Math.floor(remaining / 60);
+    remaining -= m * 60;
+    parts.push(`${m}m`);
+  }
+  if (units.includes('s')) {
+    parts.push(`${remaining}s`);
+  }
+  return parts.join(' ');
 };
 
-// Format duration compact display: "1h 40m"
-const formatDurationCompact = (minutes) => {
-  if (!minutes) return "—";
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-  return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
+const zeroDurationLabel = (units) =>
+  ['h', 'm', 's'].filter((u) => units.includes(u)).map((u) => `0${u}`).join(' ') || '0s';
+
+const formatDuration = (value, { from = 'seconds', units = 'auto', zero } = {}) => {
+  const s = Math.round((Number(value) || 0) * (from === 'minutes' ? 60 : 1));
+  const resolvedUnits = units === 'auto' ? (s >= 3600 ? 'hm' : 'ms') : units;
+  if (s <= 0) return zero !== undefined ? zero : zeroDurationLabel(resolvedUnits);
+  return buildDurationParts(s, resolvedUnits);
 };
 
 /**
@@ -823,8 +840,7 @@ export {
   convertToISOString,
   calculateDuration,
   calculateEndTime,
-  formatDurationDisplay,
-  formatDurationCompact,
+  formatDuration,
   humanizeDuration,
   parseDurationInput,
   formatDateTime,

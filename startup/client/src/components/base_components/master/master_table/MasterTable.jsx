@@ -5,6 +5,10 @@ import { formatDateForDisplay, formatDateTimeForDisplay } from '@utils/dateTimeU
 import { formatTime } from '@utils/formattingUtils';
 import { NbNextDataGrid } from '@/components/nbnext_data_grid';
 import PropTypes from 'prop-types';
+import { MdiIcon } from '../../MdiIcon';
+
+/** The swatch is the value itself, so its colour cannot come from a class. */
+const swatchStyle = (color) => ({ backgroundColor: color });
 
 // Row action fields may be given as a plain value or as a function of the row,
 // for actions that flip with the row's state (Hold/Resume, Close/Reopen).
@@ -84,6 +88,9 @@ const MasterTable = ({
             }
           },
         };
+        if (Number.isFinite(column.width)) {
+          gridCol.width = column.width;
+        }
         if (typeof column.getExportValue === 'function') {
           gridCol.getExportValue = column.getExportValue;
           gridCol.valueGetter = ({ row }) => {
@@ -171,6 +178,42 @@ const MasterTable = ({
             const v = row[fieldKey];
             if (v == null) return '';
             return lookup.get(v) ?? v;
+          },
+        };
+      }
+
+      if (column.type === 'color') {
+        return {
+          field: fieldKey,
+          headerName,
+          type: sortType,
+          renderCell: ({ row }) => {
+            const value = row[fieldKey];
+            if (!value) return '-';
+            return (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 rounded border border-gray-300" style={swatchStyle(value)} />
+                <span className="font-mono uppercase">{value}</span>
+              </span>
+            );
+          },
+        };
+      }
+
+      if (column.type === 'icon') {
+        return {
+          field: fieldKey,
+          headerName,
+          type: sortType,
+          renderCell: ({ row }) => {
+            const value = row[fieldKey];
+            if (!value) return '-';
+            return (
+              <span className="inline-flex items-center gap-2">
+                <MdiIcon name={value} size={18} color={column.colorField ? row[column.colorField] : undefined} />
+                <span>{value}</span>
+              </span>
+            );
           },
         };
       }
@@ -340,6 +383,7 @@ MasterTable.propTypes = {
         'boolean', 'file', 'array', 'object', 'json', 'status', 'duration',
       ]),
       options: PropTypes.array,
+      width: PropTypes.number,
       render: PropTypes.func,
       getExportValue: PropTypes.func,
     })

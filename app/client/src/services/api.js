@@ -112,6 +112,10 @@ const employeeApi = {
     if (options.joining_date) body.joining_date = options.joining_date;
     return api.post('/employees/activate', body);
   },
+  approveEmployee: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.post(`/employees/${encodeURIComponent(String(empCode).trim())}/approve`);
+  },
   getEmploymentPeriods: (empCode) => {
     if (!empCode) throw new Error('Employee code is required');
     return api.get(`/employees/${empCode}/employment-periods`);
@@ -193,6 +197,25 @@ const employeeApi = {
     if (!empCode) throw new Error('Employee code is required');
     if (!assignmentId) throw new Error('Assignment ID is required');
     return api.post(`/employees/${empCode}/assets/${assignmentId}/return`, payload);
+  },
+};
+
+// --------------------------------------------
+// Employee Self-Service Details Form API (public — no login)
+// --------------------------------------------
+const employeeSelfFormApi = {
+  getForm: (empCode, companyId) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/public/employee-form/${encodeURIComponent(String(empCode).trim())}`, {
+      params: { company_id: companyId }
+    });
+  },
+  submitForm: (empCode, companyId, formData) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!formData) throw new Error('Form data is required');
+    return api.put(`/public/employee-form/${encodeURIComponent(String(empCode).trim())}`, formData, {
+      params: { company_id: companyId }
+    });
   },
 };
 
@@ -674,6 +697,22 @@ const canteenMealTypeApi = {
 // --------------------------------------------
 // Purpose Type API
 // --------------------------------------------
+// --------------------------------------------
+// Contact Status API - the lead statuses a contact can be in, per company.
+// Also read by the Call Buddy mobile app, which renders the same colour and icon.
+// --------------------------------------------
+const contactFollowupApi = {
+  getReport: (params = {}) => api.get('/reports/contact-followup-report', { params }),
+  updateLeadStatus: (contactId, lead_status) => api.put(`/contact/${contactId}`, { id: contactId, lead_status }),
+};
+
+const contactStatusApi = {
+  getAllContactStatuses: (filters = {}) => api.get(`/contact-status`, { params: filters }),
+  createContactStatus: (contactStatusData) => api.post(`/contact-status`, contactStatusData),
+  updateContactStatus: (contactStatusId, contactStatusData) => api.put(`/contact-status/${contactStatusId}`, contactStatusData),
+  deleteContactStatus: (contactStatusId) => api.delete(`/contact-status/${contactStatusId}`),
+};
+
 const purposeTypeApi = {
   getAllPurposeTypes: (filters = {}) => api.get(`/purpose-type`, { params: filters }),
   createPurposeType: (purposeTypeData) => api.post(`/purpose-type`, purposeTypeData),
@@ -944,7 +983,7 @@ const employeeScheduleApi = {
 // Department Schedule API
 // --------------------------------------------
 const departmentScheduleApi = {
-  getDepartmentSchedules: (departmentId) => api.get(`/department-schedule/${departmentId}`),
+  getDepartmentSchedules: (departmentId, { is_holiday = false } = {}) => api.get(`/department-schedule/${departmentId}`, { params: { is_holiday } }),
   createDepartmentSchedule: (data) => api.post('/department-schedule', data),
   updateDepartmentSchedule: (id, data) => api.put(`/department-schedule/${id}`, data),
   deleteDepartmentSchedule: (id) => api.delete(`/department-schedule/${id}`),
@@ -965,7 +1004,7 @@ const departmentWeeklyOffApi = {
 // from the token and never from the path.
 // --------------------------------------------
 const companyScheduleApi = {
-  getCompanySchedules: () => api.get('/company-schedule'),
+  getCompanySchedules: ({ is_holiday = false } = {}) => api.get('/company-schedule', { params: { is_holiday } }),
   createCompanySchedule: (data) => api.post('/company-schedule', data),
   updateCompanySchedule: (id, data) => api.put(`/company-schedule/${id}`, data),
   deleteCompanySchedule: (id) => api.delete(`/company-schedule/${id}`),
@@ -1049,7 +1088,13 @@ const contactApi = {
   assignContactsToUser: (contactId, userIds) => api.post('/callBuddy/contacts/assign', { contactId, userIds }),
   unassignContactFromUser: (assignmentId) => api.delete(`/callBuddy/assign_contacts/${assignmentId}`),
   getUsers: () => api.get('/callBuddy/users'),
+  getHistory: (contactId) => api.get(`/contact/${contactId}/history`),
   addPayment: (paymentData) => api.post('/callBuddy/addPayment', paymentData),
+  // Booked and collected from the contact master's own modals, which the follow-up report opens
+  // as well. Same work as the app's /callBuddy routes, same services behind them -- these are
+  // the contact master's own, gated by its permissions.
+  scheduleCall: (payload) => api.post('/contact/schedule-call', payload),
+  savePaymentReminder: (payload) => api.post('/contact/payment-reminder', payload),
 };
 
 // --------------------------------------------
@@ -1257,4 +1302,4 @@ const kycApi = {
   }
 };
 
-export { api, kycApi, employeeApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, organizationStructureApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi };
+export { api, kycApi, employeeApi, employeeSelfFormApi, deptEmpApi, FormulaApi, holidayApi, SalaryStructureApi, rawPunch, canteenToken, reportApi, unregisteredFacesReportApi, biotemplateReportApi, gatePassApi, departmentApi, positionApi, organizationStructureApi, assetApi, leaveTypeApi, allowanceTypeApi, jobOfferSalaryStructureApi, purposeTypeApi, operationCycleApi, roleResponsibilityApi, canteenMealTypeApi, serviceOfferingApi, customerApi, companyProfileApi, workorderApi, leavesTakenApi, leaveListApi, employeeMergeApi, weeklyOffApi, employeeWeeklyOffApi, timetableApi, manualLogApi, manualLogEntryMasterApi, vastramDailyCounterApi, manualAttendanceApi, reportActionApi, shiftApi, employeeScheduleApi, departmentScheduleApi, departmentWeeklyOffApi, companyScheduleApi, companyWeeklyOffApi, compoundShiftApi, holidayTypeApi, reimbursementApi, advanceApi, wageMasterApi, contactApi, locationApi, usersApi, iclockTerminalApi, terminalCommandApi, costCenterApi, personnelAreaApi, employeeAreaAssignmentApi, whatsappTemplateApi,hrDashboardApi, hrChecklistApi, performanceCycleApi, performanceParameterApi, performanceReviewApi, contactStatusApi, contactFollowupApi };

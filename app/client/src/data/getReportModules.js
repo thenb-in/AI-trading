@@ -50,6 +50,10 @@ import { AllLeavesReport } from '../components/report/reports/all_leaves/AllLeav
 import { UnregisteredFacesReport } from '../components/report/reports/unregistered_faces/UnregisteredFacesReport';
 import { BiotemplateReport } from '../components/report/reports/biotemplate/BiotemplateReport';
 import { CallBuddyReport } from '../components/report/reports/call_buddy/CallBuddyReport';
+import { LeadConversionReport } from '../components/report/reports/call_buddy/LeadConversionReport';
+import { RepeatedCallsReport } from '../components/report/reports/call_buddy/RepeatedCallsReport';
+import { CommonContactsReport } from '../components/report/reports/call_buddy/CommonContactsReport';
+import { ContactFollowupReport } from '../components/report/reports/contact_followup/ContactFollowupReport';
 import { FinalWageReportForContractor } from '../components/report/reports/final_wage_report_for_contractor/FinalWageReportForContractorReport';
 import { DailySalesPersonReport } from '../components/report/reports/daily_sales_person/DailySalesPersonReport';
 import { SalesActivityReport } from '../components/report/reports/sales_activity/SalesActivityReport';
@@ -417,6 +421,53 @@ const PRINTABLE_ATTENDANCE_DEFAULT_FILTERS = {
       icon: BarChart3,
       component: CallBuddyReport,
       defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'lead-conversion-report',
+      title: 'Lead Conversion Report',
+      slug: 'lead-conversion-report',
+      permissionName: 'read_call-buddy-report',
+      desc: 'The cold-calling pipeline end to end — a lead-status funnel, per-agent conversion, and which sources actually convert. Tabs: Funnel, By Agent, By Source, All Leads.',
+      category: 'callbuddy',
+      color: 'indigo',
+      icon: Target,
+      component: LeadConversionReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'repeated-calls-report',
+      title: 'Repeated Calls Report',
+      slug: 'repeated-calls-report',
+      permissionName: 'read_call-buddy-report',
+      desc: 'Numbers called past the ceiling their pipeline step allows (Calls Per Step × step) — possible call-count padding. Internal and sub-10s calls are excluded.',
+      category: 'callbuddy',
+      color: 'rose',
+      icon: BarChart3,
+      component: RepeatedCallsReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'common-contacts-report',
+      title: 'Shared Contacts Report',
+      slug: 'common-contacts-report',
+      permissionName: 'read_call-buddy-report',
+      desc: 'Numbers worked by more than one caller — overlap that usually means duplicated effort. "Min Callers" sets the bar. Internal and sub-10s calls are excluded.',
+      category: 'callbuddy',
+      color: 'amber',
+      icon: Users,
+      component: CommonContactsReport,
+      defaultFilters: DEFAULT_REPORT_DATE_RANGE,
+    },
+    {
+      id: 'contact-followup-report',
+      title: 'Contact Followup Report',
+      slug: 'contact-followup-report',
+      permissionName: 'read_contact-followup-report',
+      desc: 'Every contact with the next call due and the last call made, with the status editable in the row.',
+      category: 'callbuddy',
+      color: 'green',
+      icon: Users,
+      component: ContactFollowupReport,
     },
     {
       id: 'daily-sales-person-report',

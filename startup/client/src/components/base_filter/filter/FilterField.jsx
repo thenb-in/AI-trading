@@ -7,6 +7,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { colors, fontSize } from '@startup/constants/theme';
 import { SearchableDropdown } from '../../base_components/fields/SearchableDropdown';
 import { NumberTypeField } from '../../base_components/fields/NumberTypeField';
+import { TextTypeField } from '../../base_components/fields/TextTypeField';
 
 const buildDatePickerSlotProps = (isDisabled) => ({
   textField: {
@@ -44,6 +45,7 @@ const FilterField = ({
   onDateChange,
   onCheckboxChange,
   onNumberChange,
+  onTextChange,
 }) => {
   const datePickerSlotProps = useMemo(
     () => buildDatePickerSlotProps(isDisabled),
@@ -106,6 +108,18 @@ const FilterField = ({
         />
       );
     }
+
+    case 'text':
+      return (
+        <TextTypeField
+          name={config.name}
+          value={value ?? ''}
+          onChange={onTextChange}
+          disabled={isDisabled}
+          placeholder={config.placeholder || config.label}
+          className="h-9 text-sm"
+        />
+      );
 
     case 'number':
       return (
@@ -170,6 +184,7 @@ FilterField.propTypes = {
   onDateChange: PropTypes.func,
   onCheckboxChange: PropTypes.func,
   onNumberChange: PropTypes.func,
+  onTextChange: PropTypes.func,
 };
 
 export { FilterField };

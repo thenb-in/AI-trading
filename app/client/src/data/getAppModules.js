@@ -4,23 +4,37 @@ import {
   MapPinCheckInside,
   Gauge,
   ListChecks,
-  Trophy,
+  Network,
+  PhoneCall,
 } from "lucide-react";
-import { getGenericAppModuleDefinitions } from "@startup/data/getAppModules";
 
 /**
  * etime-specific app modules (sidebar / top nav): searchable alongside
  * masters and reports. These are the modules whose pages live in the app
- * layer (quick check-in, HR dashboard, dashboards, WageMaster). Registered via
- * registerAppModules(); the framework's appModuleRegistry appends the generic
- * modules to this list, so only app-specific ones belong here.
+ * layer (quick check-in, HR dashboard, dashboards, WageMaster). They are
+ * merged with the framework's generic modules to form the full list.
  *
  * Sidebar order: `order` field; visibility: `isAppModuleVisible` (used by
  * `useAppMenuItems`). `color` is the ModuleCard accent (kept on the
  * definition itself so the navigator and the signup plan preview both read
  * it straight from here).
  */
-const getEtimeAppModuleDefinitions = () => [
+const getAppSpecificModuleDefinitions = () => [
+  {
+    id: "organizationStructure",
+    title: "Organization Structure",
+    description:
+      "The company as an org chart — departments, the positions sanctioned in each, and who is on them.",
+    category: "Administration",
+    color: "red",
+    tags: ["Organization", "Structure", "Hierarchy"],
+    keywords:
+      "organization structure org chart hierarchy department position seat sanctioned headcount vacancy module",
+    permissionName: "view_organization_structure_module",
+    navigatePath: "/admin/organization-structure",
+    icon: Network,
+    order: 1.1,
+  },
   {
     id: "biometricPunch",
     title: "Biometric Punch",
@@ -51,21 +65,6 @@ const getEtimeAppModuleDefinitions = () => [
     order: 1.5,
   },
   {
-    id: "myAppraisal",
-    title: "My Appraisal",
-    description: "Your own appraisals, and the ones you review for your team.",
-    category: "Attendance",
-    color: "warning",
-    tags: ["Appraisal", "Performance", "KRA", "Self Service"],
-    keywords: "my appraisal performance kra kpi self review rating band self service module",
-    permissionName: "view_my_appraisal_module",
-    navigatePath: "/admin/my-appraisal",
-    icon: Trophy,
-    // Sits just under the worklist: it is a personal page rather than an administrative
-    // one, so it belongs above the HR modules an ordinary employee has no permission for.
-    order: 1.6,
-  },
-  {
     id: "hrDashboard",
     title: "HR Dashboard",
     description: "HR analytics, attendance trends, and pending approvals.",
@@ -77,6 +76,19 @@ const getEtimeAppModuleDefinitions = () => [
     navigatePath: "/admin/hr-dashboard",
     icon: Gauge,
     order: 3,
+  },
+  {
+    id: "leadConversionDashboard",
+    title: "Calling → Conversion",
+    description: "Cold-calling pipeline: lead funnel, per-agent conversion, and source performance.",
+    category: "WageMaster",
+    color: "purple",
+    tags: ["CallBuddy", "Leads", "Conversion", "Dashboard"],
+    keywords: "call buddy lead conversion funnel agent source cold calling dashboard module",
+    permissionName: "read_call-buddy-report",
+    navigatePath: "/admin/lead-conversion-dashboard",
+    icon: PhoneCall,
+    order: 4.5,
   },
   {
     id: "dashboards",
@@ -106,13 +118,4 @@ const getEtimeAppModuleDefinitions = () => [
   },
 ];
 
-/**
- * Full app module list: framework generics + etime-specific modules.
- * Consumers (sidebar, navigator, search, route titles) read this.
- */
-const getAppModuleDefinitions = () => [
-  ...getGenericAppModuleDefinitions(),
-  ...getEtimeAppModuleDefinitions(),
-];
-
-export { getAppModuleDefinitions, getEtimeAppModuleDefinitions };
+export { getAppSpecificModuleDefinitions };

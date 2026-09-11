@@ -1,0 +1,134 @@
+name: Build Biometric Gateways
+
+# Standalone biometric gateway runnables (adms_server / biomax_server /
+# lan_zk). Each is bytecode-compiled (bytenode, like startup/app)
+# together with the shared device layers it needs (@nucleus, the
+# biometric-interface common/ + shared/ bootstrap) and staged in the SAME
+# source-relative directory layout so the runtime aliases + relative requires
+# resolve in the deployed bundle.
+#
+# DEPLOYMENT MODEL (important): the gateways are CODE-decoupled from the app
+# (zero @startup/@appServer requires) but are deployed ALONGSIDE app/server in
+# the same install, sharing its node_modules for heavy npm deps. In particular
+# `pg` (the Postgres driver) and `sequelize` are NOT bundled per-gateway — they
+# resolve from the colocated startup/app node_modules via setupAliases.addPath.
+# That's why this workflow does not `npm install` a pg into each gateway.
+#
+# bytenode bytecode is locked to the exact Node ABI + platform + arch, so each
+# target platform compiles its own copy (separate jobs, not a matrix output).
+#
+# Manual dispatch: pick which interfaces and platforms to build. Ship a client
+# only the interface(s) they bought.
+
+on:
+  workflow_dispatch:
+    inputs:
+      interfaces:
+        description: 'Comma-separated gateways to build (adms_server,biomax_server,lan_zk)'
+        required: true
+        default: 'adms_server,biomax_server'
+      platforms:
+        description: 'Comma-separated platforms (linux_x64,windows_x64)'
+        required: true
+        default: 'linux_x64,windows_x64'
+
+env:
+  NODE_VERSION_MAJOR: "22"
+
+jobs:
+  gateway_build_linux_x64:
+    # Gate on the platform being requested. (GitHub has no native "contains"
+    # job-level guard, so the step body no-ops when not selected.)
+    if: contains(github.event.inputs.platforms, 'linux_x64')
+    runs-on: [self-hosted, Linux, X64]
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION_MAJOR }}
+
+      - name: Capture Node runtime metadata (bytenode compatibility)
+        id: node_meta
+        run: |
+          {
+            echo "node_version=$(node -v)"
+            echo "node_arch=$(node -p process.arch)"
+            echo "node_platform=$(node -p process.platform)"
+            echo "node_abi=$(node -p process.versions.modules)"
+            echo "v8_version=$(node -p process.versions.v8)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
+
+      - name: Build gateway bytecode (shared layers + selected interfaces)
+        env:
+          INTERFACES: ${{ github.event.inputs.interfaces }}
+        run: bash .github/scripts/build-gateways.sh linux_x64 "$INTERFACES"
+
+      - name: Upload gateway artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gateway-build-linux_x64
+          path: _gateway_artifact/
+          include-hidden-files: true
+
+  gateway_build_windows_x64:
+    if: contains(github.event.inputs.platforms, 'windows_x64')
+    runs-on: [self-hosted, Windows, X64]
+    defaults:
+      run:
+        # git-bash so the same POSIX build script works on Windows runners.
+        shell: bash
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION_MAJOR }}
+
+      - name: Capture Node runtime metadata (bytenode compatibility)
+        id: node_meta
+        run: |
+          {
+            echo "node_version=$(node -v)"
+            echo "node_arch=$(node -p process.arch)"
+            echo "node_platform=$(node -p process.platform)"
+            echo "node_abi=$(node -p process.versions.modules)"
+            echo "v8_version=$(node -p process.versions.v8)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: npm run i
+        env:
+          CI: true
+          HUSKY: 0
+
+      - name: Build gateway bytecode (shared layers + selected interfaces)
+        env:
+          INTERFACES: ${{ github.event.inputs.interfaces }}
+        run: bash .github/scripts/build-gateways.sh windows_x64 "$INTERFACES"
+
+      - name: Upload gateway artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gateway-build-windows_x64
+          path: _gateway_artifact/
+          include-hidden-files: true

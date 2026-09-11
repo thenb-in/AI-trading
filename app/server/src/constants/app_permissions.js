@@ -58,12 +58,20 @@ const APP_MASTER_PERMISSION_CONSTANTS = {
   JOB_OFFER_SALARY_STRUCTURE: create_master_permission('job_offer_salary_structure'),
   SALARY_STRUCTURE: create_master_permission('salary_structure'),
   PURPOSE_TYPE: create_master_permission('purpose_type'),
+  CONTACT_STATUS: create_master_permission('contact_status'),
   SERVICE_OFFERING: create_master_permission('service_offering'),
   CUSTOMER: create_master_permission('customer'),
   LEAVE_LIST: create_master_permission('leave_list'),
   EMPLOYEE_MERGE: create_master_permission('employee_merge'),
   TIMETABLE: create_master_permission('timetable'),
   MANUAL_ATTENDANCE: create_master_permission('manual_attendance', true),
+  ATTENDANCE_UNLOCK: {
+    unlock: {
+      name: 'unlock_attendance',
+      display_name: 'Unlock Attendance',
+      description: 'Permission to unlock a locked attendance day so it can be edited again'
+    }
+  },
   MANUAL_PUNCHES: create_master_permission('manual_punches', true),
   MANUAL_SALARIES: create_master_permission('manual_salaries'),
   VASTRAM_DAILY_COUNTER: create_master_permission('vastram_daily_counter'),
@@ -161,6 +169,12 @@ const APP_MASTER_PERMISSION_CONSTANTS = {
 };
 
 const APP_MODULE_PERMISSION_CONSTANTS = {
+  VIEW_ORGANIZATION_STRUCTURE_MODULE: create_module_permission('organization_structure', 'Organization Structure'),
+  MANAGE_ORGANIZATION_STRUCTURE: {
+    name: 'manage_organization_structure',
+    display_name: 'Manage Organization Structure',
+    description: 'Permission to change the organization structure'
+  },
   VIEW_DASHBOARD_MODULE: create_module_permission('dashboard', 'Dashboards'),
   VIEW_HR_DASHBOARD_MODULE: create_module_permission('hr_dashboard', 'HR Dashboard'),
   // The worklist is its own page and its own permission: the people who clear
@@ -172,8 +186,6 @@ const APP_MODULE_PERMISSION_CONSTANTS = {
   // page, it does not decide whose appraisal is on it.
   VIEW_MY_APPRAISAL_MODULE: create_module_permission('my-appraisal', 'My Appraisal'),
   VIEW_WAGEMASTER_MODULE: create_module_permission('wagemaster', 'WageMaster'),
-  VIEW_ACTIVITIES_MODULE: create_module_permission('activities', 'Activities'),
-  VIEW_IDENTIFY_OFFICER_MODULE: create_module_permission('identify-officer', 'Identify Officer'),
   VIEW_BIOMETRIC_PUNCH_MODULE: create_module_permission('biometric-punch', 'Biometric Punch'),
   VIEW_ALL_CONTACTS: {
     name: 'view_all_contacts',
@@ -194,6 +206,18 @@ const APP_MODULE_PERMISSION_CONSTANTS = {
     name: 'add_call_log_manual',
     display_name: 'Add Manual Call Log',
     description: 'If granted, the user can manually add a call log entry from the mobile app'
+  },
+  AUTO_CONTACT_ALLOCATION: {
+    name: 'auto_contact_allocation',
+    display_name: 'Auto Contact Allocation',
+    description:
+      'If granted, after call-log sync the system tops up this user\'s unspoken contact pool when it runs low'
+  },
+  MULTIPLE_NOT_INTERESTED: {
+    name: 'multiple_not_interested',
+    display_name: 'Multiple Not Interested Tracking',
+    description:
+      'If granted, marking a contact Not Interested soft-flags the assignment and records not_interested slots so the contact can be reassigned to others'
   },
   USE_DIALER: {
     name: 'use_dialer',
@@ -253,6 +277,8 @@ const APP_REPORT_PERMISSION_CONSTANTS = {
   LEAVE_TRANSACTION_REPORT: create_report_permission('leave-transaction-report'),
   UNREGISTERED_FACES_REPORT: create_report_permission('unregistered-faces-report'),
   CALL_BUDDY_REPORT: create_report_permission('call-buddy-report'),
+  CONTACT_FOLLOWUP_REPORT: create_report_permission('contact-followup-report'),
+  LEAD_CONVERSION_REPORT: create_report_permission('lead-conversion-report'),
   BIOTEMPLATE_REPORT: create_report_permission('biotemplate-report'),
   FINAL_WAGE_REPORT_FOR_CONTRACTOR: create_report_permission('final-wage-report-for-contractor'),
   DAILY_SALES_PERSON_REPORT: create_report_permission('daily-sales-person-report'),

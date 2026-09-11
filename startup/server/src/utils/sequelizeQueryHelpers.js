@@ -1,4 +1,7 @@
-// Helpers for raw sequelize.query output and parameterized SQL fragments.
+// Helpers for raw sequelize.query output, parameterized SQL fragments and
+// expressions the query builder has no shorthand for.
+
+const { fn, col } = require('sequelize');
 
 /**
  * Normalize sequelize.query output into a flat array of rows. Different
@@ -34,7 +37,18 @@ function buildInListParams(values, baseName) {
   return { listSql: placeholders.join(', '), replacements };
 }
 
+/**
+ * The database-side twin of `lastTenDigits`: the last ten digits of a phone column, for
+ * matching a stored number against one normalised in the application.
+ *
+ * Built with the query builder rather than written as SQL so it can go straight into a
+ * `where`/`group`/`attributes`, and it is the expression a functional index on the same
+ * column is declared with — so an index on it is still used.
+ */
+const lastTenDigitsOf = (column) => fn('right', fn('regexp_replace', col(column), '\\D', '', 'g'), 10);
+
 module.exports = {
   rowsFromQueryResult,
-  buildInListParams
+  buildInListParams,
+  lastTenDigitsOf
 };

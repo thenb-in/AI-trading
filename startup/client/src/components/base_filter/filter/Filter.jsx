@@ -96,6 +96,7 @@ const Filter = ({
     onDateChange: handleDateChange,
     onCheckboxChange: handleCheckboxChange,
     onNumberChange: handleNumberChange,
+    onTextChange: handleNumberChange,
   };
 
 

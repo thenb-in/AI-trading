@@ -15,10 +15,20 @@ set -eu
 CONFIG_DIR="${APP_CONFIG_DIR:-/srv/config}"
 ENV_FILE="$CONFIG_DIR/.env"
 BOOT_DIR="$(pwd)"
+# app (default) or gateway — see container-entrypoint.sh. Seeding is the app's
+# job alone: a gateway that seeded would stamp its OWN port (8948/8949) as the
+# app's PORT and generate a second set of JWT secrets.
+APP_ROLE="${APP_ROLE:-app}"
 
 random_secret() {
   node -e 'process.stdout.write(require("crypto").randomBytes(48).toString("hex"))'
 }
+
+if [ ! -f "$ENV_FILE" ] && [ "$APP_ROLE" = "gateway" ]; then
+  echo "[entrypoint] gateway: $ENV_FILE is not there yet — the app container writes it" \
+       "on its first boot, so start the app and let it turn healthy first."
+  exit 1
+fi
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "[entrypoint] seeding $ENV_FILE from $BOOT_DIR/.env.example"
@@ -44,6 +54,12 @@ fi
 
 # SECURE_COOKIE stays off because this server also serves the SPA over plain
 # HTTP on the LAN; put a TLS terminator in front and flip it in config\.env.
-cp "$ENV_FILE" "$BOOT_DIR/.env"
+#
+# A gateway boots in the app's directory (that is where dotenv finds this file)
+# but the file is the app's, on a bind mount they share — so it only fills the
+# gap, never overwrites what the running app is reading.
+if [ "$APP_ROLE" != "gateway" ] || [ ! -f "$BOOT_DIR/.env" ]; then
+  cp "$ENV_FILE" "$BOOT_DIR/.env"
+fi
 
 exec "$@"

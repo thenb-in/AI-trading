@@ -264,7 +264,7 @@ jobs:
         # boot without them. Reuse the gateway builder — it compiles nucleus +
         # biometric_gateway (common, shared + the named interfaces) to bytecode
         # in the exact source-relative layout the aliases resolve to.
-        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server,zkteco_tcp_server"
+        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server"
 
       - name: Resolve version + bundle name
         id: meta
