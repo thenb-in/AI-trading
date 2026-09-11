@@ -24,8 +24,7 @@ moduleAlias.addAliases({
   '@biometric': path.join(APP_SERVER_DIR, 'src/biometric'),
   '@biometric_interface': BIOMETRIC_GATEWAY_DIR,
   '@adms': path.join(BIOMETRIC_GATEWAY_DIR, 'adms_server'),
-  '@biomax': path.join(BIOMETRIC_GATEWAY_DIR, 'biomax_server'),
-  '@zkteco': path.join(BIOMETRIC_GATEWAY_DIR, 'zkteco_tcp_server')
+  '@biomax': path.join(BIOMETRIC_GATEWAY_DIR, 'biomax_server')
 });
 
 // App/server has the larger dep set; search it first.
