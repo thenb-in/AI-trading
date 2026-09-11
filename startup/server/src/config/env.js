@@ -42,6 +42,9 @@ if (process.env.APP_NAME) {
 const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
 // Determine secure cookie setting: if SECURE_COOKIE is explicitly set, use that; otherwise default to true in production and false in development
 const isSecureCookie = process.env.SECURE_COOKIE ? process.env.SECURE_COOKIE === 'True' || process.env.SECURE_COOKIE === 'true' : isProduction;
+const isOnPremDeployment = !isSecureCookie;
+
+
 const isDevelopment = !isProduction;
 // OIDC provider cookies go secure in production, or when explicitly forced for a
 // TLS-terminated non-production deployment. Mirrors the SECURE_COOKIE handling above.
@@ -84,6 +87,18 @@ if (secretDir) {
   // Use default path
   secretDir = defaultSecretDir;
   logger.info(`SECRET_DIR is set to default: ${secretDir}`);
+}
+
+// Root of the standalone biometric gateway processes. The gateway-health probe
+// discovers the gateway set here and reads each gateway's .env. Defaults to
+// biometric_gateway/ at the repo root (env.js is at startup/server/src/config,
+// four levels down); override — resolved against the boot CWD when relative —
+// for deployments where the compiled gateway artifact lives elsewhere.
+let gatewayDir = process.env.GATEWAY_DIR;
+if (gatewayDir) {
+  gatewayDir = path.isAbsolute(gatewayDir) ? gatewayDir : path.resolve(process.cwd(), gatewayDir);
+} else {
+  gatewayDir = path.resolve(__dirname, '../../../../biometric_gateway');
 }
 
 const PISCINA_MAX_THREADS = process.env.PISCINA_MAX_THREADS === '0' ? 0 : parseInt(process.env.PISCINA_MAX_THREADS, PARSE_INT_RADIX) || Math.max(1, os.cpus().length - 1);
@@ -156,6 +171,9 @@ module.exports = {
   // File upload configuration
   UPLOADS_DIR: uploadsDir,
 
+  // Biometric gateway root (see gatewayDir resolution above)
+  GATEWAY_DIR: gatewayDir,
+
   // Secret directory configuration
   SECRET_DIR: secretDir,
 
@@ -213,6 +231,10 @@ module.exports = {
   WHATSAPP_SENDER_URL: (process.env.WHATSAPP_SENDER_URL || '').trim() || null,
   WHATSAPP_SENDER_APP_KEY: (process.env.WHATSAPP_SENDER_APP_KEY || '').trim() || null,
 
+  // mailer app.
+  MAILER_URL: (process.env.MAILER_URL || '').trim() || null,
+  MAILER_EMAIL_SECRET_KEY: (process.env.MAILER_EMAIL_SECRET_KEY || '').trim() || null,
+
   // OIDC RP / Wallet SSO (ADR 001)
   OIDC_ISSUER: process.env.OIDC_ISSUER,
   // Wallet Application.app_key. One value, two uses: the OIDC client_id on the
@@ -250,6 +272,7 @@ module.exports = {
   // Helper functions
   isProduction,
   isSecureCookie,
+  isOnPremDeployment,
   isOidcSecureCookie,
   isDevelopment,
 

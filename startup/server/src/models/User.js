@@ -17,9 +17,13 @@ module.exports = (sequelize, DataTypes) => {
       unique: true,
       allowNull: false
     },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     password: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     name: {
       type: DataTypes.STRING,
@@ -57,6 +61,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    tokens_valid_after: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     is_approved: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
@@ -75,6 +83,20 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: false
     },
+    wallet_user_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      unique: true
+    },
+    totp_secret: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    is_totp_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     // Account deletion requested from the Call Buddy mobile app. Access is
     // revoked at request time (is_approved -> false); these two record the
     // request so the purge can run on the published 30-day cycle. See
@@ -85,17 +107,6 @@ module.exports = (sequelize, DataTypes) => {
     },
     deletion_scheduled_purge_at: {
       type: DataTypes.DATE,
-      allowNull: true
-    },
-    // Which person on the payroll this login is. Null for plenty of accounts on purpose —
-    // an HR operator, a support login or an integration is not an employee — and employee
-    // self-service answers those accounts with an empty page rather than an error.
-    //
-    // Declared without a `references`: the foreign key is created by
-    // db-scripts/20260806_09_link_user_to_employee.sql, and the employee table belongs to the
-    // app rather than to this layer, so naming it here would point the framework at the app.
-    employee_id: {
-      type: DataTypes.STRING(36),
       allowNull: true
     }
   }, {

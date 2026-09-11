@@ -45,7 +45,7 @@ const getCompanySubscriptions = async (companyId) => {
     throw new Error(`Company id is required, got: ${companyId}`);
   }
 
-  if (!env.SECURE_COOKIE) {
+  if (env.isOnPremDeployment) {
     return buildLicenseSubscriptions(companyId);
   }
 
@@ -111,7 +111,7 @@ const setCompanySubscriptions = async (companyId, subscriptionIds, userId) => {
   }
   // Sync the company's full set to the wallet (adds new + removes dropped). Runs even when the
   // set is empty so clearing all subscriptions here also clears them on the wallet.
-  if (env.SECURE_COOKIE) {
+  if (!env.isOnPremDeployment) {
     try {
       await syncCompanySubscriptionsToWallet({ companyId, companyName: company.name, planIds: subscriptionIds });
     } catch (err) {

@@ -1142,6 +1142,8 @@ const usersApi = {
 // --------------------------------------------
 const iclockTerminalApi = {
   getAllTerminals: () => api.get('/iclock-terminal'),
+  // Live health of every biometric gateway process (adms, biomax, vyom, zk, cosec, realtime, …).
+  getGatewaysHealth: () => api.get('/iclock-terminal/gateways/health'),
   createTerminal: (terminalData) => api.post('/iclock-terminal', terminalData),
   updateTerminal: (terminalId, terminalData) => api.put(`/iclock-terminal/${terminalId}`, terminalData),
   deleteTerminal: (terminalId) => api.delete(`/iclock-terminal/${terminalId}`),
@@ -1159,6 +1161,10 @@ const iclockTerminalApi = {
   runCommand: (terminalId, content) => api.post(`/iclock-terminal/${terminalId}/run-command`, { content }),
   changeTerminalCompany: (terminalId, companyId) => api.put(`/iclock-terminal/${terminalId}/change-company`, { company_id: companyId }),
   setTerminalEnabled: (terminalId, enabled) => api.put(`/iclock-terminal/${terminalId}/enabled`, { enabled }),
+  // Transactions recorded before the terminal's saved active_since — count then
+  // delete. Both operate on the persisted active_since, not an unsaved edit.
+  countTransactionsBeforeActiveSince: (terminalId) => api.get(`/iclock-terminal/${terminalId}/transactions-before-active-since`),
+  deleteTransactionsBeforeActiveSince: (terminalId) => api.delete(`/iclock-terminal/${terminalId}/transactions-before-active-since`),
   // Recorded ONLINE/OFFLINE history for one terminal over the last `days`.
   getTerminalAvailability: (terminalId, days) => api.get(`/iclock-terminal/${terminalId}/availability`, { params: { days } }),
   // TCP-pull mode (server initiates connection to device on port 4370 by

@@ -2,7 +2,7 @@
 // else 404. Socket.io attaches to the same httpServer for upgrades.
 
 const http = require('http');
-const metrics = require('./metrics');
+const metrics = require('@startup/src/socket/init_setup/reports/runner/runMetrics');
 
 function createHttpServer() {
   return http.createServer((req, res) => {

@@ -27,10 +27,14 @@ async function onRunFinished({ runId, status, error }) {
 }
 
 /**
- * Attach to the outbound runner link. Safe to call when the runner is disabled —
- * the client is a stub with no socket then.
+ * Attach to the outbound runner link. Only the socket link needs wiring here:
+ * the in-process runner announces straight into onRunFinished itself (see
+ * inProcessRunner), so there is nothing to attach and nothing lost.
  */
 function registerRunnerAnnouncements(client) {
+  if (client?.inProcess) {
+    return;
+  }
   if (!client?.socket) {
     logger.warn(`${REPORT_RUN_LOG_PREFIX} runner link has no socket; finished-run announcements will be ignored`);
     return;
@@ -39,4 +43,4 @@ function registerRunnerAnnouncements(client) {
   logger.info(`${REPORT_RUN_LOG_PREFIX} listening for finished-run announcements from the runner`);
 }
 
-module.exports = { registerRunnerAnnouncements };
+module.exports = { registerRunnerAnnouncements, onRunFinished };

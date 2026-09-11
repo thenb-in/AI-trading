@@ -9,13 +9,14 @@
 require('./setup/setupAliases');
 
 const logger = require('@startup/logger');
+const { REPORT_RUN_FINISHED } = require('@startup/src/constants/socketEvent');
+const { setAnnouncer } = require('@startup/src/socket/init_setup/reports/runner/runAnnouncer');
+const { resumePendingRuns } = require('@startup/src/socket/init_setup/reports/runner/resumePendingRuns');
+const { installQueryTracking } = require('@startup/src/socket/init_setup/reports/runner/runCancellation');
 const { getRunnerConfig } = require('./setup/config');
 const { createHttpServer } = require('./setup/createHttpServer');
 const { initRunnerSocket } = require('./setup/initRunnerSocket');
 const { registerShutdown } = require('./setup/registerShutdown');
-const { setAnnouncer } = require('./setup/announceRunFinished');
-const { resumePendingRuns } = require('./setup/resumePendingRuns');
-const { installQueryTracking } = require('./setup/runCancellation');
 
 const { port, host } = getRunnerConfig();
 // Before anything can run a report: it is what lets a report already in the
@@ -24,7 +25,9 @@ installQueryTracking();
 const httpServer = createHttpServer();
 const io = initRunnerSocket({ httpServer });
 
-setAnnouncer(io);
+// This process reaches the app server over the socket, so its announcer emits
+// the finished-run event for the app server to pick up and notify on.
+setAnnouncer((payload) => io.emit(REPORT_RUN_FINISHED, payload));
 registerShutdown({ io, httpServer });
 
 httpServer.listen(port, host, () => {

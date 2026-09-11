@@ -114,11 +114,11 @@ const updateUserProfile=async(req,res)=>{
 const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, phone, username } = req.body;
-    const user = await userService.updateUserBasic(userId, { name, phone, username });
+    const { name, phone, username, email } = req.body;
+    const user = await userService.updateUserBasic(userId, { name, phone, username, email });
     res.status(200).json({
       message: `User updated successfully for userid : ${userId}`,
-      user: { id: user.id, name: user.name, phone: user.phone, username: user.username }
+      user: { id: user.id, name: user.name, phone: user.phone, username: user.username, email: user.email }
     });
   } catch (error) {
     logger.error('Update user error', error);

@@ -1,3 +1,5 @@
+const { VALIDATION_EMAIL_REGEX } = require('../constants/auth');
+
 /**
  * Normalise raw id input into an array of integers.
  *
@@ -68,6 +70,27 @@ const applyRounding = (value, roundingType) => {
 };
 
 /**
+ * A trimmed, lower-cased email address, or null when it is not one.
+ *
+ * Null rather than the raw string because callers use it to decide whether they
+ * can deliver at all: a recipient list holds phone numbers beside addresses, and
+ * mail has to pick out only the ones it can send to.
+ */
+const normalizeEmail = (value) => {
+  const trimmed = String(value ?? '').trim().toLowerCase();
+  return VALIDATION_EMAIL_REGEX.test(trimmed) ? trimmed : null;
+};
+
+/**
+ * A phone number as digits only, or null when there are no digits in it.
+ *
+ * The twin of `normalizeEmail`, and null for the same reason: a recipient list holds phone
+ * numbers beside addresses, so a sender uses this to find out whether it can deliver at all.
+ * Digits only because that is what the providers accept — `+91 98765-43210` is rejected.
+ */
+const normalizePhone = (value) => String(value ?? '').replace(/\D/g, '') || null;
+
+/**
  * The last ten digits of a phone number, with everything that is not a digit dropped.
  *
  * Ten because that is what an Indian subscriber number is: the same person's number arrives
@@ -75,6 +98,34 @@ const applyRounding = (value, roundingType) => {
  * the last ten agree. Returns fewer than ten characters for anything shorter, so callers that
  * need a real number check the length.
  */
+/**
+ * Text with its layout taken out: one line, single spaces, blank lines dropped and
+ * the breaks kept as a separator rather than lost.
+ *
+ * For the places that carry a value rather than a document -- a WhatsApp template
+ * parameter, which Meta refuses outright if it holds a newline, a tab or more than
+ * four spaces; a column in an export; a log line that must stay one line to be
+ * greppable. The separator is the caller's, because " | " reads well in a message
+ * and badly in a sentence.
+ */
+const singleLine = (value, separator = ' | ') =>
+  String(value ?? '')
+    .replace(/[\t ]+/g, ' ')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(separator);
+
 const lastTenDigits = (value) => String(value || '').replace(/\D/g, '').slice(-10);
 
-module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf, applyRounding, lastTenDigits };
+module.exports = {
+  normalizeIntegerIds,
+  normalizeOptionalId,
+  numberOrNull,
+  percentOf,
+  applyRounding,
+  normalizeEmail,
+  normalizePhone,
+  singleLine,
+  lastTenDigits
+};

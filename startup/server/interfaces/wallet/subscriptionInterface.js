@@ -12,10 +12,10 @@ function buildWalletUrl(path, base = 'plan') {
 }
 
 
-const hasWallet = (appKey = env.APP_KEY) => Boolean(appKey) && env.SECURE_COOKIE;
+const hasWallet = (appKey = env.APP_KEY) => Boolean(appKey) && !env.isOnPremDeployment;
 
 const walletConfigSummary = () =>
-  `APP_KEY ${env.APP_KEY ? 'set' : 'empty'}, SECURE_COOKIE ${env.SECURE_COOKIE}, WALLET_SERVER_URL=${env.WALLET_SERVER_URL}`;
+  `APP_KEY ${env.APP_KEY ? 'set' : 'empty'}, isOnPremDeployment ${env.isOnPremDeployment}, WALLET_SERVER_URL=${env.WALLET_SERVER_URL}`;
 
 if (!hasWallet()) {
   logger.warn(`Wallet sync disabled, subscriptions stay local — ${walletConfigSummary()}`);

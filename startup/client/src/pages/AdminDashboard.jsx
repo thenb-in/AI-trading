@@ -14,6 +14,7 @@ import {SubscriptionPage} from '../components/admin/subscription_module/Subscrip
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
 import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
+import { NotificationRuleMaster } from "../components/masters/notification_rule_master/NotificationRuleMaster";
 import { AppGuide } from "./AppGuide";
 import { appRoutesWithoutSidebar } from "./AppDashboardWithoutSidebar";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
@@ -38,6 +39,7 @@ const AdminDashboard = () => {
         <Route path="master/activity" element={<ActivityMaster />} />
         <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
         <Route path="master/cache" element={<CacheMaster />} />
+        <Route path="master/notification-rule" element={<NotificationRuleMaster />} />
         
         <Route path="users" element={<UserManagement />} />
         <Route path="company" element={<CompanySettings />} />

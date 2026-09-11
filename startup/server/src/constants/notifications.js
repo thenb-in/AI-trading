@@ -6,7 +6,8 @@ const NOTIFICATION_TYPES = {
   APPROVAL_APPROVED: 'approval_approved',
   APPROVAL_REJECTED: 'approval_rejected',
   REPORT_READY: 'report_ready',
-  REPORT_FAILED: 'report_failed'
+  REPORT_FAILED: 'report_failed',
+  RULE: 'rule'
 };
 
 const VARIANT_BY_TYPE = {
@@ -15,7 +16,8 @@ const VARIANT_BY_TYPE = {
   [NOTIFICATION_TYPES.APPROVAL_APPROVED]: 'success',
   [NOTIFICATION_TYPES.APPROVAL_REJECTED]: 'error',
   [NOTIFICATION_TYPES.REPORT_READY]: 'success',
-  [NOTIFICATION_TYPES.REPORT_FAILED]: 'error'
+  [NOTIFICATION_TYPES.REPORT_FAILED]: 'error',
+  [NOTIFICATION_TYPES.RULE]: 'info'
 };
 
 const DEFAULT_VARIANT = 'info';

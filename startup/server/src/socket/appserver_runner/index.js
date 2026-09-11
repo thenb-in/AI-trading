@@ -2,8 +2,8 @@
 
 const jwt = require('jsonwebtoken');
 const env = require('@startup/src/config/env');
-const logger = require('../../../logger');
 const { createSocketClient } = require('../utils/createSocketClient');
+const { createInProcessRunnerClient } = require('./inProcessRunner');
 
 let _appServerRunnerClient = null;
 
@@ -24,14 +24,12 @@ function initAppServerRunnerClient() {
     return _appServerRunnerClient;
   }
 
+  // No runner URL means no separate process to offload to, so run reports in
+  // the app server itself. Same isConnected()/request() surface either way, so
+  // the handlers and the saved-run lifecycle never learn which mode is live.
   const url = env.REPORT_RUNNER_URL;
   if (!url) {
-    logger.warn(`[app->runner] REPORT_RUNNER_URL not set (value=${url}) — runner disabled, fallback only`);
-    _appServerRunnerClient = {
-      isConnected: () => false,
-      request: () => Promise.reject(new Error(`REPORT_RUNNER_URL not configured (value=${url})`)),
-      close: () => {}
-    };
+    _appServerRunnerClient = createInProcessRunnerClient();
     return _appServerRunnerClient;
   }
   _appServerRunnerClient = createSocketClient({

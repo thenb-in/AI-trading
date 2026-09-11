@@ -34,7 +34,7 @@ const UserTableRow = ({
   const canUpdateUser = hasPermission('update_user', dataContext);
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
-  // Which identity field (name | phone | username) is being edited in the modal, or null.
+  // Which identity field (name | username | email | phone) is being edited in the modal, or null.
   const [editField, setEditField] = useState(null);
 
 
@@ -206,6 +206,17 @@ const UserTableRow = ({
           className={`text-left text-sm text-gray-500 ${fieldEditClass}`}
         >
           {user.username || '—'}
+        </button>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <button
+          type="button"
+          onClick={openFieldEdit('email')}
+          disabled={!canUpdateUser}
+          title={canUpdateUser ? 'Click to edit email' : 'You do not have permission to update users'}
+          className={`text-left text-sm text-gray-500 ${fieldEditClass}`}
+        >
+          {user.email || '—'}
         </button>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">

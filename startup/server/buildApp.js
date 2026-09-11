@@ -27,6 +27,7 @@ const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const notificationRoutes = require('./src/notifications/notificationRoutes');
 const reportRunRoutes = require('./src/routes/reportRunRoutes');
+const notificationRuleRoutes = require('./src/notifications/rules/notificationRuleRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 
 function mountFrameworkMiddleware(app, opts = {}) {
@@ -110,6 +111,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/nbnext-drive`, nbnextDriveRoutes);
   app.use(`${API_PREFIX}/notifications`, notificationRoutes);
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
+  app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
   app.use(`${API_PREFIX}/help-support`, helpSupportRoutes);
 }
 
@@ -128,7 +130,7 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   // mount. Anything under /api/* (incl. /api/v1, /api/healthz, /api/trackingImage),
   // /iclock-style ADMS paths, /uploads*, and /static stays strictly server-handled
   // and 404s on miss — only true SPA routes fall back to index.html.
-  if (!env.isSecureCookie && clientStaticDir) {
+  if (env.isOnPremDeployment && clientStaticDir) {
     const indexFile = path.join(clientStaticDir, 'index.html');
     if (fs.existsSync(indexFile)) {
       // Server-owned prefixes: API + any caller-supplied server-only paths

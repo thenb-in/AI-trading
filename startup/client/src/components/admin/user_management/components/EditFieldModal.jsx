@@ -9,6 +9,7 @@ const FIELD_CONFIG = {
   name: { label: 'Name', type: 'text', placeholder: 'Full name' },
   phone: { label: 'Phone', type: 'tel', placeholder: 'Phone number' },
   username: { label: 'Username', type: 'text', placeholder: 'Username' },
+  email: { label: 'Email', type: 'email', placeholder: 'name@company.com' },
 };
 
 function EditFieldModal({ field, initialValue, onSave, onClose }) {
@@ -89,7 +90,7 @@ function EditFieldModal({ field, initialValue, onSave, onClose }) {
 }
 
 EditFieldModal.propTypes = {
-  field: PropTypes.oneOf(['name', 'phone', 'username']).isRequired,
+  field: PropTypes.oneOf(['name', 'phone', 'username', 'email']).isRequired,
   initialValue: PropTypes.string,
   onSave: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,

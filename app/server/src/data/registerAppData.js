@@ -2,6 +2,7 @@
 const { registerActivityTypes } = require('@startup/src/constants/activity');
 const { AUDIT_ACTIVITY_TYPES } = require('@appServer/src/constants/auditActivity');
 const reportRegistry = require('@startup/src/socket/init_setup/reports/registry');
+const { registerRecipientSources } = require('@appServer/src/notifications/register/registerRecipientSources');
 
 const reportRoutes = require('@appServer/src/routes/reportRoutes');
 const hrDashboardRoutes = require('@appServer/src/routes/hrDashboardRoutes');
@@ -9,6 +10,9 @@ const hrChecklistRoutes = require('@appServer/src/routes/hrChecklistRoutes');
 
 // --- App-owned audit activity types ---
 registerActivityTypes(AUDIT_ACTIVITY_TYPES);
+
+// --- App audiences a notification rule can address ---
+registerRecipientSources();
 
 // --- App report routers (socket report runner) ---
 reportRegistry.registerReportRouter(reportRoutes);

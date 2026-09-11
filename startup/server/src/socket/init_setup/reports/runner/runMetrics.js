@@ -4,7 +4,7 @@
 // the websocket transport. JSON shape, not Prometheus — pull through a
 // node_exporter-style adapter if a TSDB needs it.
 
-const { RUN_OUTCOMES } = require('../constants');
+const { RUN_OUTCOMES } = require('./constants');
 
 const startedAtMs = Date.now();
 

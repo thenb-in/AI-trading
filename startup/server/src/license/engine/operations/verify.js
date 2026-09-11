@@ -24,7 +24,7 @@ const { runRejectionChecks } = require('../core/licenseHelper');
  * SECURE_COOKIE=true.
  */
 async function loadAndVerify() {
-  if (env.isSecureCookie) {
+  if (!env.isOnPremDeployment) {
     return { ok: true, bypass: true, reason: VERIFY_REASONS.ENFORCEMENT_DISABLED, verifiedAt: nowMs() };
   }
 

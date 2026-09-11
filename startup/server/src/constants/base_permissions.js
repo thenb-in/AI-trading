@@ -171,6 +171,8 @@ const MASTER_PERMISSION_CONSTANTS = {
 
   PERMISSION: create_master_permission('permission'),
 
+  NOTIFICATION_RULE: create_master_permission('notification_rule'),
+
   ROLE_PERMISSION: {
     create: {
       name: 'create_role_permission',

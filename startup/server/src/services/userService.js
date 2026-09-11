@@ -5,6 +5,7 @@ const db = require('../models');
 const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
+const { normalizeEmail } = require('../utils/normalizeUtils');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -57,7 +58,7 @@ const getAllUsers = async (companyId) => {
   }
   const rows = await User.findAll({
     where: { isActive: true, company_id: companyId },
-    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'wallet_user_id'],
+    attributes: ['id', 'phone', 'name', 'company_id', 'isActive', 'last_active', 'is_approved', 'mobileApp', 'desktopWeb', 'mobileWeb', 'username', 'email', 'wallet_user_id'],
     include: [
       { model: Company, as: 'company', attributes: ['name'] },
       // description is what tells an admin what a role like `company_admin`
@@ -226,7 +227,7 @@ const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
 };
 
 
-const ALLOWED_BASIC_FIELDS = ['name', 'phone', 'username'];
+const ALLOWED_BASIC_FIELDS = ['name', 'phone', 'username', 'email'];
 
 const updateUserBasic = async (userId, fields = {}) => {
   const user = await findModelByIdOrThrow(User, userId, {}, 'User');
@@ -249,6 +250,14 @@ const updateUserBasic = async (userId, fields = {}) => {
       throw new Error(`Username "${normalized}" already exists`);
     }
     updates.username = normalized;
+  }
+
+  if (updates.email) {
+    const normalized = normalizeEmail(updates.email);
+    if (!normalized) {
+      throw new Error(`"${updates.email}" is not an email address`);
+    }
+    updates.email = normalized;
   }
 
   if (Object.keys(updates).length > 0) {

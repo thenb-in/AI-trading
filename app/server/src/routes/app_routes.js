@@ -1,7 +1,6 @@
 // app_routes.js
 
 const logger = require('@startup/logger');
-const env = require('@startup/src/config/env');
 const employeeRoutes = require('../routes/employeeRoutes');
 const holidayRoutes = require('../routes/holidayRoutes');
 const FormulaRoutes = require('../routes/FormulaRoutes');
@@ -13,12 +12,14 @@ const canteenTokenRoutes = require('../routes/canteenTokenRoutes');
 const gatepassRoutes = require('../routes/gatepassRoutes');
 const departmentRoutes = require('../routes/departmentRoutes');
 const positionRoutes = require('../routes/positionRoutes');
+const organizationStructureRoutes = require('../routes/organizationStructureRoutes');
 const operationCycleRoutes = require('../routes/operationCycleRoutes');
 const roleResponsibilityRoutes = require('../routes/roleResponsibilityRoutes');
 const assetRoutes = require('../routes/assetRoutes');
 const leaveTypeRoutes = require('../routes/leaveTypeRoutes');
 const allowanceTypeRoutes = require('../routes/allowanceTypeRoutes');
 const purposeTypeRoutes = require('../routes/purposeTypeRoutes');
+const contactStatusRoutes = require('../routes/contactStatusRoutes');
 const canteenMealTypeRoutes = require('../routes/canteenMealTypeRoutes');
 const serviceOfferingRoutes = require('../routes/serviceOfferingRoutes');
 const customerRoutes = require('../routes/customerRoutes');
@@ -41,7 +42,6 @@ const manualAttendanceRoutes = require('../routes/manualAttendanceRoutes');
 const layoutRoutes = require('@startup/src/routes/layoutRoutes');
 const reimbursementRoutes = require('../routes/reimbursementRoutes');
 const advanceRoutes = require('../routes/advanceRoutes');
-const dataAccessRoutes = require('./dataAccess.routes');
 const locationRoutes = require('../routes/locationRoutes');
 const contactRoutes = require('../routes/contactRoutes');
 const callBuddyRoutes = require('../routes/callBuddyRoutes');
@@ -77,6 +77,7 @@ const kycRoutes = require('../routes/kycRoutes');
 // Internal service-to-service API (shared-secret, not user-JWT). The standalone
 // biometric gateways POST here to resolve/create HR Employee shells.
 const internalRoutes = require('../routes/internalRoutes');
+const publicEmployeeFormRoutes = require('../routes/publicEmployeeFormRoutes');
 const wagemasterIngestRoutes = require('../routes/wagemaster/ingestRoutes');
 const registerUndoables = require('../undo/registerUndoables');
 
@@ -100,12 +101,7 @@ const appRoutes = (app, prefix) => {
     const healthData = {
       message: 'NB Next Server is running',
       status: 'OK',
-      timestamp: new Date().toISOString(),
-      environment: env.NODE_ENV,
-      version: '2.0.0',
-      uptime: process.uptime(),
-      memory: process.memoryUsage(),
-      pid: process.pid
+      timestamp: new Date().toISOString()
     };
 
     const healthIp = req.ip || req.connection.remoteAddress;
@@ -133,18 +129,21 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/employees`, employeeRoutes);
   // Compatibility alias (some clients call singular /employee/*)
   app.use(`${prefix}/employee`, employeeRoutes);
+  app.use(`${prefix}/public/employee-form`, publicEmployeeFormRoutes);
   app.use(`${prefix}/holidays`, holidayRoutes);
   app.use(`${prefix}/formulas`, FormulaRoutes);
   // app.use('${prefix}/admin', AdminRoutes)
   app.use(`${prefix}/gatepass`, gatepassRoutes);
   app.use(`${prefix}/department`, departmentRoutes);
   app.use(`${prefix}/position`, positionRoutes);
+  app.use(`${prefix}/organization-structure`, organizationStructureRoutes);
   app.use(`${prefix}/operation-cycle`, operationCycleRoutes);
   app.use(`${prefix}/role-responsibility`, roleResponsibilityRoutes);
   app.use(`${prefix}/asset`, assetRoutes);
   app.use(`${prefix}/leave-type`, leaveTypeRoutes);
   app.use(`${prefix}/allowance-type`, allowanceTypeRoutes);
   app.use(`${prefix}/purpose-type`, purposeTypeRoutes);
+  app.use(`${prefix}/contact-status`, contactStatusRoutes);
   app.use(`${prefix}/canteen-meal-type`, canteenMealTypeRoutes);
   app.use(`${prefix}/service-offering`, serviceOfferingRoutes);
   app.use(`${prefix}/customer`, customerRoutes);
@@ -173,7 +172,6 @@ const appRoutes = (app, prefix) => {
   app.use(`${prefix}/raw-punch`, rawPunchRoutes);
   app.use(`${prefix}/canteen-token`, canteenTokenRoutes);
   app.use(`${prefix}/layouts`, layoutRoutes);
-  app.use(`${prefix}/data-access`, dataAccessRoutes);
 
 
   // location api

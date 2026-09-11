@@ -12,10 +12,10 @@ const registry = require('@startup/src/socket/init_setup/reports/registry');
 const reportRunService = require('@startup/src/services/reportRunService');
 const { writePayload, removePayloads } = require('@startup/src/utils/reportPayloadStore');
 const { REPORT_RUN_LOG_PREFIX, REPORT_RUN_STATUS } = require('@startup/src/constants/reportRuns');
-const { RUN_OUTCOMES } = require('../constants');
-const metrics = require('./metrics');
+const { RUN_OUTCOMES } = require('./constants');
+const metrics = require('./runMetrics');
 const { enqueue } = require('./jobQueue');
-const { announceRunFinished } = require('./announceRunFinished');
+const { announceRunFinished } = require('./runAnnouncer');
 const { withCancellation, stopRun } = require('./runCancellation');
 
 // Most reports answer with a single { columns, data }. Multi-section reports —

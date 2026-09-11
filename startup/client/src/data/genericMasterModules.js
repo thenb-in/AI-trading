@@ -3,16 +3,19 @@ import {
   CloudUpload as CloudUploadIcon,
   Category as CategoryIcon,
   History as HistoryIcon,
+  NotificationsActive as NotificationsActiveIcon,
 } from "@mui/icons-material";
 
 
 const GENERIC_MASTER_CATEGORIES = {
+  COMMUNICATION: "Communication",
   FILE_MANAGEMENT: "File Management",
   SYSTEM_LOGS: "System Logs",
 };
 
 
 const genericMasterCategoryOrder = [
+  { name: GENERIC_MASTER_CATEGORIES.COMMUNICATION, order: 6, icon: NotificationsActiveIcon },
   { name: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT, order: 7, icon: CloudUploadIcon },
   { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 8, icon: HistoryIcon },
 ];
@@ -21,6 +24,21 @@ const defaultMasterCategoryIcon = CategoryIcon;
 
 
 const getGenericMasterModules = (handleOpenMaster) => [
+  {
+    id: "notification-rule",
+    title: "Notification Rules",
+    description:
+      "Decide who hears about what, and where it reaches them — in-app, by email or on WhatsApp.",
+    icon: NotificationsActiveIcon,
+    color: "primary",
+    onClick: () => handleOpenMaster("notification-rule"),
+    buttonText: "Manage Rules",
+    tags: ["Notification", "Alert", "In-App", "Email", "WhatsApp"],
+    keywords:
+      "notification rule alert in-app bell email mail whatsapp message recipient role permission channel",
+    category: GENERIC_MASTER_CATEGORIES.COMMUNICATION,
+    permissionName: "read_notification_rule",
+  },
   {
     id: "activity",
     title: "Audit Logs",
