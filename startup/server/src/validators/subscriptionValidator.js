@@ -6,12 +6,13 @@ const { body, param } = require('express-validator');
 const { handleValidationErrors } = require('../middleware/validationErrorsMiddleware');
 const { VALID_SUBSCRIPTION_STATUSES } = require('../constants/subscription');
 
-// Shared shape for a `permissions: [{ permission_id, status }]` body.
+// Shared shape for a `permissions: [{ name, status }]` body. Matching is on name because a
+// permission's id is only a local serial — an exported subscription's ids mean nothing here.
 const permissionItemRules = [
-  body('permissions.*.permission_id')
-    .exists().withMessage((value) => `permission_id is required. Received: "${value}".`)
+  body('permissions.*.name')
+    .exists().withMessage((value) => `permission name is required. Received: "${value}".`)
     .bail()
-    .isInt().withMessage((value) => `permission_id must be an integer. Received: "${value}".`),
+    .isString().withMessage((value) => `permission name must be a string. Received: "${value}".`),
   body('permissions.*.status')
     .isIn(VALID_SUBSCRIPTION_STATUSES).withMessage(`status must be one of: ${VALID_SUBSCRIPTION_STATUSES.join(', ')}`)
 ];

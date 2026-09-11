@@ -12,17 +12,10 @@ const resolveCompany = async (claims) => {
     throw { status: 400, message: 'Wallet did not say which organization this user belongs to' };
   }
 
-  const existing = await companyService.getCompanyById(companyId);
-  if (existing) {
-    return existing;
-  }
-
-  const company = await companyService.createCompany({
+  return companyService.findOrCreateCompany({
     id: companyId,
     name: walletCompany?.name || companyId
   });
-  logger.info(`[oidc-rp] Created company from Wallet: ${company.id} - ${company.name}`);
-  return company;
 };
 
 

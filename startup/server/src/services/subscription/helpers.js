@@ -52,25 +52,25 @@ async function loadSubscriptionPermissions(subscriptionId, transaction) {
 async function applyPermissionStatuses(subscriptionId, rows, { transaction } = {}) {
   let appliedPermissions = [];
   if (rows.length) {
-    const ids = rows.map((r) => r.permission_id);
+    const names = rows.map((r) => r.name);
     const found = await Permission.findAll({
-      where: { id: ids },
+      where: { name: names },
       attributes: ['id', 'name', 'display_name'],
       transaction
     });
-    if (found.length !== ids.length) {
-      const foundIds = found.map((p) => p.id);
-      const missingIds = ids.filter((id) => !foundIds.includes(id));
-      throw { status: 404, message: `Permissions with ids ${missingIds.join(', ')} not found` };
+    if (found.length !== names.length) {
+      const foundNames = found.map((p) => p.name);
+      const missingNames = names.filter((name) => !foundNames.includes(name));
+      throw { status: 404, message: `Permissions not found: ${missingNames.join(', ')}` };
     }
-    const metaById = new Map(found.map((p) => [p.id, { name: p.name, display_name: p.display_name }]));
-    for (const { permission_id, status } of rows) {
-      await upsertSubscriptionPermission(subscriptionId, permission_id, status, transaction);
+    const byName = new Map(found.map((p) => [p.name, p]));
+    for (const { name, status } of rows) {
+      await upsertSubscriptionPermission(subscriptionId, byName.get(name).id, status, transaction);
     }
-    appliedPermissions = rows.map(({ permission_id, status }) => ({
-      id: permission_id,
-      name: metaById.get(permission_id)?.name || null,
-      display_name: metaById.get(permission_id)?.display_name || null,
+    appliedPermissions = rows.map(({ name, status }) => ({
+      id: byName.get(name).id,
+      name,
+      display_name: byName.get(name).display_name,
       status
     }));
   }

@@ -11,15 +11,19 @@ function buildWalletUrl(path, base = 'plan') {
   return `${env.WALLET_SERVER_URL.replace(/\/+$/, '')}/${base}/${path}`;
 }
 
-if (!env.APP_KEY) {
-  logger.warn(`APP_KEY is empty — wallet sync disabled, subscriptions stay local (WALLET_SERVER_URL=${env.WALLET_SERVER_URL})`);
-}
 
-const hasWallet = (appKey = env.APP_KEY) => Boolean(appKey);
+const hasWallet = (appKey = env.APP_KEY) => Boolean(appKey) && env.SECURE_COOKIE;
+
+const walletConfigSummary = () =>
+  `APP_KEY ${env.APP_KEY ? 'set' : 'empty'}, SECURE_COOKIE ${env.SECURE_COOKIE}, WALLET_SERVER_URL=${env.WALLET_SERVER_URL}`;
+
+if (!hasWallet()) {
+  logger.warn(`Wallet sync disabled, subscriptions stay local — ${walletConfigSummary()}`);
+}
 
 /** Result for a wallet call that was skipped because no wallet is configured. */
 const skipped = (reason) => {
-  logger.info(`Wallet sync skipped (APP_KEY empty): ${reason}`);
+  logger.info(`Wallet sync skipped (${walletConfigSummary()}): ${reason}`);
   return { success: true, skipped: true };
 };
 
@@ -118,6 +122,7 @@ async function fetchCompanySubscriptionsFromWallet(appKey, companyId) {
 }
 
 module.exports = {
+  hasWallet,
   pushSubscriptionToWallet,
   fetchPlansFromWallet,
   syncCompanySubscriptionsToWallet,

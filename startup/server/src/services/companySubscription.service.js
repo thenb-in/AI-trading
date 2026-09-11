@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const logger = require('../../logger');
 const { CompanySubscription, Subscription, Company, Permission } = require('../models');
 const env = require('../config/env');
-const { fetchAvailableSubscriptionsFromWallet, syncCompanySubscriptionsToWallet } = require('../../interfaces/wallet/subscriptionInterface');
+const { fetchAvailableSubscriptionsFromWallet, syncCompanySubscriptionsToWallet, hasWallet } = require('../../interfaces/wallet/subscriptionInterface');
 const { buildLicenseSubscriptions, validateSubscriptionsWithWallet } = require('./subscriptionResolvers');
 const { formatSubscriptionRow } = require('../data_formatters/subscriptionFormatter');
 const { getSubscriptionsAndPermissions } = require('./subscription/listSubscription.service');
@@ -58,7 +58,7 @@ const getCompanySubscriptions = async (companyId) => {
  * includes both approved and pending entries.
  */
 const getAvailableSubscriptions = async (companyId) => {
-  if (!env.APP_KEY) {
+  if (!hasWallet()) {
     return getSubscriptionsAndPermissions(companyId);
   }
   return fetchAvailableSubscriptionsFromWallet(env.APP_KEY, companyId);
@@ -132,10 +132,12 @@ const setCompanySubscriptions = async (companyId, subscriptionIds, userId) => {
 
 
 const addCompanySubscription = async (companyId, subscriptionId, transaction) => {
-  return CompanySubscription.create(
-    { company_id: companyId, subscription_id: subscriptionId },
-    { transaction }
-  );
+  const [link] = await CompanySubscription.findOrCreate({
+    where: { company_id: companyId, subscription_id: subscriptionId },
+    defaults: { company_id: companyId, subscription_id: subscriptionId },
+    transaction
+  });
+  return link;
 };
 
 /**

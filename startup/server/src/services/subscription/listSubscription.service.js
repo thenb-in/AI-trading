@@ -3,11 +3,11 @@ const logger = require('../../../logger');
 const env = require('../../config/env');
 const { Subscription } = require('../../models');
 const { permissionsInclude, permissionStatusOf, isGlobalSubscription } = require('./helpers');
-const { fetchAvailableSubscriptionsFromWallet } = require('../../../interfaces/wallet/subscriptionInterface');
+const { fetchAvailableSubscriptionsFromWallet, hasWallet } = require('../../../interfaces/wallet/subscriptionInterface');
 
 
 const getPushedPlanIds = async (companyId) => {
-  if (!env.SECURE_COOKIE) {
+  if (!hasWallet()) {
     return new Set();
   }
   try {
@@ -34,7 +34,7 @@ const getSubscriptionsAndPermissions = async (companyId) => {
     });
 
     const pushedIds = await getPushedPlanIds(companyId);
-    const walletEnabled = Boolean(env.APP_KEY);
+    const walletEnabled = hasWallet();
 
     return subscriptions.map((subscription) => {
       const subscriptionJson = subscription.toJSON();

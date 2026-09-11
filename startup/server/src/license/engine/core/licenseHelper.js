@@ -3,6 +3,7 @@ const { VERIFY_REASONS } = require('../../../constants/license');
 const { nowMs, toEpochMs } = require('../../../utils/clock');
 const licenseSeal = require('./licenseSeal');
 const licenseStore = require('./licenseStore');
+const { provisionFromLicense } = require('./licenseProvision');
 const machineFingerprint = require('./machineFingerprint');
 const { clockSkewMs, expiryDeadlineMs, expectedAppName } = require('./licenseUtils');
 
@@ -62,6 +63,7 @@ async function acceptToken({ token, payload, opts = {} }) {
   }
 
   await licenseStore.persist({ token, payload });
+  await provisionFromLicense(payload);
   const advance = licenseSeal.advanceSeal({
     payload,
     token,

@@ -20,7 +20,7 @@ function useSubscriptionManager() {
     refetch,
   } = useSubscriptions();
 
-  const draft = useSubscriptionPermissionDraft();
+  const draft = useSubscriptionPermissionDraft(permissions);
   const { reset: resetDraft, getStatus, dirtyCount, changedRows, setStatus, setMany } = draft;
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

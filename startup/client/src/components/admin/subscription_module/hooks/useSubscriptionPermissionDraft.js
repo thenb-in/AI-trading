@@ -12,9 +12,15 @@ function buildStatusMap(savedPermissions) {
 }
 
 
-function useSubscriptionPermissionDraft(initialPermissions = []) {
-  const [baseMap, setBaseMap] = useState(() => buildStatusMap(initialPermissions));
-  const [draftMap, setDraftMap] = useState(() => buildStatusMap(initialPermissions));
+function useSubscriptionPermissionDraft(permissionCatalog = []) {
+  const [baseMap, setBaseMap] = useState(() => buildStatusMap(permissionCatalog));
+  const [draftMap, setDraftMap] = useState(() => buildStatusMap(permissionCatalog));
+
+  // The UI keys everything on id, but the API matches on name — an id is only a local serial.
+  const nameById = useMemo(
+    () => new Map(permissionCatalog.map((p) => [p.id, p.name])),
+    [permissionCatalog]
+  );
 
   const reset = useCallback((savedPermissions) => {
     const map = buildStatusMap(savedPermissions);
@@ -48,11 +54,11 @@ function useSubscriptionPermissionDraft(initialPermissions = []) {
       const base = baseMap[permission_id] || DEFAULT_STATUS;
       const current = draftMap[permission_id] || DEFAULT_STATUS;
       if (current !== base) {
-        rows.push({ permission_id, status: current });
+        rows.push({ name: nameById.get(permission_id), status: current });
       }
     });
     return rows;
-  }, [baseMap, draftMap]);
+  }, [baseMap, draftMap, nameById]);
 
   return {
     getStatus,

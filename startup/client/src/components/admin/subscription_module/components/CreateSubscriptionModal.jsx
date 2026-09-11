@@ -25,7 +25,7 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [] 
     submit,
   } = useEntityCreateForm('Subscription');
 
-  const draft = useSubscriptionPermissionDraft();
+  const draft = useSubscriptionPermissionDraft(permissions);
 
   useEscapeKey(onClose, isOpen);
 

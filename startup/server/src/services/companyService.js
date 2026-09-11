@@ -49,6 +49,16 @@ const companyService = {
     );
   },
 
+  async findOrCreateCompany(data, transaction) {
+    const existing = await this.getCompanyById(data.id);
+    if (existing) {
+      return existing;
+    }
+    const company = await this.createCompany(data, transaction);
+    logger.info(`Created company ${company.id} - ${company.name}`);
+    return company;
+  },
+
   async getCompanySettings(id) {
     try {
       const company = await findModelByIdOrThrow(Company, id, {

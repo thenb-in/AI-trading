@@ -23,6 +23,35 @@ const createPermission = async (name, display_name, description, type) => {
   return newPermission;
 };
 
+
+const createMissingPermissions = async (permissions) => {
+  const byName = new Map();
+  for (const permission of permissions || []) {
+    if (permission?.name && !byName.has(permission.name)) {
+      byName.set(permission.name, {
+        name: permission.name,
+        display_name: permission.display_name || permission.name,
+        description: permission.description || null,
+        type: permission.type || null
+      });
+    }
+  }
+  if (byName.size === 0) {
+    return [];
+  }
+  const existing = await Permission.findAll({ where: { name: [...byName.keys()] }, attributes: ['name'] });
+  for (const row of existing) {
+    byName.delete(row.name);
+  }
+  if (byName.size === 0) {
+    return [];
+  }
+  const created = [...byName.keys()];
+  await Permission.bulkCreate([...byName.values()]);
+  logger.info(`Created ${created.length} missing permission(s): ${created.join(', ')}`);
+  return created;
+};
+
 const getAllPermissions = async () => {
   try {
     const permissions = await Permission.findAll({
@@ -73,6 +102,7 @@ const deletePermission = async (permissionId) => {
 
 module.exports = {
   createPermission,
+  createMissingPermissions,
   getAllPermissions,
   getPermissionById,
   getPermissionsByIds,

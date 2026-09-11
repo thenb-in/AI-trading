@@ -2,8 +2,9 @@ const { Op } = require('sequelize');
 const logger = require('../../logger');
 const env = require('../config/env');
 const { Permission } = require('../models');
+const { SUBSCRIPTION_STATUS } = require('../constants/subscription');
 const licenseService = require('../license/licenseService');
-const { fetchCompanySubscriptionsFromWallet } = require('../../interfaces/wallet/subscriptionInterface');
+const { fetchCompanySubscriptionsFromWallet, hasWallet } = require('../../interfaces/wallet/subscriptionInterface');
 
 
 const buildLicenseSubscriptions = async (companyId) => {
@@ -18,18 +19,19 @@ const buildLicenseSubscriptions = async (companyId) => {
   }
   const plans = Array.isArray(snapshot.plan) ? snapshot.plan : [];
 
-  // The token carries id/name/status/display_name per permission, but not
-  // `type`/`description` — those come from the local Permission table.
-  const permissionIds = [...new Set(
-    plans.flatMap((plan) => (plan.permissions || []).map((perm) => perm.id)).filter(Boolean)
+  // The token carries name/display_name per permission, but not `type`/`description` — those
+  // come from the local Permission table, matched on NAME. The token's ids are the wallet's
+  // serials; looking up by them here lands on whichever unrelated permission holds that id.
+  const permissionNames = [...new Set(
+    plans.flatMap((plan) => (plan.permissions || []).map((perm) => perm.name)).filter(Boolean)
   )];
-  const localPermissions = permissionIds.length
+  const localPermissions = permissionNames.length
     ? await Permission.findAll({
-      where: { id: { [Op.in]: permissionIds } },
-      attributes: ['id', 'display_name', 'description', 'type']
+      where: { name: { [Op.in]: permissionNames } },
+      attributes: ['id', 'name', 'display_name', 'description', 'type']
     })
     : [];
-  const localById = new Map(localPermissions.map((row) => [row.id, row.toJSON()]));
+  const localByName = new Map(localPermissions.map((row) => [row.name, row.toJSON()]));
 
   return plans.map((plan) => ({
     id: plan.id,
@@ -38,14 +40,15 @@ const buildLicenseSubscriptions = async (companyId) => {
     company_id: null,
     isGlobal: plan.isGlobal ?? true,
     permissions: (plan.permissions || []).map((perm) => {
-      const local = localById.get(perm.id) || {};
+      const local = localByName.get(perm.name) || {};
       return {
-        id: perm.id,
+        id: local.id ?? perm.id,
         name: perm.name,
         display_name: perm.display_name ?? local.display_name ?? null,
         description: local.description ?? null,
         type: local.type ?? null,
-        subscriptionStatus: perm.status
+        // The wallet only puts subscribed and hidden permissions in a token
+        subscriptionStatus: perm.status || SUBSCRIPTION_STATUS.SUBSCRIBED
       };
     })
   }));
@@ -55,7 +58,7 @@ const buildLicenseSubscriptions = async (companyId) => {
  * Validate a company's locally-computed subscriptions against the wallet.
  */
 const validateSubscriptionsWithWallet = async (companyId, localSubs) => {
-  if (!env.APP_KEY) {
+  if (!hasWallet()) {
     return localSubs;
   }
 
