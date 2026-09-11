@@ -51,4 +51,20 @@ const numberOrNull = (rawValue) => {
  */
 const percentOf = (part, whole) => (whole > 0 ? Number(((part / whole) * 100).toFixed(2)) : null);
 
-module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf };
+/**
+ * Round a number the way the caller was configured to round it: 1 nearest, 2 up, 3 down,
+ * 4 not at all. The mode travels as data (a column, a setting) rather than being decided in
+ * code, so the same value rounds the same way everywhere it is read back -- a figure kept
+ * exact for a calculation must not arrive rounded in the column that displays it.
+ */
+const applyRounding = (value, roundingType) => {
+  const number = Number(value) || 0;
+  switch (Number(roundingType)) {
+  case 2: return Math.ceil(number);
+  case 3: return Math.floor(number);
+  case 4: return number;
+  default: return Math.round(number); // 1 (nearest) and any unrecognised mode
+  }
+};
+
+module.exports = { normalizeIntegerIds, normalizeOptionalId, numberOrNull, percentOf, applyRounding };
