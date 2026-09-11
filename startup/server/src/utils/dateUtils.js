@@ -1,7 +1,8 @@
 const { parse, parseISO } = require('date-fns');
 const logger = require('../../logger');
 const { TIME_ZONE, DEFAULT_DATE_FORMAT } = require('../constants/auth');
-const { MS_PER_DAY } = require('../constants/time');
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function formatDate(date, format_str) {
   if (!date) {
@@ -200,19 +201,11 @@ function getDaysBetween(start_date, end_date, weekday) {
   return days;
 }
 
-const calculateWorkDays = (startDate, endDate) => {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  start.setUTCHours(0, 0, 0, 0);
-  end.setUTCHours(0, 0, 0, 0);
-
-  let count = 0;
-  while (start <= end) {
-    count++;
-    start.setUTCDate(start.getUTCDate() + 1);
-  }
-  return count;
-};
+// Calendar length of the month a date
+function daysInMonth(date) {
+  const parsed = parseDate(date);
+  return parsed ? new Date(parsed.getFullYear(), parsed.getMonth() + 1, 0).getDate() : 0;
+}
 
 function getMonthPercentage(startDate, endDate) {
   const start = new Date(startDate);
@@ -663,7 +656,6 @@ function extendDateRange(startDate, endDate, daysBefore = 1, daysAfter = 1) {
   return { extendedStart, extendedEnd };
 }
 
-
 module.exports = {
   formatDate,
   formatTime,
@@ -680,7 +672,7 @@ module.exports = {
   getAllDays,
   getDaysBetween,
   countDaysBetween,
-  calculateWorkDays,
+  daysInMonth,
   getMonthPercentage,
   getCompleteMonthsPercentage,
   normalizeToDate,
