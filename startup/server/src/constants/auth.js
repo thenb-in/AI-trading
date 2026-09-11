@@ -31,7 +31,6 @@ const SIGNUP_GENERIC_ERROR = 'An error occurred during signup';
 const SIGNUP_CONFLICT_MESSAGES = ['Phone number already exists', 'username', 'Username'];
 
 
-
 module.exports = {
   VALIDATION_MIN_PASSWORD_LENGTH,
   VALIDATION_MAX_PASSWORD_LENGTH,

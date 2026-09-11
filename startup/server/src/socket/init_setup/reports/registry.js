@@ -1,11 +1,9 @@
-// Report registry (app-populated).
+// Auto-derived report registry.
 //
-// The app registers its report routers here via registerReportRouter() from its
-// registerAppData bootstrap — startup must not import @appServer. Each call walks
-// the Express router stack and indexes every GET route by its slug → final route
-// handler, so adding a new `router.get('/x-report', ...)` in reportRoutes.js
-// automatically makes it available to the socket runner — no parallel list to
-// keep in sync.
+// Walks the Express router stack at module load and indexes every GET route
+// by its slug → final route handler. Adding a new `router.get('/x-report', ...)`
+// in reportRoutes.js automatically makes it available to the socket runner —
+// no parallel registration list to keep in sync.
 //
 // Caveats:
 //   - GET-only. POST/PUT routes are not exposed via the socket transport.
@@ -15,6 +13,9 @@
 //     this transport if you rely on Express middleware for authz.
 
 const { invokeExpressHandler } = require('./expressShim');
+const reportRoutes = require('@appServer/src/routes/reportRoutes');
+const hrDashboardRoutes = require('@appServer/src/routes/hrDashboardRoutes');
+const hrChecklistRoutes = require('@appServer/src/routes/hrChecklistRoutes');
 
 
 function buildRegistryFromRouter(router, prefix = '') {
@@ -35,16 +36,11 @@ function buildRegistryFromRouter(router, prefix = '') {
   return registry;
 }
 
-const registeredReports = {};
-
-/**
- * Register every GET route on an Express router as a runnable report handler.
- * Called by the app (registerAppData) at process start, before the socket
- * report runner handles any request.
- */
-function registerReportRouter(router, prefix = '') {
-  Object.assign(registeredReports, buildRegistryFromRouter(router, prefix));
-}
+const registeredReports = {
+  ...buildRegistryFromRouter(reportRoutes),
+  ...buildRegistryFromRouter(hrDashboardRoutes, 'hr-dashboard/'),
+  ...buildRegistryFromRouter(hrChecklistRoutes, 'hr-checklist/')
+};
 
 function has(reportKey) {
   return Object.prototype.hasOwnProperty.call(registeredReports, reportKey);
@@ -66,4 +62,4 @@ async function run(reportKey, { filters, user }) {
   return invokeExpressHandler(handler, { user, filters });
 }
 
-module.exports = { has, get, list, run, registerReportRouter };
+module.exports = { has, get, list, run };

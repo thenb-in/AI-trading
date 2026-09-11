@@ -152,6 +152,7 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 | type | INTEGER | 0=create, 1=update, 2=delete |
 | isConfirmed | BOOLEAN | External sync status |
 | timestamp | DATE | When the action occurred |
+| batchId | STRING | Groups the rows of one user gesture (see 5.3 Undo) |
 
 #### NBnextDrive
 | Column | Type | Notes |
@@ -254,6 +255,7 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 |--------|------|------|-------------|
 | GET | `/` | Yes | List activities (with pagination) |
 | GET | `/:head` | Yes | Filter activities by head/category |
+| POST | `/undo/:batchId` | Yes — own action, inside the undo window | Undo a batch: delete the records it wrote |
 
 ### 3.7 NBnext Drive (`/api/v1/nbnext-drive`)
 
@@ -345,13 +347,91 @@ server/src/
 
 Same pattern applies to client: `components/startup/`, `pages/startup/`, `services/startup/`, etc.
 
-### 5.3 Git Conventions
+### 5.3 Undo (Mistake Recovery)
+
+Undo is not a second write path — it is the master's own delete, aimed at the
+records the last action created. Nothing about deletion is reimplemented, so
+validations, side effects and permissions stay in one place.
+
+How a gesture becomes undoable:
+
+1. **Client tags the requests.** Every write carries an `x-batch-id` header
+   (`startup/client/src/services/batchContext.js`). A bulk run or import wraps
+   its loop in `runAsBatch`, so its N requests share one id; a standalone write
+   gets its own. One gesture = one batch, however many HTTP calls it took.
+2. **The activity logger stores it.** `activity.batch_id` groups the rows, and
+   each CREATE row already records `createdIds`.
+3. **Undo replays it.** `POST /activity/undo/:batchId` reads those ids back and
+   calls the registered delete for each. An undo is itself logged under batch
+   `undo:<originalId>`, which is how "already undone" is known.
+
+To make a master undoable, register its existing delete
+(`app/server/src/undo/registerUndoables.js`):
+
+```js
+registerUndoable('ManualAttendance', {   // the activity `head` its routes log under
+  remove: deleteManualAttendance,        // the same delete the DELETE route uses
+  label: 'manual attendance',
+  undoUpdateByDelete: true,              // changes undo by removing the record
+  canRemove: canRemoveManualAttendance   // ...unless approved or locked since
+});
+```
+
+**What authorises an undo.** Not the delete permission — that is usually
+withheld, and requiring it would put mistake recovery out of reach of the people
+who make the mistakes. Undo is a retraction, bounded so it cannot become a
+back-door delete:
+
+| Control | Effect |
+|---|---|
+| Actor-bound | Only the user whose activity rows they are (`created_by`) |
+| Time-bound | `UNDO_WINDOW_MINUTES` (15) from the batch's newest write, measured server-side against the logged timestamp |
+| State-bound | Per-record `canRemove` gate — attendance refuses rows since approved or locked |
+| Single-use | The undo is logged as batch `undo:<original>`; a second attempt is refused |
+| Audited | Every undo writes its own activity row |
+
+Blast radius: your own pending writes from the last quarter hour — records you
+could already have edited. Beyond the window it is a deletion, not a slip, and
+needs the master's Delete button and its permission.
+
+Creations always undo. Updates undo only where the object set
+`undoUpdateByDelete`, and they **delete rather than revert** — the log's diff
+cannot faithfully rebuild prior state. For attendance that is the right trade: a
+day with no manual mark falls back to what the punches say. Deletes never undo.
+Wherever undo removes rather than reverts, the UI says so.
+
+A route that only knows which it did after the fact (the attendance grid
+upserts: it creates the first time a day is marked, updates after that) passes a
+resolver instead of a fixed action, and returns `null` for requests that wrote
+nothing:
+
+```js
+createActivityLogMiddleware('ManualAttendance', ({ data }) => {
+  if (!data?.record?.id) return null;              // validate-only probe
+  return data.created ? 'CREATE' : 'UPDATE';
+});
+```
+
+Undoable today: `ManualAttendance` (master, import, and the detailed-attendance
+grid), `ManualPunch`, `ManualSalaries` (master and the salary register), and
+`GatePass`.
+
+Surface: the success notification itself (`showUndoToast`). It carries what
+happened plus a `detail` line naming the person and date — the part a user can
+scan for a mistake — and the Undo button beside it. "Attendance updated" alone
+gives nothing to catch an error in; "Marked P · Ravi Kumar · 04 Aug 2026" does.
+
+Per-row **History** opens
+the audit timeline straight from the grid, including for rows that can't be opened for
+edit.
+
+### 5.4 Git Conventions
 
 - **Commit format:** Conventional Commits enforced by commitlint
 - **Hooks:** Husky pre-commit (lint-staged), commit-msg (commitlint), pre-push (validation)
 - **Supported types:** `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `test`, `perf`, `ci`, `build`
 
-### 5.4 Environment Configuration
+### 5.5 Environment Configuration
 
 All environment variables are centralized in:
 - **Server:** `server/src/config/env.js` (reads from `.env` via `dotenv-safe`)

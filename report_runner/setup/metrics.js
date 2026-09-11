@@ -4,20 +4,26 @@
 // the websocket transport. JSON shape, not Prometheus — pull through a
 // node_exporter-style adapter if a TSDB needs it.
 
+const { RUN_OUTCOMES } = require('../constants');
+
 const startedAtMs = Date.now();
 
-const totals = {
-  requests: 0,
-  successes: 0,
-  errors: 0,
-  inFlight: 0,
-};
+// One counter per outcome, derived rather than listed: adding an outcome to
+// RUN_OUTCOMES is the whole change, here and in the per-report buckets.
+function emptyCounters() {
+  return Object.values(RUN_OUTCOMES).reduce(
+    (counters, outcome) => ({ ...counters, [outcome]: 0 }),
+    { requests: 0, inFlight: 0 }
+  );
+}
+
+const totals = emptyCounters();
 
 const perReport = Object.create(null);
 
 function bucketFor(reportKey) {
   if (!perReport[reportKey]) {
-    perReport[reportKey] = { requests: 0, successes: 0, errors: 0, inFlight: 0 };
+    perReport[reportKey] = emptyCounters();
   }
   return perReport[reportKey];
 }
@@ -30,19 +36,15 @@ function recordStart(reportKey) {
   b.inFlight++;
 }
 
-function recordSuccess(reportKey) {
-  totals.successes++;
+/**
+ * Close out a run under one of RUN_OUTCOMES. One function rather than one per
+ * outcome, so a new outcome is a new counter and nothing else.
+ */
+function record(reportKey, outcome) {
+  totals[outcome]++;
   totals.inFlight = Math.max(0, totals.inFlight - 1);
   const b = bucketFor(reportKey);
-  b.successes++;
-  b.inFlight = Math.max(0, b.inFlight - 1);
-}
-
-function recordError(reportKey) {
-  totals.errors++;
-  totals.inFlight = Math.max(0, totals.inFlight - 1);
-  const b = bucketFor(reportKey);
-  b.errors++;
+  b[outcome]++;
   b.inFlight = Math.max(0, b.inFlight - 1);
 }
 
@@ -53,8 +55,8 @@ function snapshot() {
     totals: { ...totals },
     per_report: Object.fromEntries(
       Object.entries(perReport).map(([k, v]) => [k, { ...v }])
-    ),
+    )
   };
 }
 
-module.exports = { recordStart, recordSuccess, recordError, snapshot };
+module.exports = { recordStart, record, snapshot };

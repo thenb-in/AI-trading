@@ -4,50 +4,32 @@ import { PageMeta } from './PageMeta';
 import { reports } from '@data/getReportModules';
 import { getMasterModules } from '@data/getMasterModules';
 import { getAppModuleDefinitions } from '@data/getAppModules';
-import {
-  getAppStaticTitles,
-  getAppTitlePatterns,
-  getAppPrivatePathPrefixes,
-} from './routeTitleRegistry';
 
 // Per-route document <title> for every page in the app. Without this the
 // title sticks at whatever the last <PageMeta>-emitting page set it to —
 // authed admin routes have no per-page meta of their own, so e.g. landing
 // at /admin/reports after signing in left the tab labelled "Sign in".
 
-// The reports / app-module / master lists are populated by the app at boot
-// (registered as a side-effect import in main.jsx). These lookup maps are
-// therefore built lazily on first resolveTitle() call — which happens at
-// render, after boot — not at module eval, which would capture empty lists.
-let reportTitleBySlug = null;
-let appTitleByPath = null;
-let masterTitleByKey = null;
-
-function getReportTitleBySlug() {
-  if (reportTitleBySlug) return reportTitleBySlug;
+const REPORT_TITLE_BY_SLUG = (() => {
   const map = {};
   for (const r of reports) {
     if (r.slug && r.title) map[r.slug] = r.title;
   }
-  reportTitleBySlug = map;
   return map;
-}
+})();
 
-function getAppTitleByPath() {
-  if (appTitleByPath) return appTitleByPath;
+const APP_TITLE_BY_PATH = (() => {
   const map = {};
   for (const def of getAppModuleDefinitions()) {
     if (def.navigatePath && def.title) map[def.navigatePath] = def.title;
   }
-  appTitleByPath = map;
   return map;
-}
+})();
 
 // Master modules expose their URL key only via `onClick: () => handler(key)`.
 // Pass a capturing handler and invoke each onClick to harvest a key→title map
 // without changing the data file or duplicating the entries.
-function getMasterTitleByKey() {
-  if (masterTitleByKey) return masterTitleByKey;
+const MASTER_TITLE_BY_KEY = (() => {
   const map = {};
   let captured = null;
   const capture = (k) => { captured = k; };
@@ -61,17 +43,17 @@ function getMasterTitleByKey() {
     }
     if (captured && m.title) map[captured] = m.title;
   }
-  masterTitleByKey = map;
   return map;
-}
+})();
 
-
-const GENERIC_STATIC_TITLES = {
+const STATIC_TITLES = {
   '/': 'Sign in',
   '/signup': 'Sign up',
   '/forgot-password': 'Forgot password',
   '/admin': 'Navigator',
   '/admin/navigator': 'Navigator',
+  '/admin/dashboards': 'Dashboards',
+  '/admin/dashboard': 'Dashboards',
   '/admin/reports': 'Reports',
   '/admin/report': 'Reports',
   '/admin/report/manager': 'Reporting Manager',
@@ -87,54 +69,49 @@ const GENERIC_STATIC_TITLES = {
   '/admin/subscription': 'Subscription',
   '/admin/app-guide': 'App Guide',
   '/admin/help-support': 'Help & Support',
+  '/admin/hr-dashboard': 'HR Dashboard',
+  '/admin/checklist': 'Checklist',
+  '/admin/wagemaster/dashboard': 'WageMaster Dashboard',
+  '/admin/wagemaster/activities': 'Activities',
+  '/admin/identify-officer': 'Identify Officer',
+  '/admin/quick-check-in': 'Quick Check-In',
+  '/admin/salarymitra/biometric': 'Biometric Check-In',
+  '/admin/wagemaster/log-history': 'Log History',
+  '/admin/wagemaster/feedback': 'Feedback',
 };
-
-let staticTitles = null;
-let privatePathPrefixes = null;
-
-function getStaticTitles() {
-  if (staticTitles) return staticTitles;
-  staticTitles = { ...GENERIC_STATIC_TITLES, ...getAppStaticTitles() };
-  return staticTitles;
-}
-
-function getPrivatePathPrefixes() {
-  if (privatePathPrefixes) return privatePathPrefixes;
-  privatePathPrefixes = ['/admin', ...getAppPrivatePathPrefixes()];
-  return privatePathPrefixes;
-}
 
 function resolveTitle(rawPath) {
   if (!rawPath) return null;
   const path = rawPath === '/' ? '/' : rawPath.replace(/\/+$/, '');
 
-  if (getStaticTitles()[path]) return getStaticTitles()[path];
-  if (getAppTitleByPath()[path]) return getAppTitleByPath()[path];
+  if (STATIC_TITLES[path]) return STATIC_TITLES[path];
+  if (APP_TITLE_BY_PATH[path]) return APP_TITLE_BY_PATH[path];
 
   const reportMatch = path.match(/^\/admin\/report\/([^/]+)$/);
   if (reportMatch) {
-    return getReportTitleBySlug()[reportMatch[1]] || 'Reports';
+    return REPORT_TITLE_BY_SLUG[reportMatch[1]] || 'Reports';
   }
 
   const masterMatch = path.match(/^\/admin\/master\/([^/]+)$/);
   if (masterMatch) {
-    return getMasterTitleByKey()[masterMatch[1]] || 'Masters';
+    return MASTER_TITLE_BY_KEY[masterMatch[1]] || 'Masters';
   }
 
-  for (const { pattern, title } of getAppTitlePatterns()) {
-    if (pattern.test(path)) return title;
-  }
-
+  if (/^\/admin\/wagemaster\/dashboard\/[^/]+$/.test(path)) return 'WageMaster User Dashboard';
+  if (path.startsWith('/admin/dashboard/')) return 'Dashboards';
+  if (path.startsWith('/admin/wagemaster/')) return 'WageMaster';
   if (path.startsWith('/admin/')) return 'Admin';
 
   return null;
 }
 
+const PRIVATE_PATH_PREFIXES = ['/admin', '/salarymitra', '/wagemaster'];
+
 function RouteTitle() {
   const { pathname } = useLocation();
   const title = useMemo(() => resolveTitle(pathname), [pathname]);
   if (!title) return null;
-  const isPrivate = getPrivatePathPrefixes().some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPrivate = PRIVATE_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   return <PageMeta title={title} noIndex={isPrivate} />;
 }
 
