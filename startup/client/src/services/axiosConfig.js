@@ -96,6 +96,12 @@ api.interceptors.response.use(
       console.log('Received 401 Unauthorized, logging out...');
       window.location.href = '/'
     }
+    if (!error.response) {
+      error.error =
+        'We’re unable to reach the server right now. Please try again in a moment. (' +
+         ' — ' + error.message + ')';
+      return Promise.reject(error);
+    }
 
     // Reject with the response body, but keep the HTTP status on it — callers
     // need to tell "you may not see this" (403) apart from "this broke" (5xx)

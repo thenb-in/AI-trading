@@ -14,14 +14,21 @@
 // reaches for something missing here, add it explicitly and document the
 // reason. Don't expand the surface speculatively.
 
-function invokeExpressHandler(handler, { user, filters }) {
+const { runInRequestContext } = require('../../../data_access/requestContext');
+const { resolveDataScope } = require('../../../data_access');
+
+async function invokeExpressHandler(handler, { user, filters }) {
   if (typeof handler !== 'function') {
     throw new Error(`invokeExpressHandler: handler must be a function got : ${typeof handler}`);
   }
-  return new Promise((resolve, reject) => {
+
+  const dataScope = await resolveDataScope(user);
+
+  return runInRequestContext({ dataScope, user }, () => new Promise((resolve, reject) => {
     // processFilters() mutates req.query in place, so hand it a fresh copy.
     const fakeReq = {
       user,
+      dataScope,
       query: { ...(filters || {}) },
       headers: {},
       params: {},
@@ -83,7 +90,7 @@ function invokeExpressHandler(handler, { user, filters }) {
         }
       }))
       .catch((err) => settle(reject, err));
-  });
+  }));
 }
 
 module.exports = { invokeExpressHandler };

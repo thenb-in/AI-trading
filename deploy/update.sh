@@ -110,9 +110,26 @@ APP_NAME=$(grep '^app_name=' "$INSTALL/VERSION" | cut -d= -f2-)
 SERVICE="$APP_NAME.service"
 NGINX_SERVE_DIR="/app/$APP_NAME"
 
-NEW_VER=$(grep '^version=' "$NEW/VERSION" | cut -d= -f2)
-OLD_VER=$(grep '^version=' "$INSTALL/VERSION" | cut -d= -f2)
+NEW_VER=$(grep '^startup_version=' "$NEW/VERSION" | cut -d= -f2)
+OLD_VER=$(grep '^startup_version=' "$INSTALL/VERSION" | cut -d= -f2)
 log "Updating $APP_NAME: v$OLD_VER → v$NEW_VER"
+
+# ─── Node/V8 ABI guard ──────────────────────────────────────────────────────
+# The bundle ships V8 bytecode (.jsc) locked to the exact V8 build it was
+# compiled against; a mismatched Node on this host is a cryptic mid-require
+# crash, not a clean error. Refuse the update BEFORE we stop the running
+# service, and say exactly how to fix it — the native mirror of the Docker
+# path's guard in startup/server/scripts/container-entrypoint.sh.
+BUNDLE_V8=$(grep '^v8_version=' "$NEW/VERSION" | cut -d= -f2)
+BUNDLE_NODE=$(grep '^node_version=' "$NEW/VERSION" | cut -d= -f2)
+RUNNING_V8=$(node -p process.versions.v8 2>/dev/null || true)
+RUNNING_NODE=$(node -v 2>/dev/null || true)
+if [[ -n "$BUNDLE_V8" && -n "$RUNNING_V8" && "$BUNDLE_V8" != "$RUNNING_V8" ]]; then
+    die "Node/V8 mismatch - the bundle's bytecode will not load on this host.
+  host runtime: Node ${RUNNING_NODE:-unknown} (V8 $RUNNING_V8)
+  bundle built: Node ${BUNDLE_NODE:-unknown} (V8 $BUNDLE_V8)
+  Install Node ${BUNDLE_NODE:-<the bundle VERSION node_version>} on this host, then re-run ./update.sh."
+fi
 
 # ─── Stop service ───────────────────────────────────────────────────────────
 running=0
@@ -193,11 +210,21 @@ chmod +x "$INSTALL/deploy/"*.sh 2>/dev/null || true
 # Install in startup/server (framework — bytenode runtime + framework deps)
 # and app/server (thin boot wrapper, may have app-specific deps). Both keep
 # devDependencies so nodemon/eslint/jest work for on-site debugging.
-log "Installing startup/server (framework) dependencies..."
-(cd "$INSTALL/startup/server" && npm install 2>&1 | tail -3)
+# app/server/package.json owns the server's runtime install list — itself, the
+# @startup framework, and @nucleus (bytecode only; without its winston the server
+# dies at boot) — in its `deps` script, the same list `npm run i` uses in dev.
+# Reuse it so the shared-dep list lives in one place, not duplicated here. Keeps
+# devDependencies (npm install) for on-site debugging.
+log "Installing server deps (app/server npm run deps: self + framework + nucleus)..."
+(cd "$INSTALL/app/server" && npm run deps 2>&1 | tail -5)
 
-log "Installing app/server (boot wrapper) dependencies..."
-(cd "$INSTALL/app/server" && npm install 2>&1 | tail -3)
+# biometric_gateway ships its own deps (sequelize, node-zklib, …); the server's
+# @adms/@biomax/@zkteco imports resolve against them. Present only when the
+# build staged it (it always does now), so guard for older bundles.
+if [[ -f "$INSTALL/biometric_gateway/package.json" ]]; then
+  log "Installing biometric_gateway (shared device libs) dependencies..."
+  (cd "$INSTALL/biometric_gateway" && npm install 2>&1 | tail -3)
+fi
 
 log "Deploying client to $NGINX_SERVE_DIR..."
 sudo mkdir -p "$NGINX_SERVE_DIR"

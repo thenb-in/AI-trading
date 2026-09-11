@@ -1,6 +1,6 @@
 name: Linux Built Tests
 
-# Reusable workflow — called from builds.yml after site_bundle_linux_x64 +
+# Reusable workflow — called from builds.yml after server_build_linux_x64 +
 # source_tests are green. Downloads the Linux bundle artifact, deploys it
 # inside a privileged systemd-enabled container (running the actual deploy
 # scripts), then runs the same three test phases against the deployed system
@@ -9,7 +9,7 @@ on:
   workflow_call:
     inputs:
       bundle_name:
-        description: 'Name of the deployment-bundle artifact produced by site_bundle_linux_x64.'
+        description: 'Name of the deployment-bundle artifact produced by server_build_linux_x64.'
         required: true
         type: string
 

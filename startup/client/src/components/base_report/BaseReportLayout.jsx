@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { ReportHeader } from './ReportHeader';
 import { ReportTitleSection } from './ReportTitleSection';
 import { BaseFilter } from '@startup/components/base_filter/BaseFilter';
+import { useDataContext } from '@context/useDataContext';
 import { LoadingBarReport } from './LoadingBarReport';
 import { ReportRunActivity } from './ReportRunActivity';
 
@@ -20,6 +21,9 @@ const BaseReportLayout = ({
   onFiltersApply,
   children,
 }) => {
+  const { userData } = useDataContext() || {};
+  const runnerEnabled = userData?.enableReportRunner !== false;
+
   const [showApplyButton, setShowApplyButton] = useState(false);
 
   const handleTitleClick = useCallback((e) => {
@@ -38,8 +42,8 @@ const BaseReportLayout = ({
             filtersConfig={filtersConfig}
             isLoading={isFilterLoading}
             disabled={isFiltering || isLoadingData}
-            showApplyButton={showApplyButton}
-            enableRunner
+            showApplyButton={showApplyButton || !runnerEnabled}
+            enableRunner={runnerEnabled}
           />
           {/* Sits with the filters, not below the grid: you decide what to run
               while looking at what is already running. */}

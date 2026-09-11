@@ -27,7 +27,7 @@ for (const [name, model] of Object.entries(frameworkDb)) {
 }
 
 const isModelDir = (parentDir, name) => {
-  if (name.includes('abstract_') || name.includes('base') || name === 'mixins' || name === 'register') {
+  if (name.includes('abstract_') || name.includes('base') || name === 'mixins') {
     return false;
   }
   return fs.statSync(path.join(parentDir, name)).isDirectory();
@@ -74,6 +74,9 @@ appModelNames.forEach(name => {
 });
 
 db.sequelize = sequelize;
+
+// Every read of employee data now answers to the login's data access.
+require('../data_access/initialize').installDataScope(db);
 
 // Register this complete registry (framework + HR + relocated device models)
 // as the process registry for the shared biometric-interface services in

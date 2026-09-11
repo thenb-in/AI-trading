@@ -17,7 +17,10 @@ on:
     types: [published]
 
 env:
-  NODE_VERSION_MAJOR: "22"
+  # The one place the Node version is declared. bytenode locks each .jsc to this
+  # exact V8 build; it is captured into the bundle's VERSION and read back at
+  # deploy time — nothing downstream hardcodes it.
+  NODE_VERSION: "22.22.2"
 
 jobs:
   setup:
@@ -30,7 +33,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Cache dependencies (github-hosted only)
         # Cache via GitHub backend is worth it on ephemeral cloud runners;
@@ -73,7 +76,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
@@ -130,16 +133,77 @@ jobs:
           include-hidden-files: true
 
   # ────────────────────────────────────────────────────────────────────
-  # SERVER BUILDS — one job per target platform/arch.
-  # bytenode bytecode is locked to the exact Node ABI + platform + arch it
-  # was compiled with, so every supported deploy target needs its own
-  # compile. The two jobs below are intentional copies (not a matrix) so
-  # each can declare its own outputs and so downstream site_bundle jobs
-  # can `needs:` a specific platform without matrix-output gymnastics.
+  # SALARYMITRA PORTAL (ios/) — standalone Vite SPA served at /salarymitra.
+  # Self-contained: its own package-lock + node_modules (NOT part of the
+  # root `npm run i` workspaces), so it installs and builds independently of
+  # client_build. The dist is consumed by server_build_linux_x64, which drops it
+  # under app/client/salarymitra/ so it deploys at $app/<app>/salarymitra/.
+  # ────────────────────────────────────────────────────────────────────
+  ios_build:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache SalaryMitra dependencies (github-hosted only)
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v5
+        id: cache-ios-deps
+        with:
+          path: ios/node_modules
+          key: build-ios-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-ios-deps.outputs.cache-hit != 'true'
+        run: cd ios && npm ci
+        env:
+          CI: true
+          HUSKY: 0
+
+      - name: Set environment variables
+        run: cp ios/.env.example ios/.env
+
+      - name: Run build
+        run: cd ios && npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-build-artifact
+          path: ios/dist/
+          include-hidden-files: true
+
+  # ────────────────────────────────────────────────────────────────────
+  # SERVER BUILD + SITE BUNDLE — compiles the framework + app boot wrapper to
+  # bytecode AND assembles the full deployable bundle (client + server bytecode
+  # + portal + deploy scripts + docker kit) in one job.
+  #
+  # Runs on github-hosted ubuntu-latest: bytenode bytecode is locked to the
+  # exact Node ABI + platform + arch it was compiled with, so building here pins
+  # the output to linux/x64 regardless of the self-hosted runners' architecture.
+  # Ubuntu sites deploy the bundle natively; Windows sites run the same bundle
+  # inside Docker (deploy/docker/) — either way the runtime is linux/x64.
+  #
+  # It needs client_build + ios_build so it can pull their artifacts into the
+  # bundle; the trade-off is the bytecode compile no longer overlaps those two
+  # (the job waits for them to finish before it starts). Because the compile and
+  # the bundling happen on the same runner, there is no intermediate
+  # server-build artifact — the bytecode is staged straight into _bundle/.
   # ────────────────────────────────────────────────────────────────────
   server_build_linux_x64:
-    needs: client_build
-    runs-on: [self-hosted, Linux, X64]
+    needs: [client_build, ios_build]
+    runs-on: ubuntu-latest
 
     defaults:
       run:
@@ -149,12 +213,11 @@ jobs:
       contents: write
       actions: write
 
+    env:
+      PLATFORM_ID: linux_x64
+
     outputs:
-      node_version: ${{ steps.node_meta.outputs.node_version }}
-      node_arch: ${{ steps.node_meta.outputs.node_arch }}
-      node_platform: ${{ steps.node_meta.outputs.node_platform }}
-      node_abi: ${{ steps.node_meta.outputs.node_abi }}
-      v8_version: ${{ steps.node_meta.outputs.v8_version }}
+      bundle_name: ${{ steps.meta.outputs.bundle_name }}
 
     steps:
       - name: Checkout repository
@@ -163,21 +226,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
-
-      - name: Capture Node runtime metadata (for bytenode compatibility)
-        # bytenode bytecode is locked to the exact V8/Node build, arch, and ABI
-        # version it was compiled with. We record the actual resolved runtime
-        # here (not the requested major) so deploy targets can verify a match.
-        id: node_meta
-        run: |
-          {
-            echo "node_version=$(node -v)"
-            echo "node_arch=$(node -p process.arch)"
-            echo "node_platform=$(node -p process.platform)"
-            echo "node_abi=$(node -p process.versions.modules)"
-            echo "v8_version=$(node -p process.versions.v8)"
-          } >> "$GITHUB_OUTPUT"
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Restore dependencies (github-hosted only)
         if: runner.environment == 'github-hosted'
@@ -208,133 +257,14 @@ jobs:
       - name: Build app/server boot wrapper bytecode
         run: cd app/server && npm run build
 
-      - name: Stage server artifact (mirrors install layout)
-        # Lay out the artifact so download-artifact in site_bundle can drop it
-        # straight into _bundle/ with no further reshaping.
-        run: |
-          mkdir -p _server_artifact/startup/server _server_artifact/app/server
-          cp -a startup/server/dist/. _server_artifact/startup/server/
-          cp -a app/server/dist/.    _server_artifact/app/server/
-
-      - name: Upload server build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: server-build-artifact-linux_x64
-          path: _server_artifact/
-          # Preserve dotfiles (notably .env.example) — upload-artifact@v4 drops
-          # hidden files by default, which breaks `npm run setup-env` on install.
-          include-hidden-files: true
-
-  server_build_windows_x64:
-    needs: client_build
-    runs-on: [self-hosted, Windows, X64]
-
-    defaults:
-      run:
-        # Use git-bash on Windows so the same POSIX commands (cp -a, mkdir -p,
-        # heredocs, chmod) work without a PowerShell rewrite. Requires the
-        # Windows self-hosted runner to have Git for Windows installed.
-        shell: bash
-
-    permissions:
-      contents: write
-      actions: write
-
-    outputs:
-      node_version: ${{ steps.node_meta.outputs.node_version }}
-      node_arch: ${{ steps.node_meta.outputs.node_arch }}
-      node_platform: ${{ steps.node_meta.outputs.node_platform }}
-      node_abi: ${{ steps.node_meta.outputs.node_abi }}
-      v8_version: ${{ steps.node_meta.outputs.v8_version }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
-
-      - name: Capture Node runtime metadata (for bytenode compatibility)
-        id: node_meta
-        run: |
-          {
-            echo "node_version=$(node -v)"
-            echo "node_arch=$(node -p process.arch)"
-            echo "node_platform=$(node -p process.platform)"
-            echo "node_abi=$(node -p process.versions.modules)"
-            echo "v8_version=$(node -p process.versions.v8)"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Restore dependencies (github-hosted only)
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@v5
-        id: cache-deps
-        with:
-          path: |
-            node_modules
-            app/node_modules
-            app/client/node_modules
-            app/server/node_modules
-            startup/client/node_modules
-            startup/server/node_modules
-          key: build-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
-
-      - name: Install dependencies
-        if: steps.cache-deps.outputs.cache-hit != 'true'
-        run: npm run i
-        env:
-          CI: true
-          HUSKY: 0
-
-      - name: Build framework bytecode (startup/server)
-        run: cd startup/server && npm run build
-
-      - name: Build app/server boot wrapper bytecode
-        run: cd app/server && npm run build
-
-      - name: Stage server artifact (mirrors install layout)
-        run: |
-          mkdir -p _server_artifact/startup/server _server_artifact/app/server
-          cp -a startup/server/dist/. _server_artifact/startup/server/
-          cp -a app/server/dist/.    _server_artifact/app/server/
-
-      - name: Upload server build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: server-build-artifact-windows_x64
-          path: _server_artifact/
-          include-hidden-files: true
-
-  # ────────────────────────────────────────────────────────────────────
-  # SITE BUNDLES — one per server_build target.
-  # Bundling is just file copying (no native code), so both variants run
-  # on Linux self-hosted to keep the shell environment consistent. Each
-  # consumes its matching server-build-artifact-<platform_id> and stamps
-  # the recorded Node runtime metadata for that platform into VERSION.
-  # ────────────────────────────────────────────────────────────────────
-  site_bundle_linux_x64:
-    needs: [client_build, server_build_linux_x64]
-    runs-on: [self-hosted, Linux, X64]
-
-    defaults:
-      run:
-        shell: bash
-
-    permissions:
-      contents: read
-      actions: write
-
-    env:
-      PLATFORM_ID: linux_x64
-
-    outputs:
-      bundle_name: ${{ steps.meta.outputs.bundle_name }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - name: Build shared runtime libs the server imports (nucleus + biometric gateway)
+        # app/server require()s @nucleus and @biometric_interface/@adms/@biomax/
+        # @zkteco at load time (e.g. src/models/index.js does
+        # `require('@biometric_interface/common/db')`), so the server will not
+        # boot without them. Reuse the gateway builder — it compiles nucleus +
+        # biometric_gateway (common, shared + the named interfaces) to bytecode
+        # in the exact source-relative layout the aliases resolve to.
+        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server,zkteco_tcp_server"
 
       - name: Resolve version + bundle name
         id: meta
@@ -369,13 +299,27 @@ jobs:
           name: client-build-artifact
           path: _bundle/app/client
 
-      - name: Download server build (framework + app boot wrapper, both compiled)
-        # The artifact was staged with internal layout app/server/ + startup/server/,
-        # so it drops directly into _bundle/ with no reshaping.
+      - name: Download SalaryMitra portal build
+        # Nest the portal inside the client tree so update.sh's existing
+        # `cp -a app/client/. /app/<app>/` lands it at /app/<app>/salarymitra/
+        # with no deploy-script changes. nginx serves it at /salarymitra/.
         uses: actions/download-artifact@v8
         with:
-          name: server-build-artifact-linux_x64
-          path: _bundle/
+          name: ios-build-artifact
+          path: _bundle/app/client/salarymitra
+
+      - name: Stage server bytecode into bundle (mirrors install layout)
+        run: |
+          mkdir -p _bundle/startup/server _bundle/app/server
+          cp -a startup/server/dist/. _bundle/startup/server/
+          cp -a app/server/dist/.    _bundle/app/server/
+          # Shared runtime libs the server imports at load time: build-gateways.sh
+          # already compiled + laid these out under _gateway_artifact in the
+          # source-relative form (nucleus/, biometric_gateway/…). Drop them in.
+          cp -a _gateway_artifact/. _bundle/
+          # @custom/server ships as plain JS (no bytecode config yet); exclude any
+          # local node_modules/logs.
+          rsync -a --exclude node_modules --exclude logs custom _bundle/
 
       - name: Stage deploy files + entry scripts
         run: |
@@ -384,6 +328,17 @@ jobs:
           cp deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
           cp deploy/README.md _bundle/deploy/
           cp deploy/update.sh _bundle/
+          # Docker deploy: the Dockerfile at the bundle root + its .dockerignore,
+          # plus the install kit (compose + .env.example + install/start/backup
+          # scripts + README). Together these make the site bundle directly
+          # docker-deployable: `cd deploy/docker && docker compose up -d --build`
+          # builds the root Dockerfile (env-only image, no COPY) and bind-mounts
+          # the bundle at /srv/app. The image has no COPY, so the .dockerignore
+          # keeps the on-target `docker compose build` from taring the whole
+          # bundle (app/client, node_modules, docker_data …).
+          cp Dockerfile _bundle/
+          printf '%s\n' 'node_modules' '**/node_modules' 'app/client' 'docker_data' 'deploy' 'scripts' '.env' '*.md' > _bundle/.dockerignore
+          cp -r deploy/docker _bundle/deploy/docker
           # deploy/*.sh source scripts/download-artifact.sh, which in turn calls scripts/ask-app-name.js.
           cp scripts/download-artifact.sh scripts/ask-app-name.js _bundle/scripts/
           # Ship every tracked .gitignore. update.sh turns the bundle into a
@@ -409,11 +364,11 @@ jobs:
           short_sha=${{ steps.meta.outputs.short_sha }}
           app_name=${{ steps.meta.outputs.app_name }}
           built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          node_version=${{ needs.server_build_linux_x64.outputs.node_version }}
-          node_arch=${{ needs.server_build_linux_x64.outputs.node_arch }}
-          node_platform=${{ needs.server_build_linux_x64.outputs.node_platform }}
-          node_abi=${{ needs.server_build_linux_x64.outputs.node_abi }}
-          v8_version=${{ needs.server_build_linux_x64.outputs.v8_version }}
+          node_version=$(node -v)
+          node_arch=$(node -p process.arch)
+          node_platform=$(node -p process.platform)
+          node_abi=$(node -p process.versions.modules)
+          v8_version=$(node -p process.versions.v8)
           commit_msg=${{ steps.meta.outputs.commit_msg }}
           EOF
 
@@ -429,112 +384,10 @@ jobs:
           path: _bundle/
           include-hidden-files: true
 
-  site_bundle_windows_x64:
-    needs: [client_build, server_build_windows_x64]
-    runs-on: [self-hosted, Linux, X64]
-
-    defaults:
-      run:
-        shell: bash
-
-    permissions:
-      contents: read
-      actions: write
-
-    env:
-      PLATFORM_ID: windows_x64
-
-    outputs:
-      bundle_name: ${{ steps.meta.outputs.bundle_name }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Resolve version + bundle name
-        id: meta
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          STARTUP_VERSION=$(jq -r .version package.json)
-          CLIENT_VERSION=$(jq -r .version app/client/package.json)
-          SERVER_VERSION=$(jq -r .version app/server/package.json)
-          COMMIT_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
-          SHORT_SHA="${COMMIT_SHA:0:7}"
-          COMMIT_MSG=$(gh api "repos/${{ github.repository }}/commits/$COMMIT_SHA" --jq '.commit.message' 2>/dev/null | head -n 1 || echo "")
-          APP_NAME=$(basename "$GITHUB_REPOSITORY")
-          BUNDLE_NAME="${APP_NAME}-site-v${STARTUP_VERSION}-${SHORT_SHA}-${PLATFORM_ID}"
-          {
-            echo "startup_version=$STARTUP_VERSION"
-            echo "client_version=$CLIENT_VERSION"
-            echo "server_version=$SERVER_VERSION"
-            echo "short_sha=$SHORT_SHA"
-            echo "full_sha=$COMMIT_SHA"
-            echo "commit_msg=$COMMIT_MSG"
-            echo "app_name=$APP_NAME"
-            echo "bundle_name=$BUNDLE_NAME"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Download client build
-        uses: actions/download-artifact@v8
-        with:
-          name: client-build-artifact
-          path: _bundle/app/client
-
-      - name: Download server build (framework + app boot wrapper, both compiled)
-        uses: actions/download-artifact@v8
-        with:
-          name: server-build-artifact-windows_x64
-          path: _bundle/
-
-      - name: Stage deploy files + entry scripts
-        run: |
-          mkdir -p _bundle/deploy _bundle/scripts
-          cp deploy/base.conf deploy/base.service _bundle/deploy/
-          cp deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
-          cp deploy/README.md _bundle/deploy/
-          cp deploy/update.sh _bundle/
-          # Windows service installer/status/uninstall scripts + helper PS1.
-          # Ship the whole folder; deploy/windows/.gitignore keeps runtime
-          # downloads (nssm.exe, node-pinned/) out of git but they aren't in
-          # the source tree at build time anyway.
-          cp -r deploy/windows _bundle/deploy/
-          cp scripts/download-artifact.sh scripts/ask-app-name.js _bundle/scripts/
-          git ls-files -z -- '.gitignore' '**/.gitignore' | while IFS= read -r -d '' gi; do
-            mkdir -p "_bundle/$(dirname "$gi")"
-            cp "$gi" "_bundle/$gi"
-          done
-          chmod +x _bundle/update.sh _bundle/deploy/*.sh _bundle/scripts/download-artifact.sh
-
-      - name: Write VERSION metadata
-        run: |
-          cat > _bundle/VERSION <<EOF
-          startup_version=${{ steps.meta.outputs.startup_version }}
-          client_version=${{ steps.meta.outputs.client_version }}
-          server_version=${{ steps.meta.outputs.server_version }}
-          commit=${{ steps.meta.outputs.full_sha }}
-          short_sha=${{ steps.meta.outputs.short_sha }}
-          app_name=${{ steps.meta.outputs.app_name }}
-          built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          node_version=${{ needs.server_build_windows_x64.outputs.node_version }}
-          node_arch=${{ needs.server_build_windows_x64.outputs.node_arch }}
-          node_platform=${{ needs.server_build_windows_x64.outputs.node_platform }}
-          node_abi=${{ needs.server_build_windows_x64.outputs.node_abi }}
-          v8_version=${{ needs.server_build_windows_x64.outputs.v8_version }}
-          commit_msg=${{ steps.meta.outputs.commit_msg }}
-          EOF
-
-      - name: Upload site deployment artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.meta.outputs.bundle_name }}
-          path: _bundle/
-          include-hidden-files: true
-
   # ────────────────────────────────────────────────────────────────────
   # SOURCE TESTS (source-mode) — defined in source_tests.yml.
   # Starts as soon as client_build is green, in parallel with the
-  # server_build / site_bundle jobs. Tests run against
+  # server_build_linux_x64 job. Tests run against
   # `node app/server/index.js` + `vite dev` using the checked-out source
   # (no build artifacts consumed).
   # ────────────────────────────────────────────────────────────────────
@@ -548,14 +401,13 @@ jobs:
 
   # ────────────────────────────────────────────────────────────────────
   # LINUX BUILT TESTS (built/deployed-mode) — defined in linux_built_tests.yml.
-  # Runs once the Linux site_bundle has produced the deployment bundle
+  # Runs once server_build_linux_x64 has produced the deployment bundle
   # AND source_tests has finished (the two test jobs share fixed docker
   # resource names — pg/test-net/deploy + host ports — so they cannot
-  # overlap on the same runner). Only the Linux bundle is exercised
-  # here; the windows_x64 bundle is shipped untested.
+  # overlap on the same runner).
   # ────────────────────────────────────────────────────────────────────
   linux_built_tests:
-    needs: [site_bundle_linux_x64, source_tests]
+    needs: [server_build_linux_x64, source_tests]
     uses: ./.github/workflows/linux_built_tests.yml
     with:
-      bundle_name: ${{ needs.site_bundle_linux_x64.outputs.bundle_name }}
+      bundle_name: ${{ needs.server_build_linux_x64.outputs.bundle_name }}

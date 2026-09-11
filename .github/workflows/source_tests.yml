@@ -2,7 +2,7 @@ name: Source Tests
 
 # Reusable workflow — called from builds.yml once client_build is green.
 # Tests against the checked-out source (`node app/server/index.js` + `vite dev`)
-# in parallel with the server_build / site_bundle jobs. No build artifacts
+# in parallel with the server_build_linux_x64 job. No build artifacts
 # consumed.
 on:
   workflow_call: {}

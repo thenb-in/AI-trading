@@ -1,0 +1,91 @@
+# SalaryMitra — Docker install (any OS: Windows, Linux, macOS).
+#
+# Two containers: the app server and its Postgres. The app image is ENVIRONMENT
+# ONLY (pinned Node + toolchain), built on THIS machine from the Dockerfile at
+# the bundle root — the application itself is the Linux bundle (the same artifact
+# Ubuntu deploys) this kit ships inside; the bundle root is two levels up and is
+# bind-mounted at /srv/app. The container is Linux whatever the host is, so this
+# one file works on every OS. The server also serves the client bundle and the
+# /salarymitra portal from that mount. Bring it up from this folder with:
+#   docker compose up -d --build
+# Values come from a `.env` file next to this one (see .env.example); on Windows,
+# install.ps1 writes it for you.
+#
+# State that must survive an update lives in docker_data/, next to this file:
+#   docker_data/config/.env               app configuration (seeded on 1st boot)
+#   docker_data/config/host_machine.json  host identity the license binds to
+#   docker_data/config/secret/            installed license + pinned wallet keys
+#   docker_data/uploads/                  face images, bill attachments
+#   docker_data/logs/                     winston logs
+#   docker_data/backups/                  nightly database dumps
+# Back up that one folder and you have the install. The live database is the
+# exception — it is in the `db-data` volume; `docker compose down` keeps it,
+# `docker compose down -v` destroys it.
+
+name: salarymitra
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      TZ: ${TZ}
+    # The one thing not under docker_data/: on Docker Desktop (Windows/macOS) a
+    # bind-mounted data dir is owned by root, so Postgres cannot chmod it and
+    # refuses to initialise — so it stays in this named volume. Take backups with
+    # pg_dump (Windows: backup.bat); a file-level copy of a live data directory
+    # will not restore.
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    image: ${APP_IMAGE:-salarymitra/server:local}
+    # Built here from the Dockerfile at the bundle root (../..) — env only, no
+    # app code baked in. This compose lives in <bundle>/deploy/docker/, so the
+    # application bundle is two levels up.
+    build:
+      context: ../..
+      target: runtime
+      args:
+        # Must match the Node the bundle's .jsc was built with; the entrypoint
+        # refuses to boot on a mismatch. install.ps1 sets it in .env from the
+        # bundle VERSION; for a manual `up --build`, set it there yourself.
+        NODE_VERSION: ${NODE_VERSION:?set NODE_VERSION in .env to the bundle VERSION node_version}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      # SEED_* are read once, by the entrypoint, to write config\.env on first
+      # boot. They are deliberately not the app's own variable names: the app
+      # must read its config from that file, so editing it actually takes
+      # effect (dotenv never overrides a variable already set in the process).
+      SEED_DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SEED_APP_URL: ${APP_URL}
+      # A container cannot see the host's NICs or machine-id, so the license
+      # binds to what the installer stamped in here. See host-fingerprint.ps1.
+      HOST_MACHINE_FILE: /srv/config/host_machine.json
+    ports:
+      - "${APP_PORT}:3000"
+    # Left of the colon is a folder on THIS machine, right of it is the path
+    # inside the container — which is Linux whatever the host is. Everything on
+    # the host side is under docker_data/, next to this file.
+    volumes:
+      # The application IS the bundle this kit ships inside — the bundle root is
+      # two levels up. A new build = replace the bundle + restart; node_modules
+      # reinstalls when the bundle's commit changes (see container-entrypoint.sh).
+      - ../../:/srv/app
+      - ./docker_data/config:/srv/config
+      - ./docker_data/uploads:/srv/data/uploads
+      - ./docker_data/logs:/srv/app/app/server/logs
+
+volumes:
+  db-data:
