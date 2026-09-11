@@ -8,11 +8,28 @@ import { toValidNumber } from "@utils/toValidNumber";
 // Fetching and grid-application live in ./reportDataSources — handleFiltersApply,
 // loadSavedReportRun and applyReportPayload are exported from there.
 
-// getEmployeeDetails lives in the app that owns the report that uses it — see
-// app/.../detailed_attendance/employeeSummaryUtils.js. Which columns count as
-// "employee info" is an app concern, not a framework one.
-//
-// normalizeEmployeeSummary stays here because fetchReportData below calls it.
+/**
+ * Known employee field keys that should be displayed as employee info
+ */
+const EMPLOYEE_FIELDS = ['emp_code', 'employee_code', 'first_name', 'employee_name', 'department_name', 'employee_department', 'position_name', 'emp_type'];
+
+/**
+ * Extract employee details from a summary object
+ * @param {Object} summary - Summary object that may contain employee fields and/or summary totals
+ * @returns {Object} Object containing only employee-related fields
+ */
+const getEmployeeDetails = (summary = {}) => {
+  if (!summary || typeof summary !== 'object') return {};
+  
+  const employeeDetails = {};
+  EMPLOYEE_FIELDS.forEach(field => {
+    if (summary[field] !== undefined && summary[field] !== null) {
+      employeeDetails[field] = summary[field];
+    }
+  });
+  
+  return employeeDetails;
+};
 const normalizeEmployeeSummary = (summary) => {
   if (!summary || typeof summary !== 'object') return {};
   return {
@@ -138,6 +155,11 @@ const processApiData = (
     // Use Set lookup for O(1) instead of O(n) forEach
     for (const key of columnKeys) {
       if (key in row) {
+        filteredRow[key] = row[key];
+      }
+    }
+    for (const key of Object.keys(row)) {
+      if (key.startsWith('_')) {
         filteredRow[key] = row[key];
       }
     }
@@ -390,4 +412,4 @@ const handleAttendanceToggle = async (rowData, rows, setRows, reportActionApi) =
 
 
 
-export { convertCellToText, filterRelevantData, processApiData, handleStatusUpdate, handleAttendanceToggle, getFiltersFromSearchParams, updateSearchParams, sanitizeFilters, fetchReportData, normalizeEmployeeSummary, applyDefaultFiltersToSearchParams };
+export { convertCellToText, filterRelevantData, processApiData, handleStatusUpdate, handleAttendanceToggle, getFiltersFromSearchParams, updateSearchParams, sanitizeFilters, fetchReportData, normalizeEmployeeSummary, getEmployeeDetails, applyDefaultFiltersToSearchParams };

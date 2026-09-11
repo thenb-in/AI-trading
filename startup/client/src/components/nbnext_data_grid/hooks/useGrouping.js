@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { convertCellToText } from "../../base_report/ReportUtils";
 import { calculateTotals, getColumnForFormatting } from "../utils/helpers";
 
-const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGroupByField = null) => {
+const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGroupByField = null, isSectionHeaderRow = null) => {
   const [groupByField, setGroupByField] = useState(initialGroupByField);
 
   const toggleGroupBy = useCallback((field) => {
@@ -18,14 +18,14 @@ const useGrouping = (columnsToUse, sortedRows, promoteToPrimarySort, initialGrou
   }, [groupByField, promoteToPrimarySort]);
 
   const groupedRows = useMemo(
-    () => groupRows(columnsToUse, sortedRows, groupByField),
-    [sortedRows, groupByField, columnsToUse]
+    () => groupRows(columnsToUse, sortedRows, groupByField, isSectionHeaderRow),
+    [sortedRows, groupByField, columnsToUse, isSectionHeaderRow]
   );
 
   return { groupByField, toggleGroupBy, groupedRows };
 };
 
-const groupRows = (columnsToUse, sortedRows, groupByField) => {
+const groupRows = (columnsToUse, sortedRows, groupByField, isSectionHeaderRow = null) => {
     if (!groupByField) return sortedRows;
     const groupCol = columnsToUse.find((c) => c.field === groupByField);
     if (!groupCol) return sortedRows;
@@ -81,13 +81,17 @@ const groupRows = (columnsToUse, sortedRows, groupByField) => {
       const labelValue = convertCellToText(getColumnForFormatting(groupCol), rawValue);
       const label = labelValue == null ? "" : String(labelValue);
       const key = label;
+      const continuesGroup = typeof isSectionHeaderRow === "function"
+        && !isSectionHeaderRow(row)
+        && key.trim() === ""
+        && currentGroupKey !== null;
 
       if (currentGroupKey === null) {
         currentGroupKey = key;
         currentGroupLabel = label;
       }
 
-      if (key !== currentGroupKey) {
+      if (!continuesGroup && key !== currentGroupKey) {
         flushGroup();
         currentGroupKey = key;
         currentGroupLabel = label;

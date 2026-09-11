@@ -76,6 +76,7 @@ const NbNextDataGrid = forwardRef(({
    * detailed attendance print view, which lists one row per parameter per employee).
    */
   isSectionHeaderRow = null,
+  sectionHeaderRuleOnly = false,
   /**
    * `(row) => boolean`. Rows it returns true for are tinted red — for entries the
    * caller wants the reader to check before acting on them (a duplicate punch, say).
@@ -344,17 +345,31 @@ const NbNextDataGrid = forwardRef(({
     () => filterRows(indexedRows, merged.filterModel, l1),
     [indexedRows, merged.filterModel, l1]
   );
-  const sortedRows = useMemo(
-    () => sortRows(filteredRows, merged.sortModel, l1),
-    [filteredRows, merged.sortModel, l1]
-  );
+
+  const sortedRows = useMemo(() => {
+    if (typeof isSectionHeaderRow !== "function") {
+      return sortRows(filteredRows, merged.sortModel, l1);
+    }
+    const sections = [];
+    filteredRows.forEach((wrapped) => {
+      if (sections.length === 0 || isSectionHeaderRow(wrapped._row)) {
+        sections.push([wrapped]);
+        return;
+      }
+      sections[sections.length - 1].push(wrapped);
+    });
+    const heads = sections.map((section) => section[0]);
+    const sortedHeads = sortRows(heads, merged.sortModel, l1);
+    return sortedHeads.flatMap((head) => sections[heads.indexOf(head)]);
+  }, [filteredRows, merged.sortModel, l1, isSectionHeaderRow]);
 
   // Grouping injects synthetic total rows between groups
   const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
     l1,
     sortedRows,
     promoteToPrimarySort,
-    defaultGroupByField
+    defaultGroupByField,
+    isSectionHeaderRow
   );
 
   // ── Frozen/non-frozen split + offsets ──────────────────────────────────
@@ -679,6 +694,7 @@ const NbNextDataGrid = forwardRef(({
               allColumns={l1}
               selection={bodySelectionProp}
               isSectionHeaderRow={isSectionHeaderRow}
+              sectionHeaderRuleOnly={sectionHeaderRuleOnly}
               isAlertRow={isAlertRow}
               density={density}
             />
@@ -753,6 +769,7 @@ NbNextDataGrid.propTypes = {
   showTotalRow: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   isSectionHeaderRow: PropTypes.func,
+  sectionHeaderRuleOnly: PropTypes.bool,
   isAlertRow: PropTypes.func,
   hideConstantColumns: PropTypes.bool,
   showInsightsAsHeader: PropTypes.bool,

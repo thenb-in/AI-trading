@@ -37,6 +37,7 @@ function DataGridBody({
   allColumns = [],
   selection = null,
   isSectionHeaderRow = null,
+  sectionHeaderRuleOnly = false,
   isAlertRow = null,
   density = "comfortable",
 }) {
@@ -94,6 +95,18 @@ function DataGridBody({
     return '';
   };
 
+  const sectionBandByIndex = [];
+  if (typeof isSectionHeaderRow === "function") {
+    let band = -1;
+    pagedRows.forEach((wrapped, index) => {
+      const row = wrapped._row;
+      if (row?._isGroupTotal !== true && isSectionHeaderRow(row)) {
+        band += 1;
+      }
+      sectionBandByIndex[index] = band;
+    });
+  }
+
   return (
     <tbody>
       {virtualScrolling && offsetY > 0 && (
@@ -112,7 +125,10 @@ function DataGridBody({
         // Use current display index for alternating colors (not original index)
         // This ensures alternating colors work correctly after filtering/sorting/grouping
         const displayIndex = virtualScrolling ? startIndex + idx : idx;
-        const isEven = displayIndex % 2 === 0;
+        const band = sectionBandByIndex[idx];
+        const isEven = band === undefined || band < 0
+          ? displayIndex % 2 === 0
+          : band % 2 === 0;
         const isSelected = key === selectedRowId;
         const isDisabled = row._isDisabled === true || isGroupTotal === true;
         // The row that opens a section (one employee's set of rows, say) is drawn as
@@ -176,7 +192,7 @@ function DataGridBody({
           const content = isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row);
           const width = columnWidths[col.field] || fallbackColumnWidth(col);
           let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
-          if (isSectionHeader && !isSelected) {
+          if (isSectionHeader && !isSelected && !sectionHeaderRuleOnly) {
             cellBg = SECTION_HEADER_CELL_BACKGROUND;
           }
           if (isAlert && !isSelected) {
@@ -195,7 +211,10 @@ function DataGridBody({
             element.style.setProperty('--cell-width', `${width}px`);
             element.style.setProperty('--cell-bg', cellBg);
             if (isSectionHeader) {
-              Object.assign(element.style, sectionHeaderCellStyle);
+              element.style.borderTop = sectionHeaderCellStyle.borderTop;
+              if (!sectionHeaderRuleOnly) {
+                Object.assign(element.style, sectionHeaderCellStyle);
+              }
             }
             if (isGroupTotal) {
               element.style.fontWeight = '600';
@@ -374,6 +393,7 @@ DataGridBody.propTypes = {
     onToggleRow: PropTypes.func,
   }),
   isSectionHeaderRow: PropTypes.func,
+  sectionHeaderRuleOnly: PropTypes.bool,
   isAlertRow: PropTypes.func,
   density: PropTypes.oneOf(["compact", "standard", "comfortable"]),
 };
