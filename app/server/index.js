@@ -1,9 +1,4 @@
-require('module-alias/register');
-// Let code under @startup resolve npm libs from app/server/node_modules. Most
-// runtime deps (body-parser, cookie-parser, cors, express, …) live here, not
-// in startup/server, so without this, requires from startup-loaded files like
-// startup/server/buildApp.js fail with MODULE_NOT_FOUND.
-require('module-alias').addPath(require('path').join(__dirname, 'node_modules'));
+require('./bootstrapAliases');
 // App columns onto framework models — must load before @startup models below.
 // eslint-disable-next-line custom/no-direct-model-imports
 require('./src/models/register/registerAppModelFields');
