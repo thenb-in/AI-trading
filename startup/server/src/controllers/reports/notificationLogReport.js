@@ -1,3 +1,10 @@
+// Notification Log Report — what the notification rules sent, and what became of it.
+//
+// Framework-owned because everything it reads is: deliveries are rows the
+// framework's own delivery pipeline writes (see notifications/rules/delivery/
+// recordDelivery), and the rules are framework records. An app gets this report
+// without adding anything.
+
 const notificationService = require('../../services/notificationService');
 const notificationRuleService = require('../../services/notificationRuleService');
 const { RULE_CHANNEL_LABEL, DELIVERY_STATUS } = require('../../constants/notificationRules');
@@ -15,6 +22,8 @@ async function getNotificationLogData(user, filters = {}) {
     channel: chosen(filters.channel)
   });
 
+  // A rule that has since been deleted leaves its deliveries behind; those rows
+  // simply show no rule name rather than dropping out of the report.
   const rules = await notificationRuleService.listForCompany(user.company_id).catch(() => []);
   const ruleNameById = new Map((rules || []).map((rule) => [String(rule.id), rule.name]));
 

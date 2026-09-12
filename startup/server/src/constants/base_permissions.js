@@ -73,6 +73,8 @@ const create_report_permission = (report) => {
 
 const REPORT_PERMISSION_CONSTANTS = {
   USER_REPORT: create_report_permission('user_report'),
+  // The notification log carries the message bodies rules sent, so reading it is
+  // granted separately from the ability to edit the rules themselves.
   NOTIFICATION_LOG_REPORT: create_report_permission('notification-log-report')
 };
 

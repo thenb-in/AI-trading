@@ -37,6 +37,7 @@ function keepColumnData(data, columns, exception_columns = []) {
 
 /**
  * A report's filters, as the request carried them.
+
  */
 function processFilters(req) {
   const filters = { ...(req.query || {}) };
@@ -52,6 +53,9 @@ function processFilters(req) {
       filters[key] = undefined;
     }
   }
+
+  // Milliseconds are left as parsed: the day's last second is the boundary
+  // reports have always been written against.
   if (filters.start_date) {
     filters.start_date = new Date(filters.start_date);
     filters.start_date.setHours(0, 0, 0);
