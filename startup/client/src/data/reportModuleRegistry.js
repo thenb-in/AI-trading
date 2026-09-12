@@ -1,13 +1,35 @@
+import { getGenericReportModules, genericReportCategories } from './genericReportModules';
+
 const reports = [];
 const categories = [];
 
+/**
+ * Framework reports first, the app's on top.
+ */
+const composeReports = (appReports = [], appCategories = []) => {
+  const appReportSlugs = new Set(appReports.map((report) => report.slug));
+  reports.length = 0;
+  reports.push(
+    ...getGenericReportModules().filter((report) => !appReportSlugs.has(report.slug)),
+    ...appReports
+  );
+
+  const appCategoryIds = new Set(appCategories.map((category) => category.id));
+  categories.length = 0;
+  categories.push(
+    ...genericReportCategories.filter((category) => !appCategoryIds.has(category.id)),
+    ...appCategories
+  );
+};
 
 const registerAppReports = (appReports, appCategories) => {
-  reports.length = 0;
-  if (Array.isArray(appReports)) reports.push(...appReports);
-
-  categories.length = 0;
-  if (Array.isArray(appCategories)) categories.push(...appCategories);
+  composeReports(
+    Array.isArray(appReports) ? appReports : [],
+    Array.isArray(appCategories) ? appCategories : []
+  );
 };
+
+// The framework's own reports are there before (and without) an app registering.
+composeReports();
 
 export { reports, categories, registerAppReports };

@@ -28,6 +28,7 @@ const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const notificationRoutes = require('./src/notifications/notificationRoutes');
 const reportRunRoutes = require('./src/routes/reportRunRoutes');
 const notificationRuleRoutes = require('./src/notifications/rules/notificationRuleRoutes');
+const genericReportRoutes = require('./src/routes/reportRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 
 function mountFrameworkMiddleware(app, opts = {}) {
@@ -112,6 +113,10 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/notifications`, notificationRoutes);
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
+  // Framework-shipped reports share the app's /reports namespace, so one the
+  // framework provides is fetched exactly like one the app added. The app mounts
+  // its own router on the same path from app_routes.
+  app.use(`${API_PREFIX}/reports`, genericReportRoutes);
   app.use(`${API_PREFIX}/help-support`, helpSupportRoutes);
 }
 
