@@ -35,7 +35,39 @@ function keepColumnData(data, columns, exception_columns = []) {
   });
 }
 
+/**
+ * A report's filters, as the request carried them.
+ */
+function processFilters(req) {
+  const filters = { ...(req.query || {}) };
+
+  for (const key of Object.keys(filters)) {
+    if (filters[key] === 'true') {
+      filters[key] = true;
+    } else if (filters[key] === 'false') {
+      filters[key] = false;
+    } else if (filters[key] === 'null') {
+      filters[key] = null;
+    } else if (filters[key] === 'undefined') {
+      filters[key] = undefined;
+    }
+  }
+  if (filters.start_date) {
+    filters.start_date = new Date(filters.start_date);
+    filters.start_date.setHours(0, 0, 0);
+  }
+  if (filters.end_date) {
+    filters.end_date = new Date(filters.end_date);
+    filters.end_date.setHours(23, 59, 59);
+  }
+
+  filters.company_id = req.user?.company_id;
+
+  return filters;
+}
+
 module.exports = {
   isDebugMode,
-  keepColumnData
+  keepColumnData,
+  processFilters
 };
