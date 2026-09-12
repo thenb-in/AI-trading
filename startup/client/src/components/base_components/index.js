@@ -12,5 +12,6 @@ export { MasterSearch } from './master/MasterSearch';
 export { MasterSearch as MasterSearchInput } from './master/MasterSearch';
 export { MasterModalActions } from './master/MasterModalActions';
 export { ShortcutHint } from './ShortcutHint.jsx';
+export { LockActionButton } from './LockActionButton.jsx';
 // Base Org Chart - generic top-down hierarchy graph (org structure, location tree, ...)
 export { OrgChart } from './org_chart/OrgChart.jsx';

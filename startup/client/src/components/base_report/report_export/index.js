@@ -5,7 +5,7 @@ import {
   createWorkbook,
   setupWorksheetColumns,
   addHeaderRow,
-  addEmployeeSummaryRow,
+  addSummaryRows,
   addDataRows,
   addTotalRow,
   applyRowHeights,
@@ -104,7 +104,7 @@ const populateReportSheet = (
       cell.value = null;
     }
 
-    const summaryRowCount = addEmployeeSummaryRow(reportSheet, mergedSummary, excelColumns, columns);
+    const summaryRowCount = addSummaryRows(reportSheet, mergedSummary, excelColumns, columns);
     if (summaryRowCount > 0) {
       headerRowNumber = summaryRowCount + 2;
       dataStartRow = summaryRowCount + 3;
