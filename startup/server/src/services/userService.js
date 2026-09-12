@@ -6,6 +6,7 @@ const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyMod
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
 const { normalizeEmail } = require('../utils/normalizeUtils');
+const logger = require('../../logger');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -324,6 +325,20 @@ const invalidateSessions = async (userId) => {
   );
 };
 
+const setUserApproved = async (userId, approved) => {
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
+  if (user.is_approved === approved) {
+    return false;
+  }
+
+  await user.update({ is_approved: approved });
+  if (!approved) {
+    await invalidateSessions(userId);
+  }
+  logger.info(`User ${user.username} is now ${approved ? 'approved' : 'not approved'}`);
+  return true;
+};
+
 const getTokensValidAfter = async (userId) => {
   const user = await User.findByPk(userId, {
     attributes: ['tokens_valid_after']
@@ -419,6 +434,7 @@ module.exports = {
   updateUserRefreshTokenAndLastActive,
   checkUserActive,
   createSsoUser,
+  setUserApproved,
   invalidateSessions,
   getTokensValidAfter,
   getUserByPkWithLock,

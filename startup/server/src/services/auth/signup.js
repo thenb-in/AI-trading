@@ -6,7 +6,7 @@ const { assertPasswordPolicy } = require('./passwordPolicy');
 
 const normalize = (val) => val?.trim().toLowerCase();
 
-const signup = async (username, password, companyId, { phone, name, role, is_approved = false, last_active = null }, transaction) => {
+const signup = async (username, password, companyId, { phone, email, name, role, is_approved = false, last_active = null }, transaction) => {
   username = normalize(username);
   password = password?.trim();
   assertPasswordPolicy(password);
@@ -50,6 +50,7 @@ const signup = async (username, password, companyId, { phone, name, role, is_app
 
   const user = await User.create({
     phone,
+    email,
     username,
     password: hashedPassword,
     name,

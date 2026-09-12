@@ -130,6 +130,13 @@ const formatDuration = (duration) => {
 
 
 
+/**
+ * A full name as its words. Which of them is the first name and which the last is a guess
+ * either way and differs by where the name came from, so that call is the caller's to make.
+ */
+const splitFullName = (fullName) =>
+  String(fullName || '').trim().split(/\s+/).filter(Boolean);
+
 const formatValueOrDash = (value) => (value === null || value === undefined ? '—' : String(value));
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -175,4 +182,4 @@ const formatDurationJson = (duration) => {
   return formatted.trim();
 };
 
-export { formatDateTime, formatTime, formatDate, formatDuration, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson };
+export { formatDateTime, formatTime, formatDate, formatDuration, splitFullName, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson };

@@ -16,7 +16,38 @@ on:
   release:
     types: [published]
 
+  # Input-driven build: cut a bundle carrying only the interfaces a client
+  # bought. Every other trigger builds `all` (see the gateway_build job).
+  workflow_dispatch:
+    inputs:
+      interfaces:
+        description: 'Gateway interfaces to bundle: "all", or a comma-separated subset (adms_server,biomax_server,lan_cosec_centra,lan_realtime,lan_zk,realtime_server,vyom_server).'
+        required: true
+        default: 'all'
+        type: string
+      platform:
+        description: 'Build target. bytenode locks each .jsc to the OS+arch that compiled it, so this picks the runner AND tags the bundle. Windows sites normally run the linux bundle under Docker — pick windows_x64 only for a native Windows install.'
+        required: true
+        default: 'linux_x64'
+        type: choice
+        options:
+          - linux_x64
+          - windows_x64
+
 env:
+  # npm runs package scripts through cmd.exe on Windows, which cannot parse the
+  # POSIX idioms our scripts use (`NODE_OPTIONS=... vite build`, `rm -rf`). A
+  # root .npmrc does NOT cover this: npm reads the project .npmrc from the
+  # nearest package.json, so `cd app/client && npm run build` never sees it.
+  # The env var applies to every npm invocation at any cwd.
+  NPM_CONFIG_SCRIPT_SHELL: bash
+
+  # The one place the build target is declared. Non-dispatch triggers build
+  # linux. The `env` context is not available in `runs-on` or in a called
+  # workflow's `with:`, so setup republishes this (and the matching runner) as
+  # job outputs and every other job reads it from there.
+  PLATFORM: ${{ inputs.platform || 'linux_x64' }}
+
   # The one place the Node version is declared. bytenode locks each .jsc to this
   # exact V8 build; it is captured into the bundle's VERSION and read back at
   # deploy time — nothing downstream hardcodes it.
@@ -24,11 +55,36 @@ env:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.platform == 'windows_x64' && 'windows-latest' || 'ubuntu-latest' }}
+
+    # git-bash on Windows runners, so every step below is the same POSIX shell
+    # on all targets. Declared on each native job — `defaults` is per-job.
+    defaults:
+      run:
+        shell: bash
+
+    # The `env` context is not available in `jobs.<id>.with`, so the Node pin
+    # is republished here for gateway_build to consume via `needs`. NODE_VERSION
+    # above stays the single declaration.
+    outputs:
+      node_version: ${{ steps.pin.outputs.node_version }}
+      platform: ${{ steps.pin.outputs.platform }}
+      runner: ${{ steps.pin.outputs.runner }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Publish build target + Node version pin
+        id: pin
+        run: |
+          echo "node_version=${{ env.NODE_VERSION }}" >> "$GITHUB_OUTPUT"
+          echo "platform=${{ env.PLATFORM }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ env.PLATFORM }}" = "windows_x64" ]; then
+            echo "runner=windows-latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "runner=ubuntu-latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -63,7 +119,11 @@ jobs:
 
   client_build:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.setup.outputs.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       contents: write
@@ -136,12 +196,16 @@ jobs:
   # SALARYMITRA PORTAL (ios/) — standalone Vite SPA served at /salarymitra.
   # Self-contained: its own package-lock + node_modules (NOT part of the
   # root `npm run i` workspaces), so it installs and builds independently of
-  # client_build. The dist is consumed by server_build_linux_x64, which drops it
+  # client_build. The dist is consumed by server_build, which drops it
   # under app/client/salarymitra/ so it deploys at $app/<app>/salarymitra/.
   # ────────────────────────────────────────────────────────────────────
   ios_build:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.setup.outputs.runner }}
+
+    defaults:
+      run:
+        shell: bash
 
     permissions:
       contents: write
@@ -185,15 +249,40 @@ jobs:
           include-hidden-files: true
 
   # ────────────────────────────────────────────────────────────────────
+  # GATEWAY BYTECODE — delegated to gateway_builds.yml so the site bundle and
+  # the standalone gateway artifact are cut by ONE build path. Only needs
+  # setup, so it compiles in parallel with client_build/ios_build instead of
+  # serially inside the server job as it used to.
+  #
+  # The server job consumes the artifact rather than rebuilding: app/server
+  # require()s @nucleus and @biometric_interface/@adms/@biomax/@zkteco at load
+  # time (e.g. src/models/index.js does `require('@biometric_interface/common/db')`),
+  # so those compiled layers must land in the bundle or the server will not boot.
+  #
+  # `all` discovers every interface carrying a build-bytecode.config.js. A
+  # workflow_dispatch run can pass a subset to ship only what a client bought.
+  # ────────────────────────────────────────────────────────────────────
+  gateway_build:
+    needs: setup
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/gateway_builds.yml
+    with:
+      interfaces: ${{ inputs.interfaces || 'all' }}
+      node_version: ${{ needs.setup.outputs.node_version }}
+      platform_id: ${{ needs.setup.outputs.platform }}
+      runner: ${{ needs.setup.outputs.runner }}
+
+  # ────────────────────────────────────────────────────────────────────
   # SERVER BUILD + SITE BUNDLE — compiles the framework + app boot wrapper to
   # bytecode AND assembles the full deployable bundle (client + server bytecode
   # + portal + deploy scripts + docker kit) in one job.
   #
-  # Runs on github-hosted ubuntu-latest: bytenode bytecode is locked to the
-  # exact Node ABI + platform + arch it was compiled with, so building here pins
-  # the output to linux/x64 regardless of the self-hosted runners' architecture.
-  # Ubuntu sites deploy the bundle natively; Windows sites run the same bundle
-  # inside Docker (deploy/docker/) — either way the runtime is linux/x64.
+  # Runs on whichever runner `setup` resolved from the `platform` input:
+  # bytenode bytecode is locked to the exact Node ABI + platform + arch it was
+  # compiled with, so the runner IS the target. Guards below refuse to bundle if
+  # the runner or the downloaded gateway artifact disagrees with that target.
   #
   # It needs client_build + ios_build so it can pull their artifacts into the
   # bundle; the trade-off is the bytecode compile no longer overlaps those two
@@ -201,9 +290,9 @@ jobs:
   # the bundling happen on the same runner, there is no intermediate
   # server-build artifact — the bytecode is staged straight into _bundle/.
   # ────────────────────────────────────────────────────────────────────
-  server_build_linux_x64:
-    needs: [client_build, ios_build]
-    runs-on: ubuntu-latest
+  server_build:
+    needs: [setup, client_build, ios_build, gateway_build]
+    runs-on: ${{ needs.setup.outputs.runner }}
 
     defaults:
       run:
@@ -214,7 +303,7 @@ jobs:
       actions: write
 
     env:
-      PLATFORM_ID: linux_x64
+      PLATFORM_ID: ${{ needs.setup.outputs.platform }}
 
     outputs:
       bundle_name: ${{ steps.meta.outputs.bundle_name }}
@@ -257,23 +346,55 @@ jobs:
       - name: Build app/server boot wrapper bytecode
         run: cd app/server && npm run build
 
-      - name: Build shared runtime libs the server imports (nucleus + biometric gateway)
-        # app/server require()s @nucleus and @biometric_interface/@adms/@biomax/
-        # @zkteco at load time (e.g. src/models/index.js does
-        # `require('@biometric_interface/common/db')`), so the server will not
-        # boot without them. Reuse the gateway builder — it compiles nucleus +
-        # biometric_gateway (common, shared + the named interfaces) to bytecode
-        # in the exact source-relative layout the aliases resolve to.
-        run: bash .github/scripts/build-gateways.sh linux_x64 "adms_server,biomax_server,lan_cosec_centra"
+      - name: Verify this runner matches the requested target
+        # The whole point of a windows_x64 run is win32 bytecode. If the runner
+        # is not what was asked for, everything below still succeeds and ships a
+        # bundle that cannot boot on the target, so stop here instead.
+        run: |
+          HOST=$(node -p '(process.platform === "win32" ? "windows" : process.platform) + "_" + process.arch')
+          echo "requested=$PLATFORM_ID runner=$HOST"
+          [ "$HOST" = "$PLATFORM_ID" ] || {
+            echo "runner is $HOST but this build is tagged $PLATFORM_ID — refusing to bundle." >&2
+            exit 1
+          }
+
+      - name: Download shared runtime libs the server imports (nucleus + biometric gateway)
+        # Built by gateway_build (gateway_builds.yml) with the SAME Node pin, so
+        # the .jsc ABI matches the bytecode compiled above. Lands in the
+        # source-relative layout the runtime aliases resolve to, which the
+        # staging step below copies wholesale into the bundle.
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.gateway_build.outputs.artifact_name }}
+          path: _gateway_artifact
+
+      - name: Verify gateway bytecode matches this runner
+        # gateway_build is a SEPARATE job on its own runner, so this is the one
+        # place a linux-built .jsc could slip into a windows bundle. GATEWAY_VERSION
+        # records what actually compiled it; the ABI must match ours exactly or the
+        # gateways will not load beside the server bytecode built above.
+        run: |
+          . ./_gateway_artifact/GATEWAY_VERSION
+          echo "gateway: $node_platform/$node_arch abi=$node_abi ($node_version)"
+          OURS_PLATFORM=$(node -p process.platform)
+          OURS_ARCH=$(node -p process.arch)
+          OURS_ABI=$(node -p process.versions.modules)
+          [ "$node_platform" = "$OURS_PLATFORM" ] && [ "$node_arch" = "$OURS_ARCH" ] && [ "$node_abi" = "$OURS_ABI" ] || {
+            echo "gateway bytecode is $node_platform/$node_arch abi=$node_abi but this runner is $OURS_PLATFORM/$OURS_ARCH abi=$OURS_ABI." >&2
+            echo "refusing to bundle mismatched bytecode." >&2
+            exit 1
+          }
 
       - name: Resolve version + bundle name
         id: meta
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          STARTUP_VERSION=$(jq -r .version package.json)
-          CLIENT_VERSION=$(jq -r .version app/client/package.json)
-          SERVER_VERSION=$(jq -r .version app/server/package.json)
+          # node, not jq: jq is a system binary we would otherwise have to
+          # assume on every target runner, and node is already a hard build dep.
+          STARTUP_VERSION=$(node -p "require('./package.json').version")
+          CLIENT_VERSION=$(node -p "require('./app/client/package.json').version")
+          SERVER_VERSION=$(node -p "require('./app/server/package.json').version")
           # On pull_request runs github.sha / git HEAD is the synthetic merge
           # commit, not the PR's actual head — prefer pull_request.head.sha so
           # the recorded commit matches the code that was actually built.
@@ -319,15 +440,23 @@ jobs:
           cp -a _gateway_artifact/. _bundle/
           # @custom/server ships as plain JS (no bytecode config yet); exclude any
           # local node_modules/logs.
-          rsync -a --exclude node_modules --exclude logs custom _bundle/
+          cp -a custom _bundle/
+          find _bundle/custom \( -name node_modules -o -name logs \) -prune -exec rm -rf {} +
 
       - name: Stage deploy files + entry scripts
         run: |
           mkdir -p _bundle/deploy _bundle/scripts
-          cp deploy/base.conf deploy/base.service _bundle/deploy/
-          cp deploy/0setup_ubuntu.sh deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
           cp deploy/README.md _bundle/deploy/
-          cp deploy/update.sh _bundle/
+          # The updater is one cross-OS Node implementation; the two launchers
+          # carry no logic, they just hand off to it from sh or cmd.
+          cp deploy/update.js deploy/update.sh deploy/update.bat _bundle/
+          # First-time provisioning is still Ubuntu-only (systemd units + nginx
+          # site config). Shipping it into a Windows bundle would just be dead
+          # weight the operator has to know to ignore, so gate it on the target.
+          if [ "$PLATFORM_ID" = "linux_x64" ]; then
+            cp deploy/base.conf deploy/base.service _bundle/deploy/
+            cp deploy/0setup_ubuntu.sh deploy/1build_deploy_files.sh deploy/2link_files_to_internal_system.sh _bundle/deploy/
+          fi
           # Docker deploy: the Dockerfile at the bundle root + its .dockerignore,
           # plus the install kit (compose + .env.example + install/start/backup
           # scripts + README). Together these make the site bundle directly
@@ -336,9 +465,11 @@ jobs:
           # the bundle at /srv/app. The image has no COPY, so the .dockerignore
           # keeps the on-target `docker compose build` from taring the whole
           # bundle (app/client, node_modules, docker_data …).
-          cp Dockerfile _bundle/
-          printf '%s\n' 'node_modules' '**/node_modules' 'app/client' 'docker_data' 'deploy' 'scripts' '.env' '*.md' > _bundle/.dockerignore
-          cp -r deploy/docker _bundle/deploy/docker
+          if [ "$PLATFORM_ID" = "linux_x64" ]; then
+            cp Dockerfile _bundle/
+            printf '%s\n' 'node_modules' '**/node_modules' 'app/client' 'docker_data' 'deploy' 'scripts' '.env' '*.md' > _bundle/.dockerignore
+            cp -r deploy/docker _bundle/deploy/docker
+          fi
           # deploy/*.sh source scripts/download-artifact.sh, which in turn calls scripts/ask-app-name.js.
           cp scripts/download-artifact.sh scripts/ask-app-name.js _bundle/scripts/
           # Ship every tracked .gitignore. update.sh turns the bundle into a
@@ -352,7 +483,9 @@ jobs:
             mkdir -p "_bundle/$(dirname "$gi")"
             cp "$gi" "_bundle/$gi"
           done
-          chmod +x _bundle/update.sh _bundle/deploy/*.sh _bundle/scripts/download-artifact.sh
+          # No-op on a Windows runner (NTFS has no exec bit) and harmless there.
+          chmod +x _bundle/update.js _bundle/update.sh _bundle/scripts/download-artifact.sh
+          chmod +x _bundle/deploy/*.sh 2>/dev/null || true
 
       - name: Write VERSION metadata
         run: |
@@ -387,7 +520,7 @@ jobs:
   # ────────────────────────────────────────────────────────────────────
   # SOURCE TESTS (source-mode) — defined in source_tests.yml.
   # Starts as soon as client_build is green, in parallel with the
-  # server_build_linux_x64 job. Tests run against
+  # server_build job. Tests run against
   # `node app/server/index.js` + `vite dev` using the checked-out source
   # (no build artifacts consumed).
   # ────────────────────────────────────────────────────────────────────
@@ -401,13 +534,16 @@ jobs:
 
   # ────────────────────────────────────────────────────────────────────
   # LINUX BUILT TESTS (built/deployed-mode) — defined in linux_built_tests.yml.
-  # Runs once server_build_linux_x64 has produced the deployment bundle
+  # Runs once server_build has produced the deployment bundle
   # AND source_tests has finished (the two test jobs share fixed docker
   # resource names — pg/test-net/deploy + host ports — so they cannot
   # overlap on the same runner).
   # ────────────────────────────────────────────────────────────────────
   linux_built_tests:
-    needs: [server_build_linux_x64, source_tests]
+    needs: [setup, server_build, source_tests]
+    # Deploys the bundle with the Ubuntu deploy scripts in a systemd container,
+    # so it only applies to a linux target.
+    if: needs.setup.outputs.platform == 'linux_x64'
     uses: ./.github/workflows/linux_built_tests.yml
     with:
-      bundle_name: ${{ needs.server_build_linux_x64.outputs.bundle_name }}
+      bundle_name: ${{ needs.server_build.outputs.bundle_name }}

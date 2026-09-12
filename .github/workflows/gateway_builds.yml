@@ -1,11 +1,9 @@
 name: Build Biometric Gateways
 
-# Standalone biometric gateway runnables (adms_server / biomax_server /
-# vyom_server / lan_zk / lan_cosec_centra). Each is bytecode-compiled (bytenode, like startup/app)
-# together with the shared device layers it needs (@nucleus, the
-# biometric-interface common/ + shared/ bootstrap) and staged in the SAME
-# source-relative directory layout so the runtime aliases + relative requires
-# resolve in the deployed bundle.
+# Reusable workflow — called from builds.yml so the site bundle and the
+# standalone gateway artifact come out of ONE build path. Also dispatchable on
+# its own to cut a subset artifact ("just what a client bought") without
+# running the whole site pipeline.
 #
 # DEPLOYMENT MODEL (important): the gateways are CODE-decoupled from the app
 # (zero @startup/@appServer requires) but are deployed ALONGSIDE app/server in
@@ -14,60 +12,122 @@ name: Build Biometric Gateways
 # resolve from the colocated startup/app node_modules via setupAliases.addPath.
 # That's why this workflow does not `npm install` a pg into each gateway.
 #
-# bytenode bytecode is locked to the exact Node ABI + platform + arch, so each
-# target platform compiles its own copy (separate jobs, not a matrix output).
+# bytenode bytecode is locked to the exact Node ABI + platform + arch, so the
+# gateways MUST be compiled by the same Node build as the app they deploy
+# beside. Hence node_version is an input, not a local constant — builds.yml
+# passes its own pin down, and a standalone dispatch reads that same pin back
+# out of builds.yml rather than declaring a second copy that can drift.
 #
-# Manual dispatch: pick which interfaces and platforms to build. Ship a client
-# only the interface(s) they bought.
+# Which interfaces exist is the FILESYSTEM's call: every biometric_gateway/<x>/
+# carrying a build-bytecode.config.js is shippable, and `all` discovers them.
+# Pass an explicit CSV only to ship a subset.
 
 on:
+  workflow_call:
+    inputs:
+      interfaces:
+        description: 'Comma-separated gateways to build, or "all" to discover every interface on disk.'
+        required: false
+        default: 'all'
+        type: string
+      node_version:
+        description: 'Exact Node version to compile with. Must match the app bundle it deploys beside.'
+        required: true
+        type: string
+      platform_id:
+        description: 'Target platform tag for the artifact name. The RUNNER decides the real target; this only labels it.'
+        required: false
+        default: 'linux_x64'
+        type: string
+      runner:
+        description: 'Runner label to compile on. Adding a native Windows target is a caller-side change: pass windows-latest + platform_id windows_x64.'
+        required: false
+        default: 'ubuntu-latest'
+        type: string
+    outputs:
+      artifact_name:
+        description: 'Name of the uploaded gateway artifact.'
+        value: ${{ jobs.gateway_build.outputs.artifact_name }}
+
   workflow_dispatch:
     inputs:
       interfaces:
-        description: 'Comma-separated gateways to build (adms_server,biomax_server,vyom_server,lan_zk,lan_cosec_centra). Each is standalone — build only what a client bought.'
+        description: 'Comma-separated gateways to build (adms_server,biomax_server,lan_cosec_centra,lan_realtime,lan_zk,realtime_server,vyom_server), or "all".'
         required: true
-        default: 'adms_server,biomax_server,vyom_server'
-      platforms:
-        description: 'Comma-separated platforms (linux_x64,windows_x64)'
-        required: true
-        default: 'linux_x64,windows_x64'
+        default: 'all'
+        type: string
+      node_version:
+        description: 'Leave blank to use the NODE_VERSION pinned in builds.yml (recommended — a mismatch will not boot).'
+        required: false
+        default: ''
+        type: string
 
 env:
-  NODE_VERSION_MAJOR: "22"
+  # npm runs package scripts through cmd.exe on Windows, which cannot parse the
+  # POSIX idioms our scripts use (`NODE_OPTIONS=... vite build`, `rm -rf`). A
+  # root .npmrc does NOT cover this: npm reads the project .npmrc from the
+  # nearest package.json, so `cd app/client && npm run build` never sees it.
+  # The env var applies to every npm invocation at any cwd.
+  NPM_CONFIG_SCRIPT_SHELL: bash
 
 jobs:
-  gateway_build_linux_x64:
-    # Gate on the platform being requested. (GitHub has no native "contains"
-    # job-level guard, so the step body no-ops when not selected.)
-    if: contains(github.event.inputs.platforms, 'linux_x64')
-    runs-on: [self-hosted, Linux, X64]
+  gateway_build:
+    runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
+
     defaults:
       run:
+        # git-bash on Windows runners, so the same POSIX build script works
+        # unchanged if a native Windows target is ever added.
         shell: bash
+
     permissions:
       contents: read
       actions: write
+
+    outputs:
+      artifact_name: ${{ steps.meta.outputs.artifact_name }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Resolve Node version
+        # builds.yml's NODE_VERSION is the one place the version is declared.
+        # Called → the caller hands it down. Dispatched standalone → read it
+        # back out of builds.yml so this workflow never carries a second copy.
+        id: node
+        run: |
+          VERSION="${{ inputs.node_version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -E '^\s*NODE_VERSION:' .github/workflows/builds.yml | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')
+          fi
+          [ -n "$VERSION" ] || { echo "could not resolve Node version — is NODE_VERSION still declared in builds.yml?" >&2; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "compiling gateways with Node $VERSION"
+
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
+          node-version: ${{ steps.node.outputs.version }}
 
-      - name: Capture Node runtime metadata (bytenode compatibility)
-        id: node_meta
-        run: |
-          {
-            echo "node_version=$(node -v)"
-            echo "node_arch=$(node -p process.arch)"
-            echo "node_platform=$(node -p process.platform)"
-            echo "node_abi=$(node -p process.versions.modules)"
-            echo "v8_version=$(node -p process.versions.v8)"
-          } >> "$GITHUB_OUTPUT"
+      - name: Restore dependencies (github-hosted only)
+        # Same cache contract as builds.yml: worth it on ephemeral cloud
+        # runners, skipped on self-hosted where node_modules already persist.
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v5
+        id: cache-deps
+        with:
+          path: |
+            node_modules
+            app/node_modules
+            app/client/node_modules
+            app/server/node_modules
+            startup/client/node_modules
+            startup/server/node_modules
+          key: build-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json', 'app/package-lock.json', 'app/client/package-lock.json', 'app/server/package-lock.json', 'startup/client/package-lock.json', 'startup/server/package-lock.json') }}
 
       - name: Install dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
         run: npm run i
         env:
           CI: true
@@ -75,60 +135,34 @@ jobs:
 
       - name: Build gateway bytecode (shared layers + selected interfaces)
         env:
-          INTERFACES: ${{ github.event.inputs.interfaces }}
-        run: bash .github/scripts/build-gateways.sh linux_x64 "$INTERFACES"
+          INTERFACES: ${{ inputs.interfaces || 'all' }}
+        run: bash .github/scripts/build-gateways.sh "${{ inputs.platform_id || 'linux_x64' }}" "$INTERFACES"
 
-      - name: Upload gateway artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: gateway-build-linux_x64
-          path: _gateway_artifact/
-          include-hidden-files: true
-
-  gateway_build_windows_x64:
-    if: contains(github.event.inputs.platforms, 'windows_x64')
-    runs-on: [self-hosted, Windows, X64]
-    defaults:
-      run:
-        # git-bash so the same POSIX build script works on Windows runners.
-        shell: bash
-    permissions:
-      contents: read
-      actions: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION_MAJOR }}
-
-      - name: Capture Node runtime metadata (bytenode compatibility)
-        id: node_meta
+      - name: Write gateway VERSION metadata
+        # The artifact is ABI-locked bytecode; without this there is no way to
+        # tell at deploy time which Node build it will load under, or which
+        # commit and interfaces it carries.
         run: |
-          {
-            echo "node_version=$(node -v)"
-            echo "node_arch=$(node -p process.arch)"
-            echo "node_platform=$(node -p process.platform)"
-            echo "node_abi=$(node -p process.versions.modules)"
-            echo "v8_version=$(node -p process.versions.v8)"
-          } >> "$GITHUB_OUTPUT"
+          cat > _gateway_artifact/GATEWAY_VERSION <<EOF
+          commit=${{ github.event.pull_request.head.sha || github.sha }}
+          interfaces=${{ inputs.interfaces || 'all' }}
+          platform_id=${{ inputs.platform_id || 'linux_x64' }}
+          built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          node_version=$(node -v)
+          node_arch=$(node -p process.arch)
+          node_platform=$(node -p process.platform)
+          node_abi=$(node -p process.versions.modules)
+          v8_version=$(node -p process.versions.v8)
+          EOF
+          cat _gateway_artifact/GATEWAY_VERSION
 
-      - name: Install dependencies
-        run: npm run i
-        env:
-          CI: true
-          HUSKY: 0
-
-      - name: Build gateway bytecode (shared layers + selected interfaces)
-        env:
-          INTERFACES: ${{ github.event.inputs.interfaces }}
-        run: bash .github/scripts/build-gateways.sh windows_x64 "$INTERFACES"
+      - name: Resolve artifact name
+        id: meta
+        run: echo "artifact_name=gateway-build-${{ inputs.platform_id || 'linux_x64' }}" >> "$GITHUB_OUTPUT"
 
       - name: Upload gateway artifact
         uses: actions/upload-artifact@v7
         with:
-          name: gateway-build-windows_x64
+          name: ${{ steps.meta.outputs.artifact_name }}
           path: _gateway_artifact/
           include-hidden-files: true

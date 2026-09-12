@@ -3,7 +3,7 @@ const { NOTIFICATION_TYPES, NOTIFICATION_NEW } = require('../../../constants/not
 const { RULE_CHANNEL, RULE_CHANNEL_LABEL, DELIVERY_STATUS } = require('../../../constants/notificationRules');
 const { emitToUsers } = require('../../notificationEmitter');
 const { formatNotification } = require('../../notificationFormatter');
-const { addressOf, firstLine } = require('../../utils/deliveryUtils');
+const { messageOf, addressOf, firstLine } = require('../../utils/deliveryUtils');
 
 
 async function recordDelivery(channel, { rule, config, recipient, context }, outcome) {
@@ -20,7 +20,7 @@ async function recordDelivery(channel, { rule, config, recipient, context }, out
     log: firstLine(outcome.reason)
       || `${RULE_CHANNEL_LABEL[channel]} sent to ${addressOf(recipient)}`,
     title: config.title || config.subject || rule.name,
-    message: config.body || '',
+    message: messageOf(config),
     meta: { ruleId: rule.id, link: context?.record?.link || null, to: addressOf(recipient) }
   });
 

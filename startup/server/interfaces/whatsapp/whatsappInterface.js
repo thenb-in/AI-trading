@@ -28,7 +28,7 @@ async function sendWhatsappMessage({ phone, templateName, header, body, text } =
         templateName,
         header: oneLineValues(header),
         body: oneLineValues(body),
-        text: singleLine(text)
+        text: String(text ?? '').trim()
       },
       {
         headers: { 'x-whatsapp-sender-app-key': env.WHATSAPP_SENDER_APP_KEY },

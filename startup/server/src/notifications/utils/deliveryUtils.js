@@ -12,9 +12,11 @@ function fromInterfaceResult(result) {
   return result.skipped ? skipped(result.reason) : failed(result.reason);
 }
 
+const messageOf = (config) => [config.header, config.body].filter(Boolean).join('\n').trim();
+
 const addressOf = (recipient) => recipient.email || recipient.phone || recipient.name || 'nobody';
 
 // A thrown reason drags its stack along, and the log column is read by people.
 const firstLine = (reason) => String(reason || '').split('\n')[0].trim();
 
-module.exports = { sent, skipped, failed, fromInterfaceResult, addressOf, firstLine };
+module.exports = { sent, skipped, failed, fromInterfaceResult, messageOf, addressOf, firstLine };

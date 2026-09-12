@@ -1,7 +1,9 @@
 # Biometric gateway deploy units
 
-Each biometric gateway is **one runnable = one service**. Deploy only the
-interfaces a client bought (the `gateway_builds.yml` workflow lets you pick).
+Each biometric gateway is **one runnable = one service**. Every site bundle
+carries all interfaces; enable only the services a client bought. To ship a
+cut-down artifact instead, dispatch `builds.yml` (whole bundle) or
+`gateway_builds.yml` (gateways only) with an `interfaces` subset.
 
 The gateways are CODE-decoupled from the app (zero `@startup`/`@appServer`
 requires) but run **alongside** the app install, sharing its `node_modules` for
@@ -16,8 +18,9 @@ gateway artifact into the same install root as `app/server` + `startup/server`.
   startup/server/               (from the app/site bundle — provides pg, sequelize)
   app/server/                   (from the app/site bundle — provides @appServer, @biometric)
   biometric_gateway/
-    common/  shared/  package.json   (from gateway artifact)
-    adms_server/  biomax_server/  vyom_server/  lan_zk/   (only those built)
+    common/  bootstrap/  package.json   (from gateway artifact)
+    adms_server/  biomax_server/  lan_cosec_centra/  lan_realtime/
+    lan_zk/  realtime_server/  vyom_server/          (only those built)
 ```
 
 Run `npm install --omit=dev` once in `biometric_gateway/` (and each interface
@@ -31,7 +34,7 @@ come from the shared `startup`/`app` `node_modules`.
 | placeholder      | value                                            |
 |------------------|--------------------------------------------------|
 | `nbnext_app_name`| app/repo name (matches the app's unit)           |
-| `gateway_name`   | `adms_server` \| `biomax_server` \| `vyom_server` \| `lan_zk` |
+| `gateway_name`   | `adms_server` \| `biomax_server` \| `lan_cosec_centra` \| `lan_realtime` \| `lan_zk` \| `realtime_server` \| `vyom_server` |
 | `server_path`    | absolute install root                            |
 | `nvm_path`       | Node install prefix (dir containing `bin/node`)  |
 | `npm_path`       | absolute path to `npm`                            |
@@ -48,13 +51,21 @@ sed -e "s#nbnext_app_name#etime#g" \
 systemctl daemon-reload && systemctl enable --now etime-adms_server
 ```
 
-Each gateway listens on its own port (`ADMS_SERVER_PORT=4002`,
-`BIOMAX_SERVER_PORT=4003`, `ZKTECO_TCP_SERVER_PORT=4004`,
-`VYOM_SERVER_PORT=4006`) from its `.env`. (4005 is wagemaster.)
+Each gateway reads a plain `PORT` from its own `.env` (defaults in each
+`.env.example`): adms_server 8948, biomax_server 8949, vyom_server 8950,
+lan_cosec_centra 11000, lan_realtime 11005, lan_zk 11048, realtime_server 7005
+(RealSoft's cloud port — the device dials it).
 
-## Windows (nssm)
+## Windows
 
-Mirror the app's `deploy/windows` nssm pattern, one service per interface:
+Native Windows is **not a supported target today**: bytenode locks each `.jsc`
+to the platform + arch it was compiled on, and the build pipeline compiles
+linux/x64 only. Windows sites run the same linux bundle under Docker — see
+`deploy/docker/`, and the gateways come along inside it.
+
+If a native Windows install is ever needed, the gateways must first be
+recompiled on a Windows runner (`gateway_builds.yml` takes `runner` and
+`platform_id` inputs for exactly that). Then, one nssm service per interface:
 
 ```
 nssm install etime-adms_server "C:\Program Files\nodejs\node.exe" index.js

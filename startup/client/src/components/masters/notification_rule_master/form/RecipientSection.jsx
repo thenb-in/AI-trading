@@ -7,7 +7,7 @@ import { FieldRow } from './FieldRow';
 import { AddressesField } from './AddressesField';
 import { DeliveryModeChoice } from './DeliveryModeChoice';
 import { AudienceSummary } from './AudienceSummary';
-import { audienceSummary } from './audienceSummary';
+import { audienceSummary } from './buildAudienceSummary';
 
 
 const RecipientSection = ({

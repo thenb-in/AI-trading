@@ -45,8 +45,9 @@ function isSamePerson(recipient, subject) {
   if (subject.key && recipient.key === subject.key) {
     return true;
   }
-  if (subject.userId && recipient.userId && String(recipient.userId) === String(subject.userId)) {
-    return true;
+
+  if (subject.userId && recipient.userId) {
+    return String(recipient.userId) === String(subject.userId);
   }
   if (subject.email && recipient.email === subject.email) {
     return true;

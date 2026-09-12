@@ -171,7 +171,12 @@ module.exports = require('./${jscBasename}');
 function walkForJs(dir, baseDir, config, result = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
-    const relPath = path.relative(baseDir, fullPath);
+    // Always forward-slash: config keys (copyAsJs / skipFiles / skipDirs) are
+    // written POSIX-style, and path.relative yields backslashes on Windows, so
+    // an un-normalised relPath silently misses every multi-segment entry —
+    // shipping 'src/utils/formulaBuilder.js' as bytecode instead of plain JS.
+    // Node accepts forward slashes on Windows, so downstream joins are fine.
+    const relPath = path.relative(baseDir, fullPath).split(path.sep).join('/');
 
     if (entry.isDirectory()) {
       if (!isSkippedDir(relPath, config.skipDirs)) {

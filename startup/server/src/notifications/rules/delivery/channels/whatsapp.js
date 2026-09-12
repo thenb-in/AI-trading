@@ -1,7 +1,7 @@
 const { sendWhatsappMessage } = require('../../../../../interfaces/whatsapp/whatsappInterface');
 const { RULE_CHANNEL } = require('../../../../constants/notificationRules');
 const { renderNamedValues } = require('../renderer');
-const { skipped, fromInterfaceResult } = require('../../../utils/deliveryUtils');
+const { skipped, fromInterfaceResult, messageOf } = require('../../../utils/deliveryUtils');
 
 // The rule carries the approved template's name; the rendered message is its variables.
 async function deliverWhatsapp({ rule, config, recipient, context }) {
@@ -19,7 +19,7 @@ async function deliverWhatsapp({ rule, config, recipient, context }) {
     templateName: config.template_name,
     header: renderNamedValues(raw.header, context),
     body: renderNamedValues(raw.body, context),
-    text: config.body?.trim()
+    text: messageOf(config)
   });
   return fromInterfaceResult(result);
 }
