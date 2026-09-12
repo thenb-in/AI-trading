@@ -47,6 +47,7 @@ import {
 import { adaptLayoutConfig } from "./utils/layoutConfig.js";
 import { getGridContainerStyle, scrollAreaStyle, tableStyle } from "./utils/styles.js";
 
+const INFINITE_SCROLL_MAX_HEIGHT = 'calc(100vh - 180px)';
 
 const NbNextDataGrid = forwardRef(({
   rows: rowsProp = [],
@@ -541,6 +542,7 @@ const NbNextDataGrid = forwardRef(({
       maxHeight: "none",
       overflow: "visible",
     }),
+    ...(infiniteScroll && !fullScreen && { maxHeight: INFINITE_SCROLL_MAX_HEIGHT }),
     ...activeTheme.vars,
   };
   const bodyScrollAreaStyle = useNaturalFlow

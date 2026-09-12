@@ -2,9 +2,11 @@ import { useCallback, useImperativeHandle, useState } from "react";
 import {
   calculateTotals,
   filterRows,
+  getGridDataRows,
   indexRows,
   normalizeColumns,
   sortRows,
+  unwrapGridRows,
 } from "../utils/helpers";
 import { detectConstantColumns } from "../utils/constantColumnsUtils";
 import { groupRows } from "./useGrouping";
@@ -105,7 +107,7 @@ const buildSheetFromRaw = (
   const filtered = filterRows(indexed, filterModel || {}, colsToUse);
   const sorted = sortRows(filtered, sortModel || { field: null, sort: null }, colsToUse);
   const grouped = groupRows(colsToUse, sorted, groupByField);
-  const unwrapped = grouped.map((w) => w._row || w);
+  const unwrapped = unwrapGridRows(grouped);
 
   // Respect the user's column visibility toggles. Unknown fields (not in the
   // state map) default to visible.
@@ -115,7 +117,7 @@ const buildSheetFromRaw = (
   ).filter((c) => c.is_export !== false);
 
 
-  const dataRowsOnly = unwrapped.filter((r) => !r?._isGroupTotal);
+  const dataRowsOnly = getGridDataRows(unwrapped);
   const totalRow =
     showTotalRow && dataRowsOnly.length > 1 ? calculateTotals(dataRowsOnly, visibleCols) : null;
 
@@ -167,10 +169,8 @@ const useGridExport = ({
   );
 
   const getExportPayload = useCallback(() => {
-    const unwrappedRows = (groupedRows || sortedRows).map(
-      (wrapped) => wrapped._row || wrapped
-    );
-    const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
+    const unwrappedRows = unwrapGridRows(groupedRows || sortedRows);
+    const dataRowsOnly = getGridDataRows(unwrappedRows);
     const totalRow =
       showTotalRow && dataRowsOnly.length > 1
         ? calculateTotals(dataRowsOnly, exportColumns)
@@ -199,10 +199,8 @@ const useGridExport = ({
     ref,
     () => ({
       getExportData: () => {
-        const unwrappedRows = (groupedRows || sortedRows).map(
-          (wrapped) => wrapped._row || wrapped
-        );
-        const dataRowsOnly = unwrappedRows.filter((r) => !r?._isGroupTotal);
+        const unwrappedRows = unwrapGridRows(groupedRows || sortedRows);
+        const dataRowsOnly = getGridDataRows(unwrappedRows);
         const totalRow =
           showTotalRow && dataRowsOnly.length > 1
             ? calculateTotals(dataRowsOnly, exportColumns)

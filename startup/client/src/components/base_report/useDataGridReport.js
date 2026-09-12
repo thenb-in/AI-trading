@@ -2,7 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { fetchReportData } from '@startup/components/base_report/ReportUtils';
-import { applyDefaultFiltersToSearchParams } from '@startup/components/base_filter/filter/helpers';
+import {
+  applyDefaultFiltersToSearchParams,
+  filterValuesFromParams,
+  serializeFilterValues,
+} from '@startup/components/base_filter/filter/helpers';
+import { getYesterdayYmd } from '@utils/dateTimeUtils';
 import {
   handleFiltersApply,
   loadSavedReportRun,
@@ -19,10 +24,8 @@ import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
  * filter config — and gets back the state, setters, and a ready-to-spread
  * `layoutProps` object for `<BaseReportLayout>`.
  *
- * Optional setters (`setOriginalColumns`, `setStatusDefinitions`,
- * `setEmployeeSummary`) are forwarded to fetchReportData. employeeSummary is
- * only populated from route locationState now (no report API returns it);
- * handleFiltersApply ignores it.
+ * Optional setters (`setOriginalColumns`, `setStatusDefinitions`) are forwarded
+ * to fetchReportData.
  */
 const useDataGridReport = ({
   report,
@@ -33,7 +36,6 @@ const useDataGridReport = ({
   applyDefaultFilters: shouldApplyDefaultFilters = true,
   setOriginalColumns,
   setStatusDefinitions,
-  setEmployeeSummary,
   // Optional caller-owned setters. Use these when the caller needs to apply
   // column customization (e.g. inject renderCell) atomically before columns
   // are set — pass an arity-2 setColumns(cols, rows) and fetchReportData /
@@ -67,6 +69,16 @@ const useDataGridReport = ({
   const { dynamicOptions, isLoading: isFilterLoading } = useFilterDynamicOptions(filters ?? [], dynamicLoaders);
   const filtersConfig = useFilterConfig(filters ?? [], dynamicOptions);
 
+
+  const appliedFiltersJson = JSON.stringify({
+    ...defaultReportFilters,
+    ...serializeFilterValues(
+      filtersConfig,
+      filterValuesFromParams(filtersConfig, searchParams, (name) => searchParams.get(name) || getYesterdayYmd())
+    ),
+  });
+  const appliedFilters = useMemo(() => JSON.parse(appliedFiltersJson), [appliedFiltersJson]);
+
   useEffect(() => {
     if (!shouldApplyDefaultFilters) return;
     applyDefaultFiltersToSearchParams(defaultReportFilters, searchParams, setSearchParams);
@@ -83,7 +95,6 @@ const useDataGridReport = ({
       setStatusDefinitions ?? (() => {}),
       setSearchParams,
       isEditable,
-      setEmployeeSummary,
     );
   }, [report, locationState]);
 
@@ -160,6 +171,7 @@ const useDataGridReport = ({
     filtersConfig,
     onFiltersApply,
     dataGridRef,
+    appliedFilters,
     searchParams,
     setSearchParams,
     isLoadingData,
