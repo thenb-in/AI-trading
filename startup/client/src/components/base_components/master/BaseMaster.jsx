@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
@@ -82,10 +82,21 @@ const BaseMaster = ({
   showInsightsAsHeader = true,
   showEmptyColumns = true,
   hideConstantColumns = true,
+
+  // Server-paged loading. `loadRows` additionally receives { page, pageSize },
+  // and the response must carry a `total` (the unpaged count) alongside rows.
+  infiniteScroll = false,
+  pageSize = 50,
+
+  // controler add action button
+  showAdd = true,
 }) => {
   const [rows, setRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -106,31 +117,54 @@ const BaseMaster = ({
     (permissionKeys.update ? hasPermission(userData, permissionKeys.update) : false);
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
-  const fetchRows = useCallback(async (filterOverride) => {
+  const fetchRows = useCallback(async (filterOverride, { pageToLoad = 1, append = false } = {}) => {
     if (!canRead) {
       toast.error(unauthorizedToast);
       return;
     }
     try {
-      setLoading(true);
+      if (append) setIsLoadingMore(true); else setLoading(true);
       const apiFilters = filterOverride ?? filters;
       const mappedFilters = mapFiltersForApi ? mapFiltersForApi(apiFilters) : apiFilters;
-      const response = await loadRows(mappedFilters);
+      const requestFilters = infiniteScroll
+        ? { ...mappedFilters, page: pageToLoad, pageSize }
+        : mappedFilters;
+      const response = await loadRows(requestFilters);
       if (response.data.success || extractResponse) {
         const extracted = extractResponse
           ? extractResponse(response)
-          : { rows: response.data.data[rowsKey] || [], columns: response.data.data.columns || [] };
-        setRows(extracted.rows);
+          : {
+            rows: response.data.data[rowsKey] || [],
+            columns: response.data.data.columns || [],
+            total: response.data.data.total,
+          };
+        const nextRows = extracted.rows;
+        setRows((prev) => (append ? [...prev, ...nextRows] : nextRows));
         setColumns(extracted.columns);
+        setTotal((prev) => extracted.total ?? (append ? prev : nextRows.length));
+        setPage(pageToLoad);
         if (fetchSuccessToast) toast.success(fetchSuccessToast);
       }
     } catch (error) {
       console.error(`${title}: Error fetching rows`, { error });
       if (fetchFailureToast) toast.error(fetchFailureToast);
     } finally {
-      setLoading(false);
+      if (append) setIsLoadingMore(false); else setLoading(false);
     }
-  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, unauthorizedToast, title, filters, mapFiltersForApi, extractResponse]);
+  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, unauthorizedToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize]);
+
+  const loadMoreRef = useRef({});
+  loadMoreRef.current = { loading, isLoadingMore, rowCount: rows.length, total, page, fetchRows };
+  const isFetchingMoreRef = useRef(false);
+
+  const handleLoadMore = useCallback(() => {
+    const state = loadMoreRef.current;
+    if (isFetchingMoreRef.current) return;
+    if (state.loading || state.isLoadingMore || state.rowCount >= state.total) return;
+    isFetchingMoreRef.current = true;
+    Promise.resolve(state.fetchRows(undefined, { pageToLoad: state.page + 1, append: true }))
+      .finally(() => { isFetchingMoreRef.current = false; });
+  }, []);
 
   useEffect(() => {
     fetchRows();
@@ -254,7 +288,7 @@ const BaseMaster = ({
           ref={headerRef}
           title={title}
           description={description}
-          onAdd={isEditable ? handleAdd : null}
+          onAdd={isEditable && showAdd ? handleAdd : undefined}
           userData={userData}
           permissionKey={canCreate}
           addButtonText={addButtonText}
@@ -296,7 +330,11 @@ const BaseMaster = ({
             loading={loading}
             actions={actions}
             onRowClick={handleRowClick}
-            rowClickEnabled
+            rowClickEnabled={isEditable || Boolean(onRowClickOverride)}
+            infiniteScroll={infiniteScroll}
+            hasMore={infiniteScroll && rows.length < total}
+            onLoadMore={handleLoadMore}
+            isLoadingMore={isLoadingMore}
             getRowClassName={getRowClassName}
             isAlertRow={isAlertRow}
             initialSortKey={initialSortKey}
@@ -409,6 +447,9 @@ BaseMaster.propTypes = {
   extraHeaderActions: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   defaultGroupByField: PropTypes.string,
   initialSortDirection: PropTypes.string,
+  infiniteScroll: PropTypes.bool,
+  pageSize: PropTypes.number,
+  showAdd: PropTypes.bool,
 };
 
 export { BaseMaster };
