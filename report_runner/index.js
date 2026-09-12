@@ -7,6 +7,9 @@
 // somewhere to be announced.
 
 require('./setup/setupAliases');
+// eslint-disable-next-line custom/no-direct-model-imports
+require('@appServer/src/models/register/registerAppModelFields');
+require('@appServer/src/data/registerAppData');
 
 const logger = require('@startup/logger');
 const { REPORT_RUN_FINISHED } = require('@startup/src/constants/socketEvent');

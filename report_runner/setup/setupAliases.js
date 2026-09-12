@@ -21,11 +21,12 @@ moduleAlias.addAliases({
   '@appServer': APP_SERVER_DIR,
   '@custom': path.join(REPO_ROOT, 'custom'),
   '@nucleus': path.join(REPO_ROOT, 'nucleus'),
-  '@biometric': path.join(APP_SERVER_DIR, 'src/biometric'),
-  '@biometric_interface': BIOMETRIC_GATEWAY_DIR,
-  '@adms': path.join(BIOMETRIC_GATEWAY_DIR, 'adms_server'),
-  '@biomax': path.join(BIOMETRIC_GATEWAY_DIR, 'biomax_server'),
-  '@vyom': path.join(BIOMETRIC_GATEWAY_DIR, 'vyom_server')
+  '@app_biometric': path.join(APP_SERVER_DIR, 'src/biometric'),
+  // The shared device layer is the ONLY biometric package this process needs.
+  // Per-gateway aliases (@adms, @biomax, …) are deliberately absent: nothing
+  // app-side names a gateway any more, and each gateway registers its own alias
+  // from its aliases.js if bootstrap/interfaceRegistry ever loads it here.
+  '@biometric_interface': BIOMETRIC_GATEWAY_DIR
 });
 
 // App/server has the larger dep set; search it first.
