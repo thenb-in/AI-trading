@@ -1,121 +1,22 @@
-import {
-  LayoutDashboard,
-  ScanFace,
-  MapPinCheckInside,
-  Gauge,
-  ListChecks,
-  Network,
-  PhoneCall,
-} from "lucide-react";
-
 /**
- * etime-specific app modules (sidebar / top nav): searchable alongside
- * masters and reports. These are the modules whose pages live in the app
- * layer (quick check-in, HR dashboard, dashboards, WageMaster). They are
- * merged with the framework's generic modules to form the full list.
+ * App modules 
  *
- * Sidebar order: `order` field; visibility: `isAppModuleVisible` (used by
- * `useAppMenuItems`). `color` is the ModuleCard accent (kept on the
- * definition itself so the navigator and the signup plan preview both read
- * it straight from here).
+ * Each entry looks like:
+ *   {
+ *     id: "myDashboard",
+ *     title: "My Dashboard",
+ *     description: "What the page is for.",
+ *     category: "Administration",
+ *     color: "blue",                       // ModuleCard accent
+ *     tags: ["Dashboard"],
+ *     keywords: "dashboard overview module",
+ *     permissionName: "view_my_dashboard_module",
+ *     navigatePath: "/admin/my-dashboard", // must match a route in getAppRoutes.jsx
+ *     icon: SomeLucideIcon,
+ *     order: 1,                            // sidebar order
+ *   }
+ *
  */
-const getAppSpecificModuleDefinitions = () => [
-  {
-    id: "organizationStructure",
-    title: "Organization Structure",
-    description:
-      "The company as an org chart — departments, the positions sanctioned in each, and who is on them.",
-    category: "Administration",
-    color: "red",
-    tags: ["Organization", "Structure", "Hierarchy"],
-    keywords:
-      "organization structure org chart hierarchy department position seat sanctioned headcount vacancy module",
-    permissionName: "view_organization_structure_module",
-    navigatePath: "/admin/organization-structure",
-    icon: Network,
-    order: 1.1,
-  },
-  {
-    id: "biometricPunch",
-    title: "Biometric Punch",
-    description: "Quick biometric punch and attendance capture.",
-    category: "Attendance",
-    color: "teal",
-    tags: ["Biometric", "Punch", "Attendance"],
-    keywords: "biometric punch scan face attendance quick check in module",
-    permissionName: "view_biometric_punch_module",
-    navigatePath: "/admin/quick-check-in",
-    icon: ScanFace,
-    order: 2,
-  },
-  {
-    id: "checklist",
-    title: "Checklist",
-    description: "The daily, weekly and monthly worklist — what must be cleared before you close.",
-    category: "Attendance",
-    color: "danger",
-    tags: ["Checklist", "Worklist", "Todo", "Data Quality"],
-    keywords: "checklist worklist todo daily weekly monthly close pending missing data quality module",
-    permissionName: "view_checklist_module",
-    navigatePath: "/admin/checklist",
-    icon: ListChecks,
-    // Sits directly under Navigator — this is the page the day starts on. The
-    // sidebar sorts `order` numerically, so a fraction slots it in without
-    // renumbering the nine modules below it.
-    order: 1.5,
-  },
-  {
-    id: "hrDashboard",
-    title: "HR Dashboard",
-    description: "HR analytics, attendance trends, and pending approvals.",
-    category: "Analytics",
-    color: "purple",
-    tags: ["HR", "Dashboard", "Analytics", "Attendance"],
-    keywords: "hr dashboard analytics attendance trends heatmap approvals module",
-    permissionName: "view_hr_dashboard_module",
-    navigatePath: "/admin/hr-dashboard",
-    icon: Gauge,
-    order: 3,
-  },
-  {
-    id: "leadConversionDashboard",
-    title: "Calling → Conversion",
-    description: "Cold-calling pipeline: lead funnel, per-agent conversion, and source performance.",
-    category: "WageMaster",
-    color: "purple",
-    tags: ["CallBuddy", "Leads", "Conversion", "Dashboard"],
-    keywords: "call buddy lead conversion funnel agent source cold calling dashboard module",
-    permissionName: "read_call-buddy-report",
-    navigatePath: "/admin/lead-conversion-dashboard",
-    icon: PhoneCall,
-    order: 4.5,
-  },
-  {
-    id: "dashboards",
-    title: "Dashboards",
-    description: "View dashboards and analytics summaries.",
-    category: "Analytics",
-    color: "purple",
-    tags: ["Dashboard", "Analytics", "Charts"],
-    keywords: "dashboard dashboards analytics charts kpi module",
-    permissionName: "view_dashboard_module",
-    navigatePath: "/admin/dashboard",
-    icon: LayoutDashboard,
-    order: 4,
-  },
-  {
-    id: "locationCallBuddy",
-    title: "Location & CallBuddy",
-    description: "WageMaster location and CallBuddy user views.",
-    category: "WageMaster",
-    color: "warning",
-    tags: ["Location", "CallBuddy", "Map"],
-    keywords: "location callbuddy wagemaster map module",
-    permissionName: "view_wagemaster_module",
-    navigatePath: "/admin/wagemaster/dashboard",
-    icon: MapPinCheckInside,
-    order: 9,
-  },
-];
+const getAppSpecificModuleDefinitions = () => [];
 
 export { getAppSpecificModuleDefinitions };

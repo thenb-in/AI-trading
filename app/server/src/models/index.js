@@ -76,7 +76,6 @@ appModelNames.forEach(name => {
 db.sequelize = sequelize;
 
 // Every read of employee data now answers to the login's data access.
-require('../data_access/initialize').installDataScope(db);
 
 // Register this complete registry (framework + HR + relocated device models)
 // as the process registry for the shared biometric-interface services in

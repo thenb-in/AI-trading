@@ -17,7 +17,6 @@ import {
 import { registerAppLayout } from "@startup/data/appLayoutRegistry";
 import { registerReportApi } from "@startup/data/reportApiRegistry";
 import { registerSummaryHeaderFields } from "@startup/data/summaryFieldRegistry";
-import { registerRecipientSources } from "@startup/data/recipientSourceRegistry";
 import { registerDefaultSortFields } from "@startup/data/defaultSortFieldRegistry";
 import {
   registerAppRoutes,
@@ -41,7 +40,6 @@ import {
 import { getAppSpecificModuleDefinitions } from "./getAppModules";
 import { reports, categories } from "./getReportModules";
 import { registerFilterOptionResolvers } from "../filter/registerFilterOptionResolvers";
-import { appRecipientSources } from "./getRecipientSources";
 import {
   appRouteTitles,
   appTitlePatterns,
@@ -70,7 +68,6 @@ function registerAppData() {
   registerAppLayout(AppLayout);
   registerReportApi(reportApi);
   registerSummaryHeaderFields(SUMMARY_HEADER_FIELDS);
-  registerRecipientSources(appRecipientSources);
   registerDefaultSortFields(DEFAULT_REPORT_SORT_FIELDS);
   registerAppRoutes(appRoutes);
   registerAppRoutesWithoutSidebar(appRoutesWithoutSidebar);

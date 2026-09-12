@@ -18,25 +18,23 @@ require('./src/data/registerAppData');
 // reports) is wired here.
 
 const path = require('path');
-const logger = require('@startup/logger');
 const env = require('@startup/src/config/env');
 const { buildApp } = require('@startup/buildApp');
 const { registerAllJobs } = require('./scheduler');
 const appRoutes = require('./src/routes/app_routes');
 const companyProfileRoutes = require('./src/routes/companyProfileRoutes');
-const { piscinaPool } = require('./src/config/piscinaPool');
-const headBaseService = require('@startup/src/services/headBaseService');
-const employeeHeadBaseService = require('./src/services/employeeHeadBaseService');
 const { initAppServerRunnerClient, initClientAppServerSocket } = require('@startup/src/socket');
 
 // Where this app's billable heads read their history from, for the framework's
-// headbase. Employee is the head the wallet bills SalaryMitra on; a head added
-// to the wallet's rate card and not registered here is reported as unsupported
-// rather than silently skipped.
-headBaseService.registerSource('Employee', employeeHeadBaseService);
+// headbase. A head on the wallet's rate card that is not registered here is
+// reported as unsupported rather than silently skipped. The reference scaffold
+// bills on nothing, so it registers no sources:
+//
+//   const headBaseService = require('@startup/src/services/headBaseService');
+//   headBaseService.registerSource('<Head>', <sourceWithTimelineFn>);
 
 const { server, startServer } = buildApp({
-  // 5MB body limit — header/footer image uploads, base64 face photos.
+  // 5MB body limit — image uploads, base64 photos.
   bodyParserLimit: '5mb',
 
   // Device-facing paths (/iclock, /hdata) are served only by the standalone
@@ -75,18 +73,8 @@ const { server, startServer } = buildApp({
   // The ADMS auto-sync loop (employee push to online terminals) was here;
   // it now runs in adms_server's process — see adms_server/index.js.
   onAfterListen: () => {
-    piscinaPool.initialize();
     initAppServerRunnerClient();
     initClientAppServerSocket(server);
-  },
-
-  // Drain app-level resources before the framework stops schedulers.
-  onBeforeShutdown: async () => {
-    try {
-      await piscinaPool.shutdown();
-    } catch (err) {
-      logger.error(`Error shutting down Piscina pool: ${err.message}`, err);
-    }
   }
 });
 
