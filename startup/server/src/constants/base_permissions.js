@@ -72,7 +72,8 @@ const create_report_permission = (report) => {
 
 
 const REPORT_PERMISSION_CONSTANTS = {
-  USER_REPORT: create_report_permission('user_report')
+  USER_REPORT: create_report_permission('user_report'),
+  NOTIFICATION_LOG_REPORT: create_report_permission('notification-log-report')
 };
 
 

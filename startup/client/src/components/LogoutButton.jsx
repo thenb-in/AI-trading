@@ -1,25 +1,21 @@
 import { useState } from "react";
 import ReactDOM from "react-dom";
-import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import PropTypes from 'prop-types';
-import { ApiService } from "@services/ApiService";
-import { useOnLogout } from "@app/hooks/useOnLogout";
+import { useDataContext } from "@context/useDataContext";
+import { runAppLogoutHandlers } from "@startup/data/authHandlerRegistry";
 
 function LogoutButton({ collapsed }) {
   const [showConfirm, setShowConfirm] = useState(false);
-  const navigate = useNavigate();
-  const onLogout = useOnLogout();
+  const { logout } = useDataContext();
 
   const confirmLogout = async () => {
+    setShowConfirm(false);
     try {
-      await ApiService.logout();
-      onLogout();
-      navigate("/");
+      runAppLogoutHandlers();
+      await logout();
     } catch {
-      // Handle logout error silently
-    } finally {
-      setShowConfirm(false);
+      // AuthContext.logout handles navigation and SSO end_session redirect
     }
   };
 

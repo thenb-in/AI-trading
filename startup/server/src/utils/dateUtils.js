@@ -655,6 +655,17 @@ function extendDateRange(startDate, endDate, daysBefore = 1, daysAfter = 1) {
 }
 
 
+/**
+ * The period a report covers: the filter dates when they are given, otherwise this
+ * month so far — month start to now.
+ * @param {Object} filters - Report filters, start_date / end_date optional
+ * @returns {{ startDate: Date, endDate: Date }}
+ */
+const getReportPeriod = (filters = {}) => ({
+  startDate: filters.start_date ? normalizeToDate(filters.start_date) : getMonthBounds(0).start,
+  endDate: filters.end_date ? normalizeToDate(filters.end_date) : new Date()
+});
+
 module.exports = {
   formatDate,
   formatTime,
@@ -682,6 +693,7 @@ module.exports = {
   isFutureDate,
   getFinancialYearStart,
   getMonthToDateRange,
+  getReportPeriod,
   getAllDaysInArray,
   extract_time_only_to_integer,
   formatDateToString,

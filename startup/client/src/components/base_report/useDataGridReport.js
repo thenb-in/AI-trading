@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import {
-  applyDefaultFiltersToSearchParams,
-  fetchReportData,
-} from '@startup/components/base_report/ReportUtils';
+import { fetchReportData } from '@startup/components/base_report/ReportUtils';
+import { applyDefaultFiltersToSearchParams } from '@startup/components/base_filter/filter/helpers';
 import {
   handleFiltersApply,
   loadSavedReportRun,
