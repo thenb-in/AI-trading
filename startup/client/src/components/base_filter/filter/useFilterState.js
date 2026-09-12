@@ -7,8 +7,9 @@ import { STORAGE_KEYS } from '../../../constants';
 import { QUICK_DATE_ACTIONS } from './constants';
 import {
   getDefaultForConfig,
-  parseParamValue,
-  serializeAppliedValue,
+  filterValuesFromParams,
+  serializeFilterValues,
+  writeFilterValuesToParams,
 } from './helpers';
 
 /**
@@ -59,15 +60,10 @@ const useFilterState = ({
     [searchParams]
   );
 
-  const computeFiltersFromParams = useCallback(() => {
-    return allFilters.reduce((acc, config) => {
-      const paramValue = searchParams.get(config.name);
-      acc[config.name] = paramValue !== null
-        ? parseParamValue(config, paramValue)
-        : getDefaultForConfig(config, getDefaultDateValue);
-      return acc;
-    }, {});
-  }, [searchParams, allFilters, getDefaultDateValue]);
+  const computeFiltersFromParams = useCallback(
+    () => filterValuesFromParams(allFilters, searchParams, getDefaultDateValue),
+    [searchParams, allFilters, getDefaultDateValue]
+  );
 
   const [filters, setFilters] = useState(() => computeFiltersFromParams());
 
@@ -219,22 +215,10 @@ const useFilterState = ({
     [allFilters]
   );
 
-  const writeValuesToParams = useCallback((appliedFilters) => {
-    const newSearchParams = new URLSearchParams();
-    Object.entries(appliedFilters).forEach(([key, value]) => {
-      if (value === undefined || value === null || value === '') return;
-      if (typeof value === 'boolean') {
-        newSearchParams.set(key, value ? 'true' : 'false');
-      } else if (Array.isArray(value)) {
-        if (value.length > 0 && !(value.length === 1 && value[0] === 'all')) {
-          newSearchParams.set(key, value.join(','));
-        }
-      } else {
-        newSearchParams.set(key, value);
-      }
-    });
-    setSearchParams(newSearchParams, { replace: true });
-  }, [setSearchParams]);
+  const writeValuesToParams = useCallback(
+    (appliedFilters) => writeFilterValuesToParams(appliedFilters, setSearchParams),
+    [setSearchParams]
+  );
 
   const resetFilters = useCallback(() => {
     if (isDisabled) return;
@@ -248,14 +232,10 @@ const useFilterState = ({
     writeValuesToParams(resetValues);
   }, [allFilters, getDefaultDateValue, isDisabled, onFilterChange, writeValuesToParams]);
 
-  const collectAppliedFilters = useCallback(() => {
-    const appliedFilters = {};
-    allFilters.forEach((config) => {
-      const serialized = serializeAppliedValue(config, filters[config.name]);
-      if (serialized !== undefined) appliedFilters[config.name] = serialized;
-    });
-    return appliedFilters;
-  }, [allFilters, filters]);
+  const collectAppliedFilters = useCallback(
+    () => serializeFilterValues(allFilters, filters),
+    [allFilters, filters]
+  );
 
   // Internal: drive one apply through the busy flag for its transport and
   // forward to the report's onFiltersApply callback with the transport tag.

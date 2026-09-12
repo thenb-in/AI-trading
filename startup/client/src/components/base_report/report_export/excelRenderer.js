@@ -7,6 +7,7 @@ import {
   generateFileName
 } from './formattingUtils.js';
 import { convertCellToText } from '../ReportUtils.js';
+import { getSummaryHeaderLabel } from '@startup/data/summaryFieldRegistry';
 
 // ===== EXCEL RENDERING FUNCTIONS =====
 
@@ -165,18 +166,8 @@ const getSummaryDisplayName = (key, columns = []) => {
     return column.display_name || column.headerName;
   }
 
-  const displayNameMap = {
-    'emp_code': 'Employee Code',
-    'employee_code': 'Employee Code',
-    'first_name': 'Name',
-    'employee_name': 'Name',
-    'department_name': 'Department',
-    'employee_department': 'Department',
-    'position_name': 'Position',
-    'emp_type': 'Employee Type'
-  };
 
-  return displayNameMap[key] || key;
+  return getSummaryHeaderLabel(key) || key;
 };
 
 /**
@@ -197,7 +188,7 @@ const formatSummaryValue = (value) => {
  * Add summary rows - each key-value pair in columns 1 and 2
  * @returns {number} Number of summary rows created
  */
-const addEmployeeSummaryRow = (reportSheet, summary = {}, excelColumns, columns = []) => {
+const addSummaryRows = (reportSheet, summary = {}, excelColumns, columns = []) => {
   if (!summary || Object.keys(summary).length === 0) {
     return 0;
   }
@@ -509,7 +500,7 @@ export {
   createWorkbook,
   setupWorksheetColumns,
   addHeaderRow,
-  addEmployeeSummaryRow,
+  addSummaryRows,
   addDataRows,
   addTotalRow,
   applyRowHeights,

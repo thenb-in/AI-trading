@@ -45,6 +45,14 @@ const handleImport = async ({
   // is the backend's job, so nothing here reads it.
   maxFileSize = 10 * 1024 * 1024, // 10MB
   onResults, // Optional callback to handle results (for modal display)
+  // Optional: how a single row-error is rendered in a toast. Defaults to a
+  // domain-agnostic "Row N: <error>" so this generic util stays decoupled from
+  // app-specific fields (e.g. emp_code). Apps that want richer labels can pass
+  // their own formatter.
+  formatRowError = (err) => {
+    const rowLabel = err?.row !== undefined && err?.row !== null ? `Row ${err.row}: ` : "";
+    return `${rowLabel}${err?.error ?? "Import error"}`;
+  },
 }) => {
   // Get file from parameter or event
   const selectedFile = file || (event?.target?.files?.[0]);
@@ -104,11 +112,7 @@ const handleImport = async ({
         
         // Show each error separately for better visibility
         errors.forEach(err => {
-          const empCode = err.emp_code && err.emp_code !== 'N/A' ? err.emp_code : 'N/A';
-          toast.error(
-            `Row ${err.row} (Employee: ${empCode}): ${err.error}`,
-            { autoClose: 10000 }
-          );
+          toast.error(formatRowError(err), { autoClose: 10000 });
         });
       } else if (responseData.batchId && responseData.created > 0) {
         // Imports run through createImportFunction come back tagged with the
@@ -143,16 +147,12 @@ const handleImport = async ({
       
       if (errors && Array.isArray(errors) && errors.length > 0) {
         // Show first error in the main toast, then show others separately
-        const firstError = errors[0];
-        errorMessage = `Row ${firstError.row} (Employee: ${firstError.emp_code || 'N/A'}): ${firstError.error}`;
-        
+        errorMessage = formatRowError(errors[0]);
+
         // Show remaining errors as separate toasts only if not using modal
         if (!onResults) {
           errors.slice(1).forEach(err => {
-            toast.error(
-              `Row ${err.row} (Employee: ${err.emp_code || 'N/A'}): ${err.error}`,
-              { autoClose: 10000 }
-            );
+            toast.error(formatRowError(err), { autoClose: 10000 });
           });
         }
       } else if (error) {

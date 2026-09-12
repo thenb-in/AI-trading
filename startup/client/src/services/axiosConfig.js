@@ -91,8 +91,22 @@ api.interceptors.response.use(
       });
     }
 
-    // Handle 401 Unauthorized responses (skip if already on login page to avoid reload loop)
-    if (error.response?.status === 401 && window.location.pathname !== '/') {
+    const onSsoInteraction = new URLSearchParams(window.location.search).has('interaction');
+
+    // A 401 from an auth endpoint is a failed sign-in — a wrong password, a bad
+    // TOTP code — not an expired session. The screen that made the call is
+    // already showing the reason, and reloading the page here would throw that
+    // message away before it could be read. This matters because the sign-in
+    // screen renders in place over whatever protected route was requested, so
+    // the pathname check below does not catch it.
+    const isAuthAttempt = /\/auth\//.test(error.config?.url || '');
+
+    if (
+      error.response?.status === 401
+      && !isAuthAttempt
+      && window.location.pathname !== '/'
+      && !onSsoInteraction
+    ) {
       console.log('Received 401 Unauthorized, logging out...');
       window.location.href = '/'
     }
