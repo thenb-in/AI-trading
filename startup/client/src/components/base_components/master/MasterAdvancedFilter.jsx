@@ -117,32 +117,12 @@ const MasterAdvancedFilter = ({
       );
     }
 
-    if (fieldType === 'date' || fieldType === 'datetime') {
-      return (
-        <input
-          type="date"
-          value={filter.value || ''}
-          onChange={(e) => handleValueChange(filter.id, e.target.value)}
-          className={inputClassName}
-        />
-      );
-    }
-
-    if (fieldType === 'number') {
-      return (
-        <input
-          type="number"
-          value={filter.value ?? ''}
-          onChange={(e) => handleValueChange(filter.id, e.target.value)}
-          placeholder="Enter value"
-          className={inputClassName}
-        />
-      );
-    }
+    // Dates filter by day, so a datetime column gets a date picker too.
+    const inputType = { date: 'date', datetime: 'date', number: 'number' }[fieldType] || 'text';
 
     return (
       <input
-        type="text"
+        type={inputType}
         value={filter.value ?? ''}
         onChange={(e) => handleValueChange(filter.id, e.target.value)}
         placeholder="Enter value"
