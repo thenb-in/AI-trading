@@ -10,6 +10,7 @@ import { FormModal } from './master_modal/FormModal';
 import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
+import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@utils/hasPermission';
 import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
@@ -20,6 +21,8 @@ const BaseMaster = ({
   description,
   addButtonText,
   searchPlaceholder,
+  // Row fields the search also matches that the grid does not show (an address, the id).
+  searchKeys,
   modalAddTitle,
   modalEditTitle,
   modalMaxWidth = 'md',
@@ -127,7 +130,6 @@ const BaseMaster = ({
   const canCreate = canAdd ? permissionKeys.create : null;
   const canDelete = permissionKeys.delete && hasPermission(userData, permissionKeys.delete);
 
-
   const canImport =
     hasPermission(userData, permissionKeys.create) ||
     (permissionKeys.update ? hasPermission(userData, permissionKeys.update) : false);
@@ -190,20 +192,8 @@ const BaseMaster = ({
     [subscribeToRefresh],
   );
 
-  const filteredData = useMemo(() => {
-    // Server columns name their field `key`, client-defined ones `id`.
-    const keys = (columns || []).map((c) => c.key || c.id);
-    const q = searchQuery.toLowerCase();
-    // JSON-shaped cells (e.g. a stored filter set) stringify to "[object Object]"
-    // and would never match, so serialise them instead of coercing.
-    const searchable = (value) => (
-      value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
-    );
-    const matched = searchQuery
-      ? rows.filter((row) => keys.some((k) => searchable(row?.[k]).toLowerCase().includes(q)))
-      : rows;
-    return mapRows ? mapRows(matched) : matched;
-  }, [rows, columns, searchQuery, mapRows]);
+  const matchedRows = useRowSearch(rows, searchQuery, { columns, searchKeys });
+  const filteredData = useMemo(() => (mapRows ? mapRows(matchedRows) : matchedRows), [matchedRows, mapRows]);
 
   const exportColumns = useMemo(
     () => (buildExportColumns ? buildExportColumns(columns) : columns?.map((col) => ({ field: col.id, headerName: col.label, type: col.type }))),
@@ -215,7 +205,8 @@ const BaseMaster = ({
       toast.error(unauthorizedDeleteToast);
       return;
     }
-    if (!window.confirm(deleteConfirmText)) return;
+    const question = typeof deleteConfirmText === 'function' ? deleteConfirmText(rows.find((r) => r.id === id)) : deleteConfirmText;
+    if (!window.confirm(question)) return;
     try {
       const response = await deleteRow(id);
       if (response.data.success) {
@@ -286,6 +277,8 @@ const BaseMaster = ({
   };
 
   const handleCloseHistory = () => setHistoryRowId(null);
+  // A form may hand back what it saved; the grid only needs to reload, not read that as filters.
+  const handleFormSuccess = () => fetchRows();
 
   const ModalBody = selectedRow ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
   const isForm = ModalBody === FormComponent;
@@ -400,7 +393,7 @@ const BaseMaster = ({
               onClose={handleCloseModal}
               initialData={selectedRow}
               columns={columns}
-              {...{ [formSuccessProp]: fetchRows }}
+              {...{ [formSuccessProp]: handleFormSuccess }}
               {...(formProps ? formProps(selectedRow) : {})}
             />
           )}
@@ -425,6 +418,7 @@ BaseMaster.propTypes = {
   // A read-only master (no form) renders neither, so none of them are required.
   addButtonText: PropTypes.string,
   searchPlaceholder: PropTypes.string,
+  searchKeys: PropTypes.arrayOf(PropTypes.string),
   modalAddTitle: PropTypes.string,
   modalEditTitle: PropTypes.string,
   modalMaxWidth: PropTypes.string,
@@ -440,7 +434,7 @@ BaseMaster.propTypes = {
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,
   canDeleteRow: PropTypes.func,
-  deleteConfirmText: PropTypes.string,
+  deleteConfirmText: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   rowsKey: PropTypes.string,
   extractResponse: PropTypes.func,
   onRowClickOverride: PropTypes.func,
