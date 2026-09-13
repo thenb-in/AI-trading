@@ -2,11 +2,8 @@ import PropTypes from 'prop-types';
 import { ActivityChangesTable } from '@/components/admin/audit_timeline/ActivityChangesTable';
 import { parseDateValue } from '@utils/dateTimeUtils';
 
-const ActivityLogDetails = ({ activity }) => {
-  if (!activity) {
-    return null;
-  }
-
+// Opened by BaseMaster on a row click, which hands the row over as `initialData`.
+const ActivityLogDetails = ({ initialData: activity }) => {
   let parsedLog;
   try {
     parsedLog = activity.log ? JSON.parse(activity.log) : null;
@@ -102,7 +99,7 @@ const ActivityLogDetails = ({ activity }) => {
 export { ActivityLogDetails };
 
 ActivityLogDetails.propTypes = {
-  activity: PropTypes.shape({
+  initialData: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     head: PropTypes.string,
     objectName: PropTypes.string,
