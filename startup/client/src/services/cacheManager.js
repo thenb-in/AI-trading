@@ -20,8 +20,9 @@ import {
  * for (see setCacheScope), so a stale shape, an expired entry, or another
  * user's data can never be served.
  *
- * Most callers only need cacheRemember(): read-through with in-flight
- * de-duplication, so N components mounting at once cause one request.
+ * Reading and refreshing is ApiService's job (see `request`): it asks for an
+ * entry, fetches when it is missing or expired, and falls back to the old copy
+ * when that fetch fails. This module only stores, expires and drops.
  *
  * Keys are `namespace:rest` (e.g. `filterOptions:deptEmp`). The namespace is
  * what cacheBustNamespace() and bust subscribers work on.
@@ -29,15 +30,10 @@ import {
 
 // `${store}:${key}` -> envelope. Session entries live here too, as the mirror.
 const memory = new Map();
-// `${store}:${key}` -> in-flight promise, so concurrent readers share one load.
-const inflight = new Map();
 const listeners = new Set();
 
 // Whose data is currently cached. Null until the user is known.
 let scopeId = null;
-// Bumped by every bust. A load that started before the bust must not write
-// its now-stale answer into the cache.
-let bustEpoch = 0;
 
 const slotOf = (key, store) => `${store}:${key}`;
 const storageKeyOf = (key) => `${CACHE_KEY_PREFIX}${key}`;
@@ -87,10 +83,7 @@ const dropSlot = (key, store) => {
   }
 };
 
-const notify = (namespace) => {
-  bustEpoch += 1;
-  listeners.forEach((listener) => listener(namespace));
-};
+const notify = (namespace) => listeners.forEach((listener) => listener(namespace));
 
 /** True when `key` holds a value that is present, in-scope and unexpired. */
 const cacheHas = (key, { store = CACHE_STORE_MEMORY } = {}) => isUsable(readEnvelope(key, store));
@@ -99,6 +92,19 @@ const cacheHas = (key, { store = CACHE_STORE_MEMORY } = {}) => isUsable(readEnve
 const cacheGet = (key, { store = CACHE_STORE_MEMORY } = {}) => {
   const envelope = readEnvelope(key, store);
   return isUsable(envelope) ? envelope.data : undefined;
+};
+
+/**
+ * The entry under `key` for the current identity, expired or not — `fresh`
+ * says which. Undefined when nothing is held. An expired copy is what a reader
+ * falls back on when fetching a new one fails.
+ */
+const cacheRead = (key, { store = CACHE_STORE_MEMORY } = {}) => {
+  const envelope = readEnvelope(key, store);
+  if (!envelope || envelope.version !== CACHE_SCHEMA_VERSION || envelope.scope !== scopeId) {
+    return undefined;
+  }
+  return { data: envelope.data, fresh: isUsable(envelope) };
 };
 
 /** Store `data` under `key`. Returns `data` so it can be used inline. */
@@ -150,50 +156,30 @@ const cacheBustAll = () => {
   notify(null);
 };
 
+const expiredCopy = (envelope) => ({ ...envelope, savedAt: 0 });
+
 /**
- * Read-through cache. Returns the cached value when there is one, otherwise
- * awaits `loader()` and stores the result. Concurrent callers for the same
- * key share a single in-flight request.
- *
- * @param {string} key       `namespace:rest`
- * @param {() => Promise<any>} loader  Runs only on a miss. Rejections are not
- *                                     cached — a failed load retries next time.
- * @param {{ store?: string, ttlMs?: number, force?: boolean }} options
- *        `force` skips the cached value and any in-flight load, and is what
- *        the filter panel's refresh button ultimately triggers.
+ * Mark every key under `namespace` out of date without dropping it. The next
+ * read fetches a new copy and still has this one to fall back on if that
+ * fetch fails — which dropping would throw away.
  */
-const cacheRemember = (
-  key,
-  loader,
-  { store = CACHE_STORE_MEMORY, ttlMs = CACHE_TTL_DEFAULT_MS, force = false } = {}
-) => {
-  const slot = slotOf(key, store);
-
-  if (force) {
-    inflight.delete(slot);
-  } else {
-    const envelope = readEnvelope(key, store);
-    if (isUsable(envelope)) return Promise.resolve(envelope.data);
-    const running = inflight.get(slot);
-    if (running) return running;
-  }
-
-  const epoch = bustEpoch;
-  const promise = Promise.resolve()
-    .then(loader)
-    .then((data) => {
-      // A bust landed while this was in flight, so the answer is already
-      // stale. Hand it to the caller that asked, but don't cache it.
-      if (epoch === bustEpoch) cacheSet(key, data, { store, ttlMs });
-      return data;
-    })
-    .finally(() => {
-      // Only clear our own registration — a forced reload may have replaced it.
-      if (inflight.get(slot) === promise) inflight.delete(slot);
+const cacheExpireNamespace = (namespace) => {
+  const prefix = `${namespace}:`;
+  memory.forEach((envelope, slot) => {
+    if (slot.slice(slot.indexOf(':') + 1).startsWith(prefix)) memory.set(slot, expiredCopy(envelope));
+  });
+  sessionKeys()
+    .filter((storageKey) => storageKey.startsWith(`${CACHE_KEY_PREFIX}${prefix}`))
+    .forEach((storageKey) => {
+      try {
+        const envelope = JSON.parse(sessionStore.getItem(storageKey));
+        sessionStore.setItem(storageKey, JSON.stringify(expiredCopy(envelope)));
+      } catch {
+        // Unreadable or over quota: drop it, so it can never pass as fresh.
+        sessionStore.removeItem(storageKey);
+      }
     });
-
-  inflight.set(slot, promise);
-  return promise;
+  notify(namespace);
 };
 
 // Rough serialised size of a payload. Only ever called from the cache master
@@ -290,11 +276,12 @@ const setCacheScope = (nextScope) => {
 export {
   cacheHas,
   cacheGet,
+  cacheRead,
   cacheSet,
   cacheBust,
   cacheBustNamespace,
   cacheBustAll,
-  cacheRemember,
+  cacheExpireNamespace,
   cacheEntries,
   getCacheScope,
   subscribeToCacheBust,

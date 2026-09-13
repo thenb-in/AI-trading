@@ -64,15 +64,18 @@ function useRecordCreateForm(recordType, { initialName = '' } = {}) {
 
   const submit = useCallback(
     async (createRequest) => {
-      if (!validate()) return false;
+      if (!validate()) return null;
       setSubmitting(true);
       try {
-        await createRequest();
+        const response = await createRequest();
         toast.success(`${recordType} created successfully!`);
-        return true;
+        // The record just written, so a caller can go straight to selecting
+        // what the user has this moment made. Truthy either way, for callers
+        // that only ask whether it worked.
+        return response?.data?.data || response?.data || {};
       } catch (error) {
         toast.error(error?.message || `Failed to create ${recordType.toLowerCase()}`);
-        return false;
+        return null;
       } finally {
         setSubmitting(false);
       }

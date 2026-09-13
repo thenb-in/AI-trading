@@ -1,7 +1,9 @@
 import PropTypes from 'prop-types';
 import { Building2, Shield, KeyRound, UserRound, AtSign } from 'lucide-react';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { RoleSelector } from '@startup/components/admin/RoleSelector';
 import { RECIPIENT_MODE } from '../constants';
+import { roleDisplayName } from '../ruleOptions';
 import { RuleSection } from './RuleSection';
 import { FieldRow } from './FieldRow';
 import { AddressesField } from './AddressesField';
@@ -58,12 +60,12 @@ const RecipientSection = ({
         hintTone="red"
         active={isOn(RECIPIENT_MODE.ROLE)}
       >
-        <SearchableDropdown
-          options={audience.roleOptions}
-          selectedValues={valuesFor(RECIPIENT_MODE.ROLE)}
+        <RoleSelector
+          value={valuesFor(RECIPIENT_MODE.ROLE)}
           multiple
-          loading={isLoading}
-          placeholder="Select roles…"
+          label={null}
+          className=""
+          describeRole={roleDisplayName}
           onChange={(value) => onChange(RECIPIENT_MODE.ROLE, value)}
         />
       </FieldRow>

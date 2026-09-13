@@ -4,6 +4,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { DataProvider } from "@startup/context/AuthContext";
+import { MasterModalProvider } from "@startup/components/base_components/index";
 import { registerServiceWorker } from "@startup/seo/registerServiceWorker";
 import { registerAppData } from "./data/registerAppData";
 import "./index.css";
@@ -24,7 +25,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <HelmetProvider>
       <BrowserRouter>
         <DataProvider>
-          <App />
+          {/* Renders whichever "create a master" modal an app registered with
+              masterCreatorRegistry. This template registers none, so it costs
+              a context and nothing else until an app built from it does. */}
+          <MasterModalProvider>
+            <App />
+          </MasterModalProvider>
         </DataProvider>
       </BrowserRouter>
     </HelmetProvider>

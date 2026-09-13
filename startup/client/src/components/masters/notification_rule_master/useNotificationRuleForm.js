@@ -4,9 +4,9 @@ import { ApiService } from '@services/ApiService';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
 import { notificationRuleService } from '@services/notificationRuleService';
 import { EMPTY_RULE, RECIPIENT_MODE } from './constants';
-import { toPermissionOptions, toRoleOptions, toUserOptions } from './ruleOptions';
+import { toPermissionOptions, toUserOptions } from './ruleOptions';
 
-const EMPTY_OPTIONS = { permissions: [], roles: [], users: [] };
+const EMPTY_OPTIONS = { permissions: [], users: [] };
 
 
 function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
@@ -26,41 +26,29 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
       : EMPTY_RULE);
   }, [isOpen, initialData]);
 
+  // ApiService caches both reads, so reopening this modal — or opening it
+  // after a report whose filter wanted the same roster — costs nothing.
+  // Roles are absent on purpose: RoleSelector loads its own.
+  const loadOptions = useCallback(() => {
+    setIsLoadingOptions(true);
+    return Promise.all([ApiService.getPermissions(), ApiService.getAllUsers()])
+      .then(([permissions, users]) => setOptions({
+        permissions: permissions.data?.data ?? [],
+        users: users.data?.users ?? []
+      }))
+      .catch((loadError) => toast.error(getApiErrorMessage(
+        loadError,
+        'Could not load permissions and users. Close and reopen to retry.'
+      )))
+      .finally(() => setIsLoadingOptions(false));
+  }, []);
+
   useEffect(() => {
     if (!isOpen) {
-      return undefined;
+      return;
     }
-    let cancelled = false;
-    setIsLoadingOptions(true);
-    Promise.all([ApiService.getPermissions(), ApiService.getAllUsers()])
-      .then(([permissions, users]) => {
-        if (cancelled) {
-          return;
-        }
-        setOptions({
-          permissions: permissions.data?.data ?? [],
-          roles: users.data?.roles ?? [],
-          users: users.data?.users ?? []
-        });
-      })
-      .catch((loadError) => {
-        if (!cancelled) {
-          toast.error(getApiErrorMessage(
-            loadError,
-            'Could not load permissions, roles and users. Close and reopen to retry.'
-          ));
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingOptions(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen]);
+    loadOptions();
+  }, [isOpen, loadOptions]);
 
   const patchRule = useCallback((patch) => {
     setRule((previous) => ({ ...previous, ...patch }));
@@ -87,7 +75,6 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
   );
 
   const audience = useMemo(() => ({
-    roleOptions: toRoleOptions(options.roles),
     userOptions: toUserOptions(options.users),
     permissionOptions: toPermissionOptions(options.permissions)
   }), [options]);

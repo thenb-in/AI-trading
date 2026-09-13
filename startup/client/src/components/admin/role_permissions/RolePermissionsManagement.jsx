@@ -1,32 +1,19 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { Shield, Plus, Globe, Building2 } from 'lucide-react';
 import { Loader } from '@/components/common/Loader';
 import { useRolePermissions } from './hooks/useRolePermissions';
-import { RoleSelector } from './components/RoleSelector';
+import { RoleSelector } from '../RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
-import { CreateRoleModal } from './components/CreateRoleModal';
+import { useMasterCreator } from '@startup/components/base_components/master/master_modal/MasterModalProvider';
+import { MASTER_TYPE_ROLE } from '../CreateRoleModal';
 import { PermissionLegend } from './components/PermissionLegend';
 import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/useDataContext';
   
 function RolePermissionsManagement() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  // What the user had typed into the role dropdown when they asked to create.
-  // Carried into the modal so the form opens on the name they already wrote.
-  const [createRoleName, setCreateRoleName] = useState('');
-  const handleOpenCreateModal = useCallback(() => {
-    setCreateRoleName('');
-    setIsCreateModalOpen(true);
-  }, []);
-  const handleCreateRoleFromSearch = useCallback((searchTerm) => {
-    setCreateRoleName(searchTerm || '');
-    setIsCreateModalOpen(true);
-  }, []);
-  const handleCloseCreateModal = useCallback(() => setIsCreateModalOpen(false), []);
   const { userData } = useDataContext();
   const {
-    roles,
     permissions,
     companySubscriptions,
     selectedRoleId,
@@ -34,12 +21,21 @@ function RolePermissionsManagement() {
     loading,
     error,
     updating,
-    setSelectedRoleId,
+    selectRole,
     togglePermission,
     toggleMultiplePermissions,
     refetch,
     deletePermission,
   } = useRolePermissions();
+
+  // A second way in, beside the picker's own create row: the header button,
+  // which opens a blank form rather than one seeded from a search. This screen
+  // opened it, so this screen reloads; the picker reloads when next opened.
+  const { openMasterModal } = useMasterCreator();
+  const handleCreateRole = useCallback(
+    () => openMasterModal({ type: MASTER_TYPE_ROLE, onSuccess: refetch }),
+    [openMasterModal, refetch]
+  );
 
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
 
@@ -56,7 +52,7 @@ function RolePermissionsManagement() {
             <h1 className="text-xl font-bold text-gray-900">Roles & Permissions</h1>
           </div>
           <button
-            onClick={handleOpenCreateModal}
+            onClick={handleCreateRole}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -79,11 +75,8 @@ function RolePermissionsManagement() {
       )}
 
       <RoleSelector
-        roles={roles}
-        selectedRoleId={selectedRoleId}
-        onSelect={setSelectedRoleId}
-        loading={loading}
-        onCreateRole={handleCreateRoleFromSearch}
+        value={selectedRoleId}
+        onChange={selectRole}
       />
       
       {selectedRole && (
@@ -207,12 +200,6 @@ function RolePermissionsManagement() {
         </div>
       )}
 
-      <CreateRoleModal
-        initialName={createRoleName}
-        isOpen={isCreateModalOpen}
-        onClose={handleCloseCreateModal}
-        onSuccess={refetch}
-      />
     </div>
   );
 }

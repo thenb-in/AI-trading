@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
@@ -47,25 +48,30 @@ function CreateRecordModal({ isOpen, onClose, onSuccess, recordType, onSubmitApi
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const ok = await submit(() =>
+    const created = await submit(() =>
       onSubmitApi({
         name: name.trim(),
         description: description.trim() || null,
         ...(canCreateGlobal && { isGlobal }),
       }),
     );
-    if (ok) {
+    if (created) {
       reset();
       onClose();
       if (onSuccess) {
-        onSuccess();
+        onSuccess(created);
       }
     }
   };
 
   if (!isOpen) return null;
 
-  return (
+  // Rendered into <body> rather than where it was declared. This modal owns a
+  // <form>, and the components that open it — a selector sitting inside some
+  // other form — would otherwise nest one form in another: the inner submit
+  // bubbles to the outer onSubmit, saving the enclosing record every time
+  // someone creates a related one.
+  return createPortal(
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
       onClick={handleBackdropClick}
@@ -182,13 +188,15 @@ function CreateRecordModal({ isOpen, onClose, onSuccess, recordType, onSubmitApi
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 CreateRecordModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  /** Receives the created record, so a picker can select what was just made. */
   onSuccess: PropTypes.func,
   recordType: PropTypes.string.isRequired,
   onSubmitApi: PropTypes.func.isRequired,

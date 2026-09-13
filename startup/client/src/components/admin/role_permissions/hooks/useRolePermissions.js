@@ -72,6 +72,18 @@ function useRolePermissions() {
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) || null;
 
+  // The picker works in string ids; this screen's roles are keyed numerically.
+  // It can also hand back a role it created itself, which this screen has not
+  // loaded — catch up rather than show an empty permission panel.
+  const selectRole = useCallback(
+    (roleId) => {
+      const id = roleId ? Number(roleId) : null;
+      setSelectedRoleId(id);
+      if (id && !roles.some((role) => role.id === id)) fetchData();
+    },
+    [roles, fetchData]
+  );
+
   const togglePermission = useCallback(
     async (permission_id, isAssigned) => {
       if (!selectedRoleId) {
@@ -258,7 +270,7 @@ function useRolePermissions() {
     loading,
     error,
     updating,
-    setSelectedRoleId,
+    selectRole,
     togglePermission,
     toggleMultiplePermissions,
     deletePermission,

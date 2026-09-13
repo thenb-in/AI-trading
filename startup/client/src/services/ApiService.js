@@ -1,7 +1,29 @@
 import { api } from './axiosConfig';
+import { cacheExpireNamespace, cacheRead, cacheSet } from './cacheManager';
+import { CACHE_STORE_SESSION, CACHE_TTL_DEFAULT_MS } from '@startup/constants/cache';
+
+// Reference lists are the largest payloads the client routinely fetches, so a
+// cached read goes to sessionStorage: surviving a reload costs one JSON.parse
+// instead of a round trip.
+const CACHE_STORE = CACHE_STORE_SESSION;
+
+// Write failures that mean "your copy is out of date" rather than "your
+// request was bad": the record is already gone, or another user changed it
+// first.
+const HTTP_GONE_STATUSES = { notFound: 404, conflict: 409 };
+
+// Query string, normalised, so the same request hits the same entry whatever
+// order the caller happened to build its params in.
+const queryOf = (params) => {
+  const entries = Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== null);
+  if (entries.length === 0) return '';
+  entries.sort(([a], [b]) => a.localeCompare(b));
+  return `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)])).toString()}`;
+};
 
 const ApiService = {
-  async request(method, url, data = null, config = {}) {
+  /** The raw call, with no cache in front of it. */
+  send(method, url, data = null, config = {}) {
     return api({
       method,
       url,
@@ -10,9 +32,72 @@ const ApiService = {
       ...config,
     });
   },
+
+  /**
+   * Every call goes through here, and each method below declares its own
+   * caching — whoever writes the method is the one who knows whether a stale
+   * answer is acceptable, so nothing is cached unless it says so.
+   *
+   *   cache: 'users'                  cache this GET under the `users`
+   *                                   namespace (optionally
+   *                                   { namespace, ttlMs } for a shorter life)
+   *   invalidates: ['users', 'roles'] on success, mark those namespaces
+   *                                   expired
+   *   force: true                     fetch even when the cached copy is fresh
+   *
+   * A cached read resolves to `{ data, status }` rather than the full axios
+   * response — headers and the request object are neither serialisable nor
+   * meaningful after the fact. Callers read `.data`, which is unchanged.
+   */
+  async request(method, url, data = null, config = {}) {
+    const { cache, invalidates, force = false, ...axiosConfig } = config;
+
+    if (cache && method === 'GET') return this.cachedGet(url, cache, force, axiosConfig);
+
+    try {
+      const response = await this.send(method, url, data, axiosConfig);
+      if (invalidates) invalidates.forEach(cacheExpireNamespace);
+      return response;
+    } catch (error) {
+      // A write usually fails without changing anything, and expiring a good
+      // list over a validation error just costs everyone a refetch. These two
+      // are the exception: they say the server disagrees with what this client
+      // thought existed — the row is gone, or someone else got there first —
+      // so the cached copy is the thing that was wrong, not the request.
+      const status = error?.response?.status;
+      if (invalidates && (status === HTTP_GONE_STATUSES.notFound || status === HTTP_GONE_STATUSES.conflict)) {
+        invalidates.forEach(cacheExpireNamespace);
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * A GET declared cacheable. A fresh copy is returned as is; a missing or
+   * expired one is fetched and stored over the old. If that fetch fails, the
+   * old copy is returned instead — an out-of-date list beats an empty screen —
+   * and only with nothing to fall back on does the error reach the caller.
+   */
+  async cachedGet(url, cache, force, axiosConfig) {
+    const { namespace, ttlMs = CACHE_TTL_DEFAULT_MS } =
+      typeof cache === 'string' ? { namespace: cache } : cache;
+    const key = `${namespace}:${String(url).split('?')[0]}${queryOf(axiosConfig.params)}`;
+    const cached = cacheRead(key, { store: CACHE_STORE });
+    if (cached?.fresh && !force) return cached.data;
+
+    try {
+      const response = await this.send('GET', url, null, axiosConfig);
+      const fetched = { data: response.data, status: response.status };
+      return cacheSet(key, fetched, { store: CACHE_STORE, ttlMs });
+    } catch (error) {
+      if (cached) return cached.data;
+      throw error;
+    }
+  },
+
   // Authentication
   signup(data) {
-    return this.request('POST', '/auth/signup', data);
+    return this.request('POST', '/auth/signup', data, { invalidates: ['users'] });
   },
 
   login(data) {
@@ -47,7 +132,8 @@ const ApiService = {
   },
 
   updateUserProfile(userId, userProfile) {
-    return this.request('POST', `/users/userProfile`, { userId, userProfile });
+    return this.request('POST', `/users/userProfile`, { userId, userProfile },
+      { invalidates: ['users'] });
   },
 
   // Company
@@ -83,13 +169,18 @@ const ApiService = {
     return this.request('POST', '/company/switch', { companyId });
   },
 
-  getAllRoles() {
-    return this.request('GET', '/auth/roles');
+  // Cached: the role list changes only when someone edits roles, and every
+  // write that does is marked below. `options` lets a caller pass `{ force }`
+  // when it must have the newest copy anyway.
+  getAllRoles(options = {}) {
+    return this.request('GET', '/auth/roles', null, { cache: 'roles', ...options });
   },
 
   // Users
-  getAllUsers() {
-    return this.request('GET', '/users');
+  // Cached. Note this response carries the role list too, which is why role
+  // writes invalidate `users` as well.
+  getAllUsers(options = {}) {
+    return this.request('GET', '/users', null, { cache: 'users', ...options });
   },
   
   getSingleUser(userId){
@@ -97,63 +188,68 @@ const ApiService = {
   },
 
   approveUser(userId, requirePasswordReset = false, role_id = null) {
-    return this.request('POST', `/auth/approve/${userId}`, { requirePasswordReset, role_id });
+    return this.request('POST', `/auth/approve/${userId}`, { requirePasswordReset, role_id },
+      { invalidates: ['users'] });
   },
 
   deactivateUser(userId) {
-    return this.request('POST', `/users/${userId}/deactivate`);
+    return this.request('POST', `/users/${userId}/deactivate`, null, { invalidates: ['users'] });
   },
 
   deleteUser(userId) {
-    return this.request('DELETE', `/users/${userId}`);
+    return this.request('DELETE', `/users/${userId}`, null, { invalidates: ['users'] });
   },
 
   updateUserRole(userId, role) {
-    return this.request('PUT', `/users/${userId}/role`, { role });
+    return this.request('PUT', `/users/${userId}/role`, { role }, { invalidates: ['users'] });
   },
   
   updateUserDevice(userId, deviceAccess) {
-    return this.request('PUT', `/users/${userId}/deviceAccess`, { deviceAccess });
+    return this.request('PUT', `/users/${userId}/deviceAccess`, { deviceAccess },
+      { invalidates: ['users'] });
   },
   updateUser(userId, fields) {
-    return this.request('PUT', `/users/${userId}`, fields);
+    return this.request('PUT', `/users/${userId}`, fields, { invalidates: ['users'] });
   },
   updateUserDisappearingSettings(userId, data){
     return this.request("PATCH", `/users/${userId}/updateDisappearing`, data)
   },
 
   // Admin - Roles
-  getRoles() {
-    return this.request('GET', '/admin/roles');
+  getRoles(options = {}) {
+    return this.request('GET', '/admin/roles', null, { cache: 'roles', ...options });
   },
 
+  // `users` too: getAllUsers returns the role list alongside its rows.
   createRole(data) {
-    return this.request('POST', '/admin/roles', data);
+    return this.request('POST', '/admin/roles', data, { invalidates: ['roles', 'users'] });
   },
 
   updateRole(role_id, data) {
-    return this.request('PUT', `/admin/roles/${role_id}`, data);
+    return this.request('PUT', `/admin/roles/${role_id}`, data, { invalidates: ['roles', 'users'] });
   },
 
   deleteRole(role_id) {
-    return this.request('DELETE', `/admin/roles/${role_id}`);
+    return this.request('DELETE', `/admin/roles/${role_id}`, null, { invalidates: ['roles', 'users'] });
   },
 
   // Admin - Permissions
-  getPermissions() {
-    return this.request('GET', '/admin/permissions');
+  getPermissions(options = {}) {
+    return this.request('GET', '/admin/permissions', null, { cache: 'permissions', ...options });
   },
 
   createPermission(data) {
-    return this.request('POST', '/admin/permissions', data);
+    return this.request('POST', '/admin/permissions', data, { invalidates: ['permissions'] });
   },
 
   updatePermission(permission_id, data) {
-    return this.request('PUT', `/admin/permissions/${permission_id}`, data);
+    return this.request('PUT', `/admin/permissions/${permission_id}`, data,
+      { invalidates: ['permissions'] });
   },
 
   deletePermission(permission_id) {
-    return this.request('DELETE', `/admin/permissions/${permission_id}`);
+    return this.request('DELETE', `/admin/permissions/${permission_id}`, null,
+      { invalidates: ['permissions'] });
   },
 
   // Admin - Role Permissions
@@ -161,12 +257,14 @@ const ApiService = {
     return this.request('GET', '/admin/role-permissions');
   },
 
+  // `roles`, not `permissions`: /admin/roles answers with each role's
+  // permissions attached, so granting one changes that cached list.
   addRolePermissions(data) {
-    return this.request('POST', '/admin/role-permissions/add', data);
+    return this.request('POST', '/admin/role-permissions/add', data, { invalidates: ['roles'] });
   },
 
   removeRolePermission(data) {
-    return this.request('POST', '/admin/role-permissions/remove', data);
+    return this.request('POST', '/admin/role-permissions/remove', data, { invalidates: ['roles'] });
   },
 
   // Admin - User Company Assignment
@@ -175,11 +273,13 @@ const ApiService = {
   },
 
   assignUserToCompany(userId, companyId) {
-    return this.request('POST', '/admin/assign-user', { userId, companyId });
+    return this.request('POST', '/admin/assign-user', { userId, companyId },
+      { invalidates: ['users'] });
   },
 
   removeUserFromCompany(userId, companyId) {
-    return this.request('POST', '/admin/remove-user', { userId, companyId });
+    return this.request('POST', '/admin/remove-user', { userId, companyId },
+      { invalidates: ['users'] });
   },
 
   getCompanyUsers(companyId) {
