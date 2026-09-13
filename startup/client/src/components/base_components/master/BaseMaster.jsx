@@ -97,7 +97,7 @@ const BaseMaster = ({
   hideConstantColumns = true,
 
   // Server-paged loading. `loadRows` additionally receives { page, pageSize },
-  // and the response must carry a `total` (the unpaged count) alongside rows.
+  // and paging stops at the first page that comes back empty.
   infiniteScroll = false,
   pageSize = 50,
 
@@ -109,7 +109,7 @@ const BaseMaster = ({
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,12 +150,11 @@ const BaseMaster = ({
           : {
             rows: response.data.data[rowsKey] || [],
             columns: response.data.data.columns || [],
-            total: response.data.data.total,
           };
         const nextRows = extracted.rows;
         setRows((prev) => (append ? [...prev, ...nextRows] : nextRows));
         setColumns(extracted.columns);
-        setTotal((prev) => extracted.total ?? (append ? prev : nextRows.length));
+        setHasMore(nextRows.length > 0);
         setPage(pageToLoad);
         if (fetchSuccessToast) toast.success(fetchSuccessToast);
       }
@@ -168,13 +167,13 @@ const BaseMaster = ({
   }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, unauthorizedToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize]);
 
   const loadMoreRef = useRef({});
-  loadMoreRef.current = { loading, isLoadingMore, rowCount: rows.length, total, page, fetchRows };
+  loadMoreRef.current = { loading, isLoadingMore, hasMore, page, fetchRows };
   const isFetchingMoreRef = useRef(false);
 
   const handleLoadMore = useCallback(() => {
     const state = loadMoreRef.current;
     if (isFetchingMoreRef.current) return;
-    if (state.loading || state.isLoadingMore || state.rowCount >= state.total) return;
+    if (state.loading || state.isLoadingMore || !state.hasMore) return;
     isFetchingMoreRef.current = true;
     Promise.resolve(state.fetchRows(undefined, { pageToLoad: state.page + 1, append: true }))
       .finally(() => { isFetchingMoreRef.current = false; });
@@ -359,7 +358,7 @@ const BaseMaster = ({
             onRowClick={handleRowClick}
             rowClickEnabled
             infiniteScroll={infiniteScroll}
-            hasMore={infiniteScroll && rows.length < total}
+            hasMore={infiniteScroll && hasMore}
             onLoadMore={handleLoadMore}
             isLoadingMore={isLoadingMore}
             onVisibleRowsChange={handleVisibleRowsChange}
