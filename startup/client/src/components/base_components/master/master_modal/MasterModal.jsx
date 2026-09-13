@@ -130,13 +130,16 @@ const MasterModal = ({
         <DialogContent
           sx={{
             pt: hasTitle ? 0 : 2,
+            // Fill the paper and allow shrinking below the content's height:
+            // the paper hides its own overflow (getDialogSidebarSx), so this is
+            // the one place a long form scrolls instead of being cut off.
+            flex: 1,
+            minHeight: 0,
             overflowX: 'hidden',
             maxWidth: '100%',
             ...(ownsScroll && {
-              flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              minHeight: 0,
               overflow: 'hidden',
               padding: fullScreen ? 2 : 0,
             }),

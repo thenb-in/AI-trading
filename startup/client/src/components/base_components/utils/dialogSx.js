@@ -16,7 +16,12 @@ function getDialogSidebarSx(fullScreen, zIndex = 50) {
       width: 'calc(100% - var(--app-sidebar-width, 0))',
       maxWidth: 'calc(100% - var(--app-sidebar-width, 0))',
     },
-    '& .MuiPaper-root': {
+    // The dialog's own paper only — `.MuiPaper-root` would also reach every
+    // card, accordion and inline menu inside the form. Hidden overflow leaves
+    // DialogContent as the one scroller, so title and actions stay put and a
+    // long form never shows two scrollbars.
+    '& .MuiDialog-paper': {
+      overflow: 'hidden',
       maxHeight: fullScreen ? '100%' : '90vh',
       ...(fullScreen && { height: '100dvh', maxHeight: '100dvh' }),
     },

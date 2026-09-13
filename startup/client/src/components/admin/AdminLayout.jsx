@@ -48,7 +48,7 @@ function AdminLayout() {
         <div className="flex overflow-x-hidden">
           {renderSidebar()}
           <div
-            className={`flex-1 transition-all duration-300 overflow-x-auto ${
+            className={`flex-1 transition-all duration-300 overflow-x-hidden ${
               collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
             } min-h-screen bg-gray-50`}
           >
