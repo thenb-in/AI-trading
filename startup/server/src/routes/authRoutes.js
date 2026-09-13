@@ -25,10 +25,6 @@ router.get('/sso/callback', ssoCallback);
 router.post('/sso/backchannel-logout', express.urlencoded({ extended: false }), ssoBackchannelLogout);
 
 
-// NOTE: the public self-serve onboarding endpoints (/plans, /payment/order,
-// /onboard, /razorpay/webhook) are NOT framework routes. They belong to the
-// app that sells subscriptions — see app/server/src/routes/onboardingRoutes.js,
-// which mounts them onto this same /auth prefix.
 router.post('/logout', authMiddleware.protect, logout);
 // Protected routes (admin only)
 router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUserValidation, approveUser);

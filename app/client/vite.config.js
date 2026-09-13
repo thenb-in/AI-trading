@@ -58,26 +58,6 @@ export default ({ mode }) => {
   const clientName = clientPackageJson.name;
 
   const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:8944');
-  // Standalone biometric gateway servers (one process per interface, own port).
-  // Device protocol paths proxy to these; operator/admin /api + /uploads stay on
-  // the app. ZK TCP-pull has no inbound HTTP, so no proxy entry. Override via env
-  // if a gateway runs on a different host/port.
-  const admsGatewayUrl = process.env.VITE_ADMS_GATEWAY_URL || 'http://localhost:8948';
-  const biomaxGatewayUrl = process.env.VITE_BIOMAX_GATEWAY_URL || 'http://localhost:8949';
-  const vyomGatewayUrl = process.env.VITE_VYOM_GATEWAY_URL || 'http://localhost:8950';
-  // Standalone wagemaster ingest server: high-volume mobile WRITES (location GPS
-  // tracking + callbuddy call-log/telemetry). Only the moved sub-paths proxy here;
-  // every other /api/* call stays on the app. Without VITE_WAGEMASTER_URL those
-  // paths stay on the app server too — the app serves them, so a dev machine that
-  // never starts wagemaster still works.
-  const wagemasterUrl = process.env.VITE_WAGEMASTER_URL || localServerUrl;
-
-
-  // SalaryMitra self-service portal (ios/) — a standalone Vite SPA on its own
-  // dev server (port 5180), served under the /salarymitra subpath. In prod it
-  // ships inside this client bundle and nginx serves it; in dev we proxy the
-  // subpath to its dev server. Override via env if it runs elsewhere.
-  const salaryMitraUrl = process.env.VITE_SALARYMITRA_URL || 'http://localhost:5180';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -122,34 +102,11 @@ export default ({ mode }) => {
     },
     server: {
       proxy: {
-        // Biometric DEVICE protocol paths → standalone gateway servers. Devices
-        // use the bare paths; the operator API /api/v1/iclock-terminal stays on
-        // the app via the '/api' rule below. ZK TCP-pull has no inbound HTTP.
-        '/iclock': {
-          target: admsGatewayUrl, // adms_server gateway (ZK iClock push/pull + device file)
-          changeOrigin: true,
-        },
-        '/hdata': {
-          target: biomaxGatewayUrl, // biomax_server gateway (/hdata + /hdata.aspx)
-          changeOrigin: true,
-        },
-        '/vyom': {
-          target: vyomGatewayUrl, // vyom_server gateway (Matrix COSEC PUSH API)
-          changeOrigin: true,
-        },
         '/uploads': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
           // rewrite: (path) => path.replace(/^\/uploads/, ''), // Optional, remove '/uploads' prefix if needed
         },
-        // wagemaster ingest sub-paths — MUST come before the generic '/api' rule
-        // below, since Vite matches proxy keys in declaration order (first match
-        // wins). Everything else under /api falls through to the app server.
-        '/api/v1/location/tracking/update': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/sendCallLog': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/syncPaymentReminder': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/report-app-version': { target: wagemasterUrl, changeOrigin: true },
-        '/api/v1/callbuddy/report-unsynced-count': { target: wagemasterUrl, changeOrigin: true },
         '/api': {
           target: localServerUrl, // Backend server
           changeOrigin: true, // Ensure that the host header is updated to the target URL
@@ -161,13 +118,6 @@ export default ({ mode }) => {
           target: localServerUrl,
           ws: true,
           changeOrigin: true,
-        },
-        // SalaryMitra portal → its own dev server. ws:true passes through its
-        // HMR socket so the portal hot-reloads when accessed via this host.
-        '/salarymitra': {
-          target: salaryMitraUrl,
-          changeOrigin: true,
-          ws: true,
         }
       },
     },
@@ -178,7 +128,7 @@ export default ({ mode }) => {
         transformIndexHtml(html) {
           return html.replace(
             /<title>.*?<\/title>/,
-            `<title>${clientName || 'SalaryMitra'}</title>`
+            `<title>${clientName}</title>`
           );
         },
       },
@@ -210,9 +160,7 @@ export default ({ mode }) => {
             },
           ],
           navigateFallback: '/index.html',
-          // /salarymitra is a separate SPA served at the same origin — keep this
-          // SW's navigation fallback from hijacking its routes to the main app.
-          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/salarymitra\//],
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],

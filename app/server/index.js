@@ -9,8 +9,7 @@ require('./src/data/registerAppData');
 //
 // The framework (auth, users, admin, layouts, activity, nbnext-drive,
 // help-support) is composed by buildApp() under /api/v1/*. Everything
-// SalaryMitra-specific (HR, payroll, attendance, ADMS biometric, field sales,
-// reports) is wired here.
+// app-specific is wired here.
 
 const path = require('path');
 const env = require('@startup/src/config/env');
@@ -32,29 +31,15 @@ const { server, startServer } = buildApp({
   // 5MB body limit — image uploads, base64 photos.
   bodyParserLimit: '5mb',
 
-  // Device-facing paths (/iclock, /hdata) are served only by the standalone
-  // biometric gateway servers now; the edge (nginx/vite) routes device traffic
-  // straight to them, so the HR app no longer reverse-proxies device protocols.
-
-  // App-owned routes that depend on app-specific things (biometric, hr/employee
-  // constants, holiday_mode, etc.) but live under the framework's /api/v1/*
-  // namespace.
+  // App-owned routes that live under the framework's /api/v1/* namespace.
   extraRoutes: [
     { prefix: '/api/v1/company-profile', router: companyProfileRoutes }
   ],
 
-  // All SalaryMitra-specific HR/payroll/attendance routes (employees, holidays,
-  // formulas, gatepass, reports, masters, etc.). See src/routes/app_routes.js.
+  // The app's own routes. See src/routes/app_routes.js.
   mountAppRoutes: (app, prefix) => {
     appRoutes(app, prefix);
   },
-
-  // Static files — more specific paths first so they win over /uploads
-  // (which is mounted by the framework). path is absolute to this server.
-  additionalStaticDirs: [
-    { urlPrefix: '/uploads/bills', fsPath: path.join(env.UPLOADS_DIR, 'bills') },
-    { urlPrefix: '/api/trackingImage', fsPath: path.join(env.UPLOADS_DIR, 'trackingImage') }
-  ],
 
   // Single-origin SPA serve: when SECURE_COOKIE is off, also serve the built
   // client bundle from this Express server. Path defaults to ../client (the
@@ -65,8 +50,6 @@ const { server, startServer } = buildApp({
   registerSchedulerJobs: registerAllJobs,
 
   // Initialise heavy app-level resources once the HTTP server is up.
-  // The ADMS auto-sync loop (employee push to online terminals) was here;
-  // it now runs in adms_server's process — see adms_server/index.js.
   onAfterListen: () => {
     initAppServerRunnerClient();
     initClientAppServerSocket(server);

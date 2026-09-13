@@ -2,8 +2,7 @@
 // startup (user, company, role, permission, role_permission, reports, masters,
 // notifications), plus the factories used to declare permissions.
 //
-// Product-specific permissions (employee, salary, attendance, gatepass,
-// canteen, terminals, WageMaster, ...) live in the app layer, which composes
+// Product-specific permissions live in the app layer, which composes
 // them with these via `buildPermissionSets` in `./permissions`. startup never
 // imports the app layer, so nothing here knows those permissions exist.
 //

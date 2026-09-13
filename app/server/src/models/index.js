@@ -17,8 +17,7 @@ const basename = path.basename(__filename, path.extname(__filename)) + '.js';
 const db = {};
 
 // Seed the combined registry with the already-loaded framework models so
-// app-side associate() can resolve cross-package targets like
-// IclockTerminal.belongsTo(Company).
+// app-side associate() can resolve cross-package targets such as Company.
 for (const [name, model] of Object.entries(frameworkDb)) {
   if (name === 'sequelize' || name === 'Sequelize') {
     continue;
@@ -74,16 +73,5 @@ appModelNames.forEach(name => {
 });
 
 db.sequelize = sequelize;
-
-// Every read of employee data now answers to the login's data access.
-
-// Register this complete registry (framework + HR + relocated device models)
-// as the process registry for the shared biometric-interface services in
-// common/. Those services read the registry lazily via getDb(); when they run
-// inside THIS app process (operator-initiated device actions through
-// @biometric), getDb() must hand back the app's full registry — Company and
-// Employee present — so guarded device associations resolve. A standalone
-// gateway never reaches here; it calls buildRegistry() instead.
-require('@biometric_interface/common/db').useRegistry(db);
 
 module.exports = db;

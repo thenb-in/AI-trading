@@ -66,7 +66,7 @@ const DEFAULTS = {
   ],
   skipDirs: [
     'node_modules', 'dist', 'logs', 'docs',
-    'eslint-rules', 'scripts', 'secret', 'uploads', 'trackingImage'
+    'eslint-rules', 'scripts', 'secret', 'uploads'
   ],
   skipFiles: [
     'eslint.config.js',

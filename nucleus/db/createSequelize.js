@@ -2,16 +2,11 @@
 
 // Sequelize bootstrap — the single place that decides pool/retry/define options.
 //
-// Lives in nucleus because BOTH the framework (startup/server, and app/server
-// through it) and the standalone biometric gateways need an identical
-// connection, and neither may depend on the other. It previously existed as two
-// hand-synced copies whose comments claimed they mirrored each other; they
-// drifted, and a retry bug had to be fixed twice.
+// Lives in nucleus so every server layer shares one connection policy.
 //
 // Callers pass their own databaseUrl rather than this module reading
-// process.env: startup and the gateways deliberately read DIFFERENT env modules
-// (the gateway's is self-contained and carries none of the HR-app keys), so env
-// reading stays with the caller and only the connection policy is shared.
+// process.env, so env reading stays with the caller and only the connection
+// policy is shared.
 //
 // The dialect is NOT passed: Sequelize derives it from the URL scheme
 // (postgresql:// → postgres, normalized internally) and overwrites any dialect

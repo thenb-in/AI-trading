@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.local
 uploads
-trackingImage
 
 # Editor directories and files
 .vscode/*

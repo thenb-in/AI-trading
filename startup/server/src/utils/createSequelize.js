@@ -1,9 +1,7 @@
 'use strict';
 
-// Re-export shim: the bootstrap itself now lives in nucleus/db/createSequelize
-// so the framework and the standalone biometric gateways share ONE connection
-// policy instead of two hand-synced copies. This file stays at its original
-// path (and keeps reading startup's env) so existing imports work unchanged.
+// Re-export shim: the bootstrap itself lives in nucleus/db/createSequelize.
+// This file supplies startup's env to it at the path existing imports use.
 
 const env = require('../config/env');
 const { createSequelize: createNucleusSequelize } = require('@nucleus/db/createSequelize');

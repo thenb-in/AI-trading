@@ -6,13 +6,14 @@
     "build": "node scripts/build-bytecode.js"
   },
   "dependencies": {
+    "axios": "^1.20.0",
     "bcrypt": "^6.0.0",
     "dotenv-safe": "^9.1.0",
+    "form-data": "^4.0.6",
     "jsonwebtoken": "^9.0.0",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",
-    "razorpay": "^2.9.6",
     "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",

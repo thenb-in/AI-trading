@@ -63,8 +63,7 @@ module.exports = {
     'node_modules',
     'logs',
     'secret',
-    'uploads',
-    'trackingImage'
+    'uploads'
   ],
 
   skipFiles: []
