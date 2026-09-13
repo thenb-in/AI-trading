@@ -1,83 +1,27 @@
-# SalaryMitra — Docker install (any OS: Windows, Linux, macOS).
+# Docker install (any OS: Windows, Linux, macOS).
 #
-# Four containers: the app server, its Postgres, and the two biometric gateways
-# the terminals push to (adms on 8948, biomax on 8949 — the app no longer
-# reverse-proxies device protocols, so without them a terminal has nowhere to
-# send a punch). They are one stack on purpose: install.bat, start.bat,
-# status.bat and uninstall.bat are plain `docker compose` on this file, so the
-# gateways install, start, update and stop with everything else and there is
-# nothing extra for an operator to remember. The app image is ENVIRONMENT
+# Two containers: the app server and its Postgres. The app image is ENVIRONMENT
 # ONLY (pinned Node + toolchain), built on THIS machine from the Dockerfile at
 # the bundle root — the application itself is the Linux bundle (the same artifact
 # Ubuntu deploys) this kit ships inside; the bundle root is two levels up and is
 # bind-mounted at /srv/app. The container is Linux whatever the host is, so this
-# one file works on every OS. The server also serves the client bundle and the
-# /salarymitra portal from that mount. Bring it up from this folder with:
+# one file works on every OS. The server also serves the client bundle from that
+# mount. Bring it up from this folder with:
 #   docker compose up -d --build
 # Values come from a `.env` file next to this one (see .env.example); on Windows,
-# install.ps1 writes it for you.
+# install.ps1 writes it for you. Its COMPOSE_PROJECT_NAME names the stack, the
+# database volume and the Windows scheduled tasks.
 #
 # State that must survive an update lives in docker_data/, next to this file:
 #   docker_data/config/.env               app configuration (seeded on 1st boot)
 #   docker_data/config/host_machine.json  host identity the license binds to
 #   docker_data/config/secret/            installed license + pinned wallet keys
-#   docker_data/uploads/                  face images, bill attachments
+#   docker_data/uploads/                  uploaded files
 #   docker_data/logs/                     winston logs
 #   docker_data/backups/                  nightly database dumps
 # Back up that one folder and you have the install. The live database is the
 # exception — it is in the `db-data` volume; `docker compose down` keeps it,
 # `docker compose down -v` destroys it.
-
-name: salarymitra
-
-# Every gateway is the same image as the app — environment only, with the bundle
-# bind-mounted at /srv/app — differing solely by which entry it runs and on what
-# port. YAML anchors keep that shape in one place: a new interface is a service
-# with <<: *gateway plus its own command/port.
-x-gateway: &gateway
-  image: ${APP_IMAGE:-salarymitra/server:local}
-  # This tag exists only because the app service builds it on THIS machine — it
-  # is on no registry. Without this, a first `up` on a clean box can try to pull
-  # it and fail the whole stack with "pull access denied"; `never` makes compose
-  # use the local image the app just built, which is always there by the time a
-  # gateway is created (it waits for the app to be healthy).
-  pull_policy: never
-  restart: unless-stopped
-  # Wait for the app to be HEALTHY, not merely started. It is what orders the
-  # two: a gateway installs ONLY biometric_gateway/ (APP_ROLE below), and the
-  # npm deps it resolves out of app/server and startup/server are put there by
-  # the app's own boot, as is config/.env. Healthy also means that install has
-  # finished, so nothing races it on the shared /srv/app mount. The cost is that
-  # a first `up` does not return until the app answers — several minutes while
-  # it installs dependencies and builds the schema.
-  depends_on:
-    app:
-      condition: service_healthy
-  volumes:
-    - ../../:/srv/app
-    - ./docker_data/config:/srv/config
-    - ./docker_data/uploads:/srv/data/uploads
-    - ./docker_data/logs:/srv/app/app/server/logs
-
-x-gateway-env: &gateway-env
-  TZ: ${TZ}
-  # Tells the shared entrypoint this container is a gateway, not the app: it
-  # installs biometric_gateway/ (with the bytenode the compiled entries need)
-  # and stops there — no `app/server npm run deps`, no seeding of config/.env.
-  # Both are the app's, and all four containers write to the same bind mount.
-  APP_ROLE: gateway
-  # The gateway opens its OWN Sequelize pool against the same database as the
-  # app. Given here rather than read from docker_data/config/.env because
-  # dotenv (loaded by bootstrap/setupAliases from the working directory) never
-  # overrides a variable already in the environment — so what compose sets wins,
-  # which is what makes PORT below take effect over the app's own PORT=3000.
-  DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/${DB_NAME}
-  # Reached over the project network by service name, not via the published
-  # host port — the gateway is a peer of the app, not a client of the edge.
-  MAIN_APP_URL: http://app:3000
-  # Absolute, because the entrypoint leaves the process in app/server and a
-  # relative UPLOADS_DIR would resolve against that instead of the mount.
-  UPLOADS_DIR: /srv/data/uploads
 
 services:
   db:
@@ -101,7 +45,7 @@ services:
       retries: 12
 
   app:
-    image: ${APP_IMAGE:-salarymitra/server:local}
+    image: ${APP_IMAGE:-myapp/server:local}
     # Built here from the Dockerfile at the bundle root (../..) — env only, no
     # app code baked in. This compose lives in <bundle>/deploy/docker/, so the
     # application bundle is two levels up.
@@ -168,43 +112,6 @@ services:
       - ./docker_data/config:/srv/config
       - ./docker_data/uploads:/srv/data/uploads
       - ./docker_data/logs:/srv/app/app/server/logs
-
-  # ZK iClock push/pull. Devices POST attendance here, so this port must be
-  # reachable from the terminal VLAN — it is published on all interfaces.
-  # Point the terminals at this machine on ${ADMS_PORT} (default 8948).
-  adms:
-    <<: *gateway
-    environment:
-      <<: *gateway-env
-      PORT: 8948
-    # Absolute path: container-entrypoint.sh cds to app/server before exec'ing
-    # the command, so a relative path would resolve from the wrong directory.
-    command: ["node", "/srv/app/biometric_gateway/adms_server/index.js"]
-    ports:
-      - "${ADMS_PORT:-8948}:8948"
-    # node, not curl: the image ships no HTTP client, same as the app's check.
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:8948/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 120s
-
-  # Biomax /hdata + /hdata.aspx. Also device-facing, on ${BIOMAX_PORT} (8949).
-  biomax:
-    <<: *gateway
-    environment:
-      <<: *gateway-env
-      PORT: 8949
-    command: ["node", "/srv/app/biometric_gateway/biomax_server/index.js"]
-    ports:
-      - "${BIOMAX_PORT:-8949}:8949"
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:8949/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 120s
 
 volumes:
   db-data:

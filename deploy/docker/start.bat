@@ -1,5 +1,5 @@
 @echo off
-REM Start SalaryMitra. Safe to double-click any time - it waits for Docker,
+REM Start the app. Safe to double-click any time - it waits for Docker,
 REM re-stamps the host identity the license binds to, and brings the stack up.
 
 cd /d "%~dp0"

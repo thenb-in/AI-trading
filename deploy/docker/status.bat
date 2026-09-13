@@ -1,5 +1,5 @@
 @echo off
-REM Double-click to see whether SalaryMitra is running. No admin needed.
+REM Double-click to see whether the app is running. No admin needed.
 REM The STATUS column shows "(healthy)" once the server answers /api/healthz.
 
 cd /d "%~dp0"

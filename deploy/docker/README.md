@@ -1,7 +1,6 @@
-# SalaryMitra — Docker install (any OS)
+# Docker install (any OS)
 
-Runs the server, the web client, the SalaryMitra portal and the biometric
-gateways as Docker containers, with its own Postgres. The container is Linux
+Runs the server and the web client as Docker containers, with its own Postgres. The container is Linux
 whatever the host is, so the one
 site bundle works on Windows, Linux or macOS. This install kit lives at
 `deploy/docker/` **inside that bundle**; the **application is the bundle itself**
@@ -21,7 +20,7 @@ the bundle root holds the app (`app/`, `startup/`, `VERSION`) and the
 
 | File                                | What it is                                          |
 | ----------------------------------- | --------------------------------------------------- |
-| `docker-compose.yml`                | All four services — `db`, `app`, and the `adms` / `biomax` biometric gateways; builds the root `Dockerfile`, mounts the bundle at `/srv/app`. |
+| `docker-compose.yml`                | Both services — `db` and `app`; builds the root `Dockerfile`, mounts the bundle at `/srv/app`. |
 | `.env.example`                      | Copy to `.env` and edit (install.ps1 writes it on Windows). |
 | `install.bat`                       | One-shot Windows installer. Self-elevates.          |
 | `update.bat`                        | Recreates the containers after the bundle is replaced. Asks nothing. |
@@ -39,7 +38,7 @@ the bundle root holds the app (`app/`, `startup/`, `VERSION`) and the
     you log in**. The engine only runs inside a logged-on session, which is why
     the installer registers a *logon* task rather than a boot service.
   - On a headless server box, also enable Windows auto-logon so a reboot brings
-    the engine (and therefore SalaryMitra) back without someone at the keyboard.
+    the engine (and therefore the app) back without someone at the keyboard.
 - ~10 GB free disk.
 - **Internet at install time** — the first build pulls the Node base image and
   installs the bundle's dependencies. After that, restarts and updates are
@@ -47,21 +46,19 @@ the bundle root holds the app (`app/`, `startup/`, `VERSION`) and the
 
 ## Install
 
-1. Extract the release bundle to the server (e.g. `C:\SalaryMitra\`) and open
+1. Extract the release bundle to the server (e.g. `C:\myapp\`) and open
    its `deploy\docker\` folder.
 2. Double-click **`install.bat`** and accept the UAC prompt. It will:
    - check Docker is up,
    - build the environment image from the `Dockerfile` (first time only),
    - ask for the **server IP/host name**, **HTTP port** (default 80) and
-     **time zone** (default `Asia/Kolkata` — attendance and payroll are stamped
-     in it),
+     **time zone** (default `Asia/Kolkata` — timestamps are stamped in it),
+     and on a first install the **app name** (default `myapp`),
    - write `.env` and create `docker_data\`,
    - stamp this machine's identity into `docker_data\config\host_machine.json`,
-   - start all four containers and register the start-on-logon task.
+   - start both containers and register the start-on-logon task.
 3. Wait for `status.bat` to show `(healthy)`. First boot creates the database
-   schema, so give it a minute. The install itself waits for the app to answer
-   before it starts the gateways, so on a first run it sits on
-   `app Waiting` for several minutes — that is the schema build, not a hang.
+   schema, so give it a minute.
 4. **Create the first company and admin user** — a fresh database has neither,
    and nobody can log in until this is done:
 
@@ -71,33 +68,7 @@ the bundle root holds the app (`app/`, `startup/`, `VERSION`) and the
 
    It prompts for the company details and the `sadmin` login, then seeds the
    roles, permissions and starting data.
-5. Browse to the URL it printed in step 2. Staff use the same URL; the employee
-   portal is at `<url>/salarymitra`.
-
-## Biometric terminals
-
-The terminals do not talk to the app — they push to the gateway containers, on
-their own ports, which is why they are part of this stack rather than something
-installed separately:
-
-| Gateway  | Port (`.env`)         | Path      | Devices                  |
-| -------- | --------------------- | --------- | ------------------------ |
-| `adms`   | `ADMS_PORT`, 8948     | `/iclock` | ZK / eSSL iClock push    |
-| `biomax` | `BIOMAX_PORT`, 8949   | `/hdata`  | Anviz / Biomax           |
-
-Configure each terminal with this machine's IP and the port for its protocol,
-and **open those ports on the Windows firewall for the terminal VLAN** — the
-installer does not. Check a gateway is listening from the server itself:
-
-```cmd
-curl http://localhost:8948/health     :: ADMS   - expect {"ok":true}
-curl http://localhost:8949/health     :: Biomax - expect {"ok":true}
-docker compose logs -f adms biomax    :: watch a device actually push
-```
-
-Only the interfaces the release was built with are here. Another protocol
-(lan_zk, realtime, Cosec) needs a bundle built with that gateway included —
-ask us, it is a build-list change, not a setting.
+5. Browse to the URL it printed in step 2. Staff use the same URL.
 
 ## License
 
@@ -136,7 +107,7 @@ a JSON array of PEM strings.
 Two files, and they are not the same thing:
 
 - **`.env`** (next to `docker-compose.yml`) — how the *containers* are wired:
-  image tag, published port, database password, time zone. Change it, then run
+  stack name, image tag, published port, database password, time zone. Change it, then run
   `start.bat`.
 - **`docker_data\config\.env`** — the *server's* own configuration, seeded from
   `.env.example` on first boot and yours from then on (mail, wallet URL, sync
@@ -156,7 +127,7 @@ docker_data\
   config\.env               app configuration
   config\host_machine.json  host identity the license binds to
   config\secret\            installed license + pinned wallet keys
-  uploads\                  face images, bill attachments
+  uploads\                  uploaded files
   logs\                     winston logs
   backups\                  nightly database dumps
 ```
@@ -178,13 +149,13 @@ compose exec` command names a path you cannot find in Explorer:
 | the bundle root (`..\..`) | `/srv/app` — the application |
 
 The live database is the one exception: it stays in the Docker volume
-`salarymitra_db-data`, and `backup.bat` puts a restorable copy of it into
+`<COMPOSE_PROJECT_NAME>_db-data`, and `backup.bat` puts a restorable copy of it into
 `docker_data\backups\` instead. The installer schedules that daily at 01:00;
 run it by hand any time. Dumps older than a fortnight are pruned.
 
 ```cmd
 backup.bat                                                       :: dump now
-docker compose exec -T db psql -U postgres etime < docker_data\backups\<file>.sql
+docker compose exec -T db psql -U postgres <DB_NAME> < docker_data\backups\<file>.sql
 ```
 
 **Why the database is not a folder under `docker_data\`.** Two reasons, and the
@@ -223,13 +194,6 @@ URL then includes the port.
 **Containers start, browser shows nothing.** `logs.bat`. Almost always the
 database URL or a missing value in `docker_data\config\.env`.
 
-**Terminals are not punching.** `status.bat` — is the gateway for that protocol
-`(healthy)`? If it is `Restarting`, the app had not finished its first boot when
-it started; it settles on its own. If it is healthy, the device cannot reach it:
-check the firewall, and that the terminal is pointed at this machine on 8948
-(ZK/iClock) or 8949 (Biomax) rather than at the app's port.
-`docker compose logs -f adms biomax` shows every push as it arrives.
-
 **"license verification failed" after moving the machine to new hardware.**
 Expected — the NICs or the Windows machine-id changed. Send us the new
 `npm run license:machine` output and install the re-issued token.
@@ -239,16 +203,11 @@ Expected — the NICs or the Windows machine-id changed. Send us the new
 
 ## How it works (one paragraph)
 
-`docker-compose.yml` runs four containers: `db` (stock Postgres, data in a named
-volume), `app` (the environment-only image built from the root `Dockerfile`) and
-the two biometric gateways, which run that same image against a different entry
-point and port and wait for the app to be healthy before they start — the app
-installs the shared dependencies and seeds the configuration, and a gateway only
-installs its own package.
+`docker-compose.yml` runs two containers: `db` (stock Postgres, data in a named
+volume) and `app` (the environment-only image built from the root `Dockerfile`).
 The application is the bundle root (two levels up from this kit), bind-mounted at
-`/srv/app`: the framework, app server, biometric interface layers and nucleus
-compiled to `.jsc`, plus the
-built client bundle and portal at `app/client/` — Express serves the API and the
+`/srv/app`: the framework, app server and nucleus compiled to `.jsc`, plus the
+built client bundle at `app/client/` — Express serves the API and the
 SPA on one port, so there is no nginx and nothing else to configure. On boot the
 container matches its Node/V8 to the bundle's `VERSION` (refusing to start on a
 mismatch), installs the bundle's dependencies if its commit changed, then copies

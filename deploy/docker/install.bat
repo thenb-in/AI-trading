@@ -1,5 +1,5 @@
 @echo off
-REM Install SalaryMitra on this Windows machine, in Docker.
+REM Install the app on this Windows machine, in Docker.
 REM Self-elevates (needed to register the start-on-logon task), then hands over
 REM to install.ps1 for the actual work.
 

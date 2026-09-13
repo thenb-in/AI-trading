@@ -1,5 +1,5 @@
 @echo off
-REM Stop SalaryMitra and remove its scheduled tasks.
+REM Stop the app and remove its scheduled tasks.
 REM
 REM Nothing is deleted: the database volume and the whole docker_data\ folder
 REM (config, license, uploads, logs, backups) stay. To wipe the database too, run afterwards:
@@ -19,8 +19,9 @@ echo Stopping containers...
 docker compose down
 
 echo Removing the scheduled tasks...
-schtasks /Delete /TN "SalaryMitra Docker Start" /F >nul 2>&1
-schtasks /Delete /TN "SalaryMitra Database Backup" /F >nul 2>&1
+for /f "tokens=1,* delims==" %%a in ('findstr /b "COMPOSE_PROJECT_NAME" .env') do set COMPOSE_PROJECT_NAME=%%b
+schtasks /Delete /TN "%COMPOSE_PROJECT_NAME% Docker Start" /F >nul 2>&1
+schtasks /Delete /TN "%COMPOSE_PROJECT_NAME% Database Backup" /F >nul 2>&1
 
 echo.
 echo Stopped. Data kept - run install.bat to bring it back.

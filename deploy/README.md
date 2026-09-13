@@ -1,4 +1,4 @@
-# SalaryMitra — Linux Install
+# Linux Install
 
 Installs the app as a **systemd service** behind **nginx**, on Ubuntu / Debian
 or Amazon Linux / RHEL. The `app/server` runs under `npm start` (using the

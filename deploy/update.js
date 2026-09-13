@@ -373,14 +373,6 @@ const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 log('Installing server deps (app/server npm run deps: self + framework + nucleus)...');
 run(npm, ['run', 'deps'], { cwd: path.join(INSTALL, 'app', 'server') });
 
-// biometric_gateway ships its own deps (sequelize, node-zklib, …); the
-// server's @adms/@biomax/@realtime imports resolve against them. Guard for
-// older bundles that predate it being staged.
-if (fs.existsSync(path.join(INSTALL, 'biometric_gateway', 'package.json'))) {
-  log('Installing biometric_gateway (shared device libs) dependencies...');
-  run(npm, ['install'], { cwd: path.join(INSTALL, 'biometric_gateway') });
-}
-
 log(`Deploying client to ${SERVE_DIR}...`);
 fs.mkdirSync(SERVE_DIR, { recursive: true });
 for (const entry of fs.readdirSync(SERVE_DIR)) {

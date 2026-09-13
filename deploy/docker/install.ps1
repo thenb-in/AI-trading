@@ -9,7 +9,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location -Path $PSScriptRoot
 
-# One-shot installer for the containerised SalaryMitra server on Windows.
+# One-shot installer for the containerised app server on Windows.
 # Builds the env-only image from the bundle-root Dockerfile (the app is the
 # bundle this kit ships inside, bind-mounted by compose), writes the compose .env,
 # stamps the host identity the license binds to, brings the stack up, and
@@ -93,7 +93,7 @@ Write-Host "      Docker engine $server."
 # Just check it is here and settle on the image tag - the compose default is used
 # unless .env already pins one.
 Write-Host '[2/6] Checking the application bundle...'
-$image = if ($existing['APP_IMAGE']) { $existing['APP_IMAGE'] } else { 'salarymitra/server:local' }
+$image = if ($existing['APP_IMAGE']) { $existing['APP_IMAGE'] } else { 'myapp/server:local' }
 # This kit lives in <bundle>\deploy\docker\; the app + Dockerfile are at the
 # bundle root, two levels up.
 if (-not (Test-Path (Join-Path $PSScriptRoot '..\..\app\server\index.js'))) {
@@ -129,6 +129,8 @@ $defaultHost = (Get-NetIPConfiguration | Where-Object { $_.IPv4DefaultGateway } 
                 Select-Object -First 1).IPv4Address.IPAddress | Select-Object -First 1
 if (-not $defaultHost) { $defaultHost = $env:COMPUTERNAME }
 
+$project = if ($existing['COMPOSE_PROJECT_NAME']) { $existing['COMPOSE_PROJECT_NAME'] } else { Ask 'App name (names the stack, its database and the scheduled tasks)' 'myapp' }
+
 # -Quiet (how update.bat calls this) reuses every answer already on disk, so a
 # release upgrade asks nothing. Anything still unanswered falls through to the
 # prompts below.
@@ -140,15 +142,9 @@ if ($Quiet) {
 
 if (-not $ServerHost) { $ServerHost = Ask 'Server IP address or host name staff will browse to' $(if ($existing['SERVER_HOST']) { $existing['SERVER_HOST'] } else { $defaultHost }) }
 if (-not $AppPort)    { $AppPort    = [int](Ask 'HTTP port to publish' $(if ($existing['APP_PORT']) { $existing['APP_PORT'] } else { '80' })) }
-if (-not $TimeZone)   { $TimeZone   = Ask 'Time zone (IANA name - attendance and payroll are stamped in it)' $(if ($existing['TZ']) { $existing['TZ'] } else { 'Asia/Kolkata' }) }
-if (-not $DbPassword) { $DbPassword = if ($existing['DB_PASSWORD']) { $existing['DB_PASSWORD'] } else { '123456' } }
-
-# The biometric terminals push to these, not to the app port. Not asked for:
-# the defaults are what the device configuration in the field already uses, and
-# an operator who genuinely has a clash edits .env and runs start.bat. Carried
-# over from a previous run so a re-install never moves a port under live devices.
-$admsPort   = if ($existing['ADMS_PORT'])   { $existing['ADMS_PORT'] }   else { '8948' }
-$biomaxPort = if ($existing['BIOMAX_PORT']) { $existing['BIOMAX_PORT'] } else { '8949' }
+if (-not $TimeZone)   { $TimeZone   = Ask 'Time zone (IANA name - timestamps are stamped in it)' $(if ($existing['TZ']) { $existing['TZ'] } else { 'Asia/Kolkata' }) }
+if (-not $DbPassword) { $DbPassword = if ($existing['DB_PASSWORD']) { $existing['DB_PASSWORD'] } else { New-Password } }
+$dbName = if ($existing['DB_NAME']) { $existing['DB_NAME'] } else { $project }
 
 $appUrl = if ($AppPort -eq 80) { "http://$ServerHost" } else { "http://${ServerHost}:$AppPort" }
 
@@ -156,16 +152,13 @@ Write-TextFile $envPath @"
 # Written by install.ps1 - re-run install.bat (or edit here and run start.bat)
 # to change any of it. This file feeds docker-compose.yml only; the server's own
 # configuration lives in config\.env.
+COMPOSE_PROJECT_NAME=$project
 APP_IMAGE=$image
 NODE_VERSION=$nodeVersion
 APP_PORT=$AppPort
 APP_URL=$appUrl
 SERVER_HOST=$ServerHost
-# Biometric terminals push here - ADMS is ZK iClock (/iclock), Biomax is
-# Anviz/Biomax (/hdata). The device configuration has to match.
-ADMS_PORT=$admsPort
-BIOMAX_PORT=$biomaxPort
-DB_NAME=etime
+DB_NAME=$dbName
 DB_PASSWORD=$DbPassword
 TZ=$TimeZone
 "@
@@ -181,13 +174,7 @@ foreach ($d in @('config', 'config\secret', 'uploads', 'logs', 'backups')) {
 # -- Up ----------------------------------------------------------------------
 # --build builds the env image on first run and picks up any Dockerfile change
 # on an update; an unchanged image is cached, so this is cheap on re-runs.
-#
-# All four services: db, app and the two biometric gateways. The gateways wait
-# on the app being healthy, so this call does not return until the app answers
-# - on a first install or after a bundle swap that is the dependency install and
-# schema build, several minutes of "Waiting" against the app before the gateways
-# start. That is the wait it used to take anyway, just visible here now.
-Write-Host '[5/6] Building the image and starting the stack (first run takes several minutes - it waits for the app to answer before starting the biometric gateways)...'
+Write-Host '[5/6] Building the image and starting the stack...'
 Invoke-Docker compose up -d --build
 if ($LASTEXITCODE -ne 0) { throw 'docker compose up failed - see the output above.' }
 
@@ -219,7 +206,7 @@ function Register-Task([string]$Name, [string]$Execute, [string]$Argument, $Trig
     }
 }
 
-Register-Task 'SalaryMitra Docker Start' 'powershell.exe' `
+Register-Task "$project Docker Start" 'powershell.exe' `
     "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'start.ps1')`"" `
     (New-ScheduledTaskTrigger -AtLogOn) `
     'The stack still restarts with Docker; run start.bat after a reboot if it does not come up.'
@@ -227,21 +214,15 @@ Register-Task 'SalaryMitra Docker Start' 'powershell.exe' `
 # The database is the one piece of state Windows backup cannot copy safely
 # while it is live. This drops a consistent dump into data\backups\ nightly,
 # where the backup software finds it with everything else.
-Register-Task 'SalaryMitra Database Backup' 'cmd.exe' `
+Register-Task "$project Database Backup" 'cmd.exe' `
     "/c `"$(Join-Path $PSScriptRoot 'backup.bat')`"" `
     (New-ScheduledTaskTrigger -Daily -At 1am) `
     'Run backup.bat by hand, or schedule it yourself - without it the database is not in your Windows backups.'
 
 Write-Host ''
-Write-Host "SalaryMitra is up at $appUrl"
+Write-Host "$project is up at $appUrl"
 Write-Host ''
-Write-Host 'Point the biometric terminals at THIS machine:'
-Write-Host "  ADMS   (ZK iClock, /iclock)   http://${ServerHost}:$admsPort"
-Write-Host "  Biomax (Anviz, /hdata)        http://${ServerHost}:$biomaxPort"
-Write-Host '  Both answer /health with {"ok":true} once they are up. Open these'
-Write-Host '  ports on the Windows firewall for the terminal VLAN.'
-Write-Host ''
-Write-Host '  status.bat   service state and health (all four containers)'
+Write-Host '  status.bat   service state and health (both containers)'
 Write-Host '  logs.bat     live server logs'
 Write-Host '  backup.bat   database dump into data\backups\ (also runs nightly at 01:00)'
 Write-Host ''
