@@ -76,8 +76,8 @@ const isMacPlatform = () => {
 /** Mac spells its modifiers with symbols and no separator; the rest spell them out. */
 const MAC_MODIFIERS = { mod: '⌘', alt: '⌥', shift: '⇧' };
 const PC_MODIFIERS = { mod: 'Ctrl', alt: 'Alt', shift: 'Shift' };
-const MAC_KEYS = { Enter: '↩', Escape: 'Esc', Delete: '⌫' };
-const PC_KEYS = { Escape: 'Esc' };
+const MAC_KEYS = { Enter: '↩', Escape: 'Esc', Delete: '⌫', ArrowLeft: '←', ArrowRight: '→' };
+const PC_KEYS = { Escape: 'Esc', ArrowLeft: '←', ArrowRight: '→' };
 
 const comboKeyLabel = (key, mac) => {
   const named = mac ? MAC_KEYS[key] : PC_KEYS[key];

@@ -7,6 +7,8 @@ import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
 import { MasterModal } from './master_modal/MasterModal';
 import { MasterSearch } from './MasterSearch';
+import { MasterRecordDetails } from './MasterRecordDetails';
+import { useRecordNav } from './useRecordNav';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@utils/hasPermission';
 import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
@@ -43,12 +45,23 @@ const BaseMaster = ({
   importApi,
   buildExportColumns,
   FormComponent,
+  // What a row click opens. Omit it and a row opens FormComponent to edit, or,
+  // on a master with no form, every column of the row read-only.
+  DetailComponent,
   formProps,
   formSuccessProp = 'onSuccess',
   filtersConfig,
   isFilterLoading,
   initialFilters = {},
   mapFiltersForApi,
+  // Optional `(rows) => rows` run over what the grid shows, after search — for
+  // decoration that depends on the whole set, like tinting rows that share a record.
+  mapRows,
+  // Optional `(refresh) => unsubscribe`, for rows that change outside this page
+  // (a cache bust elsewhere). They reload in place, keeping the grid's sort and filters.
+  subscribeToRefresh,
+  // Shown between the header and the grid — a node, or a function given { rows, columns, refresh }.
+  headerContent,
   headerRef,
   showRefreshButton = true,
   // Where the header's Back button goes. Masters live under /admin/master, but
@@ -103,12 +116,13 @@ const BaseMaster = ({
   const [filters, setFilters] = useState(initialFilters);
   const [historyRowId, setHistoryRowId] = useState(null);
   const { userData } = useDataContext();
+  const { handleVisibleRowsChange, recordNav } = useRecordNav(selectedRow, setSelectedRow);
 
-  const canRead = hasPermission(userData, permissionKeys.read);
-  // A master with no FormComponent is read-only (e.g. an archive or a log):
-  // there is nothing for Add or the edit modal to open, so neither is offered.
-  const isEditable = Boolean(FormComponent);
-  const canCreate = isEditable ? permissionKeys.create : null;
+  // A master with no read permission (e.g. one over the browser's own cache) is open to all.
+  const canRead = !permissionKeys.read || hasPermission(userData, permissionKeys.read);
+  // Without a FormComponent there is nothing for Add to open, so it is not offered.
+  const canAdd = Boolean(FormComponent);
+  const canCreate = canAdd ? permissionKeys.create : null;
   const canDelete = permissionKeys.delete && hasPermission(userData, permissionKeys.delete);
 
 
@@ -117,20 +131,20 @@ const BaseMaster = ({
     (permissionKeys.update ? hasPermission(userData, permissionKeys.update) : false);
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
-  const fetchRows = useCallback(async (filterOverride, { pageToLoad = 1, append = false } = {}) => {
+  const fetchRows = useCallback(async (filterOverride, { pageToLoad = 1, append = false, silent = false } = {}) => {
     if (!canRead) {
       toast.error(unauthorizedToast);
       return;
     }
     try {
-      if (append) setIsLoadingMore(true); else setLoading(true);
+      if (append) setIsLoadingMore(true); else if (!silent) setLoading(true);
       const apiFilters = filterOverride ?? filters;
       const mappedFilters = mapFiltersForApi ? mapFiltersForApi(apiFilters) : apiFilters;
       const requestFilters = infiniteScroll
         ? { ...mappedFilters, page: pageToLoad, pageSize }
         : mappedFilters;
       const response = await loadRows(requestFilters);
-      if (response.data.success || extractResponse) {
+      if (extractResponse || response.data.success) {
         const extracted = extractResponse
           ? extractResponse(response)
           : {
@@ -170,17 +184,25 @@ const BaseMaster = ({
     fetchRows();
   }, []);
 
+  useEffect(
+    () => subscribeToRefresh?.(() => loadMoreRef.current.fetchRows(undefined, { silent: true })),
+    [subscribeToRefresh],
+  );
+
   const filteredData = useMemo(() => {
-    if (!searchQuery) return rows;
-    const keys = (columns || []).map((c) => c.id);
+    // Server columns name their field `key`, client-defined ones `id`.
+    const keys = (columns || []).map((c) => c.key || c.id);
     const q = searchQuery.toLowerCase();
     // JSON-shaped cells (e.g. a stored filter set) stringify to "[object Object]"
     // and would never match, so serialise them instead of coercing.
     const searchable = (value) => (
       value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
     );
-    return rows.filter((row) => keys.some((k) => searchable(row?.[k]).toLowerCase().includes(q)));
-  }, [rows, columns, searchQuery]);
+    const matched = searchQuery
+      ? rows.filter((row) => keys.some((k) => searchable(row?.[k]).toLowerCase().includes(q)))
+      : rows;
+    return mapRows ? mapRows(matched) : matched;
+  }, [rows, columns, searchQuery, mapRows]);
 
   const exportColumns = useMemo(
     () => (buildExportColumns ? buildExportColumns(columns) : columns?.map((col) => ({ field: col.id, headerName: col.label, type: col.type }))),
@@ -202,6 +224,7 @@ const BaseMaster = ({
       }
     } catch (error) {
       console.error(`${title}: Error deleting row`, { error });
+      toast.error(error?.response?.data?.message || error?.response?.data?.error || `${title}: could not delete row ${id}`);
     }
   };
 
@@ -211,9 +234,12 @@ const BaseMaster = ({
   const resolvedHeaderActions = typeof extraHeaderActions === 'function'
     ? extraHeaderActions({ refresh: fetchRows, rows, columns })
     : extraHeaderActions;
+  const resolvedHeaderContent = typeof headerContent === 'function'
+    ? headerContent({ refresh: fetchRows, rows, columns })
+    : headerContent;
 
   const actions = [
-    ...(extraActions ? extraActions({ refresh: fetchRows, setRows, openEdit: (row) => handleRowClick(row) }) : []),
+    ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row) }) : []),
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
     // edit (locked, approved, read-only masters) still have a history.
@@ -243,12 +269,10 @@ const BaseMaster = ({
     setIsModalOpen(true);
   };
 
+  // Every row opens: its details, its edit form, or wherever the master sends it.
   const handleRowClick = (row) => {
     if (onRowClickOverride) {
       onRowClickOverride(row);
-      return;
-    }
-    if (!isEditable) {
       return;
     }
     setSelectedRow(row);
@@ -261,6 +285,8 @@ const BaseMaster = ({
   };
 
   const handleCloseHistory = () => setHistoryRowId(null);
+
+  const ModalBody = selectedRow ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
 
   // Adapters that inject the current rows/columns/refresh into caller-supplied
   // callbacks. Defined here (rather than inline in JSX) to satisfy the
@@ -288,7 +314,7 @@ const BaseMaster = ({
           ref={headerRef}
           title={title}
           description={description}
-          onAdd={isEditable && showAdd ? handleAdd : undefined}
+          onAdd={canAdd && showAdd ? handleAdd : undefined}
           userData={userData}
           permissionKey={canCreate}
           addButtonText={addButtonText}
@@ -308,6 +334,7 @@ const BaseMaster = ({
           onImport={boundOnImport}
           extraHeaderActions={resolvedHeaderActions}
         />
+        {resolvedHeaderContent}
         {filtersConfig && (
           <BaseFilter
             onFiltersApply={handleFiltersApply}
@@ -330,18 +357,17 @@ const BaseMaster = ({
             loading={loading}
             actions={actions}
             onRowClick={handleRowClick}
-            rowClickEnabled={isEditable || Boolean(onRowClickOverride)}
+            rowClickEnabled
             infiniteScroll={infiniteScroll}
             hasMore={infiniteScroll && rows.length < total}
             onLoadMore={handleLoadMore}
             isLoadingMore={isLoadingMore}
+            onVisibleRowsChange={handleVisibleRowsChange}
             getRowClassName={getRowClassName}
             isAlertRow={isAlertRow}
             initialSortKey={initialSortKey}
             initialSortDirection={initialSortDirection}
             defaultGroupByField={defaultGroupByField}
-            
-            
             showGridExport={showGridExport}
             exportReport={exportReport}
             showInsightsAsHeader={showInsightsAsHeader}
@@ -351,25 +377,29 @@ const BaseMaster = ({
         ) : (
           <UnauthorisedTable />
         )}
-        {isEditable && (
-          <MasterModal
-            isOpen={isModalOpen}
-            onClose={handleCloseModal}
-            title={selectedRow ? modalEditTitle : modalAddTitle}
-            maxWidth={modalMaxWidth}
-            auditHead={auditHead}
-            auditObjectId={selectedRow?.id}
-            showAudit={Boolean(selectedRow?.id)}
-          >
-            <FormComponent
+        <MasterModal
+          isOpen={isModalOpen && Boolean(ModalBody)}
+          onClose={handleCloseModal}
+          title={selectedRow ? (modalEditTitle ?? title) : modalAddTitle}
+          maxWidth={modalMaxWidth}
+          auditHead={auditHead}
+          auditObjectId={selectedRow?.id}
+          showAudit={Boolean(selectedRow?.id)}
+          recordNav={recordNav}
+        >
+          {/* Keyed by record so stepping to the next one starts a fresh form. */}
+          {ModalBody && (
+            <ModalBody
+              key={selectedRow?.id ?? 'new'}
               isOpen
               onClose={handleCloseModal}
               initialData={selectedRow}
+              columns={columns}
               {...{ [formSuccessProp]: fetchRows }}
               {...(formProps ? formProps(selectedRow) : {})}
             />
-          </MasterModal>
-        )}
+          )}
+        </MasterModal>
         {auditHead && historyRowId !== null && (
           <AuditHistoryModal
             isOpen
@@ -396,7 +426,8 @@ BaseMaster.propTypes = {
   baseMasterContainerWidth: PropTypes.string,
   auditHead: PropTypes.string,
   permissionKeys: PropTypes.shape({
-    read: PropTypes.string.isRequired,
+    // Any one of a list is enough.
+    read: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
     create: PropTypes.string,
     update: PropTypes.string,
     delete: PropTypes.string,
@@ -422,14 +453,19 @@ BaseMaster.propTypes = {
   hideConstantColumns: PropTypes.bool,
   importApi: PropTypes.func,
   buildExportColumns: PropTypes.func,
-  // Omit for a read-only master — no Add button, no edit modal.
+  // Omit for a read-only master — no Add button.
   FormComponent: PropTypes.elementType,
+  // Receives the same props as FormComponent, plus `columns`.
+  DetailComponent: PropTypes.elementType,
   formProps: PropTypes.func,
   formSuccessProp: PropTypes.string,
   filtersConfig: PropTypes.array,
   isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,
   mapFiltersForApi: PropTypes.func,
+  mapRows: PropTypes.func,
+  subscribeToRefresh: PropTypes.func,
+  headerContent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   headerRef: PropTypes.object,
   showRefreshButton: PropTypes.bool,
   backUrl: PropTypes.string,

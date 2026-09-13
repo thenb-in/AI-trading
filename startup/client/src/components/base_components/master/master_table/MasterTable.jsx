@@ -27,6 +27,8 @@ const MasterTable = ({
   hasMore = false,
   onLoadMore,
   isLoadingMore = false,
+  /** `(rows) => void`; the rows in the order the grid shows them. */
+  onVisibleRowsChange,
   /** Field to group rows by on first render; the user can retoggle from the
    *  column menu. Omit to start ungrouped. */
   defaultGroupByField = null,
@@ -341,6 +343,7 @@ const MasterTable = ({
         hasMore={hasMore}
         onLoadMore={onLoadMore}
         isLoadingMore={isLoadingMore}
+        onVisibleRowsChange={onVisibleRowsChange}
         theme="master"
         getRowId={getRowId}
         density={density}
@@ -413,6 +416,7 @@ MasterTable.propTypes = {
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
   isLoadingMore: PropTypes.bool,
+  onVisibleRowsChange: PropTypes.func,
   getRowId: PropTypes.func,
   density: PropTypes.oneOf(['compact', 'standard', 'comfortable']),
   documentName: PropTypes.string,

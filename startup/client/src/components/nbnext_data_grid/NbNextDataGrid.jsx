@@ -41,6 +41,7 @@ import {
   indexRows,
   filterRows,
   sortRows,
+  unwrapGridRows,
   getKeyForRow,
   calculateIsSummaryTotals,
   calculateFrozenOffsets,
@@ -155,6 +156,12 @@ const NbNextDataGrid = forwardRef(({
   hasMore = false,
   onLoadMore = null,
   isLoadingMore = false,
+  /**
+   * Optional `(rows) => void`. Called with the data rows in the order the grid
+   * shows them — after column filters, sort and grouping, before paging — so a
+   * consumer can step through records in that same order.
+   */
+  onVisibleRowsChange = null,
   /**
    * Optional multi-row selection (checkbox column). Off by default.
    * When enabled, a leading sticky checkbox column is rendered and selection
@@ -364,6 +371,12 @@ const NbNextDataGrid = forwardRef(({
     const sortedHeads = sortRows(heads, merged.sortModel, l1);
     return sortedHeads.flatMap((head) => sections[heads.indexOf(head)]);
   }, [filteredRows, merged.sortModel, l1, isSectionHeaderRow]);
+
+  useEffect(() => {
+    if (typeof onVisibleRowsChange === "function") {
+      onVisibleRowsChange(unwrapGridRows(sortedRows));
+    }
+  }, [sortedRows, onVisibleRowsChange]);
 
   // Grouping injects synthetic total rows between groups
   const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
@@ -814,6 +827,7 @@ NbNextDataGrid.propTypes = {
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
   isLoadingMore: PropTypes.bool,
+  onVisibleRowsChange: PropTypes.func,
   enableRowSelection: PropTypes.bool,
   selectedRowIds: PropTypes.oneOfType([PropTypes.array, PropTypes.instanceOf(Set)]),
   onSelectionChange: PropTypes.func,

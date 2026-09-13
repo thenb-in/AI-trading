@@ -7,6 +7,7 @@ import { getDialogSidebarSx } from '@startup/components/base_components/utils/di
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
 import { useFormSaveShortcut } from '@startup/hooks/useFormSaveShortcut';
+import { RecordNav } from './RecordNav';
 
 const MasterModal = ({
   isOpen,
@@ -22,6 +23,9 @@ const MasterModal = ({
   showAudit = true,
   auditPageSize = 25,
   disableContentScroll = false,
+  // `{ position, total, onPrevious, onNext }` — arrows to step to the
+  // neighbouring records of the list this one was opened from.
+  recordNav,
   PaperProps: paperPropsFromCaller,
   sx: sxFromCaller,
   ...props
@@ -90,6 +94,7 @@ const MasterModal = ({
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+              {recordNav && <RecordNav {...recordNav} />}
               {shouldShowAudit && (
                 fullScreen ? (
                   <Tooltip title="Show Audit History">
@@ -193,6 +198,12 @@ MasterModal.propTypes = {
   showAudit: PropTypes.bool,
   auditPageSize: PropTypes.number,
   disableContentScroll: PropTypes.bool,
+  recordNav: PropTypes.shape({
+    position: PropTypes.number.isRequired,
+    total: PropTypes.number.isRequired,
+    onPrevious: PropTypes.func,
+    onNext: PropTypes.func,
+  }),
   PaperProps: PropTypes.object,
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };

@@ -27,6 +27,8 @@ const SHORTCUTS = {
   GLOBAL_SEARCH: { alt: true, key: 'KeyS', alternates: [{ mod: true, key: 'KeyK' }] },
   HELP_SUPPORT: { alt: true, key: 'KeyH', alternates: [{ key: 'F1' }] },
   FULL_SCREEN: { alt: true, key: 'KeyF' },
+  PREVIOUS_RECORD: { alt: true, key: 'ArrowLeft' },
+  NEXT_RECORD: { alt: true, key: 'ArrowRight' },
 };
 
 export { SHORTCUTS };
