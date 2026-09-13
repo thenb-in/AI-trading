@@ -18,6 +18,8 @@ const PERMISSION_KEYS = {
 
 const loadFiles = () => nbnextDriveService.getAllFiles();
 
+const confirmDeleteFile = (file) => `Delete ${file.fileName}? It cannot be recovered.`;
+
 // nbnextDriveService unwraps the HTTP response to its body, and BaseMaster reads
 // the body under `data`, as it comes on a raw response.
 const deleteFile = async (id) => ({ data: await nbnextDriveService.deleteFile(id) });
@@ -60,7 +62,7 @@ const NBnextDriveMaster = () => {
       loadRows={loadFiles}
       extractResponse={extractResponse}
       deleteRow={deleteFile}
-      deleteConfirmText="Are you sure you want to delete this file?"
+      deleteConfirmText={confirmDeleteFile}
       FormComponent={NBnextDriveForm}
       DetailComponent={NBnextDriveDetails}
       extraActions={extraActions}
