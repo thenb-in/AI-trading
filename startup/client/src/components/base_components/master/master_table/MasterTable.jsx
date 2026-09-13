@@ -262,13 +262,25 @@ const MasterTable = ({
         sortable: false,
         width: Math.max(160, 100 * actions.length),
         renderCell: ({ row }) => {
-          const visibleActions = actions.filter((action) =>
-            typeof action.show === 'function' ? action.show(row) !== false : true
-          );
+          const visibleActions = actions.filter((action) => !action.show || action.show(row));
           if (visibleActions.length === 0) return null;
           return (
             <div className="flex items-center space-x-2">
               {visibleActions.map((action, idx) => {
+                // An action may draw itself instead of being a button — a
+                // status chip, a small menu. Clicks stay inside it so the row
+                // selection handler doesn't also fire.
+                if (action.additionalButton) {
+                  return (
+                    <span
+                      key={idx}
+                      className="inline-flex shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {action.additionalButton(row)}
+                    </span>
+                  );
+                }
                 const handleClick = (e) => {
                   e.stopPropagation();
                   action.onClick(row.id, row);
@@ -395,16 +407,20 @@ MasterTable.propTypes = {
   loading: PropTypes.bool,
   actions: PropTypes.arrayOf(
     PropTypes.shape({
-      /** A string, or a function of the row for labels that flip with state. */
-      label: PropTypes.oneOfType([PropTypes.string, PropTypes.func]).isRequired,
+      /** A string, or a function of the row for labels that flip with state.
+       *  Not required for an `additionalButton` action, which draws its own. */
+      label: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
       icon: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-      onClick: PropTypes.func.isRequired,
+      /** Required for a button action; an `additionalButton` one wires its own. */
+      onClick: PropTypes.func,
       type: PropTypes.oneOfType([
         PropTypes.oneOf(['primary', 'danger', 'success', 'warning', 'default']),
         PropTypes.func
       ]),
-      /** Optional: hide this action for a row by returning false. */
+      /** Optional: whether this action appears for a row. */
       show: PropTypes.func,
+      /** Draw the action yourself for this row instead of rendering a button. */
+      additionalButton: PropTypes.func,
     })
   ),
   emptyMessage: PropTypes.string,
