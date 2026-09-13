@@ -52,6 +52,8 @@ const NBnextDriveMaster = () => {
       searchPlaceholder="Search files by name, source or created by..."
       modalAddTitle="Upload File"
       modalEditTitle="File"
+      createLabel="Upload"
+      savingLabel="Uploading..."
       modalMaxWidth="lg"
       baseMasterContainerWidth="max-w-8xl"
       permissionKeys={PERMISSION_KEYS}

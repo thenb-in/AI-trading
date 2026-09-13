@@ -13,7 +13,6 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
   const [rule, setRule] = useState(EMPTY_RULE);
   const [options, setOptions] = useState(EMPTY_OPTIONS);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const isEditMode = Boolean(initialData?.id);
 
@@ -90,10 +89,7 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
     [recipientCount]
   );
 
-  const submit = useCallback(async (event) => {
-    event.preventDefault();
-
-    setIsSaving(true);
+  const submit = useCallback(async () => {
     try {
       const response = isEditMode
         ? await notificationRuleService.update(initialData.id, rule)
@@ -104,15 +100,11 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
       onClose();
     } catch (saveError) {
       toast.error(getApiErrorMessage(saveError, `Could not save ${rule.name}`));
-    } finally {
-      setIsSaving(false);
     }
   }, [rule, isEditMode, initialData, onSaved, onClose]);
 
   return {
     rule,
-    isEditMode,
-    isSaving,
     isLoadingOptions,
     permissions: options.permissions,
     selectedPermission,

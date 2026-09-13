@@ -1,12 +1,11 @@
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
-import { useFormSaveShortcut } from '@startup/hooks/useFormSaveShortcut';
 import { RecordNav } from './RecordNav';
 
 const MasterModal = ({
@@ -38,19 +37,14 @@ const MasterModal = ({
   const hasTitle = isTitleString ? titleProp !== '' : (isTitleNode || Boolean(titleProp));
   const shouldShowAudit = Boolean(showAudit && auditHead && auditObjectId != null);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
-  const paperRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) setIsAuditOpen(false);
   }, [isOpen]);
 
-  // Save shortcut for forms that render their own footer instead of FormFooter.
-  useFormSaveShortcut(paperRef, { enabled: isOpen });
-
   const ownsScroll = disableContentScroll || fullScreen;
   const mergedPaperProps = {
     ...paperPropsFromCaller,
-    ref: paperRef,
     ...(disableContentScroll && {
       sx: {
         height: '90vh',

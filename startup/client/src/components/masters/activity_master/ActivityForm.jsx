@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { TextareaTypeField } from '@startup/components/base_components/fields/TextareaTypeField';
 import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
-import { FormFooter } from '@startup/components/base_components/master/FormFooter';
+import { useFormModal } from '@startup/components/base_components/master/master_modal/FormModal';
 import { activityService } from '@services/activityService';
 
 const EMPTY_ACTIVITY = {
@@ -17,16 +17,13 @@ const EMPTY_ACTIVITY = {
 
 const ActivityForm = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState(EMPTY_ACTIVITY);
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
+  useFormModal(async () => {
     try {
       await activityService.createActivity(
         formData.head,
@@ -40,13 +37,11 @@ const ActivityForm = ({ onClose, onSuccess }) => {
       onClose();
     } catch (error) {
       toast.error(error?.error || `Failed to create activity log for ${formData.head}`);
-    } finally {
-      setIsSaving(false);
     }
-  };
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
       <TextTypeField
         name="head"
         label="Head"
@@ -90,13 +85,7 @@ const ActivityForm = ({ onClose, onSuccess }) => {
         />
         <p className="mt-1 text-xs text-gray-500">Leave empty to use current time</p>
       </div>
-      <FormFooter
-        onClose={onClose}
-        isLoading={isSaving}
-        createLabel="Create"
-        updateLabel="Create"
-      />
-    </form>
+    </>
   );
 };
 

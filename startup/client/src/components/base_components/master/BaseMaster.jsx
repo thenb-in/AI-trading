@@ -6,6 +6,7 @@ import { useDataContext } from '@context/useDataContext';
 import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
 import { MasterModal } from './master_modal/MasterModal';
+import { FormModal } from './master_modal/FormModal';
 import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
@@ -50,6 +51,7 @@ const BaseMaster = ({
   DetailComponent,
   formProps,
   formSuccessProp = 'onSuccess',
+  createLabel, updateLabel, savingLabel, // Save button wording; FormModal defaults to Create / Update / Saving...
   filtersConfig,
   isFilterLoading,
   initialFilters = {},
@@ -286,6 +288,9 @@ const BaseMaster = ({
   const handleCloseHistory = () => setHistoryRowId(null);
 
   const ModalBody = selectedRow ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
+  const isForm = ModalBody === FormComponent;
+  const Modal = isForm ? FormModal : MasterModal;
+  const formModalProps = isForm ? { isEditMode: Boolean(selectedRow), createLabel, updateLabel, savingLabel } : {};
 
   // Adapters that inject the current rows/columns/refresh into caller-supplied
   // callbacks. Defined here (rather than inline in JSX) to satisfy the
@@ -376,7 +381,8 @@ const BaseMaster = ({
         ) : (
           <UnauthorisedTable />
         )}
-        <MasterModal
+        <Modal
+          {...formModalProps}
           isOpen={isModalOpen && Boolean(ModalBody)}
           onClose={handleCloseModal}
           title={selectedRow ? (modalEditTitle ?? title) : modalAddTitle}
@@ -398,7 +404,7 @@ const BaseMaster = ({
               {...(formProps ? formProps(selectedRow) : {})}
             />
           )}
-        </MasterModal>
+        </Modal>
         {auditHead && historyRowId !== null && (
           <AuditHistoryModal
             isOpen
@@ -458,6 +464,9 @@ BaseMaster.propTypes = {
   DetailComponent: PropTypes.elementType,
   formProps: PropTypes.func,
   formSuccessProp: PropTypes.string,
+  createLabel: PropTypes.string,
+  updateLabel: PropTypes.string,
+  savingLabel: PropTypes.string,
   filtersConfig: PropTypes.array,
   isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,

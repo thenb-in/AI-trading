@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Power } from 'lucide-react';
-import { FormFooter } from '@startup/components/base_components/master';
+import { useFormModal } from '@startup/components/base_components/master';
 import { useNotificationRuleForm } from './useNotificationRuleForm';
 import { RuleNameSection } from './form/RuleNameSection';
 import { RecipientSection } from './form/RecipientSection';
@@ -9,13 +9,14 @@ import { ChannelSection } from './form/channel/ChannelSection';
 
 const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
   const form = useNotificationRuleForm({ isOpen, initialData, onSaved, onClose });
+  useFormModal(form.submit);
 
   if (!isOpen) {
     return null;
   }
 
   return (
-    <form onSubmit={form.submit} className="space-y-4">
+    <>
       <div className="flex justify-end">
         <button
           type="button"
@@ -54,17 +55,7 @@ const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) =
 
         <ChannelSection rule={form.rule} onChange={form.setChannel} />
       </div>
-
-      <FormFooter
-        onClose={onClose}
-        isLoading={form.isSaving}
-        isEditMode={form.isEditMode}
-        createLabel="Create Rule"
-        updateLabel="Update Rule"
-        creatingLabel="Saving..."
-        iconVariant="checkmark"
-        />
-    </form>
+    </>
   );
 };
 

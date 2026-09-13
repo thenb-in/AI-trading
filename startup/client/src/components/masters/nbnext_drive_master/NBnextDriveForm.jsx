@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
-import { FormFooter } from '@startup/components/base_components/master/FormFooter';
+import { useFormModal } from '@startup/components/base_components/master/master_modal/FormModal';
 import { nbnextDriveService } from '@/services/nbnextDriveService';
 import { FilesSection } from './FilesSection';
 
@@ -11,7 +11,6 @@ const EMPTY_REFERENCE = { objectName: '', objectId: '' };
 const NBnextDriveForm = ({ onClose, onSuccess }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [reference, setReference] = useState(EMPTY_REFERENCE);
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (filesOrFile) => {
     setSelectedFiles(Array.isArray(filesOrFile) ? filesOrFile : [filesOrFile].filter(Boolean));
@@ -22,13 +21,11 @@ const NBnextDriveForm = ({ onClose, onSuccess }) => {
     setReference((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  useFormModal(async () => {
     if (selectedFiles.length === 0) {
       toast.error('Please select at least one file to upload');
       return;
     }
-    setIsUploading(true);
     try {
       for (const file of selectedFiles) {
         await nbnextDriveService.uploadFile(file, reference.objectName || null, reference.objectId || null);
@@ -38,13 +35,11 @@ const NBnextDriveForm = ({ onClose, onSuccess }) => {
       onClose();
     } catch (error) {
       toast.error(error?.response?.data?.error || `Failed to upload ${selectedFiles.length} file(s) to NBnext Drive`);
-    } finally {
-      setIsUploading(false);
     }
-  };
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <>
       <FilesSection
         selectedFiles={selectedFiles}
         onFileChange={handleFileChange}
@@ -67,14 +62,7 @@ const NBnextDriveForm = ({ onClose, onSuccess }) => {
         onChange={handleChange}
         placeholder="Enter object ID (optional)"
       />
-      <FormFooter
-        onClose={onClose}
-        isLoading={isUploading}
-        createLabel="Upload"
-        updateLabel="Upload"
-        creatingLabel="Uploading..."
-      />
-    </form>
+    </>
   );
 };
 

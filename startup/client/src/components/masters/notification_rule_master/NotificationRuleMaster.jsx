@@ -71,6 +71,8 @@ const NotificationRuleMaster = () => {
       baseMasterContainerWidth = 'max-w-8xl'
       modalAddTitle="New Notification Rule"
       modalEditTitle="Edit Notification Rule"
+      createLabel="Create Rule"
+      updateLabel="Update Rule"
       modalMaxWidth="lg"
       auditHead="NotificationRule"
       permissionKeys={PERMISSION_KEYS}
