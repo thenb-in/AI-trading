@@ -9,10 +9,10 @@ const getGridContainerStyle = (computedContainerHeight, fullScreen = false, side
     right: fullScreen ? 0 : undefined,
     bottom: fullScreen ? 0 : undefined,
     zIndex: fullScreen ? 5 : undefined,
-    border: stripChrome ? "none" : "1px solid #e2e8f0",
-    borderRadius: stripChrome ? 0 : 12,
+    border: stripChrome ? "none" : "var(--grid-container-border)",
+    borderRadius: stripChrome ? 0 : "var(--grid-container-radius)",
     overflow: "hidden",
-    boxShadow: stripChrome ? "none" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    boxShadow: stripChrome ? "none" : "var(--grid-container-shadow)",
     background: "#fff",
     display: "flex",
     flexDirection: "column",
@@ -63,24 +63,24 @@ const headerCellBaseStyle = {
   top: 0,
   zIndex: 2,
   background: "var(--grid-header-bg)",
-  borderBottom: "3px solid var(--grid-header-border)",
-  borderRight: "2px solid var(--grid-header-border-soft)",
+  borderBottom: "var(--grid-header-border-bottom-width) solid var(--grid-header-border)",
+  borderRight: "var(--grid-header-border-right-width) solid var(--grid-header-border-soft)",
   padding: "12px 16px",
   boxSizing: "border-box",
-  fontWeight: 700,
+  fontWeight: "var(--grid-header-font-weight)",
   fontSize: 12,
-  color: "#ffffff",
+  color: "var(--grid-header-fg)",
   userSelect: "none",
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  letterSpacing: "0.05em",
-  textTransform: "uppercase",
+  letterSpacing: "var(--grid-header-letter-spacing)",
+  textTransform: "var(--grid-header-text-transform)",
 };
 
 const cellBaseStyle = (rowHeight, autoHeight = false, density = "comfortable") => ({
-  borderBottom: "2px solid #d1d5db",
-  borderRight: "2px solid #e5e7eb",
+  borderBottom: "var(--grid-cell-border-bottom)",
+  borderRight: "var(--grid-cell-border-right)",
   padding: density === "compact" ? "5px 10px" : "12px 16px",
   // autoHeight=true: row grows to fit wrapped content; rowHeight is a floor.
   // autoHeight=false: fixed-height row, content truncates with ellipsis.
@@ -113,11 +113,11 @@ const headerButtonStyle = {
 
 const pinButtonStyle = {
   background: "transparent",
-  border: "1px solid rgba(255,255,255,0.2)",
+  border: "1px solid var(--grid-pin-border)",
   padding: "4px",
   marginLeft: 8,
   cursor: "pointer",
-  color: "#ffffff",
+  color: "var(--grid-header-fg)",
   borderRadius: 6,
   display: "inline-flex",
   alignItems: "center",
@@ -138,7 +138,7 @@ const getSortedHeaderStyle = (isSorted) => {
   if (!isSorted) return null;
   return {
     background: "var(--grid-header-bg-sorted)",
-    borderBottom: "2px solid var(--grid-header-border-sorted)",
+    borderBottom: "var(--grid-header-border-bottom-width) solid var(--grid-header-border-sorted)",
     boxShadow: "inset 0 -3px 0 var(--grid-header-border-sorted)",
     color: "#ffffff",
   };

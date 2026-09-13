@@ -233,11 +233,11 @@ function DataGridHeader({
             {col.sortable && (
               <span className="inline-flex items-center ml-1.5">
                 {isSorted === "asc" ? (
-                  <ArrowUp size={16} color="#93c5fd" strokeWidth={2.8} />
+                  <ArrowUp size={16} color="var(--grid-header-icon-sorted)" strokeWidth={2.8} />
                 ) : isSorted === "desc" ? (
-                  <ArrowDown size={16} color="#93c5fd" strokeWidth={2.8} />
+                  <ArrowDown size={16} color="var(--grid-header-icon-sorted)" strokeWidth={2.8} />
                 ) : (
-                  <ArrowUpDown size={15} color="rgba(255,255,255,0.6)" strokeWidth={2} />
+                  <ArrowUpDown size={15} color="var(--grid-header-icon-muted)" strokeWidth={2} />
                 )}
                 {showPriority && (
                   <span
@@ -264,7 +264,7 @@ function DataGridHeader({
             {frozenState[col.field] ? (
               <Pin size={14} color="#ef4444" fill="#ef4444" strokeWidth={2.5} />
             ) : (
-              <PinOff size={14} color="#e2e8f0" strokeWidth={2} />
+              <PinOff size={14} color="var(--grid-header-icon)" strokeWidth={2} />
             )}
           </button>
           <button
@@ -278,7 +278,7 @@ function DataGridHeader({
             title={isGrouped ? "Ungroup column" : "Group by this column"}
             aria-label={isGrouped ? `Ungroup ${col.headerName}` : `Group by ${col.headerName}`}
           >
-            <Layers size={14} color={isGrouped ? "#16a34a" : "#e2e8f0"} strokeWidth={2} />
+            <Layers size={14} color={isGrouped ? "#16a34a" : "var(--grid-header-icon)"} strokeWidth={2} />
           </button>
           <div
             className="absolute right-0 top-0 h-full w-2 cursor-col-resize z-10 column-resizer"
