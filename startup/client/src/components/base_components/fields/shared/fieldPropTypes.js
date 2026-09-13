@@ -7,13 +7,16 @@ import PropTypes from 'prop-types';
 const commonFieldPropTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   checked: PropTypes.bool,
-  onChange: PropTypes.func.isRequired,
+  /** Not needed for a readOnly field, which never changes. */
+  onChange: PropTypes.func,
   placeholder: PropTypes.string,
   label: PropTypes.string,
   /** Guidance under the field; an error replaces it while present. */
   hint: PropTypes.node,
   error: PropTypes.string,
   disabled: PropTypes.bool,
+  /** Shown and copyable, but not editable — see getBaseInputClasses. */
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   className: PropTypes.string,
   containerClassName: PropTypes.string,

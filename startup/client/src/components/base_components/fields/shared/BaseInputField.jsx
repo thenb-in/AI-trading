@@ -32,6 +32,7 @@ function BaseInputField({
   hint = '',
   error = '',
   disabled = false,
+  readOnly = false,
   required = false,
   className = '',
   name = '',
@@ -54,11 +55,11 @@ function BaseInputField({
 
   const hasValue = value !== '' && value !== null && value !== undefined;
   const effectiveHasValue = typeof hasValueOverride === 'boolean' ? hasValueOverride : hasValue;
-  const shouldShowClear = Boolean(showClearButton && effectiveHasValue && !disabled);
+  const shouldShowClear = Boolean(showClearButton && effectiveHasValue && !disabled && !readOnly);
 
   const baseInputClasses = useMemo(
-    () => getBaseInputClasses({ error, disabled, className }),
-    [error, disabled, className]
+    () => getBaseInputClasses({ error, disabled, readOnly, className }),
+    [error, disabled, readOnly, className]
   );
 
   const leftPad = leftIcon ? 'pl-10' : 'pl-3';
@@ -101,6 +102,7 @@ function BaseInputField({
     onChange: handleChange,
     placeholder,
     disabled,
+    readOnly,
     required,
     maxLength,
     minLength,
@@ -176,12 +178,14 @@ BaseInputField.propTypes = {
   containerClassName: PropTypes.string,
 
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onChange: PropTypes.func.isRequired,
+  /** Not needed for a readOnly field, which never changes. */
+  onChange: PropTypes.func,
   placeholder: PropTypes.string,
   label: PropTypes.string,
   hint: PropTypes.node,
   error: PropTypes.string,
   disabled: PropTypes.bool,
+  readOnly: PropTypes.bool,
   required: PropTypes.bool,
   className: PropTypes.string,
   name: PropTypes.string,

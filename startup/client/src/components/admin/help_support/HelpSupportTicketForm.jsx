@@ -5,6 +5,7 @@ import {
   HELP_SUPPORT_PRIORITIES
 } from './helpSupportConstants';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { TextareaTypeField } from '@startup/components/base_components/fields/TextareaTypeField';
 
 const PRIORITY_OPTIONS = HELP_SUPPORT_PRIORITIES.map((priority) => ({
   value: priority,
@@ -94,17 +95,14 @@ function HelpSupportTicketForm({
         )}
 
         <div className="mt-4">
-          <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="ticket-logs">
-            Captured Console Logs
-          </label>
-          <textarea
+          <TextareaTypeField
             id="ticket-logs"
+            label="Captured Console Logs"
             value={formData.logs}
             rows={8}
-            disabled
             readOnly
             placeholder="Logs auto-filled from current screen context."
-            className="w-full cursor-not-allowed rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-xs font-mono text-gray-700 focus:outline-none"
+            className="text-xs font-mono"
           />
         </div>
         <div className="mt-5 flex justify-end">
