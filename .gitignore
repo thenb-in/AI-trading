@@ -18,7 +18,5 @@ playwright-report/
 
 screenshots
 
-# Local output of scripts/build-bundle.sh (the deployable site bundle + its
-# intermediate gateway staging dir). CI produces the same thing as an artifact.
+# The deployable site bundle, staged by the builds.yml server_build job.
 _bundle/
-_gateway_artifact/

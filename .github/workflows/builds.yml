@@ -16,15 +16,8 @@ on:
   release:
     types: [published]
 
-  # Input-driven build: cut a bundle carrying only the interfaces a client
-  # bought. Every other trigger builds `all` (see the gateway_build job).
   workflow_dispatch:
     inputs:
-      interfaces:
-        description: 'Gateway interfaces to bundle: "all", or a comma-separated subset (adms_server,biomax_server,lan_cosec_centra,lan_realtime,lan_zk,realtime_server,vyom_server).'
-        required: true
-        default: 'all'
-        type: string
       platform:
         description: 'Build target. bytenode locks each .jsc to the OS+arch that compiled it, so this picks the runner AND tags the bundle. Windows sites normally run the linux bundle under Docker — pick windows_x64 only for a native Windows install.'
         required: true
@@ -63,11 +56,7 @@ jobs:
       run:
         shell: bash
 
-    # The `env` context is not available in `jobs.<id>.with`, so the Node pin
-    # is republished here for gateway_build to consume via `needs`. NODE_VERSION
-    # above stays the single declaration.
     outputs:
-      node_version: ${{ steps.pin.outputs.node_version }}
       platform: ${{ steps.pin.outputs.platform }}
       runner: ${{ steps.pin.outputs.runner }}
 
@@ -75,10 +64,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Publish build target + Node version pin
+      - name: Publish build target
         id: pin
         run: |
-          echo "node_version=${{ env.NODE_VERSION }}" >> "$GITHUB_OUTPUT"
           echo "platform=${{ env.PLATFORM }}" >> "$GITHUB_OUTPUT"
           if [ "${{ env.PLATFORM }}" = "windows_x64" ]; then
             echo "runner=windows-latest" >> "$GITHUB_OUTPUT"
@@ -193,105 +181,23 @@ jobs:
           include-hidden-files: true
 
   # ────────────────────────────────────────────────────────────────────
-  # SALARYMITRA PORTAL (ios/) — standalone Vite SPA served at /salarymitra.
-  # Self-contained: its own package-lock + node_modules (NOT part of the
-  # root `npm run i` workspaces), so it installs and builds independently of
-  # client_build. The dist is consumed by server_build, which drops it
-  # under app/client/salarymitra/ so it deploys at $app/<app>/salarymitra/.
-  # ────────────────────────────────────────────────────────────────────
-  ios_build:
-    needs: setup
-    runs-on: ${{ needs.setup.outputs.runner }}
-
-    defaults:
-      run:
-        shell: bash
-
-    permissions:
-      contents: write
-      actions: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache SalaryMitra dependencies (github-hosted only)
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@v5
-        id: cache-ios-deps
-        with:
-          path: ios/node_modules
-          key: build-ios-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/package-lock.json') }}
-
-      - name: Install dependencies
-        if: steps.cache-ios-deps.outputs.cache-hit != 'true'
-        run: cd ios && npm ci
-        env:
-          CI: true
-          HUSKY: 0
-
-      - name: Set environment variables
-        run: cp ios/.env.example ios/.env
-
-      - name: Run build
-        run: cd ios && npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ios-build-artifact
-          path: ios/dist/
-          include-hidden-files: true
-
-  # ────────────────────────────────────────────────────────────────────
-  # GATEWAY BYTECODE — delegated to gateway_builds.yml so the site bundle and
-  # the standalone gateway artifact are cut by ONE build path. Only needs
-  # setup, so it compiles in parallel with client_build/ios_build instead of
-  # serially inside the server job as it used to.
-  #
-  # The server job consumes the artifact rather than rebuilding: app/server
-  # require()s @nucleus and @biometric_interface/@adms/@biomax/@zkteco at load
-  # time (e.g. src/models/index.js does `require('@biometric_interface/common/db')`),
-  # so those compiled layers must land in the bundle or the server will not boot.
-  #
-  # `all` discovers every interface carrying a build-bytecode.config.js. A
-  # workflow_dispatch run can pass a subset to ship only what a client bought.
-  # ────────────────────────────────────────────────────────────────────
-  gateway_build:
-    needs: setup
-    permissions:
-      contents: read
-      actions: write
-    uses: ./.github/workflows/gateway_builds.yml
-    with:
-      interfaces: ${{ inputs.interfaces || 'all' }}
-      node_version: ${{ needs.setup.outputs.node_version }}
-      platform_id: ${{ needs.setup.outputs.platform }}
-      runner: ${{ needs.setup.outputs.runner }}
-
-  # ────────────────────────────────────────────────────────────────────
   # SERVER BUILD + SITE BUNDLE — compiles the framework + app boot wrapper to
   # bytecode AND assembles the full deployable bundle (client + server bytecode
-  # + portal + deploy scripts + docker kit) in one job.
+  # + deploy scripts + docker kit) in one job.
   #
   # Runs on whichever runner `setup` resolved from the `platform` input:
   # bytenode bytecode is locked to the exact Node ABI + platform + arch it was
-  # compiled with, so the runner IS the target. Guards below refuse to bundle if
-  # the runner or the downloaded gateway artifact disagrees with that target.
+  # compiled with, so the runner IS the target. A guard below refuses to bundle if
+  # the runner disagrees with that target.
   #
-  # It needs client_build + ios_build so it can pull their artifacts into the
-  # bundle; the trade-off is the bytecode compile no longer overlaps those two
-  # (the job waits for them to finish before it starts). Because the compile and
+  # It needs client_build so it can pull its artifact into the bundle; the
+  # trade-off is the bytecode compile no longer overlaps it (the job waits for
+  # it to finish before it starts). Because the compile and
   # the bundling happen on the same runner, there is no intermediate
   # server-build artifact — the bytecode is staged straight into _bundle/.
   # ────────────────────────────────────────────────────────────────────
   server_build:
-    needs: [setup, client_build, ios_build, gateway_build]
+    needs: [setup, client_build]
     runs-on: ${{ needs.setup.outputs.runner }}
 
     defaults:
@@ -346,6 +252,9 @@ jobs:
       - name: Build app/server boot wrapper bytecode
         run: cd app/server && npm run build
 
+      - name: Build nucleus bytecode (logger + shared constants the server loads)
+        run: cd nucleus && npm run build
+
       - name: Verify this runner matches the requested target
         # The whole point of a windows_x64 run is win32 bytecode. If the runner
         # is not what was asked for, everything below still succeeds and ships a
@@ -355,33 +264,6 @@ jobs:
           echo "requested=$PLATFORM_ID runner=$HOST"
           [ "$HOST" = "$PLATFORM_ID" ] || {
             echo "runner is $HOST but this build is tagged $PLATFORM_ID — refusing to bundle." >&2
-            exit 1
-          }
-
-      - name: Download shared runtime libs the server imports (nucleus + biometric gateway)
-        # Built by gateway_build (gateway_builds.yml) with the SAME Node pin, so
-        # the .jsc ABI matches the bytecode compiled above. Lands in the
-        # source-relative layout the runtime aliases resolve to, which the
-        # staging step below copies wholesale into the bundle.
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ needs.gateway_build.outputs.artifact_name }}
-          path: _gateway_artifact
-
-      - name: Verify gateway bytecode matches this runner
-        # gateway_build is a SEPARATE job on its own runner, so this is the one
-        # place a linux-built .jsc could slip into a windows bundle. GATEWAY_VERSION
-        # records what actually compiled it; the ABI must match ours exactly or the
-        # gateways will not load beside the server bytecode built above.
-        run: |
-          . ./_gateway_artifact/GATEWAY_VERSION
-          echo "gateway: $node_platform/$node_arch abi=$node_abi ($node_version)"
-          OURS_PLATFORM=$(node -p process.platform)
-          OURS_ARCH=$(node -p process.arch)
-          OURS_ABI=$(node -p process.versions.modules)
-          [ "$node_platform" = "$OURS_PLATFORM" ] && [ "$node_arch" = "$OURS_ARCH" ] && [ "$node_abi" = "$OURS_ABI" ] || {
-            echo "gateway bytecode is $node_platform/$node_arch abi=$node_abi but this runner is $OURS_PLATFORM/$OURS_ARCH abi=$OURS_ABI." >&2
-            echo "refusing to bundle mismatched bytecode." >&2
             exit 1
           }
 
@@ -420,24 +302,12 @@ jobs:
           name: client-build-artifact
           path: _bundle/app/client
 
-      - name: Download SalaryMitra portal build
-        # Nest the portal inside the client tree so update.sh's existing
-        # `cp -a app/client/. /app/<app>/` lands it at /app/<app>/salarymitra/
-        # with no deploy-script changes. nginx serves it at /salarymitra/.
-        uses: actions/download-artifact@v8
-        with:
-          name: ios-build-artifact
-          path: _bundle/app/client/salarymitra
-
       - name: Stage server bytecode into bundle (mirrors install layout)
         run: |
-          mkdir -p _bundle/startup/server _bundle/app/server
+          mkdir -p _bundle/startup/server _bundle/app/server _bundle/nucleus
           cp -a startup/server/dist/. _bundle/startup/server/
           cp -a app/server/dist/.    _bundle/app/server/
-          # Shared runtime libs the server imports at load time: build-gateways.sh
-          # already compiled + laid these out under _gateway_artifact in the
-          # source-relative form (nucleus/, biometric_gateway/…). Drop them in.
-          cp -a _gateway_artifact/. _bundle/
+          cp -a nucleus/dist/.       _bundle/nucleus/
           # @custom/server ships as plain JS (no bytecode config yet); exclude any
           # local node_modules/logs.
           cp -a custom _bundle/
