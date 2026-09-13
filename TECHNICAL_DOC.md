@@ -31,7 +31,7 @@ Request → Routes → (Middleware) → Controllers → Services → Models → 
                                    Views (Response Formatters)
 ```
 
-**Key rules (enforced by .cursorrules):**
+**Key rules (enforced by CLAUDE.md):**
 - **Models** may only be imported in services (one primary model per service)
 - **Services** encapsulate business logic; they call models and other services
 - **Controllers** handle HTTP request/response; they call services
@@ -320,7 +320,7 @@ Login → bcrypt verify → JWT Access Token (short-lived) + Refresh Token (long
 
 ## 5. Development Conventions
 
-### 5.1 Code Organization Rules (from .cursorrules)
+### 5.1 Code Organization Rules (from CLAUDE.md)
 
 - **File length:** Warning at 300 lines, error at 500 lines
 - **Function length:** Warning at 100 lines

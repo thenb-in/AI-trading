@@ -9,8 +9,8 @@ license: MIT
 Behavioral guidelines to reduce common LLM coding mistakes, derived from [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876) on LLM coding pitfalls.
 
 Vendored verbatim from <https://github.com/multica-ai/andrej-karpathy-skills> (MIT). These
-apply on top of this repo's own conventions in `.cursorrules`; where they conflict,
-`.cursorrules` wins.
+apply on top of this repo's own conventions in `CLAUDE.md`; where they conflict,
+`CLAUDE.md` wins.
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
