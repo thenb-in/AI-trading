@@ -8,18 +8,20 @@ import { useShortcut } from '@startup/hooks/useShortcut';
 
 /**
  * FormModal's Cancel + Save footer. Save submits the form named by `formId`,
- * and shows a spinner with `savingLabel` while `isSaving`.
+ * and shows a spinner with `savingLabel` while `isSaving`. A form's own buttons
+ * land in the `actionsRef` slot, before Cancel; `canSubmit: false` hides Save.
  */
-const FormFooter = ({ formId, onClose, isSaving, submitLabel, savingLabel }) => {
+const FormFooter = ({ formId, onClose, isSaving, canSubmit, actionsRef, submitLabel, savingLabel }) => {
   const submitRef = useRef(null);
 
   // Clicking the button (rather than calling onSubmit) keeps the browser's own
   // required-field validation in play, exactly as a pointer click would.
   const submitViaShortcut = () => submitRef.current?.click();
-  useShortcut(SHORTCUTS.SAVE, submitViaShortcut, { enabled: !isSaving });
+  useShortcut(SHORTCUTS.SAVE, submitViaShortcut, { enabled: canSubmit && !isSaving });
 
   return (
-    <div className="flex w-full justify-end gap-3 pt-4 border-t border-gray-200">
+    <div className="flex w-full flex-wrap justify-end gap-3 pt-4 border-t border-gray-200">
+      <div ref={actionsRef} className="contents" />
       <button
         type="button"
         onClick={onClose}
@@ -29,7 +31,7 @@ const FormFooter = ({ formId, onClose, isSaving, submitLabel, savingLabel }) => 
         Cancel
         <ShortcutHint shortcut={SHORTCUTS.CANCEL} />
       </button>
-      <button
+      {canSubmit && <button
         ref={submitRef}
         type="submit"
         form={formId}
@@ -49,7 +51,7 @@ const FormFooter = ({ formId, onClose, isSaving, submitLabel, savingLabel }) => 
             <ShortcutHint shortcut={SHORTCUTS.SAVE} />
           </>
         )}
-      </button>
+      </button>}
     </div>
   );
 };
@@ -58,6 +60,8 @@ FormFooter.propTypes = {
   formId: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,
   isSaving: PropTypes.bool.isRequired,
+  canSubmit: PropTypes.bool.isRequired,
+  actionsRef: PropTypes.func.isRequired,
   submitLabel: PropTypes.string.isRequired,
   savingLabel: PropTypes.string.isRequired,
 };
