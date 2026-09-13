@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
-import { useEntityCreateForm } from '@/hooks/useEntityCreateForm';
+import { useRecordCreateForm } from '@/hooks/useRecordCreateForm';
 
-function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi, canCreateGlobal = false }) {
+function CreateRecordModal({ isOpen, onClose, onSuccess, recordType, onSubmitApi, canCreateGlobal = false, initialName = '' }) {
   const {
     name,
     description,
@@ -16,7 +16,15 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
     handleDescriptionChange,
     reset,
     submit,
-  } = useEntityCreateForm(entityName);
+    resetWith,
+  } = useRecordCreateForm(recordType, { initialName });
+
+  // Seed on the open transition only. Keyed on `isOpen` alone so a parent
+  // re-render can't overwrite a name the user has already started editing.
+  useEffect(() => {
+    if (isOpen) resetWith();
+    // resetWith is stable and reads the latest seed from a ref.
+  }, [isOpen]);
 
   useEscapeKey(onClose, isOpen);
 
@@ -68,7 +76,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-900">Create New {entityName}</h2>
+          <h2 className="text-lg font-bold text-gray-900">Create New {recordType}</h2>
           <button
             onClick={handleClose}
             disabled={submitting}
@@ -83,7 +91,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
           {/* Name */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              {entityName} Name <span className="text-red-500">*</span>
+              {recordType} Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -95,7 +103,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
                   ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
               } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed`}
-              placeholder={`Enter ${entityName.toLowerCase()} name`}
+              placeholder={`Enter ${recordType.toLowerCase()} name`}
             />
             {errors.name && (
               <p className="mt-1 text-xs text-red-600">{errors.name}</p>
@@ -117,7 +125,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
                   ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
               } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none`}
-              placeholder={`Enter ${entityName.toLowerCase()} description (optional)`}
+              placeholder={`Enter ${recordType.toLowerCase()} description (optional)`}
             />
             {errors.description && (
               <p className="mt-1 text-xs text-red-600">{errors.description}</p>
@@ -138,7 +146,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
               <label htmlFor="entity-isGlobal" className="text-xs text-purple-900 select-none">
                 <span className="inline-flex items-center gap-1 font-medium">
                   <Globe className="w-3 h-3" />
-                  Create as global {entityName.toLowerCase()}
+                  Create as global {recordType.toLowerCase()}
                 </span>
                 <p className="text-purple-700 mt-0.5">
                   Available to every company instead of just yours.
@@ -168,7 +176,7 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
                   Creating...
                 </>
               ) : (
-                `Create ${entityName}`
+                `Create ${recordType}`
               )}
             </button>
           </div>
@@ -178,13 +186,15 @@ function CreateEntityModal({ isOpen, onClose, onSuccess, entityName, onSubmitApi
   );
 }
 
-CreateEntityModal.propTypes = {
+CreateRecordModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
-  entityName: PropTypes.string.isRequired,
+  recordType: PropTypes.string.isRequired,
   onSubmitApi: PropTypes.func.isRequired,
   canCreateGlobal: PropTypes.bool,
+  /** Pre-fills the name field each time the modal opens. */
+  initialName: PropTypes.string,
 };
 
-export { CreateEntityModal };
+export { CreateRecordModal };

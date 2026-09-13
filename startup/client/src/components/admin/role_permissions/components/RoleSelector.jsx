@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 
-function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
+function RoleSelector({ roles, selectedRoleId, onSelect, loading, onCreateRole }) {
   const roleOptions = roles.map((role) => {
     const roleLabel = role.description
       ? `${role.name} - ${role.description}`
@@ -29,6 +29,8 @@ function RoleSelector({ roles, selectedRoleId, onSelect, loading }) {
         multiple={false}
         disabled={loading}
         loading={loading}
+        optionName="Role"
+        onCreateOption={onCreateRole}
       />
     </div>
   );
@@ -45,6 +47,9 @@ RoleSelector.propTypes = {
   selectedRoleId: PropTypes.number,
   onSelect: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  /** Called with the typed term to open the create-role modal. Omitted, the
+   *  menu offers no create row. */
+  onCreateRole: PropTypes.func,
 };
 
 export { RoleSelector };

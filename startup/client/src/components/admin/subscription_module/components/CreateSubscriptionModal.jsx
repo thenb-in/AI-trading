@@ -1,14 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
-import { useEntityCreateForm } from '@/hooks/useEntityCreateForm';
+import { useRecordCreateForm } from '@/hooks/useRecordCreateForm';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
 import { useSubscriptionPermissionDraft } from '../hooks/useSubscriptionPermissionDraft';
 import { SubscriptionPermissionEditor } from './SubscriptionPermissionEditor';
 
-function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [] }) {
+function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [], initialName = '' }) {
   const { userData } = useDataContext();
   const canCreateGlobal = !!userData?.isSupportUser;
 
@@ -22,10 +22,17 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [] 
     handleNameChange,
     handleDescriptionChange,
     reset: resetFields,
+    resetWith,
     submit,
-  } = useEntityCreateForm('Subscription');
+  } = useRecordCreateForm('Subscription', { initialName });
 
   const draft = useSubscriptionPermissionDraft(permissions);
+
+  // Seed on the open transition only — see CreateRecordModal for why.
+  useEffect(() => {
+    if (isOpen) resetWith();
+    // resetWith is stable and reads the latest seed from a ref.
+  }, [isOpen]);
 
   useEscapeKey(onClose, isOpen);
 
@@ -209,6 +216,8 @@ CreateSubscriptionModal.propTypes = {
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func,
   permissions: PropTypes.array,
+  /** Pre-fills the subscription name. */
+  initialName: PropTypes.string,
 };
 
 export { CreateSubscriptionModal };

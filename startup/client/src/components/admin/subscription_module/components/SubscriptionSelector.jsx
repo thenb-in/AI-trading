@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 
-function SubscriptionSelector({ subscriptions, selectedSubscriptionId, onSelect, loading }) {
+function SubscriptionSelector({ subscriptions, selectedSubscriptionId, onSelect, loading, onCreateSubscription }) {
   const subscriptionOptions = subscriptions.map((subscription) => {
     const subscriptionLabel = subscription.description
       ? `${subscription.name} - ${subscription.description}`
@@ -29,6 +29,8 @@ function SubscriptionSelector({ subscriptions, selectedSubscriptionId, onSelect,
         multiple={false}
         disabled={loading}
         loading={loading}
+        optionName="Subscription"
+        onCreateOption={onCreateSubscription}
       />
     </div>
   );
@@ -45,6 +47,8 @@ SubscriptionSelector.propTypes = {
   selectedSubscriptionId: PropTypes.number,
   onSelect: PropTypes.func.isRequired,
   loading: PropTypes.bool,
+  /** Called with the typed term to open the create-subscription modal. */
+  onCreateSubscription: PropTypes.func,
 };
 
 export { SubscriptionSelector };

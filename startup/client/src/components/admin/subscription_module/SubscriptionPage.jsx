@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { Crown } from 'lucide-react';
 import { useSubscriptionManager } from './hooks/useSubscriptionManager';
 import { SubscriptionSelector } from './components/SubscriptionSelector';
@@ -13,6 +14,19 @@ import { HeadBaseButton } from './components/HeadBaseButton';
 
 function SubscriptionPage() {
   const sm = useSubscriptionManager();
+  // What was typed into the subscription dropdown when the user asked to
+  // create one, carried into the modal so it opens on that name. Declared
+  // above the loading early-return so the hook order stays stable.
+  const [createName, setCreateName] = useState('');
+  const handleCreateFromSearch = useCallback((searchTerm) => {
+    setCreateName(searchTerm || '');
+    sm.openCreateModal();
+  }, [sm]);
+  // The toolbar's own button starts from a blank form.
+  const handleCreateFromButton = useCallback(() => {
+    setCreateName('');
+    sm.openCreateModal();
+  }, [sm]);
 
   if (sm.loading) {
     return <Loader message="Loading subscriptions..." />;
@@ -51,7 +65,7 @@ function SubscriptionPage() {
               onExport={sm.exportSubscription}
               onImportClick={sm.openImportPicker}
               onImportFile={sm.importSubscriptionFile}
-              onAdd={sm.openCreateModal}
+              onAdd={handleCreateFromButton}
             />
           </div>
         </div>
@@ -75,6 +89,7 @@ function SubscriptionPage() {
         selectedSubscriptionId={sm.selectedSubscriptionId}
         onSelect={sm.selectSubscription}
         loading={sm.loading}
+        onCreateSubscription={handleCreateFromSearch}
       />
 
       {sm.selectedSubscription && (
@@ -125,6 +140,7 @@ function SubscriptionPage() {
       )}
 
       <CreateSubscriptionModal
+        initialName={createName}
         isOpen={sm.isCreateModalOpen}
         onClose={sm.closeCreateModal}
         onSuccess={sm.refetch}

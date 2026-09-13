@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } fr
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { Box } from '@mui/material';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, ArrowUpRight } from 'lucide-react';
 import {
   getCheckboxState,
   toggleNodeSelection,
@@ -46,6 +46,20 @@ function SearchableDropdown({
   onOpen,
   defaultOptionValue = 'all',
   loading = false,
+  // Offer an "Add new" row at the foot of the menu, so a value that doesn't
+  // exist yet can be created without leaving the form.
+  onCreateOption = null,
+  // What the dropdown is picking ("Role", "Subscription"). Enough on its own
+  // to phrase the create row — callers only reach for createOptionLabel when
+  // they want wording this can't produce.
+  optionName = null,
+  createOptionLabel = null,
+  // Let a long label wrap instead of being clipped to an ellipsis. Defaults on
+  // for single-select, where there is a whole row to spend on one value.
+  wrapLabel = false,
+  // Render a jump-to-record affordance beside the field once something is
+  // picked. The caller decides where it goes.
+  onNavigate = null,
 }) {
   const [isOpen, setIsOpen] = useState(autoOpen);
   const [searchTerm, setSearchTerm] = useState('');
@@ -360,6 +374,37 @@ function SearchableDropdown({
     if (!isOpen) openMenu();
   }, [isOpen, openMenu]);
 
+  // --- Create row ---------------------------------------------------------
+
+  // Phrased from `optionName` unless the caller overrode it. Quoting the term
+  // is what makes the row read as a confirmation of what you typed.
+  const createOptionText = useMemo(() => {
+    if (!onCreateOption) return null;
+    if (typeof createOptionLabel === 'function') return createOptionLabel(searchTerm);
+    if (typeof createOptionLabel === 'string' && createOptionLabel.trim() !== '') {
+      return createOptionLabel;
+    }
+    const term = searchTerm.trim();
+    const noun = (optionName || '').trim().toLowerCase();
+    if (noun) return term ? `Create ${noun} "${term}"` : `Create a new ${noun}`;
+    return term ? `Create "${term}"` : 'Add new';
+  }, [onCreateOption, createOptionLabel, optionName, searchTerm]);
+
+  const handleCreateOptionClick = useCallback(() => {
+    if (!onCreateOption || disabled) return;
+    onCreateOption(searchTerm.trim());
+    setIsOpen(false);
+    setSearchTerm('');
+  }, [onCreateOption, disabled, searchTerm]);
+
+  // The create row is the last thing you can land on, so it participates in
+  // keyboard navigation as a virtual row past the end of the options. Without
+  // this it is mouse-only — and it is most needed exactly when the option list
+  // is empty, where it would be the only thing to land on.
+  const createRowIndex = createOptionText ? navigableOptions.length : -1;
+  const navigableCount = navigableOptions.length + (createOptionText ? 1 : 0);
+  const isCreateRowActive = createRowIndex >= 0 && activeIndex === createRowIndex;
+
   // --- Keyboard navigation ------------------------------------------------
 
   const selectOption = (option) =>
@@ -396,8 +441,21 @@ function SearchableDropdown({
     else listRef.current?.focus();
   }, [isOpen, searchable]);
 
+  // Activating whatever the highlight is on — a real option, or the create row
+  // sitting one past the end of them.
+  const activateHighlighted = () => {
+    if (isCreateRowActive) {
+      handleCreateOptionClick();
+      return;
+    }
+    const option = navigableOptions[activeIndex];
+    if (option) selectOption(option);
+  };
+
   const handleMenuKeyDown = (event) => {
-    const count = navigableOptions.length;
+    // Counts the create row, so Arrow keys reach it and it is still reachable
+    // when nothing matched and it is the only row on screen.
+    const count = navigableCount;
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowUp': {
@@ -417,16 +475,14 @@ function SearchableDropdown({
         break;
       case 'Enter': {
         event.preventDefault();
-        const option = navigableOptions[activeIndex];
-        if (option) selectOption(option);
+        activateHighlighted();
         break;
       }
       case ' ': {
         // Space types a space in the search box; only claim it when there isn't one.
         if (searchable) return;
         event.preventDefault();
-        const option = navigableOptions[activeIndex];
-        if (option) selectOption(option);
+        activateHighlighted();
         break;
       }
       default:
@@ -507,8 +563,25 @@ function SearchableDropdown({
     tabIndex: disabled ? -1 : 0,
   };
 
-  return (
-    <div className="relative" ref={dropdownRef}>
+  // Single-select has a full row for one value, so wrapping beats clipping.
+  const shouldWrapLabel = wrapLabel || !multiple;
+
+  const primarySelectedValue =
+    !multiple && selected.length > 0 ? selected[0] : null;
+  const showNavigateButton =
+    typeof onNavigate === 'function' && Boolean(primarySelectedValue) && !disabled;
+
+  const handleNavigateClick = useCallback((e) => {
+    e.stopPropagation();
+    if (!primarySelectedValue || typeof onNavigate !== 'function') return;
+    onNavigate(primarySelectedValue);
+  }, [primarySelectedValue, onNavigate]);
+
+  const field = (
+    <div
+      className={showNavigateButton ? 'relative flex-1 min-w-0' : 'relative'}
+      ref={dropdownRef}
+    >
       {/* Input/Display */}
       <div
         ref={triggerRef}
@@ -525,12 +598,16 @@ function SearchableDropdown({
           disabled ? 'cursor-not-allowed' : 'cursor-pointer'
         } ${fieldBorderClass}`}
       >
-        <div className="flex flex-1 min-w-0 items-center flex-wrap gap-1">
+        <div className={`flex flex-1 min-w-0 flex-wrap gap-1 ${shouldWrapLabel ? 'items-start' : 'items-center'}`}>
           {/* Single-select has exactly one value, so show it as plain text — the
               outer clear button is the only affordance needed. It steps aside
               once the field is open for entry, becoming its placeholder. */}
           {showSingleLabel && (
-            <span className="flex-1 min-w-0 truncate text-gray-900">
+            <span
+              className={`flex-1 min-w-0 text-gray-900 ${
+                shouldWrapLabel ? 'break-words whitespace-normal' : 'truncate'
+              }`}
+            >
               {singleLabel}
             </span>
           )}
@@ -725,6 +802,20 @@ function SearchableDropdown({
               })
             )}
 
+            {createOptionText && (
+              <div
+                role="option"
+                aria-selected={false}
+                data-active={isCreateRowActive}
+                onClick={handleCreateOptionClick}
+                className={`px-3 py-2 text-sm cursor-pointer text-blue-700 hover:bg-blue-50 border-t border-gray-100 ${
+                  isCreateRowActive ? 'ring-1 ring-inset ring-blue-400 bg-blue-50' : ''
+                }`}
+              >
+                + {createOptionText}
+              </div>
+            )}
+
             {loading && hasVisibleOptions && (
               <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-gray-100">
                 Loading options…
@@ -734,6 +825,22 @@ function SearchableDropdown({
         </Box>,
         document.body
       )}
+    </div>
+  );
+
+  if (!showNavigateButton) return field;
+
+  return (
+    <div className="flex items-center gap-1">
+      {field}
+      <button
+        type="button"
+        onClick={handleNavigateClick}
+        title="Open selected record"
+        className="shrink-0 rounded border border-gray-300 bg-white p-1.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+      >
+        <ArrowUpRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -769,6 +876,17 @@ SearchableDropdown.propTypes = {
   defaultOptionValue: PropTypes.string,
   // Options are still being fetched — suppresses the empty-list muting.
   loading: PropTypes.bool,
+  // Called with the trimmed search term when the create row is activated.
+  onCreateOption: PropTypes.func,
+  // What is being picked ("Role"). Phrases the create row on its own.
+  optionName: PropTypes.string,
+  // Label for that row: a string, or a fn of the search term. Defaults to
+  // "Add new".
+  createOptionLabel: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  // Wrap long labels instead of truncating (implied by single-select).
+  wrapLabel: PropTypes.bool,
+  // Called with the selected value when the jump-to-record button is clicked.
+  onNavigate: PropTypes.func,
 };
 
 export { SearchableDropdown };

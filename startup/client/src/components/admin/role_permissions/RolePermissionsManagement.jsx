@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Shield, Plus, Globe, Building2 } from 'lucide-react';
 import { Loader } from '@/components/common/Loader';
 import { useRolePermissions } from './hooks/useRolePermissions';
@@ -12,6 +12,18 @@ import { useDataContext } from '@context/useDataContext';
   
 function RolePermissionsManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  // What the user had typed into the role dropdown when they asked to create.
+  // Carried into the modal so the form opens on the name they already wrote.
+  const [createRoleName, setCreateRoleName] = useState('');
+  const handleOpenCreateModal = useCallback(() => {
+    setCreateRoleName('');
+    setIsCreateModalOpen(true);
+  }, []);
+  const handleCreateRoleFromSearch = useCallback((searchTerm) => {
+    setCreateRoleName(searchTerm || '');
+    setIsCreateModalOpen(true);
+  }, []);
+  const handleCloseCreateModal = useCallback(() => setIsCreateModalOpen(false), []);
   const { userData } = useDataContext();
   const {
     roles,
@@ -44,7 +56,7 @@ function RolePermissionsManagement() {
             <h1 className="text-xl font-bold text-gray-900">Roles & Permissions</h1>
           </div>
           <button
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={handleOpenCreateModal}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -71,6 +83,7 @@ function RolePermissionsManagement() {
         selectedRoleId={selectedRoleId}
         onSelect={setSelectedRoleId}
         loading={loading}
+        onCreateRole={handleCreateRoleFromSearch}
       />
       
       {selectedRole && (
@@ -195,8 +208,9 @@ function RolePermissionsManagement() {
       )}
 
       <CreateRoleModal
+        initialName={createRoleName}
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={handleCloseCreateModal}
         onSuccess={refetch}
       />
     </div>
