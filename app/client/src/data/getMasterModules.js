@@ -1,12 +1,10 @@
 import {
   Settings as SettingsIcon,
-  Memory as MemoryIcon,
   Category as CategoryIcon,
   Storage as StorageIcon,
   SupervisorAccount as ManagementIcon,
   Build as CommonMastersIcon,
 } from "@mui/icons-material";
-import { GENERIC_MASTER_CATEGORIES } from "@startup/data/genericMasterModules";
 
 /**
  * Single source of truth for this app's master category names.
@@ -29,23 +27,9 @@ const appSpecificMasterCategoryOrder = [
 ];
 
 /**
- * Masters this app owns
+ * Masters this app owns, beside the framework's generic ones.
  */
-const getAppSpecificMasterModules = (handleOpenMaster) => [
-  {
-    id: "cache",
-    title: "Cache Manager",
-    description: "Inspect what this browser tab is caching — filter option lists, employee rosters, sizes and expiry — and drop any of it to force a fresh load.",
-    icon: MemoryIcon,
-    color: "warning",
-    onClick: () => handleOpenMaster("cache"),
-    buttonText: "Open Cache Manager",
-    tags: ["Cache", "Session", "Performance", "Filters", "Refresh"],
-    keywords: "cache session storage memory bust clear refresh stale filters options performance",
-    category: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS,
-    skipPermissionCheck: true,
-  }
-];
+const getAppSpecificMasterModules = () => [];
 
 const defaultMasterCategoryIcon = CategoryIcon;
 

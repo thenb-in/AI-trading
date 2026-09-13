@@ -56,6 +56,14 @@ const CacheMaster = () => {
 
   const columns = useMemo(() => buildCacheColumns(), []);
 
+  // How many entries share each namespace, so a row can say whether dropping
+  // its whole namespace would take anything else with it.
+  const namespaceCounts = useMemo(() => {
+    const counts = new Map();
+    rows.forEach((row) => counts.set(row.namespace, (counts.get(row.namespace) || 0) + 1));
+    return counts;
+  }, [rows]);
+
   const totals = useMemo(
     () => ({
       entries: rows.length,
@@ -76,6 +84,17 @@ const CacheMaster = () => {
     toast.success(`Dropped everything under ${row.namespace}`);
   };
 
+  // Keys are long and truncated in their cell, and copying one is half the
+  // reason this page gets opened — so a click anywhere on the row copies it.
+  const handleCopyKey = async (row) => {
+    try {
+      await navigator.clipboard.writeText(row.key);
+      toast.success(`Copied ${row.key}`);
+    } catch (error) {
+      toast.error(`Could not copy ${row.key}: ${error.message}`);
+    }
+  };
+
   const handleDropAll = () => {
     if (!rows.length) return;
     if (!window.confirm(`Drop all ${rows.length} cached entries? They will be refetched on demand.`)) return;
@@ -91,7 +110,11 @@ const CacheMaster = () => {
       type: 'danger'
     },
     {
-      label: 'Drop namespace',
+      // Dropping a namespace that holds only this entry is "Drop" under a
+      // scarier name, so the button appears only where it does more, and says
+      // how much more.
+      label: (row) => `Drop namespace (${namespaceCounts.get(row.namespace)})`,
+      show: (row) => namespaceCounts.get(row.namespace) > 1,
       onClick: handleDropNamespace,
       type: 'default'
     }
@@ -101,7 +124,7 @@ const CacheMaster = () => {
     <div className="px-4 py-4 sm:px-6 lg:px-8 max-w-8xl mx-auto">
       <MasterHeader
         title="Cache Manager"
-        description="Everything the browser is holding for this tab — filter option lists, rosters and anything else routed through the cache manager. Drop an entry to force a fresh load."
+        description="Everything the browser is holding for this tab — users, roles, permissions, filter lists and anything else ApiService caches. Click a row to copy its key; drop an entry to force a fresh load."
         onRefresh={reload}
         userData={dataContext.userData}
         showBack={true}
@@ -132,6 +155,8 @@ const CacheMaster = () => {
         data={filteredRows}
         loading={false}
         actions={actions}
+        rowClickEnabled
+        onRowClick={handleCopyKey}
         emptyMessage="Nothing cached yet — open a report or a master and come back."
         hideConstantColumns={false}
         showGridExport={false}

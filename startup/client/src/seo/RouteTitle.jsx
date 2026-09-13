@@ -80,6 +80,7 @@ const GENERIC_STATIC_TITLES = {
   '/admin/master/users': 'User Management',
   '/admin/master/activity': 'Audit Logs',
   '/admin/master/nbnext-drive': 'NBnext Drive',
+  '/admin/master/cache': 'Cache Manager',
   '/admin/users': 'User Management',
   '/admin/company': 'Company Settings',
   '/admin/role-permissions': 'Roles & Permissions',
