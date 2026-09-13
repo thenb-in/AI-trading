@@ -11,7 +11,10 @@ uploads/
 test-results/
 playwright-report/
 
-.claude
+.claude/*
+# Skills are conventions the repo asks every contributor to follow, so they
+# travel with it; personal settings.json / worktrees stay local.
+!.claude/skills/
 
 screenshots
 

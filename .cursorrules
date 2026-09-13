@@ -50,6 +50,25 @@ startup/client/
 │   └── utils/       # Utility functions
 ```
 
+## 🗄️ Database Changes
+
+**Plain SQL scripts are the default. Migration code is the exception.**
+
+- Every framework schema change ships as a `.sql` file in `db-scripts/startup/`, named
+  `YYYYMMDD_short-description.sql` (e.g. `20260909_add-email-to-users.sql`). An app built on
+  the framework keeps its own scripts outside `db-scripts/startup/`.
+- Keep the script idempotent where the dialect allows (`IF NOT EXISTS`, guarded `ALTER`) and
+  keep one logical change per file.
+- Model changes in `models/` must be accompanied by the matching script. `SYNC_DB` only runs
+  `sync({ alter: false })` to create missing tables on development and first-time installs —
+  it never upgrades an existing schema.
+- Write a Sequelize or Node migration script **only when SQL alone genuinely cannot do the
+  job** — e.g. a backfill that needs application logic, encryption/hashing, or file/asset
+  movement alongside the data change. Complexity in the procedural script is not a reason to
+  avoid SQL; it is a reason to double-check that SQL really was insufficient.
+- If a change tempts you toward a migration framework, say so and state why SQL falls short
+  before writing it.
+
 ## 🔧 Development Standards
 
 ### Cross-Platform Compatibility
