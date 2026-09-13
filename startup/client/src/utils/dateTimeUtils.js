@@ -6,16 +6,25 @@ const getLocalDateStringYmd = (date = new Date()) => {
   return `${y}-${month}-${day}`;
 };
 
-// Get current date and time in datetime-local format
-const getCurrentDateTime = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
+// Get current date and time in datetime-local format.
+// Defined near the bottom of this file as convertISOToDateTimeLocal(new Date()) —
+// kept here as a named shortcut because half the callers only ever want "now".
+
+/** `<input type="datetime-local">`-ready YYYY-MM-DDTHH:mm, in local time. */
+const getCurrentDateTime = () => convertISOToDateTimeLocal(new Date());
+
+const convertISOToDateTimeLocal = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
 
 const formatDate = (date_str) => {
   const date = new Date(date_str);
@@ -810,7 +819,57 @@ const getMonthToDateRange = (date) => {
   return { startDate: `${year}-${month}-01`, endDate: date };
 };
 
+// ─── Local-time date helpers ──────────────────────────────────────────────
+// These format/parse against the *browser's* timezone rather than UTC, which
+// is what date-only fields (an invoice date, a delivery date) need: a date
+// picked as the 14th must not become the 13th when serialized.
+
+// Module-private: only formatDateOnlyYmd needs it, to read the month out of a
+// JS `Date.prototype.toString()` value ("Wed May 14 2025 ...").
+const MONTH_NAME_TO_INDEX = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+};
+
+/** Date-only YYYY-MM-DD from a Date, an ISO string, or a JS `toString()` date. */
+const formatDateOnlyYmd = (value) => {
+  if (value === null || value === undefined || value === '') return '';
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : getLocalDateStringYmd(value);
+  }
+  const raw = String(value).trim();
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+  const jsDatePrefix = raw.match(/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  if (jsDatePrefix) {
+    const month = MONTH_NAME_TO_INDEX[jsDatePrefix[1].toLowerCase()];
+    const day = parseInt(jsDatePrefix[2], 10);
+    const year = parseInt(jsDatePrefix[3], 10);
+    if (month !== undefined && !Number.isNaN(day) && !Number.isNaN(year)) {
+      return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  const parsed = parseDateValue(raw);
+  if (parsed && !Number.isNaN(parsed.getTime())) {
+    return getLocalDateStringYmd(parsed);
+  }
+  return '';
+};
+
+/** The inverse: what a datetime-local input gave you, as a UTC ISO string. */
+const dateTimeLocalToISO = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
 export {
+  formatDateOnlyYmd,
+  convertISOToDateTimeLocal,
+  dateTimeLocalToISO,
+
   getMonthToDateRange,
   getLocalDateStringYmd,
   getYesterday,

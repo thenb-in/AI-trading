@@ -10,6 +10,7 @@ export { createImportFunction } from './utils/createImportFunction';
 export { BaseFilter } from '../base_filter/BaseFilter';
 export { MasterSearch } from './master/MasterSearch';
 export { MasterSearch as MasterSearchInput } from './master/MasterSearch';
+export { MasterAdvancedFilter } from './master/MasterAdvancedFilter';
 export { MasterModalActions } from './master/MasterModalActions';
 export { ShortcutHint } from './ShortcutHint.jsx';
 export { LockActionButton } from './LockActionButton.jsx';
