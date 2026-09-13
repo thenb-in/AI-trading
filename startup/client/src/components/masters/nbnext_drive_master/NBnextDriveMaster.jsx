@@ -1,229 +1,71 @@
-import { useState } from 'react';
-import { MasterHeader } from '@startup/components/base_components/master/master_header/MasterHeader';
-import { MasterSearch } from '@startup/components/base_components/master/MasterSearch';
-import { MasterTable } from '@startup/components/base_components/master/master_table/MasterTable';
-import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
-import { FileViewerModal } from '@/components/common/FileViewerModal';
-import { NBnextDriveForm } from './NBnextDriveForm';
+import { useCallback } from 'react';
+import { Download } from 'lucide-react';
+import { BaseMaster } from '@startup/components/base_components/master';
+import { useDataContext } from '@context/useDataContext';
+import { hasPermission } from '@utils/hasPermission';
 import { nbnextDriveService } from '@/services/nbnextDriveService';
-import { useDataContext, hasPermission } from '@/context/useDataContext';
-import { Download, Trash2, Eye } from 'lucide-react';
-import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
-import { useMasterData } from '@/hooks/useMasterData';
-import { toast } from 'react-toastify';
+import { NBnextDriveForm } from './NBnextDriveForm';
+import { NBnextDriveDetails } from './NBnextDriveDetails';
+import { downloadDriveFile } from './downloadDriveFile';
 
-const INITIAL_FORM = {
-  objectName: '',
-  objectId: ''
+// Either read permission opens the page; the server decides whether that means
+// every file or only your own.
+const PERMISSION_KEYS = {
+  read: ['read_nbnext_drive', 'read_personal_nbnext_drive'],
+  create: 'create_nbnext_drive',
+  delete: 'delete_nbnext_drive'
 };
 
-const SEARCH_KEYS = ['fileName', 'objectName', 'createdByName'];
+const loadFiles = () => nbnextDriveService.getAllFiles();
 
-const fetchFiles = () => nbnextDriveService.getAllFiles();
+// nbnextDriveService unwraps the HTTP response to its body, and BaseMaster reads
+// the body under `data`, as it comes on a raw response.
+const deleteFile = async (id) => ({ data: await nbnextDriveService.deleteFile(id) });
+
+// nbnextDriveService already unwraps the HTTP response to { columns, data }.
+const extractResponse = (response) => ({ rows: response.data, columns: response.columns });
 
 const NBnextDriveMaster = () => {
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '', fileId: null, file: null });
-  const dataContext = useDataContext();
+  const { userData } = useDataContext();
+  const scope = hasPermission(userData, 'read_nbnext_drive') ? 'all files' : 'your personal files';
+  const canDownload = hasPermission(userData, 'download_nbnext_drive');
 
-  const canCreate = hasPermission('create_nbnext_drive', dataContext);
-  const canReadAll = hasPermission('read_nbnext_drive', dataContext);
-  const canReadPersonal = hasPermission('read_personal_nbnext_drive', dataContext);
-  const canDelete = hasPermission('delete_nbnext_drive', dataContext);
-  const canDownload = hasPermission('download_nbnext_drive', dataContext);
-  const canRead = canReadAll || canReadPersonal;
-
-  const showAll = canReadAll;
-
-  const {
-    tableColumns,
-    filteredData,
-    loading,
-    searchQuery,
-    setSearchQuery,
-    isModalOpen,
-    formData,
-    handleFormChange,
-    openModal: baseOpenModal,
-    closeModal: baseCloseModal,
-    fetchData,
-  } = useMasterData({
-    fetchService: fetchFiles,
-    initialFormData: INITIAL_FORM,
-    searchKeys: SEARCH_KEYS,
-    errorMessage: 'Failed to fetch files',
-  });
-
-  const openModal = () => {
-    setSelectedFiles([]);
-    baseOpenModal();
-  };
-
-  const closeModal = () => {
-    setSelectedFiles([]);
-    baseCloseModal();
-  };
-
-  const handleFileChange = (files) => {
-    setSelectedFiles(Array.isArray(files) ? files : []);
-  };
-
-  const handleSave = async () => {
-    const toUpload = Array.isArray(selectedFiles) ? selectedFiles : [];
-    if (toUpload.length === 0) {
-      toast.error('Please select at least one file to upload');
-      return;
-    }
-
-    try {
-      for (const file of toUpload) {
-        await nbnextDriveService.uploadFile(
-          file,
-          formData.objectName || null,
-          formData.objectId || null
-        );
-      }
-      toast.success(toUpload.length === 1 ? 'File uploaded successfully' : `${toUpload.length} files uploaded successfully`);
-      closeModal();
-      fetchData();
-    } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to upload file');
-    }
-  };
-
-  const handleView = (_id, file) => {
-    // Use the authenticated download API (same as NBnextDriveAttachment).
-    // `/uploads/...` is not reliably served to the viewer and shows a blank grey modal.
-    setViewerState({
-      open: true,
-      url: `/nbnext-drive/${_id}/download`,
-      mime: file.mimeType || '',
-      title: file.fileName || 'File Preview',
-      fileId: _id,
-      file
-    });
-  };
-
-  const handleDownload = async (id, file) => {
-    try {
-      const response = await nbnextDriveService.downloadFile(id);
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = file.fileName || 'download';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('File downloaded successfully');
-    } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to download file');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this file?')) {
-      return;
-    }
-
-    try {
-      await nbnextDriveService.deleteFile(id);
-      toast.success('File deleted successfully');
-      fetchData();
-    } catch (error) {
-      toast.error(error?.response?.data?.error || 'Failed to delete file');
-    }
-  };
-
-  if (!canRead) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <div className="text-gray-500">You don&apos;t have permission to view files</div>
-      </div>
-    );
-  }
-
-  const actions = [];
-  if (canDownload) {
-    actions.push({
-      label: 'Download',
-      icon: <Download className="w-4 h-4" />,
-      onClick: handleDownload,
-      type: 'primary'
-    });
-  }
-  actions.push({
-    label: 'View',
-    icon: <Eye className="w-4 h-4" />,
-    onClick: handleView,
-    type: 'default'
-  });
-  if (canDelete) {
-    actions.push({
-      label: 'Delete',
-      icon: <Trash2 className="w-4 h-4" />,
-      onClick: handleDelete,
-      type: 'danger'
-    });
-  }
+  const extraActions = useCallback(
+    () => [
+      ...(canDownload
+        ? [{
+            label: 'Download',
+            icon: <Download className="w-4 h-4" />,
+            type: 'primary',
+            onClick: (_id, row) => downloadDriveFile(row)
+          }]
+        : [])
+    ],
+    [canDownload]
+  );
 
   return (
-    <div className="px-4 py-4 sm:px-6 lg:px-8 max-w-8xl mx-auto">
-      <MasterHeader
-        title="NBnext Drive"
-        description={`${showAll ? 'View and manage all files' : 'View and manage your personal files'} in NBnext Drive. Upload, view, download, and delete files.`}
-        onAdd={canCreate ? openModal : null}
-        onRefresh={fetchData}
-        userData={dataContext.userData}
-        permissionKey="create_nbnext_drive"
-        addButtonText="Upload File"
-        showBack={true}
-        backUrl="/admin/master"
-      />
-
-      <div className="mb-4 justify-center flex">
-        <MasterSearch
-          value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search files by name or created by..."
-        />
-      </div>
-
-      <MasterTable
-        columns={tableColumns}
-        data={filteredData}
-        loading={loading}
-        actions={actions}
-        emptyMessage="No files found"
-        loadingMessage="Loading files..."
-      />
-
-      {canCreate && (
-        <MasterModal
-          isOpen={isModalOpen}
-          onClose={closeModal}
-          title="Upload File"
-          maxWidth="md"
-          actions={<MasterModalActions onCancel={closeModal} onConfirm={handleSave} confirmLabel="Upload" />}
-        >
-          <NBnextDriveForm
-            formData={formData}
-            onChange={handleFormChange}
-            onFileChange={handleFileChange}
-          />
-        </MasterModal>
-      )}
-
-      <FileViewerModal
-        isOpen={viewerState.open}
-        onClose={() => setViewerState({ open: false, url: '', mime: '', title: '', fileId: null, file: null })}
-        fileUrl={viewerState.url}
-        mimeType={viewerState.mime}
-        title={viewerState.title}
-        onDownload={canDownload ? () => handleDownload(viewerState.fileId, viewerState.file) : null}
-      />
-    </div>
+    <BaseMaster
+      title="NBnext Drive"
+      description={`View and manage ${scope} in NBnext Drive. Upload, view, download, and delete files.`}
+      addButtonText="Upload File"
+      searchPlaceholder="Search files by name, source or created by..."
+      modalAddTitle="Upload File"
+      modalEditTitle="File"
+      modalMaxWidth="lg"
+      baseMasterContainerWidth="max-w-8xl"
+      permissionKeys={PERMISSION_KEYS}
+      loadRows={loadFiles}
+      extractResponse={extractResponse}
+      deleteRow={deleteFile}
+      deleteConfirmText="Are you sure you want to delete this file?"
+      FormComponent={NBnextDriveForm}
+      DetailComponent={NBnextDriveDetails}
+      extraActions={extraActions}
+      unauthorizedToast="You are not authorized to view files"
+      fetchFailureToast="Failed to fetch files"
+      exportReport={{ title: 'NBnext Drive', slug: 'nbnext-drive' }}
+    />
   );
 };
 
