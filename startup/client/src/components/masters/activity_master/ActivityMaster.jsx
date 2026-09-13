@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MasterHeader } from '@startup/components/base_components/master/master_header/MasterHeader';
 import { MasterSearch } from '@startup/components/base_components/master/MasterSearch';
 import { MasterTable } from '@startup/components/base_components/master/master_table/MasterTable';
+import { getGroupTint } from '@startup/components/nbnext_data_grid/utils/styles';
 import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
 import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
 import { ActivityForm } from './ActivityForm';
@@ -160,6 +161,30 @@ const ActivityMaster = () => {
     });
   }, [activities, searchQuery]);
 
+  // Tint every entry that touches the same record, so a page of logs reads as
+  // "these five lines are all about supplier 42" instead of a flat list. Only
+  // records that appear more than once are tinted — colouring a one-off entry
+  // says nothing and makes the page noisy.
+  const highlightedActivities = useMemo(() => {
+    const keyOf = (activity) =>
+      activity.objectName && activity.objectId
+        ? `${activity.objectName}:${activity.objectId}`
+        : null;
+
+    const counts = new Map();
+    filteredActivities.forEach((activity) => {
+      const key = keyOf(activity);
+      if (key) counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    return filteredActivities.map((activity) => {
+      const key = keyOf(activity);
+      return counts.get(key) > 1
+        ? { ...activity, _highlightColor: getGroupTint(key) }
+        : activity;
+    });
+  }, [filteredActivities]);
+
   const viewActions = useMemo(
     () => [
       {
@@ -208,7 +233,7 @@ const ActivityMaster = () => {
       {canRead ? (
         <MasterTable
           columns={tableColumns}
-          data={filteredActivities}
+          data={highlightedActivities}
           loading={loading}
           actions={viewActions}
           emptyMessage="No activity logs found"

@@ -136,9 +136,12 @@ function DataGridBody({
         const isSectionHeader = !isGroupTotal && typeof isSectionHeaderRow === "function" && isSectionHeaderRow(row);
         // Caller-flagged problem row (duplicate entry, failed record …): tinted red.
         const isAlert = !isGroupTotal && typeof isAlertRow === "function" && isAlertRow(row);
+        // Per-row tint supplied by the data (`row._highlightColor`); a hidden
+        // column keeps the value through the grid. Group totals keep theirs.
+        const highlightColor = isGroupTotal ? null : row._highlightColor || null;
 
         const rowStyle = {
-          ...getRowStyle(isEven, isSelected),
+          ...getRowStyle(isEven, isSelected, highlightColor),
           ...(isAlert && !isSelected && {
             background: ALERT_ROW_CELL_BACKGROUND,
             boxShadow: `inset 3px 0 0 0 ${ALERT_ROW_ACCENT}`,
@@ -191,7 +194,7 @@ function DataGridBody({
         const renderDataCell = (col, frozen) => {
           const content = isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row);
           const width = columnWidths[col.field] || fallbackColumnWidth(col);
-          let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+          let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, highlightColor);
           if (isSectionHeader && !isSelected && !sectionHeaderRuleOnly) {
             cellBg = SECTION_HEADER_CELL_BACKGROUND;
           }
@@ -245,7 +248,7 @@ function DataGridBody({
             className={isDisabled ? 'data-grid-row-disabled' : ''}
           >
             {selectionEnabled && (() => {
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, highlightColor);
               const setSelectionCellStyles = (element) => {
                 if (element) {
                   Object.assign(element.style, baseCellStyle);

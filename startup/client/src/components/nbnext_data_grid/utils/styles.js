@@ -144,23 +144,54 @@ const getSortedHeaderStyle = (isSorted) => {
   };
 };
 
-const getRowStyle = (isEven, isSelected) => ({
-  background: isSelected
-    ? "var(--grid-row-selected)"
-    : isEven
-      ? "var(--grid-row-even)"
-      : "var(--grid-row-odd)",
+// highlightColor: optional per-row background, carried on the row as
+// `_highlightColor`. Selection still wins so the active row stays
+// recognisable; otherwise the tint replaces the even/odd striping.
+const getRowStyle = (isEven, isSelected, highlightColor = null) => ({
+  background: getCellBackgroundColor(isEven, isSelected, highlightColor),
   transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
   cursor: "pointer",
   boxShadow: isSelected ? "inset 4px 0 0 0 var(--grid-row-selected-accent)" : undefined,
 });
 
-const getCellBackgroundColor = (isEven, isSelected) =>
-  isSelected
-    ? "var(--grid-row-selected)"
-    : isEven
-      ? "var(--grid-row-even)"
-      : "var(--grid-row-odd)";
+const getCellBackgroundColor = (isEven, isSelected, highlightColor = null) => {
+  if (isSelected) return "var(--grid-row-selected)";
+  if (highlightColor) return highlightColor;
+  return isEven ? "var(--grid-row-even)" : "var(--grid-row-odd)";
+};
+
+// Faint, readable backgrounds for `_highlightColor`. Light enough that the
+// default dark text keeps its contrast, and distinct enough at a glance —
+// these say "these rows belong together", not "this row is a problem", which
+// is what isAlertRow is for.
+const GROUP_TINTS = [
+  "hsl(210 90% 96%)",
+  "hsl(150 60% 95%)",
+  "hsl(45 90% 94%)",
+  "hsl(280 60% 96%)",
+  "hsl(15 85% 95%)",
+  "hsl(190 70% 95%)",
+  "hsl(330 70% 96%)",
+  "hsl(85 55% 95%)",
+];
+
+/**
+ * A stable tint for a group key: the same key always gets the same colour,
+ * across renders, reloads and sort orders. Feed the result to a row's
+ * `_highlightColor` to tint rows by what they belong to — a namespace, a
+ * batch, a coil serial — rather than by state.
+ *
+ * Returns null for an empty key, which leaves the row on normal striping.
+ */
+const getGroupTint = (key) => {
+  if (key === null || key === undefined || key === "") return null;
+  const text = String(key);
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = (hash * 31 + text.charCodeAt(i)) >>> 0;
+  }
+  return GROUP_TINTS[hash % GROUP_TINTS.length];
+};
 
 const totalRowStyle = {
   background: "#f3f4f6",
@@ -196,6 +227,7 @@ export {
   getSortedHeaderStyle,
   getRowStyle,
   getCellBackgroundColor,
+  getGroupTint,
   totalRowStyle,
   SECTION_HEADER_CELL_BACKGROUND,
   sectionHeaderCellStyle,
