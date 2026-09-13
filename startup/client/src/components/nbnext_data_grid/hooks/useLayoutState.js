@@ -6,6 +6,7 @@
 // all collapse to selectors over `merged` + L3 writes.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isFilterEntryActive, normalizeFilterEntry } from "../utils/columnFilters";
 
 import { SORT_DIRECTIONS } from "../utils/constants.js";
 import {
@@ -189,10 +190,12 @@ const useLayoutState = ({
       const currentMerge = mergeLayout(l1Ref.current, l2, prev, fallbackSortRef.current);
       const base = prev.filterModel ?? currentMerge.filterModel ?? {};
       const next = { ...base };
-      if (value === "" || value == null) {
+      // An entry that narrows nothing is dropped rather than stored: emptying
+      // the box should leave no trace in the model or in a saved layout.
+      if (!isFilterEntryActive(value)) {
         delete next[field];
       } else {
-        next[field] = value;
+        next[field] = normalizeFilterEntry(value);
       }
       return { ...prev, filterModel: next };
     });

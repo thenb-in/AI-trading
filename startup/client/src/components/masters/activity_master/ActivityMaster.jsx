@@ -1,10 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MasterHeader } from '@startup/components/base_components/master/master_header/MasterHeader';
 import { MasterSearch } from '@startup/components/base_components/master/MasterSearch';
-import { MasterAdvancedFilter } from '@startup/components/base_components/master/MasterAdvancedFilter';
 import { MasterTable } from '@startup/components/base_components/master/master_table/MasterTable';
 import { getGroupTint } from '@startup/components/nbnext_data_grid/utils/styles';
-import { applyAdvancedFilters } from '@utils/masterAdvancedFilterUtils';
 import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
 import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
 import { ActivityForm } from './ActivityForm';
@@ -17,7 +15,6 @@ import { toast } from 'react-toastify';
 
 const ActivityMaster = () => {
   const [columns, setColumns] = useState([]);
-  const [advancedFilters, setAdvancedFilters] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -164,9 +161,8 @@ const ActivityMaster = () => {
     });
   }, [activities, searchQuery]);
 
-  // Convert server columns to MasterTable format if needed. Memoised because
-  // the advanced filter reads the column types out of it to decide which
-  // operators each field offers.
+  // Convert server columns to MasterTable format if needed. Memoised so the
+  // grid's own column model isn't rebuilt on every keystroke in the search box.
   const tableColumns = useMemo(
     () =>
       columns.map((col) => ({
@@ -175,12 +171,6 @@ const ActivityMaster = () => {
         type: col.type || 'string'
       })),
     [columns]
-  );
-
-  // Search first, then the field/operator/value rows on top of it.
-  const visibleActivities = useMemo(
-    () => applyAdvancedFilters(filteredActivities, advancedFilters, tableColumns),
-    [filteredActivities, advancedFilters, tableColumns]
   );
 
   // Tint every entry that touches the same record, so a page of logs reads as
@@ -194,18 +184,18 @@ const ActivityMaster = () => {
         : null;
 
     const counts = new Map();
-    visibleActivities.forEach((activity) => {
+    filteredActivities.forEach((activity) => {
       const key = keyOf(activity);
       if (key) counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    return visibleActivities.map((activity) => {
+    return filteredActivities.map((activity) => {
       const key = keyOf(activity);
       return counts.get(key) > 1
         ? { ...activity, _highlightColor: getGroupTint(key) }
         : activity;
     });
-  }, [visibleActivities]);
+  }, [filteredActivities]);
 
   const viewActions = useMemo(
     () => [
@@ -242,12 +232,6 @@ const ActivityMaster = () => {
         />
       </div>
 
-      <MasterAdvancedFilter
-        columns={tableColumns}
-        filters={advancedFilters}
-        onChange={setAdvancedFilters}
-      />
-
       {canRead ? (
         <MasterTable
           columns={tableColumns}
@@ -256,10 +240,7 @@ const ActivityMaster = () => {
           actions={viewActions}
           emptyMessage="No activity logs found"
           loadingMessage="Loading activity logs..."
-          // Search and the advanced filters both run over rows already
-          // loaded, so paging in more behind them would filter an arbitrary
-          // subset. Load everything at once while either is narrowing.
-          infiniteScroll={!searchQuery.trim() && advancedFilters.length === 0}
+          infiniteScroll={!searchQuery.trim()}
           hasMore={hasMore}
           onLoadMore={handleLoadMore}
           isLoadingMore={isLoadingMore}

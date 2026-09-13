@@ -1,3 +1,5 @@
+import { matchesValue } from "@utils/masterAdvancedFilterUtils";
+import { isFilterEntryActive, normalizeFilterEntry, subjectForOperator } from "./columnFilters";
 import React from "react";
 import { convertCellToText } from "../../base_report/ReportUtils.js";
 import { sanitizeHTML } from "../../base_report/reportFormatter.js";
@@ -137,8 +139,9 @@ const filterRows = (indexedRows, filterModel, columns) => {
   }
 
   return indexedRows.filter((indexedRow) => {
-    return Object.entries(filterModel).every(([field, filterValue]) => {
-      if (!filterValue || filterValue === "") {
+    return Object.entries(filterModel).every(([field, rawEntry]) => {
+      const entry = normalizeFilterEntry(rawEntry);
+      if (!isFilterEntryActive(entry)) {
         return true;
       }
 
@@ -153,14 +156,19 @@ const filterRows = (indexedRows, filterModel, columns) => {
         cellValue = indexedRow._row?.[field];
       }
 
-      // Convert to string for filtering
+      // What the cell shows, which is what a text match should be read against.
       const formatCol = getColumnForFormatting(col);
       const cellText = convertCellToText(formatCol, cellValue);
-      const cellString = cellText == null ? "" : String(cellText).toLowerCase();
-      const filterString = String(filterValue).toLowerCase();
 
-      // Case-insensitive contains match
-      return cellString.includes(filterString);
+      const { fieldType, subject } = subjectForOperator(
+        entry.operator,
+        col.type,
+        cellText == null ? "" : String(cellText),
+        cellValue
+      );
+      // Operator semantics are shared with MasterAdvancedFilter so the grid bar
+      // and the standalone panel can never disagree about "starts with".
+      return matchesValue(subject, entry.operator, entry.value, fieldType);
     });
   });
 };

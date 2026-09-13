@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, forwardRef } from "react";
+import { hasAnyActiveFilter, inferColumnType } from "./utils/columnFilters";
 import PropTypes from "prop-types";
 
 // Hooks
@@ -525,11 +526,23 @@ const NbNextDataGrid = forwardRef(({
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
+  // Which operators each column's filter box should offer. Resolved here
+  // because it needs the data: most grid columns declare no type, and a column
+  // of amounts should offer "greater than" rather than "starts with".
+  // Off `indexedRows` (pre-filter) so narrowing a column can't change the
+  // operators it offers underneath the user.
+  const columnFilterTypes = useMemo(() => {
+    const types = {};
+    l1.forEach((col) => {
+      types[col.field] = inferColumnType(col, indexedRows);
+    });
+    return types;
+  }, [l1, indexedRows]);
+
+  // An "is set" / "is not set" column filters with an empty box, so activity
+  // can't be read off the typed value alone.
   const hasActiveFilters = useMemo(
-    () =>
-      Object.entries(merged.filterModel || {}).some(
-        ([, value]) => value != null && value !== ""
-      ),
+    () => hasAnyActiveFilter(merged.filterModel),
     [merged.filterModel]
   );
 
@@ -666,6 +679,7 @@ const NbNextDataGrid = forwardRef(({
               handleColumnResize={setColumnWidth}
               fullScreen={fullScreen}
               filterModel={merged.filterModel}
+              columnFilterTypes={columnFilterTypes}
               handleFilterChange={setFilterValue}
               groupByField={groupByField}
               toggleGroupBy={toggleGroupBy}

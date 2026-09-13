@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { ArrowUpDown, ArrowUp, ArrowDown, Pin, PinOff, Layers } from "lucide-react";
+import { ColumnFilterInput } from "./ColumnFilterInput";
 import {
   headerCellBaseStyle,
   getSortedHeaderStyle,
@@ -21,6 +22,7 @@ function DataGridHeader({
   handleColumnResize,
   fullScreen = false,
   filterModel = {},
+  columnFilterTypes = {},
   handleFilterChange,
   groupByField = null,
   toggleGroupBy = null,
@@ -339,13 +341,12 @@ function DataGridHeader({
 
     return (
       <th key={`filter-${col.field}`} style={filterCellStyle}>
-        <input
-          type="text"
-          value={filterModel[col.field] || ""}
-          onChange={(e) => handleFilterInputChange(col.field, e.target.value)}
-          placeholder="Filter..."
-          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-800"
-          onClick={handleFilterInputClick}
+        <ColumnFilterInput
+          column={col}
+          columnType={columnFilterTypes[col.field]}
+          entry={filterModel[col.field]}
+          onChange={handleFilterInputChange}
+          onInputClick={handleFilterInputClick}
         />
       </th>
     );
@@ -437,6 +438,7 @@ DataGridHeader.propTypes = {
   toggleFrozen: PropTypes.func.isRequired,
   fullScreen: PropTypes.bool,
   filterModel: PropTypes.object,
+  columnFilterTypes: PropTypes.object,
   handleFilterChange: PropTypes.func,
   groupByField: PropTypes.string,
   toggleGroupBy: PropTypes.func,
