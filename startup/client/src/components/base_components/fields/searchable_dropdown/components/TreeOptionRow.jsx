@@ -1,31 +1,7 @@
-import { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-
-// `indeterminate` is a DOM property, not an attribute — it must be set imperatively.
-function TreeCheckbox({ checked = false, indeterminate = false, onChange }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.indeterminate = !checked && indeterminate;
-    }
-  }, [checked, indeterminate]);
-  return (
-    <input
-      ref={ref}
-      type="checkbox"
-      checked={checked}
-      onChange={onChange}
-      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-    />
-  );
-}
-
-TreeCheckbox.propTypes = {
-  checked: PropTypes.bool,
-  indeterminate: PropTypes.bool,
-  onChange: PropTypes.func,
-};
+import { ignoreCheckboxChange } from '../utils/menuRows';
+import { TreeCheckbox } from './TreeCheckbox';
 
 // One row in the tree dropdown: depth connectors, an optional expand chevron,
 // a tri-state checkbox and the label. Selection is owned by the row click;
@@ -44,8 +20,6 @@ function TreeOptionRow({
 }) {
   const depth = option.depth || 0;
   const isSelectedish = checked || indeterminate;
-
-  const noop = () => {};
 
   return (
     <div
@@ -89,7 +63,7 @@ function TreeOptionRow({
         ) : (
           <span className="w-4 h-4 flex-shrink-0" />
         )}
-        <TreeCheckbox checked={checked} indeterminate={indeterminate} onChange={noop} />
+        <TreeCheckbox checked={checked} indeterminate={indeterminate} onChange={ignoreCheckboxChange} />
         <span
           title={option.label}
           className={`break-words ${
@@ -121,4 +95,4 @@ TreeOptionRow.propTypes = {
   onToggleCollapse: PropTypes.func.isRequired,
 };
 
-export { TreeOptionRow, TreeCheckbox };
+export { TreeOptionRow };
