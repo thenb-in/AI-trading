@@ -176,6 +176,24 @@ const MASTER_PERMISSION_CONSTANTS = {
 
   NOTIFICATION_RULE: create_master_permission('notification_rule'),
 
+  // The drive ships with the framework, so its permissions live here rather
+  // than in an app's set. read_personal_nbnext_drive scopes a user to the files
+  // they uploaded; read_nbnext_drive widens that to the whole company and is the
+  // `showAll` flag in nbnextDriveView.
+  NBNEXT_DRIVE: {
+    ...create_master_permission('nbnext_drive'),
+    read_personal: {
+      name: 'read_personal_nbnext_drive',
+      display_name: 'Read Personal Nbnext Drive',
+      description: 'Permission to read Nbnext Drive files uploaded by the user'
+    },
+    download: {
+      name: 'download_nbnext_drive',
+      display_name: 'Download Nbnext Drive',
+      description: 'Permission to download Nbnext Drive files'
+    }
+  },
+
   ROLE_PERMISSION: {
     create: {
       name: 'create_role_permission',

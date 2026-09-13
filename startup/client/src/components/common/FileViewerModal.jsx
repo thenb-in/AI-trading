@@ -17,7 +17,7 @@ import {
  * File Viewer Modal Component
  * Displays files in a modal with appropriate viewer based on file type
  */
-const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File', onLoadError }) => {
+const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View File', onLoadError, onDownload }) => {
 
   const [blobUrl, setBlobUrl] = useState('');
   const [effectiveMime, setEffectiveMime] = useState(mimeType || '');
@@ -123,7 +123,7 @@ const FileViewerModal = ({ isOpen, onClose, fileUrl, mimeType, title = 'View Fil
       case 'excel':
       case 'csv':
       case 'unknown':
-        return <UnsupportedViewer />;
+        return <UnsupportedViewer fileType={fileType} fileName={title} onDownload={onDownload} />;
       
       default:
         return null;
@@ -190,6 +190,10 @@ FileViewerModal.propTypes = {
   mimeType: PropTypes.string,
   title: PropTypes.string,
   onLoadError: PropTypes.func,
+  // Supplied only by callers that can download the file being viewed, already
+  // gated on whatever permission guards their own download control. The modal
+  // stays free of permission logic: no handler, no button.
+  onDownload: PropTypes.func,
 };
 
 export { FileViewerModal };

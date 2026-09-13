@@ -23,7 +23,7 @@ const fetchFiles = () => nbnextDriveService.getAllFiles();
 
 const NBnextDriveMaster = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
+  const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '', fileId: null, file: null });
   const dataContext = useDataContext();
 
   const canCreate = hasPermission('create_nbnext_drive', dataContext);
@@ -91,19 +91,17 @@ const NBnextDriveMaster = () => {
     }
   };
 
-  const handleView = async (_id, file) => {
-    try {
-      const fileUrl = `/uploads/${file.filePath}`;
-      setViewerState({
-        open: true,
-        url: fileUrl,
-        mime: file.mimeType || '',
-        title: file.fileName || 'File Preview'
-      });
-    } catch (error) {
-      console.error('Error opening file viewer:', error);
-      toast.error('Failed to open file');
-    }
+  const handleView = (_id, file) => {
+    // Use the authenticated download API (same as NBnextDriveAttachment).
+    // `/uploads/...` is not reliably served to the viewer and shows a blank grey modal.
+    setViewerState({
+      open: true,
+      url: `/nbnext-drive/${_id}/download`,
+      mime: file.mimeType || '',
+      title: file.fileName || 'File Preview',
+      fileId: _id,
+      file
+    });
   };
 
   const handleDownload = async (id, file) => {
@@ -219,10 +217,11 @@ const NBnextDriveMaster = () => {
 
       <FileViewerModal
         isOpen={viewerState.open}
-        onClose={() => setViewerState({ open: false, url: '', mime: '', title: '' })}
+        onClose={() => setViewerState({ open: false, url: '', mime: '', title: '', fileId: null, file: null })}
         fileUrl={viewerState.url}
         mimeType={viewerState.mime}
         title={viewerState.title}
+        onDownload={canDownload ? () => handleDownload(viewerState.fileId, viewerState.file) : null}
       />
     </div>
   );

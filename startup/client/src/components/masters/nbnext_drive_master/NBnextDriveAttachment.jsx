@@ -43,7 +43,7 @@ const NBnextDriveAttachment = ({
   const { existingFiles, loadingFiles, refetch } = attachmentsState ?? internal;
   const [uploading, setUploading] = useState(false);
   const [localFiles, setLocalFiles] = useState([]);
-  const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '', isBlob: false });
+  const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '', isBlob: false, fileId: null });
 
   const hasObjectId = objectId != null && objectId !== '';
 
@@ -87,26 +87,27 @@ const NBnextDriveAttachment = ({
   const closeViewer = useCallback(() => {
     setViewerState((prev) => {
       if (prev.isBlob && prev.url) try { URL.revokeObjectURL(prev.url); } catch { /* ignore */ }
-      return { open: false, url: '', mime: '', title: '', isBlob: false };
+      return { open: false, url: '', mime: '', title: '', isBlob: false, fileId: null };
     });
   }, []);
 
-  const openView = useCallback((url, mime, title, isBlob) => {
-    setViewerState({ open: true, url, mime: mime || '', title: title || 'File', isBlob });
+  // fileId is set only for files that already live on the server; a pending
+  // blob has nothing to download from the API, so the viewer offers no button.
+  const openView = useCallback((url, mime, title, isBlob, fileId = null) => {
+    setViewerState({ open: true, url, mime: mime || '', title: title || 'File', isBlob, fileId });
   }, []);
 
   const onExistingView = useCallback(
     (e) => {
       const id = e.currentTarget.dataset.fileId;
       const f = existingFiles.find((x) => String(x.id) === String(id));
-      if (f) openView(`/nbnext-drive/${f.id}/download`, f.mimeType, f.fileName, false);
+      if (f) openView(`/nbnext-drive/${f.id}/download`, f.mimeType, f.fileName, false, f.id);
     },
     [existingFiles, openView]
   );
 
-  const onExistingDownload = useCallback(
-    async (e) => {
-      const id = e.currentTarget.dataset.fileId;
+  const downloadExistingFile = useCallback(
+    async (id) => {
       const f = existingFiles.find((x) => String(x.id) === String(id));
       if (!f) return;
       try {
@@ -123,6 +124,11 @@ const NBnextDriveAttachment = ({
       }
     },
     [existingFiles]
+  );
+
+  const onExistingDownload = useCallback(
+    (e) => downloadExistingFile(e.currentTarget.dataset.fileId),
+    [downloadExistingFile]
   );
 
   const onExistingDelete = useCallback(
@@ -200,6 +206,7 @@ const NBnextDriveAttachment = ({
         mimeType={viewerState.mime}
         title={viewerState.title}
         onLoadError={handleViewerLoadError}
+        onDownload={viewerState.fileId ? () => downloadExistingFile(viewerState.fileId) : null}
       />
     </div>
   );

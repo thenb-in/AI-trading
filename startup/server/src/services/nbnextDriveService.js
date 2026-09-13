@@ -3,7 +3,6 @@ const path = require('path');
 const { Op } = require('sequelize');
 const logger = require('../../logger');
 const env = require('../config/env');
-const { NBNEXT_DRIVE_FILE_NOT_FOUND, NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK } = require('../constants/errors');
 const { NBnextDrive, User } = require('../models');
 const { getDayRange } = require('../utils/dateUtils');
 
@@ -24,6 +23,23 @@ function ownedDriveFileWhere(id, companyId, userId, showAll) {
     where.createdBy = userId;
   }
   return where;
+}
+
+// A missing file is a client error, not a server fault, so it is tagged with
+// the status the view should return — the repo's usual `error.status` contract.
+// The message names the id and the scope that was searched: when the "my files
+// only" filter is what hid a file that plainly exists, the 404 says so instead
+// of leaving an engineer guessing.
+function driveFileNotFound(id, showAll) {
+  const error = new Error(`NBnext Drive file ${id} not found${showAll ? ' in this company' : ' among the files you uploaded'}`);
+  error.status = 404;
+  return error;
+}
+
+function driveFileMissingOnDisk(file, filePath) {
+  const error = new Error(`NBnext Drive file ${file.id} (${file.fileName}) is recorded in the database but its contents are missing from disk at ${filePath}`);
+  error.status = 404;
+  return error;
 }
 
 const nbnextDriveService = {
@@ -55,12 +71,15 @@ const nbnextDriveService = {
       });
 
       if (!file) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+        throw driveFileNotFound(id, showAll);
       }
 
       return file;
     } catch (error) {
       logger.error(`Error fetching file by id: ${id}`, error);
+      if (error.status) {
+        throw error;
+      }
       throw new Error(`Failed to fetch file: ${error.message}`);
     }
   },
@@ -98,7 +117,7 @@ const nbnextDriveService = {
       const file = await NBnextDrive.findOne({ where });
 
       if (!file) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+        throw driveFileNotFound(id, showAll);
       }
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
@@ -113,6 +132,9 @@ const nbnextDriveService = {
       return { success: true, message: 'File deleted successfully' };
     } catch (error) {
       logger.error(`Error deleting file: ${id}`, error);
+      if (error.status) {
+        throw error;
+      }
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   },
@@ -156,13 +178,13 @@ const nbnextDriveService = {
       });
 
       if (!file) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND);
+        throw driveFileNotFound(id, showAll);
       }
 
       const filePath = path.join(env.UPLOADS_DIR, file.filePath);
 
       if (!fs.existsSync(filePath)) {
-        throw new Error(NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK);
+        throw driveFileMissingOnDisk(file, filePath);
       }
 
       return {
@@ -172,7 +194,7 @@ const nbnextDriveService = {
       };
     } catch (error) {
       logger.error(`Error getting file stream: ${id}`, error);
-      if (error.message === NBNEXT_DRIVE_FILE_NOT_FOUND || error.message === NBNEXT_DRIVE_FILE_NOT_FOUND_ON_DISK) {
+      if (error.status) {
         throw error;
       }
       throw new Error(`Failed to get file: ${error.message}`);
