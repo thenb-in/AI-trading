@@ -19,10 +19,9 @@ import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
 /**
  * Owns the standard rows/columns/loading/isFiltering state plus default-filter
  * wiring, initial fetch, and on-filter-apply for grid-style reports. Each
- * caller supplies the filter definition (`filters`) and the dynamic-loaders
- * map (`dynamicLoaders`) — usually `FILTER_DYNAMIC_LOADERS` from the app's
- * filter config — and gets back the state, setters, and a ready-to-spread
- * `layoutProps` object for `<BaseReportLayout>`.
+ * caller supplies the filter definition (`filters`; a filter that loads its
+ * own options declares `fetchData`) and gets back the state, setters, and a
+ * ready-to-spread `layoutProps` object for `<BaseReportLayout>`.
  *
  * Optional setters (`setOriginalColumns`, `setStatusDefinitions`) are forwarded
  * to fetchReportData.
@@ -31,7 +30,6 @@ const useDataGridReport = ({
   report,
   locationState,
   filters,
-  dynamicLoaders,
   isEditable = false,
   applyDefaultFilters: shouldApplyDefaultFilters = true,
   setOriginalColumns,
@@ -66,7 +64,7 @@ const useDataGridReport = ({
   );
   // When `filters` is omitted, the caller is supplying its own filtersConfig
   // from outside (e.g. BaseReport accepting it as a prop) — skip the work.
-  const { dynamicOptions, isLoading: isFilterLoading } = useFilterDynamicOptions(filters ?? [], dynamicLoaders);
+  const { dynamicOptions } = useFilterDynamicOptions(filters ?? []);
   const filtersConfig = useFilterConfig(filters ?? [], dynamicOptions);
 
 
@@ -167,7 +165,6 @@ const useDataGridReport = ({
     initialLoad,
     isFiltering,
     setIsFiltering,
-    isFilterLoading,
     filtersConfig,
     onFiltersApply,
     dataGridRef,
@@ -175,7 +172,7 @@ const useDataGridReport = ({
     searchParams,
     setSearchParams,
     isLoadingData,
-    layoutProps: { report, isFiltering, isLoadingData, filtersConfig, isFilterLoading, onFiltersApply },
+    layoutProps: { report, isFiltering, isLoadingData, filtersConfig, onFiltersApply },
   };
 };
 

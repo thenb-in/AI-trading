@@ -11,7 +11,8 @@ import { useMemo } from 'react';
  * and `ensure`, the callback that actually goes and fetches. `ensure` is
  * exposed on the config as `onOpenOptions`, and nothing is fetched until
  * someone calls it: opening the dropdown, or a filter arriving with a value
- * whose label has to be resolved.
+ * whose label has to be resolved. Once a list has loaded, its `refresh` is
+ * exposed as `onRefreshOptions` — what the filter panel's refresh button calls.
  *
  * Generic — knows nothing about employees/departments/etc. App-side hooks
  * own the fetching and provide the keyed map.
@@ -26,6 +27,7 @@ const injectDynamicOptions = (filters, dynamicOptions) =>
       searchable: true,
       optionsLoading: entry.loading,
       onOpenOptions: entry.ensure,
+      onRefreshOptions: entry.refresh,
     };
   });
 

@@ -3,7 +3,6 @@ import { BaseReport } from "@startup/components/base_report/BaseReport";
 import { ApiService } from "@services/ApiService";
 import { commonFilters as userReportFilters } from "@app/filter/reportFilterConfig";
 import { useFilterDynamicOptions } from "@startup/hooks/useFilterDynamicOptions";
-import { FILTER_DYNAMIC_LOADERS } from "@app/filter/filterDynamicLoaders";
 import { useFilterConfig } from "@startup/components/base_filter/filterUtils";
 
 /**
@@ -24,9 +23,9 @@ const UserReport = ({ report, locationState }) => {
     }
   };
 
-  // Filters marked `dynamic: true` in reportFilterConfig.js are resolved by the
-  // app-side loader registry (`@app/filter/filterDynamicLoaders`).
-  const { dynamicOptions } = useFilterDynamicOptions(userReportFilters, FILTER_DYNAMIC_LOADERS);
+  // Filters in reportFilterConfig.js that declare `fetchData` fetch their
+  // own lists the first time they are opened.
+  const { dynamicOptions } = useFilterDynamicOptions(userReportFilters);
   const filtersConfig = useFilterConfig(userReportFilters, dynamicOptions);
 
   return (

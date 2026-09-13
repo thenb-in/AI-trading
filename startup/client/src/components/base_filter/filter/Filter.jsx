@@ -19,12 +19,12 @@ const Filter = ({
   onFiltersApply,
   onFilterChange,
   disabled = false,
-  isLoading = false,
   hideToggle = false,
   showApplyButton = false,
   enableRunner = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const filterContainerRef = useRef(null);
 
   const {
@@ -46,7 +46,15 @@ const Filter = ({
     debugReloadPrompt,
     confirmDebugReload,
     dismissDebugReload,
-  } = useFilterState({ filtersConfig, onFilterChange, onFiltersApply, isLoading });
+  } = useFilterState({ filtersConfig, onFilterChange, onFiltersApply, isLoading: isRefreshing });
+
+  // Reloads the option lists that have been opened; lists nobody opened stay
+  // unfetched. Each list's refresh catches its own failure, so this settles.
+  const refreshOptions = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all(filtersConfig.filter((c) => c.onRefreshOptions).map((c) => c.onRefreshOptions()));
+    setIsRefreshing(false);
+  }, [filtersConfig]);
 
   // Alt+Enter applies from anywhere on the page — the panel's own fields, a
   // dropdown that portals its popup outside the panel, or the grid below it.
@@ -132,7 +140,8 @@ const Filter = ({
       <FilterHeader
         activeFiltersCount={activeFiltersCount}
         isBusy={isBusy}
-        isLoading={isLoading}
+        isRefreshing={isRefreshing}
+        onRefresh={refreshOptions}
         isExpanded={isExpanded}
         onLabelClick={handleFiltersLabelClick}
         onToggleExpanded={toggleExpanded}
@@ -197,6 +206,7 @@ Filter.propTypes = {
       searchable: PropTypes.bool,
       optionsLoading: PropTypes.bool,
       onOpenOptions: PropTypes.func,
+      onRefreshOptions: PropTypes.func,
       placeholder: PropTypes.string,
       is_standard: PropTypes.bool,
       order: PropTypes.number,
@@ -208,7 +218,6 @@ Filter.propTypes = {
   onFiltersApply: PropTypes.func,
   onFilterChange: PropTypes.func,
   disabled: PropTypes.bool,
-  isLoading: PropTypes.bool,
   hideToggle: PropTypes.bool,
   showApplyButton: PropTypes.bool,
   enableRunner: PropTypes.bool,

@@ -29,7 +29,7 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
   // ApiService caches both reads, so reopening this modal — or opening it
   // after a report whose filter wanted the same roster — costs nothing.
   // Roles are absent on purpose: RoleSelector loads its own.
-  const loadOptions = useCallback(() => {
+  const fetchData = useCallback(() => {
     setIsLoadingOptions(true);
     return Promise.all([ApiService.getPermissions(), ApiService.getAllUsers()])
       .then(([permissions, users]) => setOptions({
@@ -47,8 +47,8 @@ function useNotificationRuleForm({ isOpen, initialData, onSaved, onClose }) {
     if (!isOpen) {
       return;
     }
-    loadOptions();
-  }, [isOpen, loadOptions]);
+    fetchData();
+  }, [isOpen, fetchData]);
 
   const patchRule = useCallback((patch) => {
     setRule((previous) => ({ ...previous, ...patch }));

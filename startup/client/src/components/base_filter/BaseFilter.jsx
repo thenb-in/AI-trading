@@ -8,7 +8,6 @@ import { MasterModal } from '@startup/components/base_components/master/master_m
 const BaseFilter = ({
   onFiltersApply,
   filtersConfig = [],
-  isLoading = false,
   disabled = false,
   showApplyButton = true,
   enableRunner = false,
@@ -28,7 +27,6 @@ const BaseFilter = ({
       <Filter
         filtersConfig={filtersConfig}
         onFiltersApply={onFiltersApply}
-        isLoading={isLoading}
         disabled={disabled}
         showApplyButton={showApplyButton}
         enableRunner={enableRunner}
@@ -63,7 +61,6 @@ const BaseFilter = ({
           <Filter
             filtersConfig={filtersConfig}
             onFiltersApply={handleApply}
-            isLoading={isLoading}
             disabled={disabled}
             hideToggle
             showApplyButton={showApplyButton}
@@ -78,7 +75,6 @@ const BaseFilter = ({
 BaseFilter.propTypes = {
   onFiltersApply: PropTypes.func,
   filtersConfig: PropTypes.array,
-  isLoading: PropTypes.bool,
   disabled: PropTypes.bool,
   showApplyButton: PropTypes.bool,
   enableRunner: PropTypes.bool,

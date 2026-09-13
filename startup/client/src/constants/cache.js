@@ -20,16 +20,10 @@ const CACHE_STORE_SESSION = 'session';
 // without anyone reaching for the refresh button.
 const CACHE_TTL_DEFAULT_MS = 30 * 60 * 1000;
 
-// Namespace for filter dropdown option lists (employees, departments, cost
-// centres, positions, users). The filter panel's refresh button busts this
-// namespace, and useFilterDynamicOptions reloads when it hears that.
-const CACHE_NS_FILTER_OPTIONS = 'filterOptions';
-
 export {
   CACHE_KEY_PREFIX,
   CACHE_SCHEMA_VERSION,
   CACHE_STORE_MEMORY,
   CACHE_STORE_SESSION,
-  CACHE_TTL_DEFAULT_MS,
-  CACHE_NS_FILTER_OPTIONS
+  CACHE_TTL_DEFAULT_MS
 };

@@ -17,7 +17,6 @@ const BaseReportLayout = ({
   isFiltering,
   isLoadingData,
   filtersConfig,
-  isFilterLoading,
   onFiltersApply,
   toolbar,
   children,
@@ -41,7 +40,6 @@ const BaseReportLayout = ({
           <BaseFilter
             onFiltersApply={onFiltersApply}
             filtersConfig={filtersConfig}
-            isLoading={isFilterLoading}
             disabled={isFiltering || isLoadingData}
             showApplyButton={showApplyButton || !runnerEnabled}
             enableRunner={runnerEnabled}
@@ -70,7 +68,6 @@ BaseReportLayout.propTypes = {
   isFiltering: PropTypes.bool,
   isLoadingData: PropTypes.bool,
   filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
   onFiltersApply: PropTypes.func.isRequired,
   toolbar: PropTypes.node,
   children: PropTypes.node,

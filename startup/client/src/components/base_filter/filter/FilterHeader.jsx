@@ -1,19 +1,12 @@
 import PropTypes from 'prop-types';
 import { Filter as FilterIcon, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
-import { CACHE_NS_FILTER_OPTIONS } from '@startup/constants/cache';
-import { cacheBustNamespace } from '@services/cacheManager';
-
-// Option lists (employees, departments, …) are cached for the tab session.
-// Dropping the namespace is the whole refresh: every mounted
-// useFilterDynamicOptions hears the bust and refetches the lists it has
-// actually loaded. Lists nobody has opened yet stay unfetched.
-const refreshFilterOptions = () => cacheBustNamespace(CACHE_NS_FILTER_OPTIONS);
 
 
 const FilterHeader = ({
   activeFiltersCount,
   isBusy,
-  isLoading,
+  isRefreshing,
+  onRefresh,
   isExpanded,
   onLabelClick,
   onToggleExpanded,
@@ -43,18 +36,18 @@ const FilterHeader = ({
       {isBusy && (
         <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 bg-blue-500 rounded-md text-xs font-bold text-white shadow-sm">
           <Loader2 size={12} className="animate-spin" />
-          <span className="hidden sm:inline">{isLoading ? 'LOADING...' : 'APPLYING...'}</span>
+          <span className="hidden sm:inline">{isRefreshing ? 'LOADING...' : 'APPLYING...'}</span>
         </div>
       )}
 
       <button
-        onClick={refreshFilterOptions}
+        onClick={onRefresh}
         disabled={isBusy}
         title="Reload filter options (employees, departments, cost centres…) from the server"
         aria-label="Refresh filter options"
         className="p-2 text-gray-600 hover:text-gray-800 hover:bg-blue-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-blue-200"
       >
-        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+        <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
       </button>
 
       {!hideToggle && (
@@ -79,7 +72,8 @@ const FilterHeader = ({
 FilterHeader.propTypes = {
   activeFiltersCount: PropTypes.number.isRequired,
   isBusy: PropTypes.bool,
-  isLoading: PropTypes.bool,
+  isRefreshing: PropTypes.bool,
+  onRefresh: PropTypes.func.isRequired,
   isExpanded: PropTypes.bool.isRequired,
   onLabelClick: PropTypes.func.isRequired,
   onToggleExpanded: PropTypes.func.isRequired,

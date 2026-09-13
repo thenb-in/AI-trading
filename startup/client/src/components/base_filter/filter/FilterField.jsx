@@ -56,15 +56,15 @@ const FilterField = ({
   // already holds something other than the default came from the URL, a saved
   // run or a deep link, and its label only exists inside that list — so it has
   // to load without waiting to be opened. `onOpenOptions` is idempotent.
-  const loadOptions = config.onOpenOptions;
+  const fetchData = config.onOpenOptions;
   const valueKey = Array.isArray(value) ? value.join(',') : String(value ?? '');
   useEffect(() => {
-    if (!loadOptions) return;
+    if (!fetchData) return;
     const hasNonDefaultValue = valueKey
       .split(',')
       .some((v) => v && v !== 'all');
-    if (hasNonDefaultValue) loadOptions();
-  }, [loadOptions, valueKey]);
+    if (hasNonDefaultValue) fetchData();
+  }, [fetchData, valueKey]);
 
   switch (config.type) {
     case 'date': {
@@ -104,7 +104,7 @@ const FilterField = ({
           multiple={isMulti}
           searchable={showSearch}
           loading={!!config.optionsLoading}
-          onOpen={loadOptions}
+          onOpen={fetchData}
         />
       );
     }

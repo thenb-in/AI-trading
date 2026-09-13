@@ -29,7 +29,6 @@ const BaseReport = ({
   locationState,
   documentName,
   filtersConfig,
-  isFilterLoading = false,
   applyDefaultFilters = false,
   frozenColumns = [],
   initialSortFallbackColumns,
@@ -86,7 +85,6 @@ const BaseReport = ({
       isFiltering={isFiltering}
       isLoadingData={isLoadingData}
       filtersConfig={filtersConfig}
-      isFilterLoading={isFilterLoading}
       onFiltersApply={onFiltersApply}
     >
       <BaseReportContext.Provider value={contextValue}>
@@ -114,7 +112,6 @@ BaseReport.propTypes = {
   locationState: PropTypes.object,
   documentName: PropTypes.string,
   filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
   applyDefaultFilters: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   initialSortFallbackColumns: PropTypes.arrayOf(PropTypes.string),
