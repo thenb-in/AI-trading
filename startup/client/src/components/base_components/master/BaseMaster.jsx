@@ -67,7 +67,6 @@ const BaseMaster = ({
   formSuccessProp = 'onSuccess',
   createLabel, updateLabel, savingLabel, // Save button wording; FormModal defaults to Create / Update / Saving...
   filtersConfig,
-  isFilterLoading,
   initialFilters = {},
   mapFiltersForApi,
   // Optional `(rows) => rows` run over what the grid shows, after search — for
@@ -381,7 +380,6 @@ const BaseMaster = ({
           <BaseFilter
             onFiltersApply={handleFiltersApply}
             filtersConfig={filtersConfig}
-            isLoading={isFilterLoading}
             disabled={loading}
           />
         )}
@@ -510,7 +508,6 @@ BaseMaster.propTypes = {
   updateLabel: PropTypes.string,
   savingLabel: PropTypes.string,
   filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,
   mapFiltersForApi: PropTypes.func,
   mapRows: PropTypes.func,

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
 import { Lock, LockOpen, Filter } from "lucide-react";
-import { MasterSearchInput } from "@startup/components/base_components";
+import { MasterSearch } from "@startup/components/base_components";
 import { SearchableDropdown } from "@startup/components/base_components/fields/SearchableDropdown";
 
 const SearchHeader = ({
@@ -64,7 +64,7 @@ const SearchHeader = ({
 
           {/* Search */}
           <div className="w-full md:w-auto md:min-w-[300px] md:max-w-md">
-            <MasterSearchInput
+            <MasterSearch
               value={searchTerm}
               onChange={onSearchChange}
               placeholder="Search modules and reports..."

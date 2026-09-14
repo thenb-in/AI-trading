@@ -14,7 +14,7 @@ import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { shortcutLabel } from "@utils/keyboardShortcut";
 import { SHORTCUTS } from "../../constants/shortcuts";
-import { MasterModal, MasterSearchInput } from "../base_components";
+import { MasterModal, MasterSearch } from "../base_components";
 import { SearchResultItem } from "./SearchResultItem";
 import { filterAndSortItems } from "@utils/searchUtils";
 
@@ -244,7 +244,7 @@ function GlobalSearchPalette({
       }
     >
       <Box sx={{ pt: 0.5, flexShrink: 0 }}>
-        <MasterSearchInput
+        <MasterSearch
           ref={inputRef}
           value={query}
           onChange={setQuery}
