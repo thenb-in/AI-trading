@@ -1,11 +1,13 @@
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
+import { useAutoFocusFirstField } from '@startup/hooks/useAutoFocusFirstField';
+import { useCreatorInitialName } from './MasterModalProvider';
 import { RecordNav } from './RecordNav';
 
 const MasterModal = ({
@@ -25,6 +27,7 @@ const MasterModal = ({
   // `{ position, total, onPrevious, onNext }` — arrows to step to the
   // neighbouring records of the list this one was opened from.
   recordNav,
+  autoFocusFirstField = true,
   PaperProps: paperPropsFromCaller,
   sx: sxFromCaller,
   ...props
@@ -42,9 +45,17 @@ const MasterModal = ({
     if (!isOpen) setIsAuditOpen(false);
   }, [isOpen]);
 
+  const paperRef = useRef(null);
+  const initialName = useCreatorInitialName();
+
+  // Opening a modal puts the caret in its first field, ready for entry — holding
+  // what a picker's "Create …" row had typed, when this is that creator.
+  useAutoFocusFirstField(paperRef, { enabled: isOpen && autoFocusFirstField, fillValue: initialName });
+
   const ownsScroll = disableContentScroll || fullScreen;
   const mergedPaperProps = {
     ...paperPropsFromCaller,
+    ref: paperRef,
     ...(disableContentScroll && {
       sx: {
         height: '90vh',
@@ -198,6 +209,7 @@ MasterModal.propTypes = {
     onPrevious: PropTypes.func,
     onNext: PropTypes.func,
   }),
+  autoFocusFirstField: PropTypes.bool,
   PaperProps: PropTypes.object,
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };

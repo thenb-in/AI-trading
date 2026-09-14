@@ -24,6 +24,9 @@ import {
  */
 const MasterModalContext = createContext(null);
 
+// What the picker's create row had typed, for the creator's modal to fill its first field with.
+const CreatorInitialNameContext = createContext('');
+
 const EMPTY_STATE = { masterName: null, data: null, recordId: null, onSuccess: null, defaults: {} };
 
 function MasterModalProvider({ children }) {
@@ -85,14 +88,16 @@ function MasterModalProvider({ children }) {
     <MasterModalContext.Provider value={value}>
       {children}
       {Component && (
-        <Component
-          isOpen={Boolean(state.masterName)}
-          modalData={state.data}
-          recordId={state.recordId}
-          defaults={state.defaults}
-          onClose={closeMasterModal}
-          onSuccess={handleSuccess}
-        />
+        <CreatorInitialNameContext.Provider value={state.defaults.initialName || ''}>
+          <Component
+            isOpen={Boolean(state.masterName)}
+            modalData={state.data}
+            recordId={state.recordId}
+            defaults={state.defaults}
+            onClose={closeMasterModal}
+            onSuccess={handleSuccess}
+          />
+        </CreatorInitialNameContext.Provider>
       )}
     </MasterModalContext.Provider>
   );
@@ -120,4 +125,6 @@ function useMasterCreator() {
   return useContext(MasterModalContext) || NO_PROVIDER;
 }
 
-export { MasterModalProvider, useMasterCreator };
+const useCreatorInitialName = () => useContext(CreatorInitialNameContext);
+
+export { MasterModalProvider, useMasterCreator, useCreatorInitialName };
