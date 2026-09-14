@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { AlertTriangle } from 'lucide-react';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
-import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { RoleSelector } from '@startup/components/admin/RoleSelector';
 
-const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, roles = [], extraContent = null }) => {
+const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, extraContent = null }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
 
@@ -64,11 +64,6 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
     }
   };
 
-  const roleOptions = roles.map((role) => ({
-    value: String(role.id),
-    label: role.description ? `${role.name} - ${role.description}` : role.name,
-  }));
-
   const handleRoleChange = (value) => {
     setSelectedRoleId(value ? Number(value) : null);
   };
@@ -94,12 +89,12 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Role <span className="text-red-500">*</span>
                 </label>
-                <SearchableDropdown
-                  options={roleOptions}
-                  selectedValues={selectedRoleId ? String(selectedRoleId) : ''}
+                <RoleSelector
+                  value={selectedRoleId}
                   onChange={handleRoleChange}
-                  placeholder="-- Select a role --"
-                  multiple={false}
+                  label={null}
+                  className=""
+                  allowCreate={false}
                 />
               </div>
             )}
@@ -154,13 +149,6 @@ ConfirmationDialog.propTypes = {
   onConfirm: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   isSupportUser: PropTypes.bool,
-  roles: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string,
-    })
-  ),
   extraContent: PropTypes.node,
 };
 

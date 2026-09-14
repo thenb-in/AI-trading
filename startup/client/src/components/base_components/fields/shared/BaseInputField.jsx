@@ -52,7 +52,8 @@ function BaseInputField({
 }) {
   const disabled = useFieldDisabled(disabledProp);
   const inputId = id || name;
-  const leftIcon = icon || defaultIcon;
+  // `icon={false}` drops the type's own icon too, for compact cells.
+  const leftIcon = icon === false ? null : icon || defaultIcon;
   const errorId = error ? `${inputId || name || 'field'}-error` : undefined;
 
   const hasValue = value !== '' && value !== null && value !== undefined;
@@ -197,7 +198,7 @@ BaseInputField.propTypes = {
   minLength: PropTypes.number,
   rows: PropTypes.number,
   showClearButton: PropTypes.bool,
-  icon: PropTypes.node,
+  icon: PropTypes.oneOfType([PropTypes.node, PropTypes.bool]),
   defaultIcon: PropTypes.node,
   sanitize: PropTypes.bool,
 };

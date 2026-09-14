@@ -1,3 +1,6 @@
+import { EmailTypeField } from '@startup/components/base_components/fields/EmailTypeField';
+import { PhoneTypeField } from '@startup/components/base_components/fields/PhoneTypeField';
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
@@ -6,10 +9,10 @@ import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 
 
 const FIELD_CONFIG = {
-  name: { label: 'Name', type: 'text', placeholder: 'Full name' },
-  phone: { label: 'Phone', type: 'tel', placeholder: 'Phone number' },
-  username: { label: 'Username', type: 'text', placeholder: 'Username' },
-  email: { label: 'Email', type: 'email', placeholder: 'name@company.com' },
+  name: { label: 'Name', Input: TextTypeField, placeholder: 'Full name' },
+  phone: { label: 'Phone', Input: PhoneTypeField, placeholder: 'Phone number' },
+  username: { label: 'Username', Input: TextTypeField, placeholder: 'Username' },
+  email: { label: 'Email', Input: EmailTypeField, placeholder: 'name@company.com' },
 };
 
 function EditFieldModal({ field, initialValue, onSave, onClose }) {
@@ -59,15 +62,13 @@ function EditFieldModal({ field, initialValue, onSave, onClose }) {
           </button>
         </div>
 
-        <label className="mb-1 block text-xs font-medium text-gray-500">{cfg.label}</label>
-        <input
+        <cfg.Input
+          label={cfg.label}
           autoFocus
-          type={cfg.type}
           value={value}
           placeholder={cfg.placeholder}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         />
         {showHint && <AvailabilityHint status={availability.status} takenLabel="This username is already taken." />}
         {saveError && <p className="mt-1.5 text-xs font-medium text-red-600">{saveError}</p>}

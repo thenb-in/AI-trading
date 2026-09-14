@@ -1,3 +1,6 @@
+import { DateTypeField } from '@startup/components/base_components/fields/DateTypeField';
+import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Plus, X } from 'lucide-react';
@@ -9,8 +12,6 @@ import {
   isValueLessOperator
 } from '@utils/masterAdvancedFilterUtils';
 
-const inputClassName =
-  'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500';
 
 const BOOLEAN_OPTIONS = [
   { value: 'true', label: 'Yes' },
@@ -91,13 +92,7 @@ const MasterAdvancedFilter = ({
   const renderValueInput = (filter) => {
     if (isValueLessOperator(filter.operator)) {
       return (
-        <input
-          type="text"
-          disabled
-          value=""
-          placeholder="No value needed"
-          className={`${inputClassName} bg-gray-50 text-gray-400`}
-        />
+        <TextTypeField disabled value="" placeholder="No value needed" className="!text-sm" />
       );
     }
 
@@ -108,8 +103,7 @@ const MasterAdvancedFilter = ({
       return (
         <SearchableDropdown
           options={BOOLEAN_OPTIONS}
-          selectedValues={filter.value ?? ''}
-          multiple={false}
+          value={filter.value ?? ''}
           searchable={false}
           placeholder="Select..."
           onChange={(value) => handleValueChange(filter.id, value)}
@@ -118,15 +112,35 @@ const MasterAdvancedFilter = ({
     }
 
     // Dates filter by day, so a datetime column gets a date picker too.
-    const inputType = { date: 'date', datetime: 'date', number: 'number' }[fieldType] || 'text';
+    if (fieldType === 'date' || fieldType === 'datetime') {
+      return (
+        <DateTypeField
+          name={String(filter.id)}
+          value={filter.value ?? ''}
+          onChange={(field, next) => handleValueChange(filter.id, next)}
+          maxToday={false}
+        />
+      );
+    }
+
+    if (fieldType === 'number') {
+      return (
+        <NumberTypeField
+          numberMode="float"
+          value={filter.value ?? ''}
+          onChange={(e) => handleValueChange(filter.id, e.target.value)}
+          placeholder="Enter value"
+          className="!text-sm"
+        />
+      );
+    }
 
     return (
-      <input
-        type={inputType}
+      <TextTypeField
         value={filter.value ?? ''}
         onChange={(e) => handleValueChange(filter.id, e.target.value)}
         placeholder="Enter value"
-        className={inputClassName}
+        className="!text-sm"
       />
     );
   };
@@ -177,16 +191,14 @@ const MasterAdvancedFilter = ({
               >
                 <SearchableDropdown
                   options={fieldOptions}
-                  selectedValues={filter.field ?? ''}
-                  multiple={false}
+                  value={filter.field ?? ''}
                   placeholder="Select field..."
                   onChange={(field) => handleFieldChange(filter.id, field)}
                 />
 
                 <SearchableDropdown
                   options={operators}
-                  selectedValues={filter.operator ?? ''}
-                  multiple={false}
+                  value={filter.operator ?? ''}
                   searchable={false}
                   placeholder="Select operator..."
                   onChange={(operator) => handleOperatorChange(filter.id, operator)}

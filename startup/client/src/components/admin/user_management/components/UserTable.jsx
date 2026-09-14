@@ -5,7 +5,6 @@ import { UserTableRow } from './UserTableRow';
 
 const UserTable = ({
   users,
-  roles,
   title,
   emptyMessage,
   statusColor,
@@ -84,7 +83,6 @@ const UserTable = ({
                 <UserTableRow
                   key={user.id}
                   user={user}
-                  roles={roles}
                   selectedUsers={selectedUsers}
                   bulkDeleteMode={bulkDeleteMode}
                   toggleUserSelection={toggleUserSelection}
@@ -120,10 +118,6 @@ UserTable.propTypes = {
     }),
     is_approved: PropTypes.bool,
     last_active: PropTypes.string,
-  })).isRequired,
-  roles: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired
   })).isRequired,
   title: PropTypes.string.isRequired,
   emptyMessage: PropTypes.string.isRequired,

@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 // Custom hook for managing company user assignment data
 const useCompanyUserData = (isOpen, initialCompany) => {
   const [data, setData] = useState({
-    users: [],
     companyUsers: [],
     loading: false
   });
@@ -21,13 +20,9 @@ const useCompanyUserData = (isOpen, initialCompany) => {
     setData(prev => ({ ...prev, loading: true }));
 
     try {
-      const [usersRes, companyUsersRes] = await Promise.all([
-        ApiService.getSupportUsers(),
-        initialCompany?.id ? ApiService.getCompanyUsers(initialCompany.id) : Promise.resolve({ data: [] })
-      ]);
+      const companyUsersRes = initialCompany?.id ? await ApiService.getCompanyUsers(initialCompany.id) : { data: [] };
 
       setData({
-        users: normalizeResponse(usersRes.data),
         companyUsers: normalizeResponse(companyUsersRes.data),
         loading: false
       });

@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from 'prop-types';
 import { Link2 } from 'lucide-react';
 
@@ -50,7 +51,7 @@ const PermissionLegend = ({ isRoleReadOnly = false }) => (
 
       <li className={ITEM}>
         <span className={`${SYMBOL_CELL}`}>
-          <input type="checkbox" disabled readOnly className="h-3.5 w-3.5 rounded border-gray-300 opacity-50" />
+          <CheckboxTypeField mode="bare" disabled readOnly className="!h-3.5 !w-3.5 opacity-50" />
         </span>
         <span className="text-xs text-gray-700">
           {isRoleReadOnly ? (

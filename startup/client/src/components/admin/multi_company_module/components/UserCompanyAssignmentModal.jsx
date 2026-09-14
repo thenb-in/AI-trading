@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Loader2 } from 'lucide-react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
@@ -10,9 +10,10 @@ import { UserAssignmentList } from './UserAssignmentList';
 import { ApiService } from '@services/ApiService';
 
 function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
-  const { users, companyUsers, loading, loadCompanyUsers } = useCompanyUserData(isOpen, company);
+  const { companyUsers, loading, loadCompanyUsers } = useCompanyUserData(isOpen, company);
 
   const [selectedUser, setSelectedUser] = useState('');
+  const [selectedUserName, setSelectedUserName] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [removing, setRemoving] = useState(false);
 
@@ -32,10 +33,15 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
     }
   }, [isOpen, resetSelection]);
 
-  const getAvailableUsers = useMemo(() => {
-    const assignedUserIds = new Set(companyUsers.map(user => user.id || user.username));
-    return users.filter(user => !assignedUserIds.has(user.id || user.username));
-  }, [users, companyUsers]);
+  const isUnassigned = useCallback(
+    (user) => !companyUsers.some((assigned) => (assigned.id || assigned.username) === (user.id || user.username)),
+    [companyUsers]
+  );
+
+  const handleSelectUser = useCallback((value, user) => {
+    setSelectedUser(value ?? '');
+    setSelectedUserName(user?.name || user?.username || '');
+  }, []);
 
   const handleBackdropClick = useCallback((e) => {
     if (e.target === e.currentTarget) onClose();
@@ -51,8 +57,7 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
       return;
     }
 
-    const user = users.find(u => (u.id || u.username) === selectedUser);
-    const userName = user?.name || user?.username || 'User';
+    const userName = selectedUserName || 'User';
     const companyName = company?.name || 'Company';
 
     setAssigning(true);
@@ -68,7 +73,7 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
     } finally {
       setAssigning(false);
     }
-  }, [selectedUser, selectedCompany, users, company?.name, loadCompanyUsers, onSuccess]);
+  }, [selectedUser, selectedUserName, selectedCompany, company?.name, loadCompanyUsers, onSuccess]);
 
   const handleRemoveUser = useCallback(async (userId) => {
     const user = companyUsers.find(u => (u.id || u.username) === userId);
@@ -124,9 +129,9 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
                 selectedUser={selectedUser}
                 assigning={assigning}
                 loading={loading}
-                onSelectUser={setSelectedUser}
+                onSelectUser={handleSelectUser}
                 onAssign={handleAssignUser}
-                availableUsers={getAvailableUsers}
+                isUnassigned={isUnassigned}
               />
 
               <UserAssignmentList

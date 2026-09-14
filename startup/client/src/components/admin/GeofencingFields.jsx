@@ -1,3 +1,4 @@
+import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
 import { useState } from "react";
 import PropTypes from "prop-types";
 import { MapPin, Shield, Info, LocateFixed, Loader } from "lucide-react";
@@ -76,15 +77,14 @@ function GeofencingFields({
             Latitude
             <Info size={14} className="text-gray-400" title="A value between -90 and 90 degrees" />
           </label>
-          <input
-            type="number"
-            step="any"
+          <NumberTypeField
+            numberMode="float"
+            allowNegative
             min={-90}
             max={90}
             value={latitude}
             onChange={onLatitudeChange}
             placeholder="e.g. 19.0760"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
         </div>
         <div className="space-y-1.5">
@@ -92,15 +92,14 @@ function GeofencingFields({
             Longitude
             <Info size={14} className="text-gray-400" title="A value between -180 and 180 degrees" />
           </label>
-          <input
-            type="number"
-            step="any"
+          <NumberTypeField
+            numberMode="float"
+            allowNegative
             min={-180}
             max={180}
             value={longitude}
             onChange={onLongitudeChange}
             placeholder="e.g. 72.8777"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
           />
         </div>
 
@@ -110,14 +109,11 @@ function GeofencingFields({
               Access Radius (meters)
               <Info size={14} className="text-gray-400" title="Punches are allowed within this many meters of the coordinates" />
             </label>
-            <input
-              type="number"
+            <NumberTypeField
               min={1}
-              step={1}
               value={radius ?? ""}
               onChange={onRadiusChange}
               placeholder={radiusPlaceholder}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             />
           </div>
         )}

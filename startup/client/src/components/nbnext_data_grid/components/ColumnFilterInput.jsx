@@ -1,3 +1,4 @@
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
@@ -82,18 +83,14 @@ function ColumnFilterInput({ column, columnType, entry, onChange, onInputClick }
 
   return (
     <div className="relative flex items-center gap-1">
-      <input
-        type="text"
+      <TextTypeField
         value={valueless ? "" : value}
         onChange={handleValueChange}
         disabled={valueless}
         placeholder={valueless ? OPERATOR_LABELS[operator] : "Filter..."}
         title={isDefault ? undefined : `${OPERATOR_LABELS[operator]}…`}
-        className={`min-w-0 flex-1 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-800 ${
-          valueless
-            ? "bg-gray-100 border-gray-200 text-gray-500 italic cursor-not-allowed"
-            : "bg-white border-gray-300"
-        }`}
+        className={`!px-2 !py-1 !text-xs !rounded ${valueless ? "italic" : ""}`}
+        containerClassName="min-w-0 flex-1"
         onClick={onInputClick}
       />
       <button

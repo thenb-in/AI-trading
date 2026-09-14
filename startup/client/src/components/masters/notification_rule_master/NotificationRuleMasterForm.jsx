@@ -37,19 +37,14 @@ const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) =
       <div className="divide-y-2 divide-gray-200">
         <RuleNameSection
           rule={form.rule}
-          permissions={form.permissions}
-          selectedPermission={form.selectedPermission}
-          isLoading={form.isLoadingOptions}
           onChange={form.patchRule}
         />
 
         <RecipientSection
           rule={form.rule}
-          audience={form.audience}
           onPatch={form.patchRule}
           recipientCount={form.recipientCount}
           totalRecipients={form.totalRecipients}
-          isLoading={form.isLoadingOptions}
           onChange={form.setRecipient}
         />
 

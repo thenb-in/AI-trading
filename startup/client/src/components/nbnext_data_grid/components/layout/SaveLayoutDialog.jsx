@@ -1,3 +1,5 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import PropTypes from "prop-types";
 import { SearchableDropdown } from "@startup/components/base_components/fields/SearchableDropdown";
 
@@ -35,25 +37,24 @@ function SaveLayoutDialog({
           Updating: <strong>{selectedLayout.layout_name}</strong>
         </div>
       )}
-      <input
-        type="text"
+      <TextTypeField
         value={newLayoutName}
         onChange={(e) => onNameChange(e.target.value)}
         placeholder="Layout name"
-        className="w-full border border-gray-200 rounded text-xs box-border mb-2 py-1 px-2"
+        className="!text-xs !py-1 !px-2 !rounded"
+        containerClassName="mb-2"
       />
       <div className="mb-2">
         <SearchableDropdown
           options={LAYOUT_TYPE_OPTIONS}
-          selectedValues={newLayoutType}
+          value={newLayoutType}
           onChange={onTypeChange}
           placeholder="Layout type"
-          multiple={false}
         />
       </div>
       <label className="flex items-center gap-2 text-xs text-gray-700 mb-3 cursor-pointer select-none">
-        <input
-          type="checkbox"
+        <CheckboxTypeField
+          mode="bare"
           checked={includeFilters}
           onChange={(e) => onIncludeFiltersChange(e.target.checked)}
         />

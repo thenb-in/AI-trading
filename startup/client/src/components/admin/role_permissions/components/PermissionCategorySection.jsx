@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { useCallback } from 'react';
 import { Layers, Loader2, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
@@ -187,8 +188,8 @@ function PermissionCategorySection({
                 return (
                   <tr key={permission.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="p-1.5 text-center border-r border-gray-200">
-                      <input
-                        type="checkbox"
+                      <CheckboxTypeField
+                        mode="bare"
                         checked={assigned}
                         onChange={() => handlePermissionToggle(permission.id, assigned)}
                         disabled={isDisabled}
@@ -297,8 +298,8 @@ function PermissionCategorySection({
               className={`flex items-center gap-1 p-1 bg-white rounded border border-gray-200 hover:border-blue-300 ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               title={tooltipText || getPermissionLabel(permission)}
             >
-              <input
-                type="checkbox"
+              <CheckboxTypeField
+                mode="bare"
                 checked={assigned}
                 onChange={() => handlePermissionToggle(permission.id, assigned)}
                 disabled={isDisabled}

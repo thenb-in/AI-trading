@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from "prop-types";
 import {
   cellBaseStyle,
@@ -267,8 +268,8 @@ function DataGridBody({
                   onClick={stopPropagation}
                 >
                   {!isGroupTotal && (
-                    <input
-                      type="checkbox"
+                    <CheckboxTypeField
+                      mode="bare"
                       checked={isRowSelected}
                       onChange={handleSelectionChange}
                       onClick={stopPropagation}

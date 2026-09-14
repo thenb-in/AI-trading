@@ -1,3 +1,6 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
+import { TextareaTypeField } from '@startup/components/base_components/fields/TextareaTypeField';
 import { useCallback, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { X, Loader2, Globe } from 'lucide-react';
@@ -101,48 +104,36 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [],
           <div className="p-4 space-y-4 overflow-y-auto">
             {/* Name */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Subscription Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
+              <TextTypeField
+                label="Subscription Name"
+                required
                 value={name}
                 onChange={handleNameChange}
                 disabled={submitting}
-                className={`w-full px-2 py-1.5 text-sm border rounded ${
-                  errors.name
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                error={errors.name || ''}
                 placeholder="Enter subscription name"
               />
-              {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-              <textarea
+              <TextareaTypeField
+                label="Description"
                 value={description}
                 onChange={handleDescriptionChange}
                 disabled={submitting}
                 rows={2}
-                className={`w-full px-2 py-1.5 text-sm border rounded ${
-                  errors.description
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                } bg-white text-gray-900 focus:ring-1 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none`}
+                error={errors.description || ''}
                 placeholder="Enter subscription description (optional)"
               />
-              {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
             </div>
 
             {/* Global toggle - only for super users */}
             {canCreateGlobal && (
               <div className="flex items-start gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
-                <input
+                <CheckboxTypeField
+                  mode="bare"
                   id="subscription-isGlobal"
-                  type="checkbox"
                   checked={isGlobal}
                   onChange={(e) => setIsGlobal(e.target.checked)}
                   disabled={submitting}

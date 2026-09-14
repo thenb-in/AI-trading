@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { Loader2, Link2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import {
@@ -190,8 +191,8 @@ function PermissionTable({
                             
                             return (
                               <div key={uniqueKey} className="flex items-center gap-0.5">
-                                <input
-                                  type="checkbox"
+                                <CheckboxTypeField
+                                  mode="bare"
                                   checked={assigned}
                                   onChange={() => onTogglePermission(permission.id, assigned)}
                                   disabled={isDisabled}

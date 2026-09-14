@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
@@ -183,8 +184,8 @@ function SubscriptionSelectorPanel({
                         }`}
                       >
                         <div className="relative flex items-center justify-center w-4 h-4">
-                          <input
-                            type="checkbox"
+                          <CheckboxTypeField
+                            mode="bare"
                             checked={isSelected}
                             disabled={isPending}
                             onChange={() => onToggle(subscription.id)}

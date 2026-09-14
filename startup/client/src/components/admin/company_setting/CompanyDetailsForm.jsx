@@ -1,3 +1,4 @@
+import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
 import PropTypes from "prop-types";
 import { MapPin, FileBadge, Landmark, Image, Upload, X } from "lucide-react";
 import { TextTypeField } from "@startup/components/base_components/fields/TextTypeField";
@@ -103,7 +104,7 @@ const LogoSection = ({
           <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 text-xs font-medium border border-gray-300 rounded-md hover:bg-gray-50">
             <Upload className="w-3.5 h-3.5" />
             {logoFile ? "Change file" : "Choose file"}
-            <input ref={fileInputRef} id="company_logo" name="company_logo" type="file" accept="image/*" onChange={onLogoChange} className="hidden" />
+            <FileTypeField inputRef={fileInputRef} id="company_logo" name="company_logo" accept="image/*" onChange={onLogoChange} fileChangeMode="native" containerClassName="hidden" />
           </label>
         </div>
       </FieldFrame>

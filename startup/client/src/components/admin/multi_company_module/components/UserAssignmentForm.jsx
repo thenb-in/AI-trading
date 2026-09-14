@@ -1,6 +1,15 @@
 import PropTypes from 'prop-types';
 import { Loader2, UserPlus } from 'lucide-react';
-import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { ApiService } from '@services/ApiService';
+import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
+
+// Support users are the ones who can be assigned to another company.
+const loadSupportUsers = () => ApiService.getSupportUsers().then((response) => response.data?.data ?? response.data);
+const supportUserOption = (user) => ({
+  label: `${user.name || user.username} (${user.username || user.email || 'No username'})`,
+  searchKeys: [user.name, user.username, user.email],
+});
+const supportUserKey = (user) => String(user.id || user.username);
 
 const UserAssignmentForm = ({
   selectedUser,
@@ -8,13 +17,8 @@ const UserAssignmentForm = ({
   loading,
   onSelectUser,
   onAssign,
-  availableUsers
+  isUnassigned
 }) => {
-  const userOptions = availableUsers.map((user) => ({
-    value: String(user.id || user.username),
-    label: `${user.name || user.username} (${user.username || user.email || 'No username'})`
-  }));
-
   return (
     <div className="bg-gray-50 rounded-lg p-4">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -26,14 +30,18 @@ const UserAssignmentForm = ({
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Select Super Admin User
         </label>
-        <SearchableDropdown
-          options={userOptions}
-          selectedValues={String(selectedUser ?? '')}
+        <MasterSelector
+          loadRows={loadSupportUsers}
+          toOption={supportUserOption}
+          getValue={supportUserKey}
+          filter={isUnassigned}
+          optionName="User"
+          value={selectedUser}
           onChange={onSelectUser}
           placeholder="Choose a user..."
-          multiple={false}
           disabled={assigning || loading}
-          loading={loading}
+          allowCreate={false}
+          allowEdit={false}
         />
       </div>
 
@@ -64,7 +72,8 @@ UserAssignmentForm.propTypes = {
   loading: PropTypes.bool.isRequired,
   onSelectUser: PropTypes.func.isRequired,
   onAssign: PropTypes.func.isRequired,
-  availableUsers: PropTypes.array.isRequired
+  /** (user) => bool — leaves out the users the company already has. */
+  isUnassigned: PropTypes.func.isRequired
 };
 
 export { UserAssignmentForm };

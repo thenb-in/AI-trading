@@ -1,3 +1,4 @@
+import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
 import PropTypes from 'prop-types';
 import { Loader2, Plus, Download, Upload, UploadCloud, Check } from 'lucide-react';
 
@@ -37,12 +38,12 @@ function SubscriptionToolbar({
         {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
         Import
       </button>
-      <input
-        ref={importFileRef}
-        type="file"
+      <FileTypeField
+        inputRef={importFileRef}
         accept="application/json,.json"
         onChange={onImportFile}
-        className="hidden"
+        fileChangeMode="native"
+        containerClassName="hidden"
       />
       {/* Hidden when no wallet is configured (APP_KEY empty) */}
       {showPush && <button

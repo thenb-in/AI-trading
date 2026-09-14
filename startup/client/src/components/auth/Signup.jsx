@@ -10,8 +10,12 @@ import { PhoneTypeField } from '@startup/components/base_components/fields/Phone
 import { PasswordTypeField } from '@startup/components/base_components/fields/PasswordTypeField';
 import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
-import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
 
+
+// Signing up happens before login, so roles come from the open role list.
+const loadSignupRoles = () => ApiService.getAllRoles().then((response) => response.data);
+const roleNameOption = (role) => ({ label: role.name });
 
 function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
   const [formData, setFormData] = useState({
@@ -23,7 +27,6 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
     companyId: companyId || '',
   });
   const [error, setError] = useState('');
-  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,12 +55,12 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
     if (showRoleDropdown) {
       const fetchRoles = async () => {
         try {
-          const response = await ApiService.getAllRoles();
-          setRoles(response.data);
-          if (response.data.length > 0) {
+          // New sign-ups start as `user`, or the first role there is.
+          const rolesList = await loadSignupRoles();
+          if (rolesList.length > 0) {
             setFormData(prev => ({
               ...prev,
-              role: response.data.find(role => role.name === 'user')?.id || response.data[0].id
+              role: rolesList.find(role => role.name === 'user')?.id || rolesList[0].id
             }));
           }
         } catch {
@@ -76,11 +79,6 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');
     setFormData({ ...formData, [e.target.name]: sanitizedValue });
   };
-
-  const roleOptions = roles.map((role) => ({
-    value: String(role.id),
-    label: role.name,
-  }));
 
   const handleRoleChange = (value) => {
     setFormData({ ...formData, role: value });
@@ -241,14 +239,16 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
           {/* Role Dropdown - only show if showRoleDropdown is true */}
           {showRoleDropdown && (
             <div className="mb-4">
-              <SearchableDropdown
-                options={roleOptions}
-                selectedValues={String(formData.role ?? '')}
+              <MasterSelector
+                loadRows={loadSignupRoles}
+                toOption={roleNameOption}
+                optionName="Role"
+                value={formData.role}
                 onChange={handleRoleChange}
                 placeholder="Select Role"
-                multiple={false}
                 disabled={loading}
-                loading={loading}
+                allowCreate={false}
+                allowEdit={false}
               />
             </div>
           )}

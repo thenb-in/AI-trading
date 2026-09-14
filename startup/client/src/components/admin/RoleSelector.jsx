@@ -29,6 +29,9 @@ function RoleSelector({
   label = 'Select Role',
   placeholder,
   className = 'mb-3',
+  disabled = false,
+  autoOpen = false,
+  onClose,
 }) {
   const toOption = useCallback(
     (role) => ({ value: String(role.id), label: describeRole(role) }),
@@ -48,6 +51,9 @@ function RoleSelector({
       multiple={multiple}
       allowCreate={allowCreate}
       className={className}
+      disabled={disabled}
+      autoOpen={autoOpen}
+      onClose={onClose}
     />
   );
 }
@@ -70,6 +76,9 @@ RoleSelector.propTypes = {
   label: PropTypes.string,
   placeholder: PropTypes.string,
   className: PropTypes.string,
+  disabled: PropTypes.bool,
+  autoOpen: PropTypes.bool,
+  onClose: PropTypes.func,
 };
 
 export { RoleSelector, describeRoleFully };

@@ -57,6 +57,8 @@ function MasterSelector({
   required = false,
   error,
   renderOption,
+  autoOpen = false,
+  onClose,
   allowOptionsOutsideSelectBox = false,
   className = '',
 }) {
@@ -161,6 +163,8 @@ function MasterSelector({
         disabled={disabled || loading}
         loading={loading}
         onOpen={load}
+        autoOpen={autoOpen}
+        onClose={onClose}
         optionName={optionName}
         onCreate={canCreate ? openCreator : undefined}
         renderOption={renderOption}
@@ -218,6 +222,10 @@ MasterSelector.propTypes = {
   error: PropTypes.string,
   /** (option) => node for its menu row. Keep it stable. */
   renderOption: PropTypes.func,
+  /** Opens the menu on mount, for a field shown only while it is being edited. */
+  autoOpen: PropTypes.bool,
+  /** Called when the menu closes. */
+  onClose: PropTypes.func,
   /** Set false where editing the pick makes no sense, like a filter bar. */
   allowEdit: PropTypes.bool,
   className: PropTypes.string,

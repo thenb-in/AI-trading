@@ -40,7 +40,6 @@ function UserManagement() {
     deselectAllUsersFromTable,
     showConfirmation,
     showBulkDeleteConfirmation,
-    roles,
     // deviceAccessOptions ,
     handleDeviceOptionUpdate,
     updateUser,
@@ -110,7 +109,6 @@ function UserManagement() {
 
 
   const sharedTableProps = {
-    roles,
     bulkDeleteMode,
     selectedUsers,
     toggleUserSelection,
@@ -276,7 +274,6 @@ function UserManagement() {
         onConfirm={confirmAction}
         onCancel={handleCancelConfirmDialog}
         isSupportUser={userData?.isSupportUser || false}
-        roles={roles}
         extraContent={approveExtension.renderExtras}
       />
 

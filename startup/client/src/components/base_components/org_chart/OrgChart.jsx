@@ -1,3 +1,4 @@
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Search, ZoomIn, ZoomOut, Crosshair, ChevronRight, CornerLeftUp } from 'lucide-react';
@@ -225,13 +226,12 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
       <div className="flex flex-wrap items-center gap-2 mb-2">
         {toolbar}
         <div className="relative flex-1 min-w-[14rem] max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
+          <TextTypeField
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            icon={<Search className="w-4 h-4 text-slate-400" />}
+            className="!text-sm"
           />
           {term.length >= 2 && (
             <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg ring-1 ring-slate-900/5">

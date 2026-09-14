@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from "prop-types";
 import { ArrowUpDown, ArrowUp, ArrowDown, Pin, PinOff, Layers } from "lucide-react";
 import { ColumnFilterInput } from "./ColumnFilterInput";
@@ -397,9 +398,9 @@ function DataGridHeader({
       <tr ref={headerRef}>
         {selectionEnabled && (
           <th style={selectionHeaderCellStyle}>
-            <input
-              type="checkbox"
-              ref={setIndeterminate}
+            <CheckboxTypeField
+              mode="bare"
+              inputRef={setIndeterminate}
               checked={Boolean(selection?.allSelected)}
               onChange={handleSelectAllChange}
               onClick={(e) => e.stopPropagation()}

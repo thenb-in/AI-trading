@@ -7,18 +7,18 @@ import { RoleBadge } from './RoleBadge';
 import { EditFieldModal } from './EditFieldModal';
 import { hasPermission, useDataContext } from '@context/useDataContext';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
-import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { RoleSelector } from '@startup/components/admin/RoleSelector';
 
 // SearchableDropdown speaks strings, and '' is its "nothing selected" value —
 // which is not the same as deliberately choosing to remove someone's role.
-const NO_ROLE_VALUE = '__none__';
+// Role names here run to `attendance_admin`; the table shows the name alone.
+const roleName = (role) => role.name;
 
 const WALLET_WINDOW_NAME = 'nbnextWallet';
 const WALLET_WINDOW_FEATURES = 'popup=yes,width=1180,height=820';
 
 const UserTableRow = ({
   user,
-  roles,
   selectedUsers,
   bulkDeleteMode,
   toggleUserSelection,
@@ -58,20 +58,13 @@ const UserTableRow = ({
     }
   };
 
-  // A role can be taken away, not just swapped — the handler has always
-  // accepted null, but without this entry there was no way to say it.
-  const roleOptions = [
-    { value: NO_ROLE_VALUE, label: 'No Role' },
-    ...roles.map((role) => ({ value: String(role.id), label: role.name })),
-  ];
-
-  const onRoleChange = async (value) => {
-    const newRoleId = value === NO_ROLE_VALUE || value === '' ? null : parseInt(value, 10);
+  // A role can be taken away, not just swapped: clearing the field sends null.
+  const onRoleChange = async (value, next) => {
+    const newRoleId = value ? parseInt(value, 10) : null;
     if (newRoleId === (user?.role?.id ?? null)) {
       setEditingRole(false);
       return;
     }
-    const next = roles.find((role) => role.id === newRoleId);
     const who = user.name || user.username;
     const ok = await handleRoleChange(user.id, newRoleId);
     // Changing what someone is allowed to do should say so. It used to happen
@@ -235,14 +228,15 @@ const UserTableRow = ({
           // Wide enough to read a role name in: the column is sized for a badge,
           // and role names here run to `attendance_admin`.
           <div onClick={handleStopPropagation} className="min-w-[14rem]">
-            <SearchableDropdown
-              options={roleOptions}
-              selectedValues={user?.role?.id ? String(user.role.id) : NO_ROLE_VALUE}
+            <RoleSelector
+              value={user?.role?.id}
               onChange={onRoleChange}
               onClose={handleRoleBlur}
+              describeRole={roleName}
+              label={null}
+              className=""
               placeholder="No Role"
-              defaultOptionValue={NO_ROLE_VALUE}
-              multiple={false}
+              allowCreate={false}
               autoOpen
               disabled={!canUpdateRole}
             />
@@ -407,7 +401,6 @@ const UserTableRow = ({
 
 UserTableRow.propTypes = {
   user: PropTypes.object.isRequired,
-  roles: PropTypes.array.isRequired,
   selectedUsers: PropTypes.array.isRequired,
   bulkDeleteMode: PropTypes.bool.isRequired,
   toggleUserSelection: PropTypes.func.isRequired,

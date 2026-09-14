@@ -1,3 +1,4 @@
+import { RadioTypeField } from '@startup/components/base_components/fields/RadioTypeField';
 import { useCallback, useMemo } from 'react';
 import { Layers } from 'lucide-react';
 import PropTypes from 'prop-types';
@@ -229,8 +230,8 @@ function SubscriptionPermissionSection({
                     </td>
                   )}
                   <td className="p-1.5 text-center border-r border-gray-200">
-                    <input
-                      type="radio"
+                    <RadioTypeField
+                      mode="bare"
                       name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="subscribed"
                       checked={currentStatus === 'subscribed'}
@@ -240,8 +241,8 @@ function SubscriptionPermissionSection({
                     />
                   </td>
                   <td className="p-1.5 text-center border-r border-gray-200">
-                    <input
-                      type="radio"
+                    <RadioTypeField
+                      mode="bare"
                       name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="not_subscribed"
                       checked={currentStatus === 'not_subscribed'}
@@ -251,8 +252,8 @@ function SubscriptionPermissionSection({
                     />
                   </td>
                   <td className="p-1.5 text-center">
-                    <input
-                      type="radio"
+                    <RadioTypeField
+                      mode="bare"
                       name={`permission-group-${namePrefix}${category}-${row.key}`}
                       value="hidden"
                       checked={currentStatus === 'hidden'}

@@ -1,3 +1,4 @@
+import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
 import PropTypes from 'prop-types';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Upload, X, Camera, Video, Eye } from 'lucide-react';
@@ -234,14 +235,14 @@ const FilesSection = ({
 
   return (
     <div>
-      <input
+      <FileTypeField
         id={fileInputId}
-        type="file"
         accept={accept}
-        {...(multiple ? { multiple: true } : {})}
-        ref={fileInputRef}
-        className="sr-only"
+        multiple={multiple}
+        inputRef={fileInputRef}
         onChange={handleFileInputChange}
+        fileChangeMode="native"
+        containerClassName="sr-only"
         aria-hidden
       />
       <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor={fileInputId}>

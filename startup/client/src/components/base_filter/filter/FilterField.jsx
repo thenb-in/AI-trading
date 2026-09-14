@@ -1,3 +1,4 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { useEffect, useMemo } from 'react';
 import { parse } from 'date-fns';
 import PropTypes from 'prop-types';
@@ -97,7 +98,7 @@ const FilterField = ({
       return (
         <SearchableDropdown
           options={options}
-          selectedValues={selected}
+          value={selected}
           onChange={(next) => onSearchableChange(config, next)}
           placeholder={config.placeholder || `Select ${config.label || ''}`.trim()}
           disabled={isDisabled}
@@ -145,8 +146,8 @@ const FilterField = ({
             isDisabled ? 'cursor-not-allowed opacity-60' : 'hover:text-gray-900'
           }`}
         >
-          <input
-            type="checkbox"
+          <CheckboxTypeField
+            mode="bare"
             name={config.name}
             checked={value || false}
             onChange={onCheckboxChange}

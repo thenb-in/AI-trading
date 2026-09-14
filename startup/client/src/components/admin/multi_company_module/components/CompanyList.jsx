@@ -1,3 +1,5 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
+import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import PropTypes from 'prop-types';
 import { useState, useCallback, useMemo, memo } from 'react';
 import { toast } from 'react-toastify';
@@ -159,18 +161,17 @@ const CompanyList = ({ companies, activeCompanyId, activeCompanyName, onSwitch, 
   </div>
 
   <div className="mb-4">
-    <input
-      type="text"
+    <TextTypeField
       value={searchText}
       onChange={(e) => setSearchText(e.target.value)}
       onKeyDown={handleSearchKeyDown}
       placeholder={debug ? 'Search company name...' : 'Type full company name to show'}
-      className="w-full max-w-md mx-auto block px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      containerClassName="max-w-md mx-auto"
       aria-label="Filter companies by name"
     />
     <label className="flex items-center justify-center gap-2 mt-2 cursor-pointer text-sm text-gray-600">
-      <input
-        type="checkbox"
+      <CheckboxTypeField
+        mode="bare"
         checked={debug}
         onChange={(e) => setDebug(e.target.checked)}
         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"

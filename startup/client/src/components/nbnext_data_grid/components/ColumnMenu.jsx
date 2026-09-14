@@ -2,6 +2,7 @@
  * Column Menu component for showing/hiding and freezing columns
  */
 
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from "prop-types";
 
 function ColumnMenu({
@@ -22,8 +23,8 @@ function ColumnMenu({
           key={c.field}
           className="flex items-center gap-2 mb-1.5"
         >
-          <input
-            type="checkbox"
+          <CheckboxTypeField
+            mode="bare"
             checked={!!columnVisibility[c.field]}
             onChange={() => toggleColumnVisibility(c.field)}
           />

@@ -1,3 +1,4 @@
+import { UrlTypeField } from '@startup/components/base_components/fields/UrlTypeField';
 import PropTypes from 'prop-types';
 import { FilesSection } from '@/components/masters/nbnext_drive_master/FilesSection';
 import {
@@ -38,16 +39,12 @@ function HelpSupportTicketForm({
 
         <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="ticket-page-url">
-              Page URL
-            </label>
-            <input
+            <UrlTypeField
               id="ticket-page-url"
-              type="url"
+              label="Page URL"
               value={formData.pageUrl}
               onChange={(e) => onFieldChange('pageUrl', e.target.value)}
               placeholder="https://example.com/admin/users?tab=active"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
 
@@ -57,10 +54,9 @@ function HelpSupportTicketForm({
             </label>
             <SearchableDropdown
               options={PRIORITY_OPTIONS}
-              selectedValues={formData.priority}
+              value={formData.priority}
               onChange={handlePriorityChange}
               placeholder="Select priority"
-              multiple={false}
             />
           </div>
 
@@ -70,26 +66,22 @@ function HelpSupportTicketForm({
             </label>
             <SearchableDropdown
               options={CATEGORY_OPTIONS}
-              selectedValues={formData.category}
+              value={formData.category}
               onChange={handleCategoryChange}
               placeholder="Select category"
-              multiple={false}
             />
           </div>
         </div>
 
         {screenshotCaptured && (
           <div className="mt-4">
-            <label className="mb-1 block text-sm font-medium text-gray-700" htmlFor="ticket-comment">
-              Comment
-            </label>
-            <textarea
+            <TextareaTypeField
               id="ticket-comment"
+              label="Comment"
               value={formData.comment}
               onChange={(e) => onFieldChange('comment', e.target.value)}
               rows={5}
               placeholder="Describe what happened, expected behavior, and any steps to reproduce."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
         )}

@@ -1,3 +1,4 @@
+import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
 import { useState } from 'react';
 import { History, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -65,15 +66,16 @@ function HeadBaseButton() {
       <label htmlFor="headBaseMonths" className="text-xs text-gray-600">
         Months
       </label>
-      <input
+      <NumberTypeField
         id="headBaseMonths"
-        type="number"
-        min="1"
-        max="36"
+        min={1}
+        max={36}
         value={months}
         onChange={(e) => setMonths(e.target.value)}
         disabled={building}
-        className="w-14 px-2 py-1.5 text-xs border border-gray-300 rounded disabled:opacity-50"
+        icon={false}
+        className="!px-2 !py-1.5 !text-xs !rounded"
+        containerClassName="!w-14"
       />
       <button
         onClick={handleBuild}

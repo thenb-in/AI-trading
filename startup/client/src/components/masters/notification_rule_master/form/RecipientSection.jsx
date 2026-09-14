@@ -1,6 +1,8 @@
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from 'prop-types';
 import { Building2, Shield, KeyRound, UserRound, AtSign } from 'lucide-react';
-import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { PermissionSelector } from '@startup/components/admin/PermissionSelector';
+import { UserSelector } from '@startup/components/admin/UserSelector';
 import { RoleSelector } from '@startup/components/admin/RoleSelector';
 import { RECIPIENT_MODE } from '../constants';
 import { roleDisplayName } from '../ruleOptions';
@@ -13,7 +15,7 @@ import { audienceSummary } from './buildAudienceSummary';
 
 
 const RecipientSection = ({
-  rule, audience, recipientCount, totalRecipients, isLoading, onChange, onPatch
+  rule, recipientCount, totalRecipients, onChange, onPatch
 }) => {
   const recipients = rule.recipients || {};
   const onlyTheSubject = Boolean(rule.only_the_subject);
@@ -43,8 +45,8 @@ const RecipientSection = ({
         active={Boolean(recipients[RECIPIENT_MODE.COMPANY])}
       >
         <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
+          <CheckboxTypeField
+            mode="bare"
             checked={Boolean(recipients[RECIPIENT_MODE.COMPANY])}
             onChange={() => onChange(RECIPIENT_MODE.COMPANY, !recipients[RECIPIENT_MODE.COMPANY])}
             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -77,11 +79,9 @@ const RecipientSection = ({
         hintTone="red"
         active={isOn(RECIPIENT_MODE.PERMISSION)}
       >
-        <SearchableDropdown
-          options={audience.permissionOptions}
-          selectedValues={valuesFor(RECIPIENT_MODE.PERMISSION)}
+        <PermissionSelector
+          value={valuesFor(RECIPIENT_MODE.PERMISSION)}
           multiple
-          loading={isLoading}
           placeholder="Select permissions…"
           onChange={(value) => onChange(RECIPIENT_MODE.PERMISSION, value)}
         />
@@ -94,11 +94,9 @@ const RecipientSection = ({
         hintTone="red"
         active={isOn(RECIPIENT_MODE.USERS)}
       >
-        <SearchableDropdown
-          options={audience.userOptions}
-          selectedValues={valuesFor(RECIPIENT_MODE.USERS)}
+        <UserSelector
+          value={valuesFor(RECIPIENT_MODE.USERS)}
           multiple
-          loading={isLoading}
           placeholder="Select users…"
           onChange={(value) => onChange(RECIPIENT_MODE.USERS, value)}
         />
@@ -124,10 +122,8 @@ const RecipientSection = ({
 
 RecipientSection.propTypes = {
   rule: PropTypes.object.isRequired,
-  audience: PropTypes.object.isRequired,
   recipientCount: PropTypes.func.isRequired,
   totalRecipients: PropTypes.number.isRequired,
-  isLoading: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
   onPatch: PropTypes.func.isRequired
 };
