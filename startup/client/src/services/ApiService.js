@@ -168,11 +168,11 @@ const ApiService = {
     return this.request('POST', '/company/switch', { companyId });
   },
 
-  // Cached: the role list changes only when someone edits roles, and every
-  // write that does is marked below. `options` lets a caller pass `{ force }`
-  // when it must have the newest copy anyway.
-  getAllRoles(options = {}) {
-    return this.request('GET', '/auth/roles', null, { cache: 'roles', ...options });
+  // The roles a sign-up may pick: global ones, plus `companyId`'s own. Cached:
+  // the role list changes only when someone edits roles, and every write that
+  // does is marked below. `options` lets a caller pass `{ force }`.
+  getAllRoles(companyId, options = {}) {
+    return this.request('GET', '/auth/roles', null, { cache: 'roles', params: { companyId }, ...options });
   },
 
   // Users

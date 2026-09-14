@@ -65,11 +65,12 @@ const authController = {
   },
 
   /**
-   * Get all roles
+   * Roles a sign-up may pick: global ones, plus the company's own
+   * @param {string} [companyId] - Company the sign-up is for
    * @returns {Promise<array>} List of roles
    */
-  async getAllRoles() {
-    return await authService.getAllRoles();
+  async getAllRoles(companyId) {
+    return await authService.getAllRoles(companyId);
   },
 
   /**

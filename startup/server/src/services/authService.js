@@ -4,6 +4,8 @@ const { findModelByIdOrThrow, getUserWithRoleInclude } = require('../utils/model
 const { verifyValidSubscribedPermission } = require('../utils/subscriptionPermissionUtils');
 const { isSsoManagedAccount } = require('../config/ssoUserAccess');
 const env = require('../config/env');
+const roleService = require('./roleService');
+const { isValidUuid } = require('../utils/uuidUtils');
 
 const normalize = (val) => val?.trim().toLowerCase();
 
@@ -99,12 +101,9 @@ const getCurrentUser = async (userId) => {
   }
 };
 
-const getAllRoles = async () => {
-  const roles = await Role.findAll({
-    attributes: ['id', 'name', 'description']
-  });
-  return roles;
-};
+// Open to anyone (sign-up), so never every company's roles: the global ones,
+// plus the company's own when sign-up names a real company id.
+const getAllRoles = (companyId) => roleService.getAllRoles(isValidUuid(companyId) ? companyId : null);
 
 /**
  * Live uniqueness check for a field, so a UI can tell the user a company name /

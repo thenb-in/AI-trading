@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {  FaUser, FaLock, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -13,9 +13,6 @@ import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
 import { MASTERS } from '@startup/constants/masters';
 
-
-// Signing up happens before login, so roles come from the open role list.
-const loadSignupRoles = () => ApiService.getAllRoles().then((response) => response.data);
 const roleNameOption = (role) => ({ label: role.name });
 
 function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
@@ -33,6 +30,12 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
   const location = useLocation();
 
   const usernameAvailability = useAvailabilityCheck('username', formData.username);
+
+  // Signing up happens before login: the global roles, plus the company's own once its id is in.
+  const loadSignupRoles = useCallback(
+    () => ApiService.getAllRoles(formData.companyId.trim()).then((response) => response.data),
+    [formData.companyId]
+  );
 
 
   useEffect(() => {
@@ -74,7 +77,7 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
     } else {
       setLoading(false);
     }
-  }, [showRoleDropdown]);
+  }, [showRoleDropdown, loadSignupRoles]);
 
   const handleChange = (e) => {
     const sanitizedValue = e.target.value.replace(/[<>&]/g, '');

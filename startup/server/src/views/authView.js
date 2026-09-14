@@ -241,7 +241,7 @@ async function getAllUsers(req, res) {
 async function getAllRoles(req, res) {
   try {
     // Call controller
-    const roles = await authController.getAllRoles();
+    const roles = await authController.getAllRoles(req.query.companyId);
 
     // Build and send response
     res.status(200).json(roles);
