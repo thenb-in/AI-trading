@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { getLastChildValues, getVisibleNodes } from '@utils/treeSelect';
+import { matchRank } from '../utils/optionMatch';
 
 // A flat menu draws at most this many rows: a long list is narrowed by typing,
 // not scrolled — drawing thousands of rows is what freezes an older machine.
@@ -9,9 +10,8 @@ const MENU_ROW_CAP = 25;
  * What the open menu lists for the current search. Options that describe a
  * hierarchy (the Department filter) make it a tree, with its own collapse state
  * and the default ("All") option set apart above it; every other dropdown is a
- * flat list capped at MENU_ROW_CAP rows, matched on its label and then on its
- * `searchText` — the other keys a row is found by (an item's alternate name or
- * description) without showing them. `filter` leaves options out of a flat
+ * flat list capped at MENU_ROW_CAP rows, ranked by how well each option's
+ * `searchKeys` (or label) match the term. `filter` leaves options out of a flat
  * menu without dropping them from the dropdown, so a picked one keeps its label.
  */
 const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filter }) => {
@@ -34,22 +34,17 @@ const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filter }) 
 
   const { filteredOptions, hiddenMatchCount } = useMemo(() => {
     if (isTree) return { filteredOptions: [], hiddenMatchCount: 0 };
-    const needle = searchTerm.toLowerCase();
-    // Labels that start with the term come first, then labels that contain it,
-    // then rows found only by their other keys — so the rows the cap keeps are
-    // the likeliest picks. With no term every label "starts with" it, and the
-    // list keeps its own order.
-    const starting = [];
-    const containing = [];
-    const byOtherKeys = [];
-    options.forEach((option) => {
-      if (filter && !filter(option)) return;
-      const label = option.label.toLowerCase();
-      if (label.startsWith(needle)) starting.push(option);
-      else if (label.includes(needle)) containing.push(option);
-      else if (option.searchText?.toLowerCase().includes(needle)) byOtherKeys.push(option);
-    });
-    const matches = [...starting, ...containing, ...byOtherKeys];
+    const needle = searchTerm.trim().toLowerCase();
+    const allowed = filter ? options.filter(filter) : options;
+    // With no term the list keeps its own order; with one, the best matches come
+    // first (see matchRank) — so the rows the cap keeps are the likeliest picks.
+    const matches = needle
+      ? allowed
+        .map((option) => ({ option, rank: matchRank(option, needle) }))
+        .filter(({ rank }) => rank !== null)
+        .sort((x, y) => x.rank - y.rank)
+        .map(({ option }) => option)
+      : allowed;
     return {
       filteredOptions: matches.slice(0, MENU_ROW_CAP),
       hiddenMatchCount: Math.max(matches.length - MENU_ROW_CAP, 0),

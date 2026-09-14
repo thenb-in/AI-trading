@@ -38,7 +38,7 @@ function MasterSelector({
   toOption,
   getValue = idOf,
   filter,
-  sortRows,
+  sort,
   describeMissing,
   creatorType,
   creatorDefaults,
@@ -50,8 +50,6 @@ function MasterSelector({
   disabled = false,
   required = false,
   error,
-  wrapLabel,
-  createOptionLabel,
   renderOption,
   onNavigate,
   allowOptionsOutsideSelectBox = false,
@@ -84,12 +82,12 @@ function MasterSelector({
   }, [multiple, value]);
 
   const options = useMemo(() => {
-    const ordered = sortRows ? [...rows].sort(sortRows) : rows;
+    const ordered = sort ? [...rows].sort(sort) : rows;
     const listed = ordered.map((row) => ({ ...toOption(row), value: getValue(row) }));
     // A stored value the master no longer lists still shows, when the caller says how.
     const isMissing = describeMissing && !multiple && !loading && selectedValues !== '' && !rowsByValue.has(selectedValues);
     return isMissing ? [...listed, { value: selectedValues, label: describeMissing(selectedValues) }] : listed;
-  }, [rows, sortRows, toOption, getValue, describeMissing, multiple, loading, selectedValues, rowsByValue]);
+  }, [rows, sort, toOption, getValue, describeMissing, multiple, loading, selectedValues, rowsByValue]);
 
   // The dropdown filters options; a selector's filter is written against its records.
   // A value the master does not list has no record, so it is tested as the option itself.
@@ -142,7 +140,7 @@ function MasterSelector({
       ) : null}
       <SearchableDropdown
         options={options}
-        selectedValues={selectedValues}
+        value={selectedValues}
         onChange={handleChange}
         placeholder={placeholder || `Select ${optionName}`}
         multiple={multiple}
@@ -150,9 +148,7 @@ function MasterSelector({
         loading={loading}
         onOpen={load}
         optionName={optionName}
-        wrapLabel={wrapLabel}
-        onCreateOption={canCreate ? openCreator : undefined}
-        createOptionLabel={createOptionLabel}
+        onCreate={canCreate ? openCreator : undefined}
         renderOption={renderOption}
         filter={recordFilter}
         onNavigate={onNavigate}
@@ -175,9 +171,10 @@ MasterSelector.propTypes = {
   /** () => Promise<rows>. Keep it stable (module level or memoised) and cached. */
   loadRows: PropTypes.func.isRequired,
   /**
-   * (row) => ({ label, searchText?, ...anything renderOption draws }). `label` is
-   * what the field shows and is searched first; `searchText` holds the other keys
-   * the row is found by. The value comes from `getValue`. Keep it stable as well.
+   * (row) => ({ label, searchKeys?, ...anything renderOption draws }). `label` is
+   * what the field shows; `searchKeys` are what the row is found by, strongest
+   * first (code, then name), and default to the label. The value comes from
+   * `getValue`. Keep it stable as well.
    */
   toOption: PropTypes.func.isRequired,
   /** (row) => string the field stores. Defaults to the id. Keep it stable. */
@@ -187,7 +184,7 @@ MasterSelector.propTypes = {
   /** (record) => bool — leaves records out of the menu (the one being edited, the pick on another field); a picked one keeps its label. */
   filter: PropTypes.func,
   /** (a, b) => number — orders the rows, e.g. the ones that can cover a need first. */
-  sortRows: PropTypes.func,
+  sort: PropTypes.func,
   /** Key the record's creator is registered under; omit where it cannot be created inline. */
   creatorType: PropTypes.string,
   /** Extra defaults handed to the creator along with the typed name. */
@@ -205,9 +202,6 @@ MasterSelector.propTypes = {
   disabled: PropTypes.bool,
   required: PropTypes.bool,
   error: PropTypes.string,
-  wrapLabel: PropTypes.bool,
-  /** Wording of the create row, where optionName would phrase it wrong (e.g. an acronym). */
-  createOptionLabel: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   /** (option) => node for its menu row. Keep it stable. */
   renderOption: PropTypes.func,
   /** (value) => jump to the picked record; draws the dropdown's navigate button. */

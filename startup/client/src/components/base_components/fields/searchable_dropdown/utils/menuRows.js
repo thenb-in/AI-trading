@@ -2,19 +2,17 @@
 const ignoreCheckboxChange = () => {};
 
 /**
- * Menu rows in keyboard order. The accept row above the options takes index 0
- * and pushes every option down by one; the create row is a virtual row past the
- * end of them. Counting both is what makes them reachable by keyboard — the
- * create row is most needed exactly when nothing matched and it is the only
- * row on screen.
+ * Menu rows in keyboard order: the options first, so Enter on a fresh search
+ * picks the best match; then the accept row (keep what was typed); then the
+ * create row. Counting both action rows is what makes them reachable by
+ * keyboard — they are most needed exactly when nothing matched.
  */
 const getMenuRowLayout = ({ hasAcceptRow, optionCount, hasCreateRow }) => {
-  const optionOffset = hasAcceptRow ? 1 : 0;
-  const createRowIndex = hasCreateRow ? optionOffset + optionCount : -1;
+  const acceptRowIndex = hasAcceptRow ? optionCount : -1;
+  const createRowIndex = hasCreateRow ? optionCount + (hasAcceptRow ? 1 : 0) : -1;
   return {
-    optionOffset,
-    count: optionOffset + optionCount + (hasCreateRow ? 1 : 0),
-    isAcceptRow: (index) => hasAcceptRow && index === 0,
+    count: optionCount + (hasAcceptRow ? 1 : 0) + (hasCreateRow ? 1 : 0),
+    isAcceptRow: (index) => index === acceptRowIndex,
     isCreateRow: (index) => index === createRowIndex,
   };
 };

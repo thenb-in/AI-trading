@@ -46,12 +46,6 @@ function DropdownMenu({
         onKeyDown={onKeyDown}
         className="flex-1 min-h-0 overflow-y-auto py-1 focus:outline-none"
       >
-        {acceptText && (
-          <MenuActionRow isActive={isAcceptRowActive} onClick={onAccept} className="border-b border-gray-100">
-            Accept &quot;{acceptText}&quot;
-          </MenuActionRow>
-        )}
-
         {hasVisibleOptions ? children : (
           <div className="px-3 py-2 text-sm text-gray-500 text-center">
             {loading ? 'Loading options…' : 'No options found'}
@@ -62,6 +56,12 @@ function DropdownMenu({
           <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-gray-100">
             {`${hiddenCount.toLocaleString()} more — keep typing to narrow`}
           </div>
+        )}
+
+        {acceptText && (
+          <MenuActionRow isActive={isAcceptRowActive} onClick={onAccept} className="border-t border-gray-100">
+            Accept &quot;{acceptText}&quot;
+          </MenuActionRow>
         )}
 
         {createOptionText && (

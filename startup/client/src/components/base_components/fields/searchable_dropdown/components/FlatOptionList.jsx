@@ -5,12 +5,12 @@ import { ignoreCheckboxChange } from '../utils/menuRows';
  * Plain options: a checkbox row each for multiple, a radio row for single. A
  * row shows its label, or what `renderOption(option)` draws for it.
  */
-function FlatOptionList({ options, selectedSet, multiple, activeIndex, indexOffset, onSelect, renderOption }) {
+function FlatOptionList({ options, selectedSet, multiple, activeIndex, onSelect, renderOption }) {
   return options.map((option, index) => {
     const isSelected = selectedSet.has(option.value);
     const isHighlight = Boolean(option.highlight);
     // Rows above the options (the accept row) push their indexes down.
-    const isActive = index + indexOffset === activeIndex;
+    const isActive = index === activeIndex;
     return (
       <div
         key={option.value}
@@ -46,7 +46,6 @@ FlatOptionList.propTypes = {
   selectedSet: PropTypes.instanceOf(Set).isRequired,
   multiple: PropTypes.bool.isRequired,
   activeIndex: PropTypes.number.isRequired,
-  indexOffset: PropTypes.number.isRequired,
   /** (value) */
   onSelect: PropTypes.func.isRequired,
   /** (option) => node drawn in place of the label. */

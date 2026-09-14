@@ -26,11 +26,11 @@ const MENU_TREE_MIN_WIDTH = 250;
 
 function SearchableDropdown({
   options = [],
-  selectedValues = [],
+  value,
   onChange,
   placeholder = 'Select...',
   disabled: disabledProp,
-  multiple = true,
+  multiple = false,
   searchable = true,
   autoOpen = false,
   onClose,
@@ -39,15 +39,10 @@ function SearchableDropdown({
   loading = false,
   // Offer an "Add new" row at the foot of the menu, so a value that doesn't
   // exist yet can be created without leaving the form.
-  onCreateOption = null,
-  // What the dropdown is picking ("Role", "Subscription"). Enough on its own
-  // to phrase the create row — callers only reach for createOptionLabel when
-  // they want wording this can't produce.
+  onCreate = null,
+  // What the dropdown is picking ("Role", "HSN Code"), as it should read: it
+  // phrases the create row ("Create HSN Code "…"").
   optionName = null,
-  createOptionLabel = null,
-  // Let a long label wrap instead of being clipped to an ellipsis. Defaults on
-  // for single-select, where there is a whole row to spend on one value.
-  wrapLabel = false,
   // Render a jump-to-record affordance beside the field once something is
   // picked. The caller decides where it goes.
   onNavigate = null,
@@ -78,7 +73,7 @@ function SearchableDropdown({
     selected, selectedSet, isOnlyDefaultSelected, unknownSelections,
     pickValue, addValue, removeValue, toggleTreeNode, clearValues,
   } = useSelection({
-    selectedValues, multiple, onChange, optionByValue, hasOptions, defaultOptionValue, loading, allowOptionsOutsideSelectBox,
+    selectedValues: value, multiple, onChange, optionByValue, hasOptions, defaultOptionValue, loading, allowOptionsOutsideSelectBox,
   });
 
   const {
@@ -92,7 +87,7 @@ function SearchableDropdown({
   commitOnLeaveRef.current = commitTypedText;
 
   const { createOptionText, createFromSearch } = useCreateOption({
-    onCreateOption, createOptionLabel, optionName, searchTerm, closeAfterPick,
+    onCreate, optionName, searchTerm, closeAfterPick,
   });
 
   // Nothing to pick from reads the same as unavailable, so mute the control.
@@ -221,7 +216,7 @@ function SearchableDropdown({
       return;
     }
     // Enter on an empty menu lands past every row.
-    const option = navigableOptions[index - rows.optionOffset];
+    const option = navigableOptions[index];
     if (!option) return;
     if (isTree) handleTreeSelect(option);
     else handleSelect(option.value);
@@ -254,7 +249,6 @@ function SearchableDropdown({
     >
       <DropdownField
         isMuted={disabled || isEmpty}
-        wrapLabel={wrapLabel}
         triggerRef={triggerRef}
         inputRef={inputRef}
         onFieldClick={handleFieldClick}
@@ -316,7 +310,6 @@ function SearchableDropdown({
               selectedSet={selectedSet}
               multiple={multiple}
               activeIndex={activeIndex}
-              indexOffset={rows.optionOffset}
               onSelect={handleSelect}
               renderOption={renderOption}
             />
@@ -341,8 +334,8 @@ SearchableDropdown.propTypes = {
     PropTypes.shape({
       value: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
-      // Other text the row is found by, after its label.
-      searchText: PropTypes.string,
+      // The text the row is found by, strongest first (an item's code, then its name); the label when absent.
+      searchKeys: PropTypes.arrayOf(PropTypes.string),
       highlight: PropTypes.bool,
       is_active: PropTypes.bool,
       depth: PropTypes.number,
@@ -352,7 +345,7 @@ SearchableDropdown.propTypes = {
     })
   ).isRequired,
   // Array for `multiple`; a plain scalar (or '' for none) for single-select.
-  selectedValues: PropTypes.oneOfType([
+  value: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.string),
     PropTypes.string,
   ]),
@@ -370,14 +363,9 @@ SearchableDropdown.propTypes = {
   // Options are still being fetched — suppresses the empty-list muting.
   loading: PropTypes.bool,
   // Called with the trimmed search term when the create row is activated.
-  onCreateOption: PropTypes.func,
+  onCreate: PropTypes.func,
   // What is being picked ("Role"). Phrases the create row on its own.
   optionName: PropTypes.string,
-  // Label for that row: a string, or a fn of the search term. Defaults to
-  // "Add new".
-  createOptionLabel: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  // Wrap long labels instead of truncating (implied by single-select).
-  wrapLabel: PropTypes.bool,
   // Called with the selected value when the jump-to-record button is clicked.
   onNavigate: PropTypes.func,
   // Typed text is a value: an "Accept" row offers it, and leaving the field
