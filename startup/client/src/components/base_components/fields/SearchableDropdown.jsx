@@ -74,7 +74,7 @@ function SearchableDropdown({
   });
 
   const {
-    isTree, filteredOptions, allTreeOption, visibleTreeNodes, lastChildSet,
+    isTree, filteredOptions, hiddenMatchCount, allTreeOption, visibleTreeNodes, lastChildSet,
     collapsed, toggleCollapse, navigableOptions, hasVisibleOptions,
   } = useVisibleOptions({ options, searchTerm, defaultOptionValue });
 
@@ -281,6 +281,7 @@ function SearchableDropdown({
           multiple={multiple}
           onKeyDown={searchable ? undefined : handleMenuKeyDown}
           hasVisibleOptions={hasVisibleOptions}
+          hiddenCount={hiddenMatchCount}
           loading={loading}
           acceptText={acceptText}
           isAcceptRowActive={rows.isAcceptRow(activeIndex)}

@@ -11,7 +11,8 @@ const keepInsideMenu = (event) => event.stopPropagation();
 
 /**
  * The open menu, portalled onto <body> so it sits above modals: the accept row,
- * the options (or why there are none), the create row and a loading footer.
+ * the options (or why there are none), how many more matches typing would
+ * reveal, the create row and a loading footer.
  */
 function DropdownMenu({
   menuRef,
@@ -20,6 +21,7 @@ function DropdownMenu({
   multiple,
   onKeyDown,
   hasVisibleOptions,
+  hiddenCount,
   loading,
   acceptText,
   isAcceptRowActive,
@@ -56,6 +58,12 @@ function DropdownMenu({
           </div>
         )}
 
+        {hiddenCount > 0 && (
+          <div className="px-3 py-2 text-xs text-gray-500 text-center border-t border-gray-100">
+            {`${hiddenCount.toLocaleString()} more — keep typing to narrow`}
+          </div>
+        )}
+
         {createOptionText && (
           <MenuActionRow isActive={isCreateRowActive} onClick={onCreate} className="border-t border-gray-100">
             + {createOptionText}
@@ -87,6 +95,8 @@ DropdownMenu.propTypes = {
   /** Only when there is no search box to hold focus and take the keys. */
   onKeyDown: PropTypes.func,
   hasVisibleOptions: PropTypes.bool.isRequired,
+  // Matches left out by the row cap.
+  hiddenCount: PropTypes.number.isRequired,
   loading: PropTypes.bool.isRequired,
   acceptText: PropTypes.string.isRequired,
   isAcceptRowActive: PropTypes.bool.isRequired,
