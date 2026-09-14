@@ -6,10 +6,6 @@ const getLocalDateStringYmd = (date = new Date()) => {
   return `${y}-${month}-${day}`;
 };
 
-// Get current date and time in datetime-local format.
-// Defined near the bottom of this file as convertISOToDateTimeLocal(new Date()) —
-// kept here as a named shortcut because half the callers only ever want "now".
-
 /** `<input type="datetime-local">`-ready YYYY-MM-DDTHH:mm, in local time. */
 const getCurrentDateTime = () => convertISOToDateTimeLocal(new Date());
 

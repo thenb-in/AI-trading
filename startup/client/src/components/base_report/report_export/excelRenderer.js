@@ -2,11 +2,11 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import {
   getColumnWidth,
-  getCurrentDateTime,
   getExportDisplayString,
   generateFileName
 } from './formattingUtils.js';
 import { convertCellToText } from '../ReportUtils.js';
+import { formatDateTimeForDisplay } from '@utils/dateTimeUtils';
 import { getSummaryHeaderLabel } from '@startup/data/summaryFieldRegistry';
 
 // ===== EXCEL RENDERING FUNCTIONS =====
@@ -95,15 +95,13 @@ const calculateOptimalColumnWidths = (reportSheet, columns, excelColumns, dataSt
 const addFooterInfo = (reportSheet, report, startDate, endDate, lastDataRow) => {
   const footerRow = lastDataRow + 2;
 
-  const { reportDate, reportTime } = getCurrentDateTime();
-
   const reportNameCell = reportSheet.getCell(`A${footerRow}`);
   reportNameCell.value = `Report: ${report.slug || report.title || 'Data Export'}`;
   reportNameCell.font = { size: 11, name: "Segoe UI" };
   reportNameCell.alignment = { horizontal: "left", vertical: "middle" };
 
   const dateCell = reportSheet.getCell(`B${footerRow}`);
-  dateCell.value = `Date: ${reportDate} ${reportTime}`;
+  dateCell.value = `Date: ${formatDateTimeForDisplay(new Date())}`;
   dateCell.font = { size: 11, name: "Segoe UI" };
   dateCell.alignment = { horizontal: "left", vertical: "middle" };
 
