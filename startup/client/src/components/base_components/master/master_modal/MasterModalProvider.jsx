@@ -24,23 +24,23 @@ import {
  */
 const MasterModalContext = createContext(null);
 
-const EMPTY_STATE = { type: null, data: null, recordId: null, onSuccess: null, defaults: {} };
+const EMPTY_STATE = { masterName: null, data: null, recordId: null, onSuccess: null, defaults: {} };
 
 function MasterModalProvider({ children }) {
   const [state, setState] = useState(EMPTY_STATE);
 
   const openMasterModal = useCallback(
-    ({ type, data = null, recordId = null, onSuccess = null, defaults = {} }) => {
+    ({ masterName, data = null, recordId = null, onSuccess = null, defaults = {} }) => {
       const creators = getMasterCreators();
-      if (!creators[type]) {
+      if (!creators[masterName]) {
         // Nothing would open and the click would look broken, so name both
         // what was asked for and what is actually registered.
         console.warn(
-          `[MasterModalProvider] No modal registered for type "${type}". Registered: ${Object.keys(creators).join(', ') || 'none'}`
+          `[MasterModalProvider] No modal registered for master "${masterName}". Registered: ${Object.keys(creators).join(', ') || 'none'}`
         );
         return;
       }
-      setState({ type, data, recordId, onSuccess, defaults });
+      setState({ masterName, data, recordId, onSuccess, defaults });
     },
     []
   );
@@ -53,7 +53,7 @@ function MasterModalProvider({ children }) {
     const bound = Object.entries(events).map(([eventName, toRequest]) => {
       const handler = (e) => {
         const request = typeof toRequest === 'function' ? toRequest(e?.detail) : null;
-        if (request?.type) openMasterModal(request);
+        if (request?.masterName) openMasterModal(request);
       };
       window.addEventListener(eventName, handler);
       return [eventName, handler];
@@ -75,18 +75,18 @@ function MasterModalProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ openMasterModal, closeMasterModal, hasProvider: true }),
+    () => ({ openMasterModal, closeMasterModal, hasCreator: (masterName) => Boolean(getMasterCreators()[masterName]) }),
     [openMasterModal, closeMasterModal]
   );
 
-  const Component = state.type ? getMasterCreators()[state.type] : null;
+  const Component = state.masterName ? getMasterCreators()[state.masterName] : null;
 
   return (
     <MasterModalContext.Provider value={value}>
       {children}
       {Component && (
         <Component
-          isOpen={Boolean(state.type)}
+          isOpen={Boolean(state.masterName)}
           modalData={state.data}
           recordId={state.recordId}
           defaults={state.defaults}
@@ -102,16 +102,16 @@ MasterModalProvider.propTypes = {
   children: PropTypes.node.isRequired
 };
 
-// No provider: opening warns rather than throwing, and `hasProvider` lets a
+// No provider: opening warns rather than throwing, and `hasCreator` lets a
 // component hide the affordance instead of offering one that does nothing.
 // A framework component cannot assume an app mounted the provider, and taking
 // a whole screen down over a missing create button would be the worse failure.
 const NO_PROVIDER = {
-  hasProvider: false,
+  hasCreator: () => false,
   closeMasterModal: () => {},
-  openMasterModal: ({ type } = {}) => {
+  openMasterModal: ({ masterName } = {}) => {
     console.warn(
-      `[useMasterCreator] Cannot open "${type}": no <MasterModalProvider> is mounted above this component.`
+      `[useMasterCreator] Cannot open "${masterName}": no <MasterModalProvider> is mounted above this component.`
     );
   }
 };

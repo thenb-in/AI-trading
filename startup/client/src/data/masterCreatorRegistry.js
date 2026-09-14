@@ -3,7 +3,8 @@
 // context hook; the app owns which masters exist and which component draws
 // each one, so those are registered from app/ rather than imported here.
 //
-// Shape: { [type: string]: React component }. Each component is rendered with
+// Shape: { [masterName: string]: React component }, keyed by the master in words
+// ("Cost Center", a masters constant) — the same name its pickers are given. Each component is rendered with
 // { isOpen, modalData, recordId, defaults, onClose, onSuccess }; `recordId`
 // asks for that record to be edited, loaded by the modal itself.
 
@@ -16,7 +17,7 @@ let masterCreatorProvider = () => ({});
 
 // Global window events that should pop a master modal, so any part of the app
 // can request one without holding the context. Registered as
-// { [eventName]: (detail) => ({ type, data, defaults }) | null }.
+// { [eventName]: (detail) => ({ masterName, data, defaults }) | null }.
 let masterModalEventProvider = () => ({});
 
 /** Framework-owned creators. Called from startup/, not from an app. */

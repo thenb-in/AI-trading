@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
 import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
-import { MASTER_TYPE_ROLE } from './CreateRoleModal';
+import { MASTERS } from '@startup/constants/masters';
 
 /**
  * The role picker, wherever roles are picked: a MasterSelector over the role
@@ -44,8 +44,7 @@ function RoleSelector({
       onChange={onChange}
       loadRows={loadRoles}
       toOption={toOption}
-      creatorType={MASTER_TYPE_ROLE}
-      optionName="Role"
+      masterName={MASTERS.ROLE}
       label={label}
       placeholder={placeholder || (multiple ? 'Select roles…' : '-- Select a role --')}
       multiple={multiple}

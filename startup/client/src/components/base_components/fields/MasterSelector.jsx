@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
+import { hasPermission } from '@utils/hasPermission';
+import { useDataContext } from '@context/useDataContext';
+import { masterKeyOf } from '@startup/utils/masterKey';
 import { SearchableDropdown } from './SearchableDropdown';
 import { useMasterCreator } from '../master/master_modal/MasterModalProvider';
 
@@ -16,7 +19,7 @@ import { useMasterCreator } from '../master/master_modal/MasterModalProvider';
  * open. Either way the screen holding the picker fetches nothing and keeps no list.
  *
  * Creating a record is part of the picker too: the menu offers a create row,
- * opens the creator registered under `creatorType` with what was typed as
+ * opens the creator registered for the master with what was typed as
  * `defaults.initialName`, reloads, and selects what was just made.
  *
  * Values are record ids as strings, which is what SearchableDropdown works in,
@@ -27,6 +30,10 @@ import { useMasterCreator } from '../master/master_modal/MasterModalProvider';
  *
  * Editing is the same creator: the button beside the field opens the picked
  * record in it by id, over the current screen, so nothing typed there is lost.
+ * Both need the master's own permission — create_<master>, read_<master> — and
+ * are offered only where the master registered a creator. `masterName` is the
+ * master in words ("Cost Center"): the creator is registered under it, and its
+ * permissions spell it cost_center.
  * The modal loads the whole record itself (list rows can be lean); after
  * saving the list reloads so the field shows the edited label.
  */
@@ -45,9 +52,8 @@ function MasterSelector({
   filter,
   sort,
   describeMissing,
-  creatorType,
   creatorDefaults,
-  optionName,
+  masterName,
   label,
   placeholder,
   multiple = false,
@@ -73,10 +79,10 @@ function MasterSelector({
       return list;
     })
     .catch((loadError) => {
-      toast.error(getApiErrorMessage(loadError, `Could not load ${optionName} list`));
+      toast.error(getApiErrorMessage(loadError, `Could not load ${masterName} list`));
       return [];
     })
-    .finally(() => setLoading(false)), [loadRows, optionName]);
+    .finally(() => setLoading(false)), [loadRows, masterName]);
 
   useEffect(() => {
     load();
@@ -112,9 +118,12 @@ function MasterSelector({
     onChange(picked, picked === null ? null : rowsByValue.get(picked));
   }, [onChange, multiple, rowsByValue]);
 
-  const { openMasterModal, hasProvider } = useMasterCreator();
-  // Nothing would happen without a creator or a provider, so don't offer the row at all.
-  const canCreate = allowCreate && Boolean(creatorType) && hasProvider;
+  const masterKey = masterKeyOf(masterName);
+  const { openMasterModal, hasCreator } = useMasterCreator();
+  const { userData } = useDataContext();
+  // Nothing would open without a creator, so don't offer the row at all.
+  const isCreatable = hasCreator(masterName);
+  const canCreate = allowCreate && isCreatable && hasPermission(userData, `create_${masterKey}`);
 
   // Reload before selecting, so the new record is in the list by the time it
   // is the value — a value with no matching option renders as an empty field.
@@ -132,18 +141,18 @@ function MasterSelector({
   }), [load, onChange, multiple, selectedValues, getValue]);
 
   const openCreator = useCallback((searchTerm) => openMasterModal({
-    type: creatorType,
+    masterName,
     defaults: { ...creatorDefaults, initialName: searchTerm || '' },
     onSuccess: selectCreated,
-  }), [openMasterModal, creatorType, creatorDefaults, selectCreated]);
+  }), [openMasterModal, masterName, creatorDefaults, selectCreated]);
 
   // Typed text has no record to edit, so only a listed pick gets the button.
   const pickedRecord = rowsByValue.get(selectedValues);
-  const canEdit = allowEdit && Boolean(creatorType) && hasProvider && Boolean(pickedRecord);
+  const canEdit = allowEdit && isCreatable && Boolean(pickedRecord) && hasPermission(userData, `read_${masterKey}`);
 
   const openEditor = useCallback(
-    () => openMasterModal({ type: creatorType, recordId: pickedRecord.id, onSuccess: load }),
-    [openMasterModal, creatorType, pickedRecord, load]
+    () => openMasterModal({ masterName, recordId: pickedRecord.id, onSuccess: load }),
+    [openMasterModal, masterName, pickedRecord, load]
   );
 
   return (
@@ -158,14 +167,14 @@ function MasterSelector({
         options={options}
         value={selectedValues}
         onChange={handleChange}
-        placeholder={placeholder || `Select ${optionName}`}
+        placeholder={placeholder || `Select ${masterName}`}
         multiple={multiple}
         disabled={disabled || loading}
         loading={loading}
         onOpen={load}
         autoOpen={autoOpen}
         onClose={onClose}
-        optionName={optionName}
+        optionName={masterName}
         onCreate={canCreate ? openCreator : undefined}
         renderOption={renderOption}
         filter={recordFilter}
@@ -203,12 +212,14 @@ MasterSelector.propTypes = {
   filter: PropTypes.func,
   /** (a, b) => number — orders the rows, e.g. the ones that can cover a need first. */
   sort: PropTypes.func,
-  /** Key the record's creator is registered under; omit where it cannot be created inline. */
-  creatorType: PropTypes.string,
   /** Extra defaults handed to the creator along with the typed name. */
   creatorDefaults: PropTypes.object,
-  /** What is being picked ("Warehouse"). Phrases the placeholder and create row. */
-  optionName: PropTypes.string.isRequired,
+  /**
+   * The master being picked, in words ("Cost Center") — a masters constant.
+   * Phrases the placeholder and create row, opens the creator registered under
+   * it, and checks its create_ / read_ permissions (create_cost_center).
+   */
+  masterName: PropTypes.string.isRequired,
   /** Field label. Omit where the surrounding layout already labels it. */
   label: PropTypes.string,
   placeholder: PropTypes.string,

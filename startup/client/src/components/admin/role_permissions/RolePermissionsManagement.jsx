@@ -6,8 +6,8 @@ import { RoleSelector } from '../RoleSelector';
 import { PermissionCategorySection } from './components/PermissionCategorySection';
 import { AlertMessage } from './components/AlertMessage';
 import { useMasterCreator } from '@startup/components/base_components/master/master_modal/MasterModalProvider';
-import { MASTER_TYPE_ROLE } from '../CreateRoleModal';
 import { PermissionLegend } from './components/PermissionLegend';
+import { MASTERS } from '@startup/constants/masters';
 import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
 import { useDataContext } from '@context/useDataContext';
   
@@ -33,7 +33,7 @@ function RolePermissionsManagement() {
   // opened it, so this screen reloads; the picker reloads when next opened.
   const { openMasterModal } = useMasterCreator();
   const handleCreateRole = useCallback(
-    () => openMasterModal({ type: MASTER_TYPE_ROLE, onSuccess: refetch }),
+    () => openMasterModal({ masterName: MASTERS.ROLE, onSuccess: refetch }),
     [openMasterModal, refetch]
   );
 

@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
+import { MASTERS } from '@startup/constants/masters';
 
 function SubscriptionSelector({ subscriptions, selectedSubscriptionId, onSelect, loading, onCreateSubscription }) {
   const subscriptionOptions = subscriptions.map((subscription) => {
@@ -23,14 +24,13 @@ function SubscriptionSelector({ subscriptions, selectedSubscriptionId, onSelect,
       </label>
       <SearchableDropdown
         options={subscriptionOptions}
-        selectedValues={selectedSubscriptionId ? String(selectedSubscriptionId) : ''}
+        value={selectedSubscriptionId ? String(selectedSubscriptionId) : ''}
         onChange={handleChange}
         placeholder="-- Select a subscription --"
-        multiple={false}
         disabled={loading}
         loading={loading}
-        optionName="Subscription"
-        onCreateOption={onCreateSubscription}
+        optionName={MASTERS.SUBSCRIPTION}
+        onCreate={onCreateSubscription}
       />
     </div>
   );

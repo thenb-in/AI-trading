@@ -32,13 +32,13 @@ const BaseMaster = ({
   auditHead,
   permissionKeys,
   // What a record goes through (see workflow.js); a master that declares none
-  // has DEFAULT_WORKFLOW's single `saved` status. `entity` names permissions
-  // permissionKeys does not (approve_<entity>). `workflowHooks` override an
+  // has DEFAULT_WORKFLOW's single `saved` status. `masterName` names permissions
+  // permissionKeys does not (approve_<masterName>). `workflowHooks` override an
   // action's default — { approve: ({ record, formData, to }) => ... } — in the
   // form's footer, and are what a row button runs, since a list has no form.
   // Amend opens the copy in the form unless hooked.
   workflow = DEFAULT_WORKFLOW,
-  entity,
+  masterName,
   workflowHooks = {},
   loadRows,
   deleteRow,
@@ -250,8 +250,7 @@ const BaseMaster = ({
 
   const workflowRowActions = useWorkflowRowActions({
     workflow,
-    entity,
-    label: (modalEditTitle ?? title).toLowerCase(),
+    masterName,
     permissions: permissionKeys,
     hooks: { amend: handleAmend, ...workflowHooks },
     onChanged: () => fetchRows(),
@@ -324,7 +323,7 @@ const BaseMaster = ({
         savingLabel,
         workflow,
         record: selectedRow,
-        entity,
+        masterName,
         permissions: permissionKeys,
         hooks: workflowHooks,
         onAmend: openRecord,
@@ -478,7 +477,7 @@ BaseMaster.propTypes = {
     delete: PropTypes.string,
   }).isRequired,
   workflow: PropTypes.object,
-  entity: PropTypes.string,
+  masterName: PropTypes.string,
   workflowHooks: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,

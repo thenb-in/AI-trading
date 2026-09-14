@@ -1,4 +1,5 @@
 import { Ban, CheckCircle, RotateCcw, Save, Send } from 'lucide-react';
+import { masterKeyOf } from '@startup/utils/masterKey';
 
 /**
  * A workflow is what a kind of record goes through, declared once by the
@@ -18,7 +19,7 @@ import { Ban, CheckCircle, RotateCcw, Save, Send } from 'lucide-react';
  *               amend            — instead of moving the record, open a new one
  *                                  copied from it (amendCopy)
  *               permission       — a verb ('update', 'approve', 'create'); the
- *                                  entity turns it into a permission name
+ *                                  masterName turns it into a permission name
  *               createPermission — the verb that offers it on a record not yet
  *                                  saved; only Save has one
  *               submit           — the form's own Save: it submits the form, so
@@ -131,9 +132,9 @@ const extendWorkflow = (base, { initial = base.initial, statuses = {}, actions =
   ),
 });
 
-// 'approve' on 'stock_reconciliation' is approve_stock_reconciliation, unless
+// 'approve' on 'Stock Reconciliation' is approve_stock_reconciliation, unless
 // the record names its own permission for that verb.
-const permissionFor = (verb, entity, permissions) => permissions[verb] ?? `${verb}_${entity}`;
+const permissionFor = (verb, masterName, permissions) => permissions[verb] ?? `${verb}_${masterKeyOf(masterName)}`;
 
 // The status a record is in: its own, where the workflow keeps one, else the starting one.
 const statusOf = (workflow, status) => (workflow.statusKey && status ? String(status).trim().toLowerCase() : workflow.initial);

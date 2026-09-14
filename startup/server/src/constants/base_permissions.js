@@ -1,3 +1,5 @@
+const { masterKeyOf } = require('../utils/masterKey');
+const { MASTERS } = require('./masters');
 // Generic, framework-level permissions shared by every product built on
 // startup (user, company, role, permission, role_permission, reports, masters,
 // notifications), plus the factories used to declare permissions.
@@ -79,8 +81,9 @@ const REPORT_PERMISSION_CONSTANTS = {
 
 
 
+// `master` in words ("Sales Order"), from a masters constant; permissions spell it sales_order.
 const create_master_permission = (master, approval_required = false) => {
-  master = master.toLowerCase();
+  master = masterKeyOf(master);
   const formattedMaster = formatDisplayName(master);
   const permissions = {
     create: {
@@ -169,18 +172,18 @@ const MASTER_PERMISSION_CONSTANTS = {
     }
   },
 
-  ROLE: create_master_permission('role'),
+  ROLE: create_master_permission(MASTERS.ROLE),
 
-  PERMISSION: create_master_permission('permission'),
+  PERMISSION: create_master_permission(MASTERS.PERMISSION),
 
-  NOTIFICATION_RULE: create_master_permission('notification_rule'),
+  NOTIFICATION_RULE: create_master_permission(MASTERS.NOTIFICATION_RULE),
 
   // The drive ships with the framework, so its permissions live here rather
   // than in an app's set. read_personal_nbnext_drive scopes a user to the files
   // they uploaded; read_nbnext_drive widens that to the whole company and is the
   // `showAll` flag in nbnextDriveView.
   NBNEXT_DRIVE: {
-    ...create_master_permission('nbnext_drive'),
+    ...create_master_permission(MASTERS.NBNEXT_DRIVE),
     read_personal: {
       name: 'read_personal_nbnext_drive',
       display_name: 'Read Personal Nbnext Drive',

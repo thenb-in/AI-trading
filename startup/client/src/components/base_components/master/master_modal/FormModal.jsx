@@ -18,8 +18,9 @@ const FormModalContext = createContext(null);
  * Every form has a workflow: `DEFAULT_WORKFLOW` (one `saved` status) unless one
  * is given with the `record`. The footer offers its actions and runs each one's
  * default (see workflow.js); `hooks` override them per action key, and
- * `onAmend(copy)` opens the copy an amend makes. `entity` turns permission verbs
- * into names (update_uom); `permissions` names them outright (a BaseMaster's keys).
+ * `onAmend(copy)` opens the copy an amend makes. `masterName` ("UOM") names the
+ * record and turns permission verbs into names (update_uom); `permissions` names
+ * them outright (a BaseMaster's keys).
  *
  * Base fields inside lock themselves while the record is not editable. A form
  * that needs more (a field shown only once approved) reads the workflow back
@@ -43,8 +44,7 @@ const FormModal = ({
   record: givenRecord,
   recordId,
   loadRecord,
-  entity,
-  label,
+  masterName,
   permissions,
   hooks = {},
   onAmend,
@@ -60,21 +60,19 @@ const FormModal = ({
   // Save shows only once a form has registered what it runs (not while the body is still loading).
   const [hasForm, setHasForm] = useState(false);
   const [actionsSlot, setActionsSlot] = useState(null);
-  const recordLabel = label ?? entity?.replace(/_/g, ' ');
   const { record, isLoading } = useModalRecord({
     isOpen: modalProps.isOpen,
     record: givenRecord,
     recordId,
     loadRecord,
-    label: recordLabel,
+    label: masterName,
     onClose,
   });
   const isEditMode = isEditModeProp ?? Boolean(record?.id ?? recordId);
   const recordWorkflow = useWorkflow({
     workflow,
     record,
-    entity,
-    label: recordLabel,
+    masterName,
     permissions,
     hooks,
     isNew: !isEditMode,
@@ -128,7 +126,7 @@ const FormModal = ({
       <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, actionsSlot, workflow: recordWorkflow }}>
         <FormEditableContext.Provider value={recordWorkflow.isEditable}>
           <form ref={formRef} id={formId} onSubmit={handleSubmit} className="space-y-4">
-            {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${recordLabel}...`}</p> : null}
+            {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
             {!isLoading && typeof children === 'function' ? children(record) : null}
             {!isLoading && typeof children !== 'function' ? children : null}
           </form>
@@ -150,8 +148,8 @@ FormModal.propTypes = {
   recordId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   /** (id) => Promise<record>. */
   loadRecord: PropTypes.func,
-  entity: PropTypes.string,
-  label: PropTypes.string,
+  /** The master in words ("Sales Order"), usually from a masters constant. */
+  masterName: PropTypes.string,
   permissions: PropTypes.objectOf(PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)])),
   /** { [action key]: ({ record, formData, to }) => ..., isEditable: ({ status, record, isEditable }) => boolean } */
   hooks: PropTypes.objectOf(PropTypes.func),

@@ -3,6 +3,7 @@ import { ApiService } from '@services/ApiService';
 import { registerFrameworkMasterCreators } from '@/data/masterCreatorRegistry';
 import { CreateRecordModal } from './CreateRecordModal';
 import { useDataContext } from '@context/useDataContext';
+import { MASTERS } from '@startup/constants/masters';
 
 /**
  * Create a role, from anywhere a role can be picked.
@@ -12,7 +13,6 @@ import { useDataContext } from '@context/useDataContext';
  * same one. A master reaching into an admin screen for it would be the wrong
  * direction of dependency.
  */
-const MASTER_TYPE_ROLE = 'role';
 
 function CreateRoleModal({ isOpen, onClose, onSuccess, initialName = '' }) {
   const { userData } = useDataContext();
@@ -38,7 +38,7 @@ CreateRoleModal.propTypes = {
 };
 
 // Framework-owned creator: any selector or screen opens it with
-// openMasterModal({ type: MASTER_TYPE_ROLE }), the same call an app master
+// openMasterModal({ masterName: MASTERS.ROLE }), the same call an app master
 // uses. `defaults.initialName` is what the dropdown's create row had typed.
 function RoleCreator({ isOpen, defaults, onClose, onSuccess }) {
   return (
@@ -58,6 +58,6 @@ RoleCreator.propTypes = {
   onSuccess: PropTypes.func,
 };
 
-registerFrameworkMasterCreators({ [MASTER_TYPE_ROLE]: RoleCreator });
+registerFrameworkMasterCreators({ [MASTERS.ROLE]: RoleCreator });
 
-export { CreateRoleModal, MASTER_TYPE_ROLE };
+export { CreateRoleModal };

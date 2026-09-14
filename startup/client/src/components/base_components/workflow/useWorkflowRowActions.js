@@ -21,8 +21,7 @@ const ROW_TYPES = { red: 'danger', green: 'success', amber: 'warning', orange: '
  */
 const useWorkflowRowActions = ({
   workflow,
-  entity,
-  label,
+  masterName,
   permissions = {},
   hooks,
   showWhen = {},
@@ -31,19 +30,19 @@ const useWorkflowRowActions = ({
   const { userData } = useDataContext();
 
   const runStatusChange = async (action, record) => {
-    const question = action.confirm?.({ label, record });
+    const question = action.confirm?.({ label: masterName, record });
     if (question && !window.confirm(question)) return;
     try {
       await hooks[action.key]({ record, to: action.to });
-      toast.success(`${label.charAt(0).toUpperCase()}${label.slice(1)} ${action.done}`);
+      toast.success(`${masterName} ${action.done}`);
       onChanged({ record, to: action.to });
     } catch (error) {
-      toast.error(getApiErrorMessage(error, `Could not ${action.label.toLowerCase()} ${label}`));
+      toast.error(getApiErrorMessage(error, `Could not ${action.label.toLowerCase()} ${masterName}`));
     }
   };
 
   return actionsOf(workflow)
-    .filter((action) => hooks[action.key] && hasPermission(userData, permissionFor(action.permission, entity, permissions)))
+    .filter((action) => hooks[action.key] && hasPermission(userData, permissionFor(action.permission, masterName, permissions)))
     .map((action) => ({
       label: action.label,
       icon: createElement(action.icon, { className: 'w-4 h-4' }),

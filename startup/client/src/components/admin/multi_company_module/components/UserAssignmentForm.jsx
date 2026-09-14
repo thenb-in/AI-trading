@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import { Loader2, UserPlus } from 'lucide-react';
 import { ApiService } from '@services/ApiService';
 import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
+import { MASTERS } from '@startup/constants/masters';
 
 // Support users are the ones who can be assigned to another company.
 const loadSupportUsers = () => ApiService.getSupportUsers().then((response) => response.data?.data ?? response.data);
@@ -35,7 +36,7 @@ const UserAssignmentForm = ({
           toOption={supportUserOption}
           getValue={supportUserKey}
           filter={isUnassigned}
-          optionName="User"
+          masterName={MASTERS.USER}
           value={selectedUser}
           onChange={onSelectUser}
           placeholder="Choose a user..."

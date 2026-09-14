@@ -11,6 +11,7 @@ import { PasswordTypeField } from '@startup/components/base_components/fields/Pa
 import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
+import { MASTERS } from '@startup/constants/masters';
 
 
 // Signing up happens before login, so roles come from the open role list.
@@ -242,7 +243,7 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
               <MasterSelector
                 loadRows={loadSignupRoles}
                 toOption={roleNameOption}
-                optionName="Role"
+                masterName={MASTERS.ROLE}
                 value={formData.role}
                 onChange={handleRoleChange}
                 placeholder="Select Role"
