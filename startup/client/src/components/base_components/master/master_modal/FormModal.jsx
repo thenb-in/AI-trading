@@ -2,6 +2,7 @@ import { createContext, useContext, useId, useLayoutEffect, useRef, useState } f
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { MasterModal } from './MasterModal';
+import { useModalRecord } from './useModalRecord';
 import { FormFooter } from '../FormFooter';
 import { DEFAULT_WORKFLOW, amendCopy } from '../../workflow/workflow';
 import { useWorkflow } from '../../workflow/useWorkflow';
@@ -25,17 +26,23 @@ const FormModalContext = createContext(null);
  * from `useFormModal`. A form's buttons that are not workflow actions
  * (Create PO...) go in `<FormModalActions>`.
  *
+ * The record comes whole as `record` (a master page's row), or as `recordId`
+ * with `loadRecord` (a picker's pick), in which case it is loaded on open and
+ * the body waits for it. Children that need it are a function of the record.
+ *
  * The footer sits outside the scrolling body and reaches the form through the
  * `form` attribute, so Save stays in view on a long form and the browser still
  * checks required fields first.
  */
 const FormModal = ({
-  isEditMode = false,
+  isEditMode: isEditModeProp,
   createLabel = 'Create',
   updateLabel = 'Update',
   savingLabel = 'Saving...',
   workflow = DEFAULT_WORKFLOW,
-  record,
+  record: givenRecord,
+  recordId,
+  loadRecord,
   entity,
   label,
   permissions,
@@ -53,11 +60,21 @@ const FormModal = ({
   // Save shows only once a form has registered what it runs (not while the body is still loading).
   const [hasForm, setHasForm] = useState(false);
   const [actionsSlot, setActionsSlot] = useState(null);
+  const recordLabel = label ?? entity?.replace(/_/g, ' ');
+  const { record, isLoading } = useModalRecord({
+    isOpen: modalProps.isOpen,
+    record: givenRecord,
+    recordId,
+    loadRecord,
+    label: recordLabel,
+    onClose,
+  });
+  const isEditMode = isEditModeProp ?? Boolean(record?.id ?? recordId);
   const recordWorkflow = useWorkflow({
     workflow,
     record,
     entity,
-    label: label ?? entity?.replace(/_/g, ' '),
+    label: recordLabel,
     permissions,
     hooks,
     isNew: !isEditMode,
@@ -111,7 +128,9 @@ const FormModal = ({
       <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, actionsSlot, workflow: recordWorkflow }}>
         <FormEditableContext.Provider value={recordWorkflow.isEditable}>
           <form ref={formRef} id={formId} onSubmit={handleSubmit} className="space-y-4">
-            {children}
+            {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${recordLabel}...`}</p> : null}
+            {!isLoading && typeof children === 'function' ? children(record) : null}
+            {!isLoading && typeof children !== 'function' ? children : null}
           </form>
         </FormEditableContext.Provider>
       </FormModalContext.Provider>
@@ -125,8 +144,12 @@ FormModal.propTypes = {
   updateLabel: PropTypes.string,
   savingLabel: PropTypes.string,
   workflow: PropTypes.object,
-  /** The record open in the form; its status is read from the workflow's statusKey. */
+  /** The record open in the form, whole; its status is read from the workflow's statusKey. */
   record: PropTypes.object,
+  /** The record's id, when only that is known; `loadRecord` reads the record on open. */
+  recordId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  /** (id) => Promise<record>. */
+  loadRecord: PropTypes.func,
   entity: PropTypes.string,
   label: PropTypes.string,
   permissions: PropTypes.objectOf(PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)])),
@@ -135,7 +158,8 @@ FormModal.propTypes = {
   /** Opens the copy an amend makes; without it (and without an amend hook) Amend is not offered. */
   onAmend: PropTypes.func,
   onClose: PropTypes.func.isRequired,
-  children: PropTypes.node,
+  /** The fields; a function of the record where they start from it. */
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
 };
 
 /**

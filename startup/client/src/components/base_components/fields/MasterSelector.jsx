@@ -24,6 +24,11 @@ import { useMasterCreator } from '../master/master_modal/MasterModalProvider';
  * `onChange` receives the id (or null) and the record itself — an array of
  * each for `multiple` — so a caller that copies fields off the record does not
  * look it up again.
+ *
+ * Editing is the same creator: the button beside the field opens the picked
+ * record in it by id, over the current screen, so nothing typed there is lost.
+ * The modal loads the whole record itself (list rows can be lean); after
+ * saving the list reloads so the field shows the edited label.
  */
 
 // Creators hand back either the record or the API envelope around it.
@@ -47,11 +52,11 @@ function MasterSelector({
   placeholder,
   multiple = false,
   allowCreate = true,
+  allowEdit = true,
   disabled = false,
   required = false,
   error,
   renderOption,
-  onNavigate,
   allowOptionsOutsideSelectBox = false,
   className = '',
 }) {
@@ -130,6 +135,15 @@ function MasterSelector({
     onSuccess: selectCreated,
   }), [openMasterModal, creatorType, creatorDefaults, selectCreated]);
 
+  // Typed text has no record to edit, so only a listed pick gets the button.
+  const pickedRecord = rowsByValue.get(selectedValues);
+  const canEdit = allowEdit && Boolean(creatorType) && hasProvider && Boolean(pickedRecord);
+
+  const openEditor = useCallback(
+    () => openMasterModal({ type: creatorType, recordId: pickedRecord.id, onSuccess: load }),
+    [openMasterModal, creatorType, pickedRecord, load]
+  );
+
   return (
     <div className={className}>
       {label ? (
@@ -151,7 +165,7 @@ function MasterSelector({
         onCreate={canCreate ? openCreator : undefined}
         renderOption={renderOption}
         filter={recordFilter}
-        onNavigate={onNavigate}
+        onNavigate={canEdit ? openEditor : undefined}
         allowOptionsOutsideSelectBox={allowOptionsOutsideSelectBox}
       />
       {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
@@ -204,8 +218,8 @@ MasterSelector.propTypes = {
   error: PropTypes.string,
   /** (option) => node for its menu row. Keep it stable. */
   renderOption: PropTypes.func,
-  /** (value) => jump to the picked record; draws the dropdown's navigate button. */
-  onNavigate: PropTypes.func,
+  /** Set false where editing the pick makes no sense, like a filter bar. */
+  allowEdit: PropTypes.bool,
   className: PropTypes.string,
 };
 

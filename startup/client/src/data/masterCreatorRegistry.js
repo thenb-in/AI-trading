@@ -4,7 +4,8 @@
 // each one, so those are registered from app/ rather than imported here.
 //
 // Shape: { [type: string]: React component }. Each component is rendered with
-// { isOpen, modalData, defaults, onClose, onSuccess }.
+// { isOpen, modalData, recordId, defaults, onClose, onSuccess }; `recordId`
+// asks for that record to be edited, loaded by the modal itself.
 
 // Creators the framework ships for its own records (roles, ...). Separate from
 // the app's so that an app registering its masters cannot wipe them, and so an

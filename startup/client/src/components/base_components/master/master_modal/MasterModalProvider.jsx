@@ -6,7 +6,8 @@ import {
 } from '@/data/masterCreatorRegistry';
 
 /**
- * Inline "create a master" modals, opened from anywhere.
+ * Inline master modals, opened from anywhere: to create a record, or to edit
+ * one by `recordId` (the modal loads it).
  *
  * The framework owns the plumbing — open/close state, the context hook, the
  * window-event bridge — and the app owns which masters exist and which
@@ -23,13 +24,13 @@ import {
  */
 const MasterModalContext = createContext(null);
 
-const EMPTY_STATE = { type: null, data: null, onSuccess: null, defaults: {} };
+const EMPTY_STATE = { type: null, data: null, recordId: null, onSuccess: null, defaults: {} };
 
 function MasterModalProvider({ children }) {
   const [state, setState] = useState(EMPTY_STATE);
 
   const openMasterModal = useCallback(
-    ({ type, data = null, onSuccess = null, defaults = {} }) => {
+    ({ type, data = null, recordId = null, onSuccess = null, defaults = {} }) => {
       const creators = getMasterCreators();
       if (!creators[type]) {
         // Nothing would open and the click would look broken, so name both
@@ -39,7 +40,7 @@ function MasterModalProvider({ children }) {
         );
         return;
       }
-      setState({ type, data, onSuccess, defaults });
+      setState({ type, data, recordId, onSuccess, defaults });
     },
     []
   );
@@ -87,6 +88,7 @@ function MasterModalProvider({ children }) {
         <Component
           isOpen={Boolean(state.type)}
           modalData={state.data}
+          recordId={state.recordId}
           defaults={state.defaults}
           onClose={closeMasterModal}
           onSuccess={handleSuccess}
