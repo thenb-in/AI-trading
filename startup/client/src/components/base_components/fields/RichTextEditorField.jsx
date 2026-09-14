@@ -6,6 +6,7 @@ import 'react-quill/dist/quill.snow.css';
 import { FieldFrame } from './shared/FieldFrame';
 import { emitChange } from './shared/emitChange';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
+import { useFieldDisabled } from './shared/formEditable';
 
 const DEFAULT_MODULES = {
   toolbar: [
@@ -40,7 +41,7 @@ function RichTextEditorField({
   onChange,
   label = '',
   error = '',
-  disabled = false,
+  disabled: disabledProp,
   required = false,
   name = '',
   id = '',
@@ -52,6 +53,7 @@ function RichTextEditorField({
   theme = 'snow',
   ...restProps
 }) {
+  const disabled = useFieldDisabled(disabledProp);
   const inputId = id || name;
   const errorId = error ? `${inputId || name || 'field'}-error` : undefined;
 

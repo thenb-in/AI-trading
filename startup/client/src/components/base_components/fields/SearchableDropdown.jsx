@@ -15,6 +15,7 @@ import { DropdownMenu } from './searchable_dropdown/components/DropdownMenu';
 import { FlatOptionList } from './searchable_dropdown/components/FlatOptionList';
 import { TreeOptionList } from './searchable_dropdown/components/TreeOptionList';
 import { NavigateButton } from './searchable_dropdown/components/NavigateButton';
+import { useFieldDisabled } from './shared/formEditable';
 
 // The menu is free to be wider than the field it hangs off, and has to be: a
 // field sized to a table cell would otherwise truncate every option to a few
@@ -28,7 +29,7 @@ function SearchableDropdown({
   selectedValues = [],
   onChange,
   placeholder = 'Select...',
-  disabled = false,
+  disabled: disabledProp,
   multiple = true,
   searchable = true,
   autoOpen = false,
@@ -53,7 +54,14 @@ function SearchableDropdown({
   // Typed text is a value too: offered as an "Accept" row, and kept when the
   // field is left without picking. Such a value wears the red border.
   allowOptionsOutsideSelectBox = false,
+  // (option) => node for a menu row, where a label alone says too little (an
+  // item's name over its code). The field still shows the label once picked.
+  renderOption,
+  // (option) => bool: options it rejects are left out of the menu, not out of
+  // the dropdown — a picked value keeps its label.
+  filterOption = null,
 }) {
+  const disabled = useFieldDisabled(disabledProp);
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
@@ -76,7 +84,7 @@ function SearchableDropdown({
   const {
     isTree, filteredOptions, hiddenMatchCount, allTreeOption, visibleTreeNodes, lastChildSet,
     collapsed, toggleCollapse, navigableOptions, hasVisibleOptions,
-  } = useVisibleOptions({ options, searchTerm, defaultOptionValue });
+  } = useVisibleOptions({ options, searchTerm, defaultOptionValue, filterOption });
 
   const { acceptText, commitTypedText } = useFreeText({
     enabled: allowOptionsOutsideSelectBox, isTree, searchTerm, options, addValue,
@@ -310,6 +318,7 @@ function SearchableDropdown({
               activeIndex={activeIndex}
               indexOffset={rows.optionOffset}
               onSelect={handleSelect}
+              renderOption={renderOption}
             />
           )}
         </DropdownMenu>
@@ -332,6 +341,8 @@ SearchableDropdown.propTypes = {
     PropTypes.shape({
       value: PropTypes.string.isRequired,
       label: PropTypes.string.isRequired,
+      // Other text the row is found by, after its label.
+      searchText: PropTypes.string,
       highlight: PropTypes.bool,
       is_active: PropTypes.bool,
       depth: PropTypes.number,
@@ -372,6 +383,10 @@ SearchableDropdown.propTypes = {
   // Typed text is a value: an "Accept" row offers it, and leaving the field
   // (click outside, Tab, chevron) keeps it. Escape cancels. Flat lists only.
   allowOptionsOutsideSelectBox: PropTypes.bool,
+  /** (option) => node drawn for the option's menu row; the field still shows its label. */
+  renderOption: PropTypes.func,
+  /** (option) => bool — leaves options out of the menu; a picked one still shows its label. Flat lists only. */
+  filterOption: PropTypes.func,
 };
 
 export { SearchableDropdown };

@@ -15,6 +15,8 @@ import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@utils/hasPermission';
 import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
+import { DEFAULT_WORKFLOW, amendCopy, statusOf } from '../workflow/workflow';
+import { useWorkflowRowActions } from '../workflow/useWorkflowRowActions';
 
 const BaseMaster = ({
   title,
@@ -29,6 +31,15 @@ const BaseMaster = ({
   baseMasterContainerWidth = 'max-w-7xl',
   auditHead,
   permissionKeys,
+  // What a record goes through (see workflow.js); a master that declares none
+  // has DEFAULT_WORKFLOW's single `saved` status. `entity` names permissions
+  // permissionKeys does not (approve_<entity>). `workflowHooks` override an
+  // action's default — { approve: ({ record, formData, to }) => ... } — in the
+  // form's footer, and are what a row button runs, since a list has no form.
+  // Amend opens the copy in the form unless hooked.
+  workflow = DEFAULT_WORKFLOW,
+  entity,
+  workflowHooks = {},
   loadRows,
   deleteRow,
   // Optional `(row) => boolean` for masters whose grid holds rows that are not
@@ -230,8 +241,28 @@ const BaseMaster = ({
     ? headerContent({ refresh: fetchRows, rows, columns })
     : headerContent;
 
+  // An amend opens the copy as a new record in the form.
+  const openRecord = (record) => {
+    setSelectedRow(record);
+    setIsModalOpen(true);
+  };
+  const handleAmend = ({ record }) => openRecord(amendCopy(workflow, record));
+
+  const workflowRowActions = useWorkflowRowActions({
+    workflow,
+    entity,
+    label: (modalEditTitle ?? title).toLowerCase(),
+    permissions: permissionKeys,
+    hooks: { amend: handleAmend, ...workflowHooks },
+    onChanged: () => fetchRows(),
+  });
+  // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
+  const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
+    && (!canDeleteRow || canDeleteRow(row));
+
   const actions = [
     ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row) }) : []),
+    ...workflowRowActions,
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
     // edit (locked, approved, read-only masters) still have a history.
@@ -250,7 +281,7 @@ const BaseMaster = ({
             label: 'Delete',
             onClick: (id) => handleDelete(id),
             type: 'danger',
-            show: canDeleteRow,
+            show: showDelete,
           },
         ]
       : []),
@@ -280,10 +311,25 @@ const BaseMaster = ({
   // A form may hand back what it saved; the grid only needs to reload, not read that as filters.
   const handleFormSuccess = () => fetchRows();
 
-  const ModalBody = selectedRow ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
+  // A saved record opens its details or form; a new one (or an amend's copy) the form.
+  const isSaved = Boolean(selectedRow?.id);
+  const ModalBody = isSaved ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
   const isForm = ModalBody === FormComponent;
   const Modal = isForm ? FormModal : MasterModal;
-  const formModalProps = isForm ? { isEditMode: Boolean(selectedRow), createLabel, updateLabel, savingLabel } : {};
+  const formModalProps = isForm
+    ? {
+        isEditMode: isSaved,
+        createLabel,
+        updateLabel,
+        savingLabel,
+        workflow,
+        record: selectedRow,
+        entity,
+        permissions: permissionKeys,
+        hooks: workflowHooks,
+        onAmend: openRecord,
+      }
+    : {};
 
   // Adapters that inject the current rows/columns/refresh into caller-supplied
   // callbacks. Defined here (rather than inline in JSX) to satisfy the
@@ -378,7 +424,7 @@ const BaseMaster = ({
           {...formModalProps}
           isOpen={isModalOpen && Boolean(ModalBody)}
           onClose={handleCloseModal}
-          title={selectedRow ? (modalEditTitle ?? title) : modalAddTitle}
+          title={isSaved ? (modalEditTitle ?? title) : modalAddTitle}
           maxWidth={modalMaxWidth}
           auditHead={auditHead}
           auditObjectId={selectedRow?.id}
@@ -431,6 +477,9 @@ BaseMaster.propTypes = {
     update: PropTypes.string,
     delete: PropTypes.string,
   }).isRequired,
+  workflow: PropTypes.object,
+  entity: PropTypes.string,
+  workflowHooks: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,
   canDeleteRow: PropTypes.func,

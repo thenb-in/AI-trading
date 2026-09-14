@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock } from 'lucide-react';
 import { FieldFrame } from './shared/FieldFrame';
 import { getBaseInputClasses } from './shared/getBaseInputClasses';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
+import { useFieldDisabled } from './shared/formEditable';
 
 function PasswordTypeField(props) {
   const {
@@ -11,7 +12,7 @@ function PasswordTypeField(props) {
     placeholder = '',
     label = '',
     error = '',
-    disabled = false,
+    disabled: disabledProp,
     required = false,
     className = '',
     name = '',
@@ -22,6 +23,7 @@ function PasswordTypeField(props) {
     icon = null,
     ...restProps
   } = props;
+    const disabled = useFieldDisabled(disabledProp);
 
   const inputId = id || name;
   const [showPassword, setShowPassword] = useState(false);

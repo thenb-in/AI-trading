@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { FieldFrame } from './shared/FieldFrame';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
 import { MdiIcon } from '../MdiIcon';
+import { useFieldDisabled } from './shared/formEditable';
 
 /** How many matches the grid draws at once -- 6577 icons at once would stall the modal. */
 const VISIBLE_LIMIT = 120;
@@ -40,7 +41,7 @@ function IconTypeField({
   label = '',
   hint = '',
   error = '',
-  disabled = false,
+  disabled: disabledProp,
   required = false,
   name = '',
   id = '',
@@ -48,6 +49,7 @@ function IconTypeField({
   previewColor,
   containerClassName = ''
 }) {
+  const disabled = useFieldDisabled(disabledProp);
   const inputId = id || name;
   const errorId = error ? `${inputId || 'icon'}-error` : undefined;
   const [isOpen, setIsOpen] = useState(false);

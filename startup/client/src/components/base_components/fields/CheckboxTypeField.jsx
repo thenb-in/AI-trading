@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { FieldFrame } from './shared/FieldFrame';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
 import { emitChange } from './shared/emitChange';
+import { useFieldDisabled } from './shared/formEditable';
 
 function CheckboxTypeField(props) {
   const {
@@ -15,7 +16,7 @@ function CheckboxTypeField(props) {
     onChange,
     label = '',
     error = '',
-    disabled = false,
+    disabled: disabledProp,
     required = false,
     className = '',
     containerClassName = '',
@@ -26,6 +27,7 @@ function CheckboxTypeField(props) {
     autoFocus = false,
     ...restProps
   } = props;
+    const disabled = useFieldDisabled(disabledProp);
 
   const isMulti = type === 'multi';
   const inputType = isMulti ? 'checkbox' : 'radio';

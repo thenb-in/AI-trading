@@ -38,6 +38,8 @@ function MasterSelector({
   toOption,
   getValue = idOf,
   filterRow,
+  filterOption,
+  sortRows,
   describeMissing,
   creatorType,
   creatorDefaults,
@@ -51,6 +53,9 @@ function MasterSelector({
   error,
   wrapLabel,
   createOptionLabel,
+  renderOption,
+  onNavigate,
+  allowOptionsOutsideSelectBox = false,
   className = '',
 }) {
   const [rows, setRows] = useState([]);
@@ -80,11 +85,20 @@ function MasterSelector({
   }, [multiple, value]);
 
   const options = useMemo(() => {
-    const listed = (filterRow ? rows.filter(filterRow) : rows).map((row) => ({ ...toOption(row), value: getValue(row) }));
+    const ordered = sortRows ? [...rows].sort(sortRows) : rows;
+    const listed = ordered.map((row) => ({ ...toOption(row), value: getValue(row) }));
     // A stored value the master no longer lists still shows, when the caller says how.
     const isMissing = describeMissing && !multiple && !loading && selectedValues !== '' && !rowsByValue.has(selectedValues);
     return isMissing ? [...listed, { value: selectedValues, label: describeMissing(selectedValues) }] : listed;
-  }, [rows, filterRow, toOption, getValue, describeMissing, multiple, loading, selectedValues, rowsByValue]);
+  }, [rows, sortRows, toOption, getValue, describeMissing, multiple, loading, selectedValues, rowsByValue]);
+
+  // Both filters hide menu rows only, so a picked record that fails them still shows its label.
+  // A value the master does not list has no row to test and stays.
+  const menuFilter = useMemo(() => {
+    if (!filterRow && !filterOption) return undefined;
+    return (option) => (!filterOption || filterOption(option))
+      && (!filterRow || !rowsByValue.has(option.value) || filterRow(rowsByValue.get(option.value)));
+  }, [filterRow, filterOption, rowsByValue]);
 
   const handleChange = useCallback((next) => {
     if (multiple) {
@@ -141,6 +155,10 @@ function MasterSelector({
         wrapLabel={wrapLabel}
         onCreateOption={canCreate ? openCreator : undefined}
         createOptionLabel={createOptionLabel}
+        renderOption={renderOption}
+        filterOption={menuFilter}
+        onNavigate={onNavigate}
+        allowOptionsOutsideSelectBox={allowOptionsOutsideSelectBox}
       />
       {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
     </div>
@@ -158,14 +176,22 @@ MasterSelector.propTypes = {
   onChange: PropTypes.func.isRequired,
   /** () => Promise<rows>. Keep it stable (module level or memoised) and cached. */
   loadRows: PropTypes.func.isRequired,
-  /** (row) => ({ label, searchText? }). The value comes from `getValue`. Keep it stable as well. */
+  /**
+   * (row) => ({ label, searchText?, ...anything renderOption draws }). `label` is
+   * what the field shows and is searched first; `searchText` holds the other keys
+   * the row is found by. The value comes from `getValue`. Keep it stable as well.
+   */
   toOption: PropTypes.func.isRequired,
   /** (row) => string the field stores. Defaults to the id. Keep it stable. */
   getValue: PropTypes.func,
   /** (value) => label for a stored value the master does not list, so it still shows. */
   describeMissing: PropTypes.func,
-  /** (row) => bool — leaves rows out of the list, e.g. the record being edited. */
+  /** (row) => bool — leaves rows out of the menu, e.g. the record being edited. */
   filterRow: PropTypes.func,
+  /** (option) => bool — leaves options out of the menu by value, e.g. the pick on another field. */
+  filterOption: PropTypes.func,
+  /** (a, b) => number — orders the rows, e.g. the ones that can cover a need first. */
+  sortRows: PropTypes.func,
   /** Key the record's creator is registered under; omit where it cannot be created inline. */
   creatorType: PropTypes.string,
   /** Extra defaults handed to the creator along with the typed name. */
@@ -176,6 +202,8 @@ MasterSelector.propTypes = {
   label: PropTypes.string,
   placeholder: PropTypes.string,
   multiple: PropTypes.bool,
+  /** Typed text is a value of its own; `onChange` then gets the text and no record. */
+  allowOptionsOutsideSelectBox: PropTypes.bool,
   /** Set false where creating from the picker makes no sense. */
   allowCreate: PropTypes.bool,
   disabled: PropTypes.bool,
@@ -184,6 +212,10 @@ MasterSelector.propTypes = {
   wrapLabel: PropTypes.bool,
   /** Wording of the create row, where optionName would phrase it wrong (e.g. an acronym). */
   createOptionLabel: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  /** (option) => node for its menu row. Keep it stable. */
+  renderOption: PropTypes.func,
+  /** (value) => jump to the picked record; draws the dropdown's navigate button. */
+  onNavigate: PropTypes.func,
   className: PropTypes.string,
 };
 

@@ -105,6 +105,7 @@ const FilterField = ({
           searchable={showSearch}
           loading={!!config.optionsLoading}
           onOpen={fetchData}
+          renderOption={config.renderOption}
         />
       );
     }
@@ -170,6 +171,8 @@ FilterField.propTypes = {
     type: PropTypes.oneOf(['date', 'select', 'checkbox', 'number']).isRequired,
     options: PropTypes.array,
     multiselect: PropTypes.bool,
+    /** (option) => node for its menu row. */
+    renderOption: PropTypes.func,
     searchable: PropTypes.bool,
     optionsLoading: PropTypes.bool,
     onOpenOptions: PropTypes.func,

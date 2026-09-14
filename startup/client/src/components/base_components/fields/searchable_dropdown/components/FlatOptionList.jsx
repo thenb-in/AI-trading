@@ -1,8 +1,11 @@
 import PropTypes from 'prop-types';
 import { ignoreCheckboxChange } from '../utils/menuRows';
 
-/** Plain options: a checkbox row each for multiple, a radio row for single. */
-function FlatOptionList({ options, selectedSet, multiple, activeIndex, indexOffset, onSelect }) {
+/**
+ * Plain options: a checkbox row each for multiple, a radio row for single. A
+ * row shows its label, or what `renderOption(option)` draws for it.
+ */
+function FlatOptionList({ options, selectedSet, multiple, activeIndex, indexOffset, onSelect, renderOption }) {
   return options.map((option, index) => {
     const isSelected = selectedSet.has(option.value);
     const isHighlight = Boolean(option.highlight);
@@ -27,7 +30,7 @@ function FlatOptionList({ options, selectedSet, multiple, activeIndex, indexOffs
             onChange={ignoreCheckboxChange}
             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
-          <span>{option.label}</span>
+          <div className="min-w-0 flex-1">{renderOption ? renderOption(option) : option.label}</div>
         </div>
       </div>
     );
@@ -46,6 +49,8 @@ FlatOptionList.propTypes = {
   indexOffset: PropTypes.number.isRequired,
   /** (value) */
   onSelect: PropTypes.func.isRequired,
+  /** (option) => node drawn in place of the label. */
+  renderOption: PropTypes.func,
 };
 
 export { FlatOptionList };

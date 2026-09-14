@@ -9,9 +9,12 @@ const MENU_ROW_CAP = 25;
  * What the open menu lists for the current search. Options that describe a
  * hierarchy (the Department filter) make it a tree, with its own collapse state
  * and the default ("All") option set apart above it; every other dropdown is a
- * flat list filtered by label, capped at MENU_ROW_CAP rows.
+ * flat list capped at MENU_ROW_CAP rows, matched on its label and then on its
+ * `searchText` — the other keys a row is found by (an item's alternate name or
+ * description) without showing them. `filterOption` leaves options out of a
+ * flat menu without dropping them from the dropdown, so a picked one keeps its label.
  */
-const useVisibleOptions = ({ options, searchTerm, defaultOptionValue }) => {
+const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filterOption }) => {
   const [collapsed, setCollapsed] = useState(() => new Set());
 
   const isTree = useMemo(() => options.some((o) => o.hasChildren), [options]);
@@ -32,22 +35,26 @@ const useVisibleOptions = ({ options, searchTerm, defaultOptionValue }) => {
   const { filteredOptions, hiddenMatchCount } = useMemo(() => {
     if (isTree) return { filteredOptions: [], hiddenMatchCount: 0 };
     const needle = searchTerm.toLowerCase();
-    // Labels that start with the term come before those that merely contain it,
-    // so the rows the cap keeps are the likeliest picks. With no term every
-    // label "starts with" it, and the list keeps its own order.
+    // Labels that start with the term come first, then labels that contain it,
+    // then rows found only by their other keys — so the rows the cap keeps are
+    // the likeliest picks. With no term every label "starts with" it, and the
+    // list keeps its own order.
     const starting = [];
     const containing = [];
+    const byOtherKeys = [];
     options.forEach((option) => {
+      if (filterOption && !filterOption(option)) return;
       const label = option.label.toLowerCase();
       if (label.startsWith(needle)) starting.push(option);
       else if (label.includes(needle)) containing.push(option);
+      else if (option.searchText?.toLowerCase().includes(needle)) byOtherKeys.push(option);
     });
-    const matches = [...starting, ...containing];
+    const matches = [...starting, ...containing, ...byOtherKeys];
     return {
       filteredOptions: matches.slice(0, MENU_ROW_CAP),
       hiddenMatchCount: Math.max(matches.length - MENU_ROW_CAP, 0),
     };
-  }, [isTree, options, searchTerm]);
+  }, [isTree, options, searchTerm, filterOption]);
 
   // The rows arrow keys walk, in render order. Tree mode puts the "All" row
   // first because it renders above the tree.

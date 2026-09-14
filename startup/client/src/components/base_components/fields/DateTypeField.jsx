@@ -5,16 +5,18 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format, parse, isValid } from 'date-fns';
 import { colors, fontSize } from '@startup/constants/theme';
+import { useFieldDisabled } from './shared/formEditable';
 
 function DateTypeField({
   name,
   value,
   onChange,
-  disabled = false,
+  disabled: disabledProp,
   placeholder = 'DD/MM/YYYY',
   maxToday = true,
   popperZIndex
 }) {
+  const disabled = useFieldDisabled(disabledProp);
 
   const parsedDate = useMemo(() => {
     if (!value) return null;

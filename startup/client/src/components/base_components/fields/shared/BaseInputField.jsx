@@ -6,6 +6,7 @@ import { ClearButton } from './ClearButton';
 import { getBaseInputClasses } from './getBaseInputClasses';
 import { emitChange } from './emitChange';
 import { basicSanitize } from '../utils/sanitize';
+import { useFieldDisabled } from './formEditable';
 
 /**
  * Shared input/textarea renderer with optional left icon + optional clear button.
@@ -31,7 +32,7 @@ function BaseInputField({
   label = '',
   hint = '',
   error = '',
-  disabled = false,
+  disabled: disabledProp,
   readOnly = false,
   required = false,
   className = '',
@@ -49,6 +50,7 @@ function BaseInputField({
   // Extra props forwarded to the underlying control
   ...restProps
 }) {
+  const disabled = useFieldDisabled(disabledProp);
   const inputId = id || name;
   const leftIcon = icon || defaultIcon;
   const errorId = error ? `${inputId || name || 'field'}-error` : undefined;

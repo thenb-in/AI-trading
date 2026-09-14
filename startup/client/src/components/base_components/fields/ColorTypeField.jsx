@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 
 import { FieldFrame } from './shared/FieldFrame';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
+import { useFieldDisabled } from './shared/formEditable';
 
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
@@ -15,7 +16,7 @@ function ColorTypeField({
   label = '',
   hint = '',
   error = '',
-  disabled = false,
+  disabled: disabledProp,
   required = false,
   name = '',
   id = '',
@@ -24,6 +25,7 @@ function ColorTypeField({
   className = '',
   containerClassName = ''
 }) {
+  const disabled = useFieldDisabled(disabledProp);
   const inputId = id || name;
   const errorId = error ? `${inputId || 'color'}-error` : undefined;
   const swatchValue = HEX_PATTERN.test(value) ? value : fallbackColor;
