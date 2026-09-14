@@ -6,7 +6,7 @@
 //     overrides: { [field]: { hide?, frozen?, width?, order? } },
 //     order:     [field, field, ...] | null,
 //     sortModel: [{ field, sort }],
-//     filterModel: { [field]: string } | null,
+//     filterModel: { [field]: { operator, value } } | null,
 //     savedFilters: boolean,
 //     l1Snapshot: [{ field, hide, frozen, width? }] | null,  // audit only
 //   }

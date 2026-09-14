@@ -42,10 +42,9 @@ const OPERATOR_SYMBOL = {
   is_not_set: "∅",
 };
 
-/** `{ operator, value }` from either shape, including a legacy bare string. */
+/** A column's `{ operator, value }`; a column with no entry yet reads as an empty "contains". */
 const normalizeFilterEntry = (entry) => {
   if (entry === null || entry === undefined) return { operator: DEFAULT_OPERATOR, value: "" };
-  if (typeof entry === "string") return { operator: DEFAULT_OPERATOR, value: entry };
   return {
     operator: entry.operator || DEFAULT_OPERATOR,
     value: entry.value ?? "",
