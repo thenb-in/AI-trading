@@ -27,8 +27,8 @@ import {
  * per page load. A store that is unavailable or full leaves the entry in
  * memory only: it serves this page load and just doesn't survive a reload.
  *
- * IndexedDB is asynchronous, so its entries are read into memory once as the
- * page loads — await cacheReady() before a first read.
+ * IndexedDB is asynchronous: an entry is read into memory the first time it is
+ * asked for — await cacheReady(key) before reading it.
  *
  * Every entry carries a schema version, a TTL and the identity it was loaded
  * for (see setCacheScope), so a stale shape, an expired entry, or another
@@ -85,35 +85,47 @@ const webStorage = (getStorage) => {
         remove(key);
       }
     },
+    // Out of date but kept, so a failed refetch still has it to fall back on.
+    expire: (key) => {
+      try {
+        const raw = storage.getItem(storageKeyOf(key));
+        if (raw) storage.setItem(storageKeyOf(key), JSON.stringify({ ...JSON.parse(raw), savedAt: 0 }));
+      } catch {
+        // Unreadable or over quota: drop it, so it can never pass as fresh.
+        remove(key);
+      }
+    },
     remove,
   };
 };
 
-// IndexedDB, behind the same synchronous shape as Web Storage: what the
-// database holds is read into `held` once as the page loads, and every write
-// is sent off in order and reflected in `held` when it lands.
+// IndexedDB, behind the same synchronous shape as Web Storage. Opening reads
+// only which keys the database holds; an entry's value is read into `held` the
+// first time something asks for it (load), so a page that never reads a large
+// list never pays to parse it. Writes are sent off in order and reflected in
+// `held` when they land.
 const indexedDbStorage = () => {
   const held = new Map();
+  const known = new Set();
   let database = null;
 
-  const loaded = new Promise((resolve) => {
+  // An IndexedDB request as a promise; a failed one resolves empty, like a miss.
+  const settle = (request) => new Promise((resolve) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(undefined);
+  });
+
+  const opened = new Promise((resolve) => {
     try {
       const request = window.indexedDB.open('smCache', 1);
       request.onupgradeneeded = () => request.result.createObjectStore('entries');
       request.onerror = () => resolve();
       request.onsuccess = () => {
         database = request.result;
-        const cursorRequest = database.transaction('entries').objectStore('entries').openCursor();
-        cursorRequest.onerror = () => resolve();
-        cursorRequest.onsuccess = () => {
-          const cursor = cursorRequest.result;
-          if (!cursor) {
-            resolve();
-            return;
-          }
-          held.set(cursor.key, cursor.value);
-          cursor.continue();
-        };
+        settle(database.transaction('entries').objectStore('entries').getAllKeys()).then((keys) => {
+          (keys || []).forEach((key) => known.add(key));
+          resolve();
+        });
       };
     } catch {
       // No IndexedDB here (some privacy modes): the store stays memory-only.
@@ -121,7 +133,15 @@ const indexedDbStorage = () => {
     }
   });
 
-  const change = (apply, onDone, onFail) => loaded.then(() => {
+  const load = (key) => opened.then(() => {
+    if (!database || held.has(key) || !known.has(key)) return undefined;
+    return settle(database.transaction('entries').objectStore('entries').get(key)).then((envelope) => {
+      // Dropped or rewritten while it was being read: that later change stands.
+      if (envelope && known.has(key) && !held.has(key)) held.set(key, envelope);
+    });
+  });
+
+  const change = (apply, onDone, onFail) => opened.then(() => {
     if (!database) return;
     try {
       const transaction = database.transaction('entries', 'readwrite');
@@ -137,17 +157,32 @@ const indexedDbStorage = () => {
   // Out of `held` straight away, so nothing reads it back into memory while
   // the delete is still on its way.
   const remove = (key) => {
+    known.delete(key);
     held.delete(key);
     change((entries) => entries.delete(key), () => held.delete(key), () => held.delete(key));
   };
 
   return {
-    ready: loaded,
-    keys: () => [...held.keys()],
+    load,
+    loadAll: () => opened.then(() => Promise.all([...known].map(load))),
+    keys: () => [...known],
     read: (key) => held.get(key),
     // Over quota or uncloneable: dropped, as Web Storage does, so an older
     // copy can't outlive the one that failed to save.
-    write: (key, envelope) => change((entries) => entries.put(envelope, key), () => held.set(key, envelope), () => remove(key)),
+    write: (key, envelope) => {
+      known.add(key);
+      change((entries) => entries.put(envelope, key), () => held.set(key, envelope), () => remove(key));
+    },
+    // Marked out of date in the database itself, so an entry not yet read is
+    // expired too — and still there to fall back on.
+    expire: (key) => change((entries) => {
+      const request = entries.get(key);
+      request.onsuccess = () => {
+        if (request.result) entries.put({ ...request.result, savedAt: 0 }, key);
+      };
+    }, () => {
+      if (held.has(key)) held.set(key, { ...held.get(key), savedAt: 0 });
+    }, () => remove(key)),
     remove,
   };
 };
@@ -192,8 +227,11 @@ const dropSlot = (key, store) => {
 
 const notify = (namespace) => listeners.forEach((listener) => listener(namespace));
 
-/** Resolves once every store can be read — IndexedDB loads asynchronously. */
-const cacheReady = () => persistentStores[CACHE_STORE_DB].ready;
+/** Resolves once `key` can be read from every store — IndexedDB reads an entry on first ask. */
+const cacheReady = (key) => persistentStores[CACHE_STORE_DB].load(key);
+
+/** Resolves once every entry can be read, for listing them all (the cache master page). */
+const cacheLoadAll = () => persistentStores[CACHE_STORE_DB].loadAll();
 
 /** True when `key` holds a value that is present, in-scope and unexpired. */
 const cacheHas = (key, { store = CACHE_STORE_MEMORY } = {}) => isUsable(readEnvelope(key, store));
@@ -270,14 +308,7 @@ const cacheExpireNamespace = (namespace) => {
     if (slot.slice(slot.indexOf(':') + 1).startsWith(prefix)) memory.set(slot, expiredCopy(envelope));
   });
   eachPersistentStore((_, backing) => {
-    backing.keys().filter((key) => key.startsWith(prefix)).forEach((key) => {
-      try {
-        backing.write(key, expiredCopy(backing.read(key)));
-      } catch {
-        // Unreadable: drop it, so it can never pass as fresh.
-        backing.remove(key);
-      }
-    });
+    backing.keys().filter((key) => key.startsWith(prefix)).forEach((key) => backing.expire(key));
   });
   notify(namespace);
 };
@@ -376,6 +407,7 @@ const setCacheScope = (nextScope) => {
 
 export {
   cacheReady,
+  cacheLoadAll,
   cacheHas,
   cacheGet,
   cacheRead,

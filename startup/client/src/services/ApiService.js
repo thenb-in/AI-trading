@@ -84,7 +84,7 @@ const ApiService = {
     const { namespace, ttlMs = CACHE_TTL_DEFAULT_MS, store = CACHE_STORE_SESSION } =
       typeof cache === 'string' ? { namespace: cache } : cache;
     const key = `${namespace}:${String(url).split('?')[0]}${queryOf(axiosConfig.params)}`;
-    await cacheReady();
+    await cacheReady(key);
     const cached = cacheRead(key, { store });
     if (cached?.fresh && !force) return cached.data;
 

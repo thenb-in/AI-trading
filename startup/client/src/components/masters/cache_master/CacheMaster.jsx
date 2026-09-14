@@ -8,7 +8,7 @@ import {
   cacheBustAll,
   cacheBustNamespace,
   cacheEntries,
-  cacheReady,
+  cacheLoadAll,
   getCacheScope,
   subscribeToCacheBust
 } from '@services/cacheManager';
@@ -23,7 +23,7 @@ const PERMISSION_KEYS = {};
 const CACHE_COLUMNS = buildCacheColumns();
 
 const loadEntries = async () => {
-  await cacheReady();
+  await cacheLoadAll();
   return cacheEntries();
 };
 

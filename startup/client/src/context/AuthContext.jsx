@@ -110,13 +110,6 @@ const DataProvider = ({ children, publicPaths = [] }) => {
     navigate(redirectTo, { replace: true });
   }, [authChecked, userData, location.pathname, location.search, location.state, navigate]);
 
-  // Cached data (rosters, filter option lists) belongs to one user in one
-  // company. Logging out or switching company drops the whole cache; a plain
-  // page reload does not, which is what keeps sessionStorage worth having.
-  useEffect(() => {
-    setCacheScope(userData ? `${userData.id}:${userData.companyId ?? ""}` : null);
-  }, [userData]);
-
   const logout = useCallback(async () => {
     setIsLoggingOut(true);
     try {
