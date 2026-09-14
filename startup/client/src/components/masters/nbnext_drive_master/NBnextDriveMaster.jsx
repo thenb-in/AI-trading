@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Download } from 'lucide-react';
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { useDataContext } from '@context/useDataContext';
 import { hasPermission } from '@utils/hasPermission';
 import { nbnextDriveService } from '@/services/nbnextDriveService';
@@ -48,6 +49,7 @@ const NBnextDriveMaster = () => {
 
   return (
     <BaseMaster
+      masterName={MASTERS.NBNEXT_DRIVE}
       title="NBnext Drive"
       description={`View and manage ${scope} in NBnext Drive. Upload, view, download, and delete files.`}
       addButtonText="Upload File"

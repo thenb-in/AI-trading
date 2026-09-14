@@ -1,4 +1,5 @@
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { getGroupTint } from '@startup/components/nbnext_data_grid/utils/styles';
 import { activityService } from '@services/activityService';
 import { ActivityForm } from './ActivityForm';
@@ -39,6 +40,7 @@ const tintSharedRecords = (activities) => {
 
 const ActivityMaster = () => (
   <BaseMaster
+    masterName={MASTERS.ACTIVITY}
     title="Activity Logs"
     description="Track and review all user actions and CRUD operations across every system module and model."
     addButtonText="Add Activity"

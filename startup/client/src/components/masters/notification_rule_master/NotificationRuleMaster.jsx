@@ -3,6 +3,7 @@ import { FlaskConical } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { notificationRuleService } from '@services/notificationRuleService';
 import { NotificationRuleMasterForm } from './NotificationRuleMasterForm';
 
@@ -64,6 +65,7 @@ const NotificationRuleMaster = () => {
 
   return (
     <BaseMaster
+      masterName={MASTERS.NOTIFICATION_RULE}
       title="Notification Rules"
       description="Decide who is told what, and on which channel — in-app, by email or on WhatsApp."
       addButtonText="Add Rule"

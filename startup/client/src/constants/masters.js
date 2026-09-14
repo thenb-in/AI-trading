@@ -10,6 +10,9 @@ const MASTERS = {
   SUBSCRIPTION: 'Subscription',
   NOTIFICATION_RULE: 'Notification Rule',
   NBNEXT_DRIVE: 'NBnext Drive',
+  ACTIVITY: 'Activity',
+  REPORT_RUN: 'Report Run',
+  CACHE: 'Cache',
 };
 
 export { MASTERS };

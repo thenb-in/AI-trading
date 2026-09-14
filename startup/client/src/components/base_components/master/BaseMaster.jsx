@@ -475,7 +475,7 @@ BaseMaster.propTypes = {
     delete: PropTypes.string,
   }).isRequired,
   workflow: PropTypes.object,
-  masterName: PropTypes.string,
+  masterName: PropTypes.string.isRequired,
   workflowHooks: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,

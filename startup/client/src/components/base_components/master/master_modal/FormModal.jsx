@@ -149,7 +149,7 @@ FormModal.propTypes = {
   /** (id) => Promise<record>. */
   loadRecord: PropTypes.func,
   /** The master in words ("Sales Order"), usually from a masters constant. */
-  masterName: PropTypes.string,
+  masterName: PropTypes.string.isRequired,
   permissions: PropTypes.objectOf(PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)])),
   /** { [action key]: ({ record, formData, to }) => ..., isEditable: ({ status, record, isEditable }) => boolean } */
   hooks: PropTypes.objectOf(PropTypes.func),

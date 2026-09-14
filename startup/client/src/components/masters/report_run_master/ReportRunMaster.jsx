@@ -4,6 +4,7 @@ import { Eye, RefreshCw, Square } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { reportRunService } from '@services/reportRunService';
 import { enqueueSavedReportRun } from '@startup/socket';
 import {
@@ -104,6 +105,7 @@ const ReportRunMaster = () => {
 
   return (
     <BaseMaster
+      masterName={MASTERS.REPORT_RUN}
       title="Reporting Manager"
       description="Reports you have run, kept with the filters that produced them. Open one to load it instantly instead of computing it again."
       searchPlaceholder="Search by report name or filter..."

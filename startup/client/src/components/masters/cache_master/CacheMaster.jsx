@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Copy, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { formatBytes } from '@utils/formattingUtils';
 import {
   cacheBust,
@@ -123,6 +124,7 @@ const CacheMaster = () => {
 
   return (
     <BaseMaster
+      masterName={MASTERS.CACHE}
       title="Cache Manager"
       description="Everything this tab can read from its cache — in memory, sessionStorage, localStorage or IndexedDB: users, roles, permissions, filter lists and anything else ApiService caches. Click a row to see an entry; copy its key or drop it to force a fresh load."
       searchPlaceholder="Search by key, namespace or store..."
