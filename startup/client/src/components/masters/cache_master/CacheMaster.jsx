@@ -8,10 +8,10 @@ import {
   cacheBustAll,
   cacheBustNamespace,
   cacheEntries,
+  cacheReady,
   getCacheScope,
   subscribeToCacheBust
 } from '@services/cacheManager';
-import { CACHE_STORE_SESSION } from '@startup/constants/cache';
 import { buildCacheColumns } from './cacheColumns';
 import { CacheSummary } from './CacheSummary';
 
@@ -22,7 +22,10 @@ const PERMISSION_KEYS = {};
 
 const CACHE_COLUMNS = buildCacheColumns();
 
-const loadEntries = async () => cacheEntries();
+const loadEntries = async () => {
+  await cacheReady();
+  return cacheEntries();
+};
 
 // The same key can sit in both stores, so the store is part of what makes an
 // entry one row — and what lets Previous/Next tell entries apart.
@@ -34,7 +37,7 @@ const extractResponse = (entries) => ({
 const summarise = (rows) => ({
   entries: rows.length,
   bytes: rows.reduce((sum, row) => sum + (row.bytes || 0), 0),
-  session: rows.filter((row) => row.store === CACHE_STORE_SESSION).length,
+  persisted: rows.filter((row) => row.persisted).length,
   namespaces: new Set(rows.map((row) => row.namespace)).size
 });
 
@@ -121,7 +124,7 @@ const CacheMaster = () => {
   return (
     <BaseMaster
       title="Cache Manager"
-      description="Everything the browser is holding for this tab — users, roles, permissions, filter lists and anything else ApiService caches. Click a row to see an entry; copy its key or drop it to force a fresh load."
+      description="Everything this tab can read from its cache — in memory, sessionStorage, localStorage or IndexedDB: users, roles, permissions, filter lists and anything else ApiService caches. Click a row to see an entry; copy its key or drop it to force a fresh load."
       searchPlaceholder="Search by key, namespace or store..."
       modalEditTitle="Cache Entry"
       baseMasterContainerWidth="max-w-8xl"

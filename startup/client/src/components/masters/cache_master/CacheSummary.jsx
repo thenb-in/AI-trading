@@ -32,7 +32,7 @@ const CacheSummary = ({ totals, scope }) => (
       icon={Layers}
       label="Namespaces"
       value={totals.namespaces}
-      hint={`${totals.session} of ${totals.entries} entries survive a page refresh`}
+      hint={`${totals.persisted} of ${totals.entries} entries survive a page refresh`}
     />
     <Tile
       icon={Fingerprint}
@@ -47,7 +47,7 @@ CacheSummary.propTypes = {
   totals: PropTypes.shape({
     entries: PropTypes.number.isRequired,
     bytes: PropTypes.number.isRequired,
-    session: PropTypes.number.isRequired,
+    persisted: PropTypes.number.isRequired,
     namespaces: PropTypes.number.isRequired
   }).isRequired,
   scope: PropTypes.string

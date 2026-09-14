@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
 import { formatBytes } from '@utils/formattingUtils';
 import { humanizeDuration } from '@utils/dateTimeUtils';
-import { CACHE_STORE_SESSION } from '@startup/constants/cache';
+import { CACHE_STORE_MEMORY } from '@startup/constants/cache';
 
 const STATUS_STYLES = {
   Fresh: 'bg-green-100 text-green-800',
@@ -49,13 +49,13 @@ const buildCacheColumns = () => [
     label: 'Store',
     type: 'string',
     render: (row) =>
-      row.store === CACHE_STORE_SESSION ? (
+      row.store === CACHE_STORE_MEMORY ? (
+        <Pill label="memory" className="bg-purple-100 text-purple-800" />
+      ) : (
         <Pill
-          label={row.persisted ? 'session' : 'session (memory only)'}
+          label={row.persisted ? row.store : `${row.store} (memory only)`}
           className={row.persisted ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'}
         />
-      ) : (
-        <Pill label="memory" className="bg-purple-100 text-purple-800" />
       )
   },
   {
