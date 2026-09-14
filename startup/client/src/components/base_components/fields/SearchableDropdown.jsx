@@ -59,7 +59,7 @@ function SearchableDropdown({
   renderOption,
   // (option) => bool: options it rejects are left out of the menu, not out of
   // the dropdown — a picked value keeps its label.
-  filterOption = null,
+  filter = null,
 }) {
   const disabled = useFieldDisabled(disabledProp);
   const dropdownRef = useRef(null);
@@ -84,7 +84,7 @@ function SearchableDropdown({
   const {
     isTree, filteredOptions, hiddenMatchCount, allTreeOption, visibleTreeNodes, lastChildSet,
     collapsed, toggleCollapse, navigableOptions, hasVisibleOptions,
-  } = useVisibleOptions({ options, searchTerm, defaultOptionValue, filterOption });
+  } = useVisibleOptions({ options, searchTerm, defaultOptionValue, filter });
 
   const { acceptText, commitTypedText } = useFreeText({
     enabled: allowOptionsOutsideSelectBox, isTree, searchTerm, options, addValue,
@@ -386,7 +386,7 @@ SearchableDropdown.propTypes = {
   /** (option) => node drawn for the option's menu row; the field still shows its label. */
   renderOption: PropTypes.func,
   /** (option) => bool — leaves options out of the menu; a picked one still shows its label. Flat lists only. */
-  filterOption: PropTypes.func,
+  filter: PropTypes.func,
 };
 
 export { SearchableDropdown };

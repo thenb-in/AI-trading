@@ -11,10 +11,10 @@ const MENU_ROW_CAP = 25;
  * and the default ("All") option set apart above it; every other dropdown is a
  * flat list capped at MENU_ROW_CAP rows, matched on its label and then on its
  * `searchText` — the other keys a row is found by (an item's alternate name or
- * description) without showing them. `filterOption` leaves options out of a
- * flat menu without dropping them from the dropdown, so a picked one keeps its label.
+ * description) without showing them. `filter` leaves options out of a flat
+ * menu without dropping them from the dropdown, so a picked one keeps its label.
  */
-const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filterOption }) => {
+const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filter }) => {
   const [collapsed, setCollapsed] = useState(() => new Set());
 
   const isTree = useMemo(() => options.some((o) => o.hasChildren), [options]);
@@ -43,7 +43,7 @@ const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filterOpti
     const containing = [];
     const byOtherKeys = [];
     options.forEach((option) => {
-      if (filterOption && !filterOption(option)) return;
+      if (filter && !filter(option)) return;
       const label = option.label.toLowerCase();
       if (label.startsWith(needle)) starting.push(option);
       else if (label.includes(needle)) containing.push(option);
@@ -54,7 +54,7 @@ const useVisibleOptions = ({ options, searchTerm, defaultOptionValue, filterOpti
       filteredOptions: matches.slice(0, MENU_ROW_CAP),
       hiddenMatchCount: Math.max(matches.length - MENU_ROW_CAP, 0),
     };
-  }, [isTree, options, searchTerm, filterOption]);
+  }, [isTree, options, searchTerm, filter]);
 
   // The rows arrow keys walk, in render order. Tree mode puts the "All" row
   // first because it renders above the tree.

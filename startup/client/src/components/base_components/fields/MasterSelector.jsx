@@ -37,8 +37,7 @@ function MasterSelector({
   loadRows,
   toOption,
   getValue = idOf,
-  filterRow,
-  filterOption,
+  filter,
   sortRows,
   describeMissing,
   creatorType,
@@ -92,13 +91,12 @@ function MasterSelector({
     return isMissing ? [...listed, { value: selectedValues, label: describeMissing(selectedValues) }] : listed;
   }, [rows, sortRows, toOption, getValue, describeMissing, multiple, loading, selectedValues, rowsByValue]);
 
-  // Both filters hide menu rows only, so a picked record that fails them still shows its label.
-  // A value the master does not list has no row to test and stays.
-  const menuFilter = useMemo(() => {
-    if (!filterRow && !filterOption) return undefined;
-    return (option) => (!filterOption || filterOption(option))
-      && (!filterRow || !rowsByValue.has(option.value) || filterRow(rowsByValue.get(option.value)));
-  }, [filterRow, filterOption, rowsByValue]);
+  // The dropdown filters options; a selector's filter is written against its records.
+  // A value the master does not list has no record, so it is tested as the option itself.
+  const recordFilter = useMemo(
+    () => filter && ((option) => filter(rowsByValue.get(option.value) ?? option)),
+    [filter, rowsByValue]
+  );
 
   const handleChange = useCallback((next) => {
     if (multiple) {
@@ -156,7 +154,7 @@ function MasterSelector({
         onCreateOption={canCreate ? openCreator : undefined}
         createOptionLabel={createOptionLabel}
         renderOption={renderOption}
-        filterOption={menuFilter}
+        filter={recordFilter}
         onNavigate={onNavigate}
         allowOptionsOutsideSelectBox={allowOptionsOutsideSelectBox}
       />
@@ -186,10 +184,8 @@ MasterSelector.propTypes = {
   getValue: PropTypes.func,
   /** (value) => label for a stored value the master does not list, so it still shows. */
   describeMissing: PropTypes.func,
-  /** (row) => bool — leaves rows out of the menu, e.g. the record being edited. */
-  filterRow: PropTypes.func,
-  /** (option) => bool — leaves options out of the menu by value, e.g. the pick on another field. */
-  filterOption: PropTypes.func,
+  /** (record) => bool — leaves records out of the menu (the one being edited, the pick on another field); a picked one keeps its label. */
+  filter: PropTypes.func,
   /** (a, b) => number — orders the rows, e.g. the ones that can cover a need first. */
   sortRows: PropTypes.func,
   /** Key the record's creator is registered under; omit where it cannot be created inline. */
