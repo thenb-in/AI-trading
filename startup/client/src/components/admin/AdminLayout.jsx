@@ -21,7 +21,7 @@ function AdminLayout() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Expose sidebar width for modals (MasterModal) so they size/position to the right of sidebar
+  // Expose sidebar width for modals (BaseModal) so they size/position to the right of sidebar
   useEffect(() => {
     const width = collapsed ? '3.5rem' : isMobileView ? '12rem' : '16rem';
     document.documentElement.style.setProperty('--app-sidebar-width', width);

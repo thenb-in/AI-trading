@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
 import { Bug, RefreshCw } from 'lucide-react';
-import { MasterModal } from '@startup/components/base_components/master';
+import { BaseModal } from '@startup/components/base_components/master';
 import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
 
 const DebugReloadDialog = ({ show, debugEnabled, onConfirm, onCancel }) => (
-  <MasterModal
+  <BaseModal
     isOpen={show}
     onClose={onCancel}
     maxWidth="sm"
@@ -33,7 +33,7 @@ const DebugReloadDialog = ({ show, debugEnabled, onConfirm, onCancel }) => (
       The data on screen was loaded before this change, so it does not reflect
       the new setting. Reloading re-runs with your current filters.
     </p>
-  </MasterModal>
+  </BaseModal>
 );
 
 DebugReloadDialog.propTypes = {

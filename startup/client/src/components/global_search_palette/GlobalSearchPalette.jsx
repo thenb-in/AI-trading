@@ -14,7 +14,7 @@ import { getModulePermissionName } from "@data/getModulePermissionName";
 import { useDataContext, hasPermission } from "@context/useDataContext";
 import { shortcutLabel } from "@utils/keyboardShortcut";
 import { SHORTCUTS } from "../../constants/shortcuts";
-import { MasterModal, MasterSearch } from "../base_components";
+import { BaseModal, MasterSearch } from "../base_components";
 import { SearchResultItem } from "./SearchResultItem";
 import { filterAndSortItems } from "@utils/searchUtils";
 
@@ -190,7 +190,7 @@ function GlobalSearchPalette({
   ), [activeIndex, handleItemClick, query]);
 
   return (
-    <MasterModal
+    <BaseModal
       isOpen={open}
       onClose={handleClose}
       fullWidth
@@ -282,7 +282,7 @@ function GlobalSearchPalette({
           </Box>
         )}
       </Box>
-    </MasterModal>
+    </BaseModal>
   );
 }
 

@@ -1,7 +1,7 @@
 // import and export master header, master filter, master search input, and master modal for use in various masters across the application
 
 export { MasterHeader } from './master_header/MasterHeader';
-export { MasterModal } from './master_modal/MasterModal';
+export { BaseModal } from './master_modal/BaseModal';
 export { FormModal, useFormModal, FormModalActions } from './master_modal/FormModal';
 export { MasterTable } from './master_table/MasterTable';
 export { BaseFilter } from '../../base_filter/BaseFilter';

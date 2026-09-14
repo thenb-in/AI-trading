@@ -1,7 +1,7 @@
 import { createContext, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import { MasterModal } from './MasterModal';
+import { BaseModal } from './BaseModal';
 import { useModalRecord } from './useModalRecord';
 import { FormFooter } from '../FormFooter';
 import { DEFAULT_WORKFLOW, amendCopy } from '../../workflow/workflow';
@@ -11,7 +11,7 @@ import { FormEditableContext } from '../../fields/shared/formEditable';
 const FormModalContext = createContext(null);
 
 /**
- * A MasterModal that is a form: header from MasterModal, the caller's fields in
+ * A BaseModal that is a form: header from BaseModal, the caller's fields in
  * the body, and a footer of what the record's workflow allows — so no form
  * writes its own <form>, footer or workflow buttons.
  *
@@ -103,7 +103,7 @@ const FormModal = ({
   };
 
   return (
-    <MasterModal
+    <BaseModal
       {...modalProps}
       onClose={onClose}
       actions={
@@ -132,7 +132,7 @@ const FormModal = ({
           </form>
         </FormEditableContext.Provider>
       </FormModalContext.Provider>
-    </MasterModal>
+    </BaseModal>
   );
 };
 

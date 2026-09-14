@@ -16,8 +16,9 @@ const ROW_TYPES = { red: 'danger', green: 'success', amber: 'warning', orange: '
  * more (a job card is never cancelled on its own).
  *
  * A hook gets `{ record, to }`. For a status change the row action asks the
- * action's confirm question, toasts the outcome and calls `onChanged({ record, to })`
- * so the list can patch that row or refetch; amend is simply run.
+ * action's confirm question, toasts the outcome and calls
+ * `onChanged({ record, to, saved })` — `saved` being what the hook returned (the
+ * saved record) — so the list can patch that row or refetch; amend is simply run.
  */
 const useWorkflowRowActions = ({
   workflow,
@@ -33,9 +34,9 @@ const useWorkflowRowActions = ({
     const question = action.confirm?.({ label: masterName, record });
     if (question && !window.confirm(question)) return;
     try {
-      await hooks[action.key]({ record, to: action.to });
+      const saved = await hooks[action.key]({ record, to: action.to });
       toast.success(`${masterName} ${action.done}`);
-      onChanged({ record, to: action.to });
+      onChanged({ record, to: action.to, saved });
     } catch (error) {
       toast.error(getApiErrorMessage(error, `Could not ${action.label.toLowerCase()} ${masterName}`));
     }

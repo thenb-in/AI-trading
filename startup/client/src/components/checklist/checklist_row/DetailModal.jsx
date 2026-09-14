@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 import { ChecklistBreakdown } from '../ChecklistProgress';
 import { STATUS_STYLES } from '../constants/checklistConstants';
 import { RowActions } from './RowActions';
@@ -65,7 +65,7 @@ const DetailModal = ({ check, result, isOpen, onClose }) => {
   const actions = <RowActions result={result} />;
 
   return (
-    <MasterModal isOpen={isOpen} onClose={onClose} title={modalTitle} maxWidth="md" showAudit={false} actions={actions}>
+    <BaseModal isOpen={isOpen} onClose={onClose} title={modalTitle} maxWidth="md" showAudit={false} actions={actions}>
       <div className="pt-1">
         {check.whyItMatters && <p className="mb-4 text-sm text-gray-600">{check.whyItMatters}</p>}
         <Highlights result={result} />
@@ -96,7 +96,7 @@ const DetailModal = ({ check, result, isOpen, onClose }) => {
           </Section>
         )}
       </div>
-    </MasterModal>
+    </BaseModal>
   );
 };
 

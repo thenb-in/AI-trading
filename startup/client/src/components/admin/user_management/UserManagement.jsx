@@ -9,7 +9,7 @@ import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BulkDeleteConfirmationDialog } from './components/BulkDeleteConfirmationDialog';
 import { InviteLinkButton } from './components/InviteLinkButton';
 import { QRCodeDisplay } from '@/components/common/QRCodeDisplay';
-import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 import { toast } from 'react-toastify';
 import { SearchTypeField } from '@startup/components/base_components/fields/SearchTypeField';
 
@@ -283,7 +283,7 @@ function UserManagement() {
         onCancel={handleCancelBulkDeleteDialog}
       />
 
-      <MasterModal
+      <BaseModal
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
         title="Company Onboarding"
@@ -297,7 +297,7 @@ function UserManagement() {
           valueLabel="Company ID"
           onDownload={() => setShowQRModal(false)}
         />
-      </MasterModal>
+      </BaseModal>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useCallback } from 'react';
-import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 import { CameraCaptureContent } from './components/CameraCaptureContent';
 
 /**
@@ -22,7 +22,7 @@ const CameraCapture = ({
   }, [onClose]);
 
   return (
-    <MasterModal
+    <BaseModal
       isOpen={isOpen}
       onClose={handleClose}
       title={mode === 'photo' ? 'Take Photo' : 'Record Video'}
@@ -37,7 +37,7 @@ const CameraCapture = ({
         cameraContainerClassName={cameraContainerClassName}
         {...contentProps}
       />
-    </MasterModal>
+    </BaseModal>
   );
 };
 

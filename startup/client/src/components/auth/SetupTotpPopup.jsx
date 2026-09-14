@@ -3,7 +3,7 @@ import { FaQrcode, FaCheck } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
-import { MasterModal } from '../base_components/master/master_modal/MasterModal';
+import { BaseModal } from '../base_components/master/master_modal/BaseModal';
 import { OtpTypeField } from '@startup/components/base_components/fields/OtpTypeField';
 
 const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
@@ -70,7 +70,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
   };
 
   return (
-    <MasterModal
+    <BaseModal
       isOpen={isOpen}
       onClose={handleClose}
       title="Setup Google Authenticator"
@@ -162,7 +162,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
           </form>
         )}
       </div>
-    </MasterModal>
+    </BaseModal>
   );
 };
 

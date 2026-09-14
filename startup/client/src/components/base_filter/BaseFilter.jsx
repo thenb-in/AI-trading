@@ -3,7 +3,7 @@ import { useMediaQuery, useTheme } from '@mui/material';
 import { Filter as FilterIcon } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { Filter } from './filter';
-import { MasterModal } from '@startup/components/base_components/master/master_modal/MasterModal';
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 
 const BaseFilter = ({
   onFiltersApply,
@@ -50,7 +50,7 @@ const BaseFilter = ({
         <span>Filters</span>
       </button>
 
-      <MasterModal
+      <BaseModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         title="Apply Your Filter"
@@ -67,7 +67,7 @@ const BaseFilter = ({
             enableRunner={enableRunner}
           />
         </div>
-      </MasterModal>
+      </BaseModal>
     </>
   );
 };

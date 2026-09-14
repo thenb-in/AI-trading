@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
 import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
-import { MasterModal } from './master_modal/MasterModal';
+import { BaseModal } from './master_modal/BaseModal';
 import { FormModal } from './master_modal/FormModal';
 import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
@@ -313,7 +313,7 @@ const BaseMaster = ({
   const isSaved = Boolean(selectedRow?.id);
   const ModalBody = isSaved ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
   const isForm = ModalBody === FormComponent;
-  const Modal = isForm ? FormModal : MasterModal;
+  const Modal = isForm ? FormModal : BaseModal;
   const formModalProps = isForm
     ? {
         isEditMode: isSaved,

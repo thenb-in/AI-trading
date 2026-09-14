@@ -10,7 +10,7 @@ import { useAutoFocusFirstField } from '@startup/hooks/useAutoFocusFirstField';
 import { useCreatorInitialName } from './MasterModalProvider';
 import { RecordNav } from './RecordNav';
 
-const MasterModal = ({
+const BaseModal = ({
   isOpen,
   onClose,
   title: titleProp,
@@ -189,7 +189,7 @@ const MasterModal = ({
   );
 };
 
-MasterModal.propTypes = {
+BaseModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
@@ -214,5 +214,5 @@ MasterModal.propTypes = {
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };
 
-export { MasterModal };
+export { BaseModal };
 
