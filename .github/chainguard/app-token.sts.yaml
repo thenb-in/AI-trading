@@ -1,0 +1,20 @@
+# Octo STS trust policy for the nightly `sync-startup` job.
+#
+# Lets a GitHub Actions run from any thenb-in/* repo, on its main branch,
+# federate its ambient OIDC identity token for a short-lived installation
+# token scoped to this repo — no long-lived secret stored in any of those
+# repos, and one place (this file) to change trust for all of them.
+#
+# See scripts/sync-startup.js and .github/workflows/sync-startup.yml in
+# thenb-in/etime-payroll for the caller.
+issuer: https://token.actions.githubusercontent.com
+subject_pattern: repo:thenb-in/.*:ref:refs/heads/main
+
+permissions:
+  contents: write
+  pull_requests: write
+  # `.github/` is a synced framework path (see sync-startup.js), so a
+  # commit can touch `.github/workflows/*.yml` here. GitHub gates that on
+  # its own `workflows` permission — `contents: write` alone gets the
+  # push rejected.
+  workflows: write
