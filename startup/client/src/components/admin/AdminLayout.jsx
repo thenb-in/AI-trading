@@ -3,6 +3,7 @@ import { AppSideBar } from "../AppSideBar";
 import { Outlet } from "react-router-dom";
 import { useDebugMode } from "@/hooks/useDebugMode";
 import { useHelpSupportShortcut } from "@/hooks/useHelpSupportShortcut";
+import { useClearCacheShortcut } from "@/hooks/useClearCacheShortcut";
 import { getAppLayout } from "@data/appLayoutRegistry";
 import { NotificationProvider } from "../../notifications/NotificationProvider";
 import { ToastProvider } from "../toast";
@@ -31,6 +32,7 @@ function AdminLayout() {
   // Initialize global debug mode to ensure Alt+D keyboard handler is always active
   useDebugMode();
   useHelpSupportShortcut();
+  useClearCacheShortcut();
 
   const AppLayout = getAppLayout();
 

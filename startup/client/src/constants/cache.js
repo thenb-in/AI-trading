@@ -24,6 +24,10 @@ const CACHE_STORE_DB = 'db';
 // without anyone reaching for the refresh button.
 const CACHE_TTL_DEFAULT_MS = 30 * 60 * 1000;
 
+// Minimum pause before "clear cache and refresh" reloads, so the user sees the
+// "Clearing cache…" toast instead of a page that just flickers.
+const CACHE_CLEAR_RELOAD_DELAY_MS = 300;
+
 export {
   CACHE_KEY_PREFIX,
   CACHE_SCHEMA_VERSION,
@@ -31,5 +35,6 @@ export {
   CACHE_STORE_SESSION,
   CACHE_STORE_LOCAL,
   CACHE_STORE_DB,
-  CACHE_TTL_DEFAULT_MS
+  CACHE_TTL_DEFAULT_MS,
+  CACHE_CLEAR_RELOAD_DELAY_MS
 };

@@ -29,6 +29,9 @@ const SHORTCUTS = {
   FULL_SCREEN: { alt: true, key: 'KeyF' },
   PREVIOUS_RECORD: { alt: true, key: 'ArrowLeft' },
   NEXT_RECORD: { alt: true, key: 'ArrowRight' },
+
+  // App-wide
+  CLEAR_CACHE_REFRESH: { mod: true, shift: true, key: 'KeyR', allowWhileTyping: true },
 };
 
 export { SHORTCUTS };

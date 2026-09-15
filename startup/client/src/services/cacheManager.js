@@ -141,25 +141,27 @@ const indexedDbStorage = () => {
     });
   });
 
-  const change = (apply, onDone, onFail) => opened.then(() => {
-    if (!database) return;
+  // Resolves once the transaction has landed (or failed), so a caller about to
+  // reload the page can wait for it.
+  const change = (apply, onDone, onFail) => opened.then(() => new Promise((resolve) => {
+    if (!database) return resolve();
     try {
       const transaction = database.transaction('entries', 'readwrite');
-      transaction.oncomplete = onDone;
-      transaction.onabort = onFail;
+      transaction.oncomplete = () => resolve(onDone());
+      transaction.onabort = () => resolve(onFail());
       apply(transaction.objectStore('entries'));
     } catch {
       // A payload structured clone can't copy.
-      onFail();
+      resolve(onFail());
     }
-  });
+  }));
 
   // Out of `held` straight away, so nothing reads it back into memory while
   // the delete is still on its way.
   const remove = (key) => {
     known.delete(key);
     held.delete(key);
-    change((entries) => entries.delete(key), () => held.delete(key), () => held.delete(key));
+    return change((entries) => entries.delete(key), () => held.delete(key), () => held.delete(key));
   };
 
   return {
@@ -288,11 +290,16 @@ const cacheBustNamespace = (namespace) => {
   notify(namespace);
 };
 
-/** Drop everything this manager owns. Subscribers hear a null namespace. */
+/**
+ * Drop everything this manager owns. Subscribers hear a null namespace.
+ * Resolves once IndexedDB has deleted its entries — await it before a reload.
+ */
 const cacheBustAll = () => {
   memory.clear();
-  eachPersistentStore((_, backing) => backing.keys().forEach((key) => backing.remove(key)));
+  const removals = [];
+  eachPersistentStore((_, backing) => backing.keys().forEach((key) => removals.push(backing.remove(key))));
   notify(null);
+  return Promise.all(removals);
 };
 
 const expiredCopy = (envelope) => ({ ...envelope, savedAt: 0 });

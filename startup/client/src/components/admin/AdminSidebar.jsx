@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "@context/useDataContext";
 import { LogoutButton } from "../LogoutButton";
 import { HelpSupportButton } from "../HelpSupportButton";
+import { ClearCacheButton } from "../ClearCacheButton";
 import { SearchButton } from "../SearchButton";
 import { NotificationButton } from "../NotificationButton";
 import { DebugModeIndicator } from "../DebugModeIndicator";
@@ -210,6 +211,7 @@ function AdminSidebar({
           <NotificationButton collapsed={collapsed} />
           <SearchButton collapsed={collapsed} />
           <HelpSupportButton collapsed={collapsed} />
+          {!collapsed && <ClearCacheButton />}
           {collapsed ? (
             <>
               <div className="flex justify-center py-2">
