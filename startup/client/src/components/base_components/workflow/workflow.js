@@ -37,6 +37,7 @@ import { masterKeyOf } from '@startup/utils/masterKey';
  * ({ status, record, isEditable }) => boolean.
  *
  * Cancelled is where a document ends; amending it makes a new document from it.
+ * A draft is never cancelled: nothing has happened to it yet, so it is deleted.
  *
  * Tones are colour families: gray, amber, green, red, orange, blue, purple, teal.
  */
@@ -98,7 +99,7 @@ const APPROVAL_WORKFLOW = {
     cancel: {
       label: 'Cancel',
       done: 'cancelled',
-      from: ['draft', 'pending_for_approval', 'approved'],
+      from: ['pending_for_approval', 'approved'],
       to: 'cancelled',
       permission: 'update',
       tone: 'red',
