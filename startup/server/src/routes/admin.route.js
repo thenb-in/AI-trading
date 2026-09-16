@@ -5,27 +5,47 @@ const headBaseController = require('../controllers/headBase.controller');
 const subscriptionView = require('../views/subscription.view');
 const subscriptionValidator = require('../validators/subscriptionValidator');
 const authMiddleware = require('../middleware/authMiddleware');
+const requirePermission = require('../middleware/requirePermission');
+const requireSupportUser = require('../middleware/requireSupportUser');
+const {
+  MASTER_PERMISSION_CONSTANTS,
+  MODULE_PERMISSION_CONSTANTS
+} = require('../constants/permissions');
+
+// Seeing the role-permission screen is what these endpoints serve, so the
+// module permission grants them alongside the specific one — an install whose
+// roles predate the specific permissions keeps working.
+const CAN_SEE_ROLES = [
+  MASTER_PERMISSION_CONSTANTS.ROLE.read.name,
+  MODULE_PERMISSION_CONSTANTS.VIEW_ROLE_PERMISSION_MODULE.name
+];
+const CAN_SEE_PERMISSIONS = [
+  MASTER_PERMISSION_CONSTANTS.PERMISSION.read.name,
+  MODULE_PERMISSION_CONSTANTS.VIEW_ROLE_PERMISSION_MODULE.name
+];
+const CAN_EDIT_ROLE_PERMISSIONS = [
+  MASTER_PERMISSION_CONSTANTS.ROLE_PERMISSION.update.name,
+  MODULE_PERMISSION_CONSTANTS.VIEW_ROLE_PERMISSION_MODULE.name
+];
 
 const router = express.Router();
 router.use(authMiddleware.protect); // Protect all routes
 
-router.get('/roles', adminController.getRoles);
-router.post('/roles', adminController.createRole);
+router.get('/roles', requirePermission(CAN_SEE_ROLES), adminController.getRoles);
+router.post('/roles', requirePermission(MASTER_PERMISSION_CONSTANTS.ROLE.create.name), adminController.createRole);
 
-router.get('/permissions', adminController.getPermissions);
-router.post('/permissions', adminController.createPermission);
-router.delete('/permissions/:permission_id', adminController.deletePermission);
+router.get('/permissions', requirePermission(CAN_SEE_PERMISSIONS), adminController.getPermissions);
+router.post('/permissions', requirePermission(MASTER_PERMISSION_CONSTANTS.PERMISSION.create.name), adminController.createPermission);
+router.delete('/permissions/:permission_id', requirePermission(MASTER_PERMISSION_CONSTANTS.PERMISSION.delete.name), adminController.deletePermission);
 
+router.post('/role-permissions/add', requirePermission(CAN_EDIT_ROLE_PERMISSIONS), adminController.addPermissionToRole);
+router.post('/role-permissions/remove', requirePermission(CAN_EDIT_ROLE_PERMISSIONS), adminController.removePermissionFromRole);
 
-
-router.post('/role-permissions/add', adminController.addPermissionToRole);
-router.post('/role-permissions/remove', adminController.removePermissionFromRole);
-
-// User-Company Assignment routes
-router.get('/users/support', adminController.getSupportUsers);
-router.post('/assign-user', adminController.assignUserToCompany);
-router.post('/remove-user', adminController.removeUserFromCompany);
-router.get('/companies/:companyId/users', adminController.getCompanyUsers);
+// User-Company assignment — support staff only, across companies.
+router.get('/users/support', requireSupportUser, adminController.getSupportUsers);
+router.post('/assign-user', requireSupportUser, adminController.assignUserToCompany);
+router.post('/remove-user', requireSupportUser, adminController.removeUserFromCompany);
+router.get('/companies/:companyId/users', requireSupportUser, adminController.getCompanyUsers);
 
 // Subscription routes
 
