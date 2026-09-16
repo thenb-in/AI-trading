@@ -104,7 +104,7 @@ export default defineConfig({
       name: 'Backend',
       command: backendCommand,
       cwd: path.resolve(__dirname, '../../app/server'),
-      url: `${process.env.BACKEND_URL}/api/healthz`, // must return 200
+      url: `${process.env.BACKEND_URL}/api/v1/health`, // must return 200
       reuseExistingServer: !isCI,
       timeout: 180_000,
       env: { NODE_ENV: isCI ? 'production' : 'development', NO_PROXY: '127.0.0.1,localhost' },

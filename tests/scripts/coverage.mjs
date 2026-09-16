@@ -17,7 +17,7 @@
 // Each phase:
 //   1. spawn `node app/server/index.js` with NODE_V8_COVERAGE pointed at a
 //      per-phase raw dir; e2e additionally spawns vite dev for the frontend.
-//   2. poll /api/healthz (and the frontend URL, in e2e) until 200.
+//   2. poll /api/v1/health (and the frontend URL, in e2e) until 200.
 //   3. invoke the test runner (vitest / playwright) against the live servers.
 //   4. SIGTERM the server(s) and wait for exit so v8 flushes coverage.
 //
@@ -97,13 +97,13 @@ function copyJsonFiles(srcDir, destDir) {
   return count;
 }
 
-function healthzUrl() {
+function healthUrl() {
   // Prefer explicit BACKEND_URL (set by e2e .env), else PORT, else 3000.
   if (process.env.BACKEND_URL) {
-    return `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/healthz`;
+    return `${process.env.BACKEND_URL.replace(/\/$/, '')}/api/v1/health`;
   }
   const port = process.env.PORT || '3000';
-  return `http://127.0.0.1:${port}/api/healthz`;
+  return `http://127.0.0.1:${port}/api/v1/health`;
 }
 
 async function waitForHealthz(url, timeoutMs = 60_000) {
@@ -141,7 +141,7 @@ async function startServer(coverageDir) {
     crashed = true;
   });
 
-  const url = healthzUrl();
+  const url = healthUrl();
   const start = Date.now();
   while (!crashed && Date.now() - start < 60_000) {
     try {

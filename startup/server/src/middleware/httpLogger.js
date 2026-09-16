@@ -2,7 +2,7 @@ const logger = require('../../logger');
 
 const httpLogger = (req, res, next) => {
   // Skip logging for health checks or other noisy endpoints
-  if (req.path === '/health' || req.path === '/favicon.ico') {
+  if (req.path === '/api/v1/health' || req.path === '/favicon.ico') {
     return next();
   }
 

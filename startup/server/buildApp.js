@@ -74,6 +74,12 @@ function mountFrameworkMiddleware(app, opts = {}) {
 }
 
 function mountFrameworkRoutes(app) {
+  // Liveness for docker, CI and uptime checks — ahead of the gate, so it
+  // answers even on an unlicensed install.
+  app.get(`${API_PREFIX}/health`, (req, res) => {
+    res.status(200).send('ok');
+  });
+
   // License routes must mount BEFORE the gate. Status/recovery endpoints
   // need to be reachable even when the license is invalid so an operator
   // can fix the install. The gate's EXEMPT_PATH_PREFIXES list mirrors
@@ -81,7 +87,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/license`, licenseRoutes);
 
   // License gate guards every subsequent route. Exempt paths (auth/login,
-  // license recovery, healthz) pass through. See middleware/licenseGate.js.
+  // license recovery) pass through. See middleware/licenseGate.js.
   app.use(licenseGate());
 
   app.use(`${API_PREFIX}/auth`, authRoutes);
@@ -114,7 +120,7 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   // Single-origin SPA serve: when secure cookies are off (i.e. Express is
   // fronting the UI itself, no separate nginx/dev-server origin), serve the
   // built client bundle for everything that isn't a server route or static
-  // mount. Anything under /api/* (incl. /api/v1, /api/healthz), the app's static
+  // mount. Anything under /api/* (incl. /api/v1/health), the app's static
   // mounts, /uploads*, and /static stays strictly server-handled
   // and 404s on miss — only true SPA routes fall back to index.html.
   if (env.isOnPremDeployment && clientStaticDir) {
@@ -147,9 +153,6 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   }
 
   app.use(errorMiddleware);
-  app.get('/api/healthz', (req, res) => {
-    res.status(200).send('ok');
-  });
 }
 
 /**

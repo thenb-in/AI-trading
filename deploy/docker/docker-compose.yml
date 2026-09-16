@@ -96,7 +96,7 @@ services:
     # couple of minutes before it recovered - exactly the false alarm this
     # healthcheck exists to prevent. Failures inside the window are not counted.
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/api/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000/api/v1/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 15s
       timeout: 5s
       retries: 5

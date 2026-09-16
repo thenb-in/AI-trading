@@ -58,7 +58,7 @@ jobs:
           node index.js > "$RUNNER_TEMP/source/backend.log" 2>&1 &
           echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:8944/api/healthz > /dev/null; then
+            if curl -sf http://localhost:8944/api/v1/health > /dev/null; then
               echo "Backend up"; exit 0
             fi
             sleep 2
@@ -143,8 +143,8 @@ jobs:
           exit 1
 
       # ─── Test phases (run sequentially against the persistent backend) ───
-      - name: Smoke — /api/healthz
-        run: curl -fsS http://localhost:8944/api/healthz
+      - name: Smoke — /api/v1/health
+        run: curl -fsS http://localhost:8944/api/v1/health
 
       - name: Integration tests
         id: integration

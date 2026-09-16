@@ -208,7 +208,7 @@ jobs:
           # `localhost` instead would hit the localhost-only basic_status
           # block (block 2) and 404.
           for i in $(seq 1 15); do
-            if curl -fsS "http://${IP_ADDRESS}/api/healthz" > /dev/null; then
+            if curl -fsS "http://${IP_ADDRESS}/api/v1/health" > /dev/null; then
               echo "Deployed system healthy"; exit 0
             fi
             sleep 2
@@ -226,7 +226,7 @@ jobs:
         # localhost-only basic_status block (block 2) and 404s.
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS -H "Host: $DEPLOY_CONTAINER" "${APP_URL}/api/healthz" > /dev/null; then
+            if curl -fsS -H "Host: $DEPLOY_CONTAINER" "${APP_URL}/api/v1/health" > /dev/null; then
               echo "Reachable from runner at $APP_URL"; exit 0
             fi
             sleep 2
@@ -240,9 +240,9 @@ jobs:
       # already exists" on its second call and fail — same script,
       # non-idempotent for the user-creation step. source_tests works
       # the same way (no pre-seed), so this keeps the two flows symmetric.
-      - name: Smoke — /api/healthz
+      - name: Smoke — /api/v1/health
         run: |
-          curl -fsS -H "Host: $DEPLOY_CONTAINER" "${APP_URL}/api/healthz"
+          curl -fsS -H "Host: $DEPLOY_CONTAINER" "${APP_URL}/api/v1/health"
 
       - name: Integration tests
         id: integration

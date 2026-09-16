@@ -1,6 +1,6 @@
 @echo off
 REM Double-click to see whether the app is running. No admin needed.
-REM The STATUS column shows "(healthy)" once the server answers /api/healthz.
+REM The STATUS column shows "(healthy)" once the server answers /api/v1/health.
 
 cd /d "%~dp0"
 

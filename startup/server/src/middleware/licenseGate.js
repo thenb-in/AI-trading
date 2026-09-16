@@ -18,7 +18,6 @@ const logger = require('../../logger');
 const licenseService = require('../license/licenseService');
 
 const EXEMPT_PATH_PREFIXES = [
-  '/api/healthz',
   // License recovery + status endpoints — must be reachable when the
   // license itself is invalid so an operator can fix the install.
   '/api/v1/license',
