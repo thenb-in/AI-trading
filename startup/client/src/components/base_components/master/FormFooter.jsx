@@ -1,8 +1,9 @@
 import PropTypes from 'prop-types';
 import { useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-toastify';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-import { Save } from 'lucide-react';
+import { Save, X } from 'lucide-react';
 import { ShortcutHint } from '@startup/components/base_components/ShortcutHint';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
@@ -28,10 +29,11 @@ import { WorkflowButtons } from '../workflow/WorkflowButtons';
  * would save the form says it instead of saving. A reason that names a field
  * (`blockedField`) is a link to it.
  *
- * There is no close button here: Cancel cancels a document, and the modal is
- * closed from its title bar or with Esc.
+ * Cancel, which cancels the document, is drawn on its own in `leftSlot` (the
+ * far left of the modal's footer), away from the other actions; Close takes its
+ * place on the right and only closes the form.
  */
-const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, run, isSaving, hasForm, blockedReason, blockedField, onShowBlockedField, actionsRef, submitLabel, savingLabel }) => {
+const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, run, isSaving, hasForm, blockedReason, blockedField, onShowBlockedField, onClose, leftSlot, actionsRef, submitLabel, savingLabel }) => {
   const submitRef = useRef(null);
   const canSubmit = hasForm && workflow.isEditable;
 
@@ -55,6 +57,9 @@ const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, 
   const suitsRecord = (action) => !showWhen[action.key] || showWhen[action.key](record);
   const isOffered = (action) => suitsRecord(action)
     && Boolean(hooks[action.key] || (action.amend ? onAmend : action.to && hasForm));
+  // Cancel stands apart on the left, so it is not pressed for Close by mistake.
+  const isCancelOffered = (action) => action.key === 'cancel' && isOffered(action);
+  const isOfferedOnRight = (action) => action.key !== 'cancel' && isOffered(action);
 
   // Clicking the button (rather than calling onSubmit) keeps the browser's own
   // required-field validation in play, exactly as a pointer click would.
@@ -76,7 +81,12 @@ const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, 
         <p className="mr-auto self-center text-sm font-medium text-amber-700">{blockedReason}</p>
       ) : null}
       <div ref={actionsRef} className="contents" />
-      <WorkflowButtons workflow={workflow} record={record} isOffered={isOffered} onRun={runAction} busy={isSaving} />
+      <WorkflowButtons workflow={workflow} record={record} isOffered={isOfferedOnRight} onRun={runAction} busy={isSaving} />
+      {leftSlot ? createPortal(
+        <WorkflowButtons workflow={workflow} record={record} isOffered={isCancelOffered} onRun={runAction} busy={isSaving} />,
+        leftSlot
+      ) : null}
+      <FormCloseButton onClose={onClose} isSaving={isSaving} />
       {canSubmit && <button
         ref={submitRef}
         type="submit"
@@ -130,9 +140,35 @@ FormFooter.propTypes = {
   blockedField: PropTypes.string.isRequired,
   /** Scrolls to and focuses `blockedField`. */
   onShowBlockedField: PropTypes.func.isRequired,
+  /** Closes the modal without doing anything to the record. */
+  onClose: PropTypes.func.isRequired,
+  /** The element on the far left of the modal's footer that Cancel is drawn into. */
+  leftSlot: PropTypes.instanceOf(Element),
   actionsRef: PropTypes.func.isRequired,
   submitLabel: PropTypes.string.isRequired,
   savingLabel: PropTypes.string.isRequired,
+};
+
+/**
+ * Closes the form without doing anything to the record. Named Close, not
+ * Cancel, because Cancel cancels a document; it waits while a save is running,
+ * like the rest of the form.
+ */
+const FormCloseButton = ({ onClose, isSaving }) => (
+  <button
+    type="button"
+    onClick={onClose}
+    disabled={isSaving}
+    className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+  >
+    <X className="h-4 w-4 mr-2" />
+    Close
+  </button>
+);
+
+FormCloseButton.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  isSaving: PropTypes.bool.isRequired,
 };
 
 export { FormFooter };

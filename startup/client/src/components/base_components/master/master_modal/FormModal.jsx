@@ -24,7 +24,9 @@ const NOT_BLOCKED = { message: '', field: '' };
  * names the record and turns permission verbs into names (update_uom);
  * `permissions` names them outright (a BaseMaster's keys).
  *
- * Base fields inside lock themselves while the record is not editable. A form
+ * Base fields inside lock themselves while the record is not editable, and the
+ * whole form is read-only while Save or a workflow action is waiting on the
+ * server. A form
  * that needs more (a field shown only once approved) reads the workflow back
  * from `useFormModal`. A form's buttons that are not workflow actions
  * (Create PO...) go in `<FormModalActions>`.
@@ -67,6 +69,8 @@ const FormModal = ({
   const [blocked, setBlocked] = useState(NOT_BLOCKED);
   const blockedReason = blocked.message;
   const [actionsSlot, setActionsSlot] = useState(null);
+  // The far left of the footer, where the footer draws Cancel apart from the other actions.
+  const [cancelSlot, setCancelSlot] = useState(null);
   const { record, isLoading } = useModalRecord({
     isOpen: modalProps.isOpen,
     record: givenRecord,
@@ -125,6 +129,7 @@ const FormModal = ({
       {...modalProps}
       title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
       onClose={onClose}
+      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
       actions={
         <FormFooter
           formId={formId}
@@ -140,6 +145,8 @@ const FormModal = ({
           blockedReason={blockedReason}
           blockedField={blocked.field}
           onShowBlockedField={showBlockedField}
+          onClose={onClose}
+          leftSlot={cancelSlot}
           actionsRef={setActionsSlot}
           submitLabel={isEditMode ? updateLabel : createLabel}
           savingLabel={savingLabel}
@@ -148,11 +155,15 @@ const FormModal = ({
     >
       <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
         <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
-        <FormEditableContext.Provider value={recordWorkflow.isEditable}>
-          <form ref={formRef} id={formId} onSubmit={handleSubmit} className="space-y-4">
-            {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
-            {!isLoading && typeof children === 'function' ? children(record) : null}
-            {!isLoading && typeof children !== 'function' ? children : null}
+        {/* While Save or a workflow action waits on the server, nothing in the form can
+            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
+        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
+          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
+            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
+              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
+              {!isLoading && typeof children === 'function' ? children(record) : null}
+              {!isLoading && typeof children !== 'function' ? children : null}
+            </fieldset>
           </form>
         </FormEditableContext.Provider>
         </FormBlockedFieldContext.Provider>
