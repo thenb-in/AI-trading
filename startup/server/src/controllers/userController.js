@@ -9,6 +9,15 @@ const getAllUsers = async (req, res) => {
   const companyId = req.user.company_id;
 
   try {
+    // Two different questions arrive here. Pickers and report filters ask "who
+    // is in this company" to show names; the user screen asks for the roster
+    // itself. Only the second one comes with contact details, device access and
+    // roles, and only for whoever may open that screen.
+    const canManageUsers = await allowedPermissions(req.user.id, [MASTER_PERMISSION_CONSTANTS.USER.read.name]);
+    if (!canManageUsers) {
+      return res.status(200).json({ users: await userService.getUserRoster(companyId), roles: [] });
+    }
+
     const users = await userService.getAllUsers(companyId);
     res.status(200).json({ ...users, walletUserManagementUrl: getWalletUserManagementUrl() });
   } catch (error) {

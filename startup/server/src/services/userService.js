@@ -91,6 +91,17 @@ const getAllUsers = async (companyId) => {
   return { users, roles };
 };
 
+/**
+ * Just enough to put a name on a user id — what every picker and report filter
+ * in the app asks this list for. The roster is not the user screen: phone,
+ * email, devices and roles are not in it.
+ */
+const getUserRoster = async (companyId) => User.findAll({
+  where: { isActive: true, company_id: companyId },
+  attributes: ['id', 'name', 'username'],
+  order: [['name', 'ASC']]
+});
+
 const getUserById = async (userId) => {
   return await findModelByIdOrThrow(User, userId, {}, 'User');
 };
@@ -428,6 +439,7 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 module.exports = {
   getAllUsers,
   getSupportUsers,
+  getUserRoster,
   getUserById,
   getUserNamesByIds,
   isSupportUser,
