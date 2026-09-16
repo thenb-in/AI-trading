@@ -1,10 +1,13 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
+const requirePermission = require('../middleware/requirePermission');
+const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const authValidator = require('../validators/authValidator');
 const { signup, login, resetPassword, generateTotpSecret, verifyAndEnableTotp, approveUser, getAllUsers, getAllRoles, logout, checkAvailability } = require('../views/authView');
 const { startSso, ssoCallback, ssoBackchannelLogout } = require('../sso');
 
 const router = express.Router();
+const { USER } = MASTER_PERMISSION_CONSTANTS;
 
 // Public routes
 router.post('/signup', authValidator.signupValidation, signup);
@@ -26,9 +29,10 @@ router.post('/sso/backchannel-logout', express.urlencoded({ extended: false }), 
 
 
 router.post('/logout', authMiddleware.protect, logout);
-// Protected routes (admin only)
-router.post('/approve/:userId', authMiddleware.protect, authValidator.approveUserValidation, approveUser);
-router.get('/users', authMiddleware.protect, getAllUsers);
+router.post('/approve/:userId', authMiddleware.protect, requirePermission(USER.approve.name), authValidator.approveUserValidation, approveUser);
+router.get('/users', authMiddleware.protect, requirePermission(USER.read.name), getAllUsers);
 
-router.get('/roles', getAllRoles);
+// The role list names every role in the company, and fills the role picker on
+// the user screens. It was answering anyone at all, signed in or not.
+router.get('/roles', authMiddleware.protect, getAllRoles);
 module.exports = router;

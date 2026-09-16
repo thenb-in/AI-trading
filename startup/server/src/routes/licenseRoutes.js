@@ -22,18 +22,22 @@
 //                                        report them when requesting a
 //                                        license from the issuer.
 //
-// Auth: status + machine are public to authenticated users via the same
-// admin auth as the rest. We don't expose them anonymously because
-// fingerprint + license state are useful recon for an attacker. The
-// gate-exemption is about LICENSE state, not auth state — auth still
-// applies.
+// Auth: only /status is anonymous. Everything else takes a support user —
+// fingerprint and license state are useful recon for an attacker, and renewal
+// or installation is an operator's job. The gate-exemption is about LICENSE
+// state, not auth state — auth still applies.
 
 const express = require('express');
 const licenseService = require('../license/licenseService');
 const machineFingerprint = require('../license/engine/core/machineFingerprint');
 const authMiddleware = require('../middleware/authMiddleware');
+const requireSupportUser = require('../middleware/requireSupportUser');
 
 const router = express.Router();
+
+// Renewing, installing and fingerprinting belong to whoever runs the
+// installation, not to any company's admin.
+const supportOnly = [authMiddleware.protect, requireSupportUser];
 
 // Status is the one path we keep fully public — uptime probes and the
 // frontend login screen need to render "this server is locked" without
@@ -53,7 +57,7 @@ router.get('/status', async (req, res) => {
   });
 });
 
-router.get('/machine', authMiddleware.protect, (req, res) => {
+router.get('/machine', supportOnly, (req, res) => {
   try {
     const fp = machineFingerprint.compute();
     res.status(200).json(fp);
@@ -62,7 +66,7 @@ router.get('/machine', authMiddleware.protect, (req, res) => {
   }
 });
 
-router.post('/refresh', authMiddleware.protect, async (req, res) => {
+router.post('/refresh', supportOnly, async (req, res) => {
   try {
     const result = await licenseService.renewOnline();
     res.status(200).json({
@@ -75,7 +79,7 @@ router.post('/refresh', authMiddleware.protect, async (req, res) => {
   }
 });
 
-router.post('/airgap-request', authMiddleware.protect, async (req, res) => {
+router.post('/airgap-request', supportOnly, async (req, res) => {
   try {
     const bundle = await licenseService.buildAirgapRequest();
     // The operator typically saves this as JSON and ferries it to the
@@ -87,7 +91,7 @@ router.post('/airgap-request', authMiddleware.protect, async (req, res) => {
   }
 });
 
-router.post('/airgap-apply', authMiddleware.protect, async (req, res) => {
+router.post('/airgap-apply', supportOnly, async (req, res) => {
   try {
     const { token } = req.body || {};
     const result = await licenseService.applyAirgapResponse({ token });
@@ -105,7 +109,7 @@ router.post('/airgap-apply', authMiddleware.protect, async (req, res) => {
 // so first-install UX can use a distinct, semantically-clearer URL. If
 // they diverge later (e.g. install requires a fresh license_id while
 // airgap-apply allows reissue), the split is already in place.
-router.post('/install', authMiddleware.protect, async (req, res) => {
+router.post('/install', supportOnly, async (req, res) => {
   try {
     const { token } = req.body || {};
     const result = await licenseService.installToken({ token });

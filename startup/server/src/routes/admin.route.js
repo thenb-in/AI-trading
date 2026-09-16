@@ -7,6 +7,7 @@ const subscriptionValidator = require('../validators/subscriptionValidator');
 const authMiddleware = require('../middleware/authMiddleware');
 const requirePermission = require('../middleware/requirePermission');
 const requireSupportUser = require('../middleware/requireSupportUser');
+const requireOwnCompanyOrSupport = require('../middleware/requireOwnCompanyOrSupport');
 const {
   MASTER_PERMISSION_CONSTANTS,
   MODULE_PERMISSION_CONSTANTS
@@ -47,24 +48,26 @@ router.post('/assign-user', requireSupportUser, adminController.assignUserToComp
 router.post('/remove-user', requireSupportUser, adminController.removeUserFromCompany);
 router.get('/companies/:companyId/users', requireSupportUser, adminController.getCompanyUsers);
 
-// Subscription routes
+// Subscription routes — authoring a plan and deciding who is on it is support
+// staff's job, the same as the screen that shows them.
 
-
-router.get('/subscriptions', subscriptionView.getSubscriptions);
-router.post('/subscriptions', subscriptionValidator.createSubscriptionValidation, subscriptionView.createSubscription);
-router.put('/subscriptions/:subscription_id/permissions', subscriptionValidator.updateSubscriptionPermissionsValidation, subscriptionView.updateSubscriptionPermissions);
-router.get('/subscriptions/:subscription_id/export', subscriptionView.exportSubscription);
-router.post('/subscriptions/import', subscriptionValidator.importSubscriptionValidation, subscriptionView.importSubscription);
-router.post('/subscriptions/:subscription_id/push-to-wallet', subscriptionView.pushSubscriptionToWallet);
+router.get('/subscriptions', requireSupportUser, subscriptionView.getSubscriptions);
+router.post('/subscriptions', requireSupportUser, subscriptionValidator.createSubscriptionValidation, subscriptionView.createSubscription);
+router.put('/subscriptions/:subscription_id/permissions', requireSupportUser, subscriptionValidator.updateSubscriptionPermissionsValidation, subscriptionView.updateSubscriptionPermissions);
+router.get('/subscriptions/:subscription_id/export', requireSupportUser, subscriptionView.exportSubscription);
+router.post('/subscriptions/import', requireSupportUser, subscriptionValidator.importSubscriptionValidation, subscriptionView.importSubscription);
+router.post('/subscriptions/:subscription_id/push-to-wallet', requireSupportUser, subscriptionView.pushSubscriptionToWallet);
 
 // Company-Subscription routes
-router.get('/companies/:companyId/subscriptions', companySubscriptionController.getCompanySubscriptions);
-router.get('/subscriptions/available', companySubscriptionController.getAvailableSubscriptions);
-router.put('/companies/:companyId/subscriptions', companySubscriptionController.setCompanySubscriptions);
+// What your own company is subscribed to decides what you are shown, so every
+// signed-in user reads their own — and only support staff read another's.
+router.get('/companies/:companyId/subscriptions', requireOwnCompanyOrSupport, companySubscriptionController.getCompanySubscriptions);
+router.get('/subscriptions/available', requireSupportUser, companySubscriptionController.getAvailableSubscriptions);
+router.put('/companies/:companyId/subscriptions', requireSupportUser, companySubscriptionController.setCompanySubscriptions);
 
 // Head base — restate this company's head history to the wallet, so periods
 // that predate activity logging are billed on what was actually there rather
 // than on nothing. See services/headBaseService.
-router.post('/head-base', headBaseController.buildHeadBase);
+router.post('/head-base', requireSupportUser, headBaseController.buildHeadBase);
 
 module.exports = router;

@@ -172,6 +172,22 @@ const MASTER_PERMISSION_CONSTANTS = {
     }
   },
 
+  // Logs are written and read, never edited or removed, so the master declares
+  // only the two operations that exist. The client's Activity master has always
+  // asked for these names; now the framework declares and enforces them.
+  ACTIVITY: {
+    create: {
+      name: 'create_activity',
+      display_name: 'Create Activity',
+      description: 'Permission to write an activity log entry'
+    },
+    read: {
+      name: 'read_activity',
+      display_name: 'Read Activity',
+      description: 'Permission to read activity logs'
+    }
+  },
+
   ROLE: create_master_permission(MASTERS.ROLE),
 
   PERMISSION: create_master_permission(MASTERS.PERMISSION),

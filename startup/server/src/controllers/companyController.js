@@ -1,8 +1,6 @@
 const env = require('../config/env');
-const { MASTER_PERMISSION_CONSTANTS, MODULE_PERMISSION_CONSTANTS } = require('../constants/base_permissions');
 const companyService = require('../services/companyService');
 const userService = require('../services/userService');
-const allowedPermissions = require('../utils/allowedPermissions');
 const { generateAccessToken, generateRefreshToken } = require('../utils/authUtils');
 const { normalizeCoordinate, normalizeRadiusMeters } = require('../utils/locationUtils');
 
@@ -22,12 +20,6 @@ const companyController = {
 
   async getCompanySettings(req, res) {
     try {
-      const requiredPermission = MODULE_PERMISSION_CONSTANTS.VIEW_COMPANY_SETTINGS.name;
-      const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
-      if (!hasPermission) {
-        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
-      }
-
       const id = req.user.company_id;
       const settings = await companyService.getCompanySettings(id);
       res.json(settings);
@@ -38,12 +30,6 @@ const companyController = {
 
   async updateCompanySettings(req, res) {
     try {
-      const requiredPermission = MASTER_PERMISSION_CONSTANTS.COMPANY.update.name;
-      const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
-      if (!hasPermission) {
-        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
-      }
-
       const id = req.user.company_id;
       const {
         deleteOnSeen, messageTimer, name, hideChat, mobileApp, desktopWeb, mobileWeb,
@@ -84,12 +70,6 @@ const companyController = {
 
   async createCompany(req, res) {
     try {
-      const requiredPermission = MASTER_PERMISSION_CONSTANTS.COMPANY.create.name;
-      const hasPermission = await allowedPermissions(req.user.id, [requiredPermission]);
-      if (!hasPermission) {
-        return res.status(403).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
-      }
-
       const { name, companyId, mobileApp, desktopWeb, mobileWeb } = req.body;
       if (!name) {
         return res.status(400).json({ error: `Company name is required get ${name}` });

@@ -4,10 +4,8 @@
  */
 const logger = require('../../logger');
 const env = require('../config/env');
-const { MASTER_PERMISSION_CONSTANTS } = require('../constants/base_permissions');
 const authController = require('../controllers/authController');
 const sso = require('../sso');
-const allowedPermissions = require('../utils/allowedPermissions');
 const { setAuthCookies, clearAuthCookies } = require('../utils/auth_shared_utils');
 const { sequelizeErrors } = require('../constants/errors');
 const { SIGNUP_GENERIC_ERROR, SIGNUP_CONFLICT_MESSAGES } = require('../constants/auth');
@@ -192,15 +190,6 @@ async function approveUser(req, res) {
     // Extract data from request
     const userId = req.params.userId;
     const { requirePasswordReset = false, role_id = null } = req.body;
-    const currentUserId = req.user.id;
-
-    // Permission check
-    const requiredPermission = MASTER_PERMISSION_CONSTANTS.USER.approve.name;
-    const hasPermission = await allowedPermissions(currentUserId, [requiredPermission]);
-    if (!hasPermission) {
-      return res.status(404).json({ error: `You are not authorized to access this resource ${requiredPermission}` });
-    }
-
     // Call controller
     await authController.approveUser(userId, requirePasswordReset, role_id);
 
