@@ -1,5 +1,4 @@
 const logger = require('../../logger');
-const allowedPermissions = require('../utils/allowedPermissions');
 const { handleRefreshToken, validateAccessToken, checkUserActive, isTokenSuperseded, setAuthCookies ,extractTokens } = require('../utils/auth_shared_utils');
 const { isSsoUserAllowedPath } = require('../config/ssoUserAccess');
 const { attachDataScope } = require('../data_access/middleware');
@@ -77,11 +76,3 @@ const authenticate = async (req, res, next) => {
  * gets both, so no route has to remember to ask for scoping.
  */
 exports.protect = (req, res, next) => authenticate(req, res, () => attachDataScope(req, res, next));
-
-exports.admin = async (req, res, next) => {
-  const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
-  if (!hasPermission) {
-    return res.status(403).json({ error: `You are not authorized to access this resource Admin ${req.user.id}` });
-  }
-  next();
-};

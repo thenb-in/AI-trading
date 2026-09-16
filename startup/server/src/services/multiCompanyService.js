@@ -1,6 +1,6 @@
 const logger = require('../../logger');
 // MultiCompanyModule is the primary model for this service
-const { MultiCompanyModule, CompanyProfile } = require('../models');
+const { MultiCompanyModule, CompanyProfile, User } = require('../models');
 const companyService = require('./companyService');
 const rolePermissionService = require('./rolePermissionService');
 const userService = require('./userService');
@@ -112,37 +112,23 @@ async function removeAllUserCompanyLinks(userId) {
   await MultiCompanyModule.destroy({ where: { user_id: userId } });
 }
 
+/** The active support users assigned to a company. */
 async function getCompanyUsers(companyId) {
-  // Fetch assignments and then get users through userService
   const assignments = await MultiCompanyModule.findAll({
     where: { companyId },
+    include: [{
+      model: User,
+      as: 'user',
+      attributes: ['id', 'name', 'username', 'isSupportUser', 'isActive'],
+      where: { isSupportUser: true, isActive: true }
+    }],
     order: [['createdAt', 'ASC']]
   });
-
-  // Get users through userService and filter for support user and active
-  const users = [];
-  for (const assignment of assignments) {
-    try {
-      const user = await userService.getUserById(assignment.userId);
-      if (user.isSupportUser && user.isActive) {
-        users.push({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          isSupportUser: user.isSupportUser,
-          isActive: user.isActive
-        });
-      }
-    } catch (error) {
-      // User might not exist, skip
-      logger.error(`User ${assignment.userId} not found, skipping`, error);
-    }
-  }
-  return users;
+  return assignments.map((assignment) => assignment.user);
 }
 
 
-const assignUserToCompanyFinal = async (userId, companyId) => {
+const assignSupportUserToCompany = async (userId, companyId) => {
   try {
     // Validate user exists and is support user and active - use userService
     const user = await userService.getUserById(userId);
@@ -176,7 +162,7 @@ const assignUserToCompanyFinal = async (userId, companyId) => {
   }
 };
 
-const removeUserFromCompanyFinal = async (userId, companyId) => {
+const removeSupportUserFromCompany = async (userId, companyId) => {
   try {
     // Validate user exists - use userService
     const user = await userService.getUserById(userId);
@@ -315,6 +301,6 @@ module.exports = {
   removeUserFromCompany,
   getAllUsers,
   createCompanyAndLink,
-  assignUserToCompanyFinal,
-  removeUserFromCompanyFinal
+  assignSupportUserToCompany,
+  removeSupportUserFromCompany
 };

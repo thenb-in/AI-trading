@@ -1,5 +1,7 @@
 const logger = require('../../logger');
-const adminService = require('../services/admin.service');
+const rolePermissionService = require('../services/rolePermissionService');
+const permissionService = require('../services/permissionService');
+const multiCompanyService = require('../services/multiCompanyService');
 const userService = require('../services/userService');
 const { ONLY_SUPERADMINS_CAN_CREATE_GLOBAL_ROLES } = require('../constants/errors');
 
@@ -19,7 +21,7 @@ const createRole = async (req, res) => {
     }
 
     const companyId = isGlobal ? null : req.user.company_id;
-    const newRole = await adminService.createRole(name, description, companyId);
+    const newRole = await rolePermissionService.createRole(name, description, companyId);
     res.json({
       success: true,
       message: isGlobal
@@ -39,13 +41,9 @@ const createRole = async (req, res) => {
 
 
 const createPermission = async (req, res) => {
-  // const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
-  // if (!hasPermission) {
-  //   return res.status(404).json({ error: "You are not authorized to access this resource" });
-  // }
   try {
     const { name, description ,type} = req.body;
-    const newPermission = await adminService.createPermission(name, name, description, type);
+    const newPermission = await permissionService.createPermission(name, name, description, type);
     res.json({
       success: true,
       message: `Permission "${newPermission.name}" created successfully!`,
@@ -63,14 +61,10 @@ const createPermission = async (req, res) => {
 
 
 const addPermissionToRole = async (req, res) => {
-  // const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
-  // if (!hasPermission) {
-  //   return res.status(404).json({ error: "You are not authorized to access this resource" });
-  // }
   try {
     const { role_id, permission_ids } = req.body;
     const userId = req.user.id;
-    await adminService.addPermissionToRole(role_id, permission_ids, userId);
+    await rolePermissionService.addPermissionToRole(role_id, permission_ids, userId);
     res.json({
       success: true,
       message: `${permission_ids.length} Permissions added successfully!`
@@ -86,14 +80,10 @@ const addPermissionToRole = async (req, res) => {
 };
 
 const removePermissionFromRole = async (req, res) => {
-  // const hasPermission = await allowedPermissions(req.user.id, ['Admin']);
-  // if (!hasPermission) {
-  //   return res.status(404).json({ error: "You are not authorized to access this resource" });
-  // }
   try {
     const { role_id, permission_id } = req.body;
     const userId = req.user.id;
-    const result = await adminService.removePermissionFromRole(role_id, permission_id, userId);
+    const result = await rolePermissionService.removePermissionFromRole(role_id, permission_id, userId);
     res.json({
       success: true,
       message: `${result.message}`
@@ -113,7 +103,7 @@ const removePermissionFromRole = async (req, res) => {
 const getRoles = async (req, res) => {
   try {
     const companyId = req.user.company_id;
-    const roles = await adminService.getRolesAndPermissions(companyId);
+    const roles = await rolePermissionService.getRolesAndPermissions(companyId);
     res.json({
       success: true,
       data: roles
@@ -129,7 +119,7 @@ const getRoles = async (req, res) => {
 
 const getPermissions = async (req, res) => {
   try {
-    const permissions = await adminService.getAllPermissions();
+    const permissions = await permissionService.getAllPermissions();
     res.json({
       success: true,
       data: permissions
@@ -146,7 +136,7 @@ const getPermissions = async (req, res) => {
 const deletePermission = async (req, res) => {
   try {
     const { permission_id } = req.params;
-    const result = await adminService.deletePermission(permission_id);
+    const result = await permissionService.deletePermission(permission_id);
     res.json({
       success: true,
       message: result.message,
@@ -165,7 +155,7 @@ const deletePermission = async (req, res) => {
 // User-Company Assignment endpoints
 const getSupportUsers = async (req, res) => {
   try {
-    const users = await adminService.getSupportUsers();
+    const users = await userService.getSupportUsers();
     res.json({
       success: true,
       data: users
@@ -190,7 +180,7 @@ const assignUserToCompany = async (req, res) => {
       });
     }
 
-    const result = await adminService.assignUserToCompany(userId, companyId);
+    const result = await multiCompanyService.assignSupportUserToCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -217,7 +207,7 @@ const removeUserFromCompany = async (req, res) => {
       });
     }
 
-    const result = await adminService.removeUserFromCompany(userId, companyId);
+    const result = await multiCompanyService.removeSupportUserFromCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -244,7 +234,7 @@ const getCompanyUsers = async (req, res) => {
       });
     }
 
-    const users = await adminService.getCompanyUsers(companyId);
+    const users = await multiCompanyService.getCompanyUsers(companyId);
     res.json({
       success: true,
       data: users

@@ -6,10 +6,6 @@ const { getWalletUserManagementUrl } = require('../sso/utils/walletUrl');
 const allowedPermissions = require('../utils/allowedPermissions');
 
 const getAllUsers = async (req, res) => {
-  // const hasPermission = await allowedPermissions(req.user.id, ['Get All Users']);
-  // if (!hasPermission) {
-  //   return res.status(404).json({ error: "You are not authorized to access this resource" });
-  // }
   const companyId = req.user.company_id;
 
   try {

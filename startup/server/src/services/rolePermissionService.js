@@ -1,11 +1,14 @@
+// Roles, and which permissions each one carries. Users, companies and the
+// Permission table itself are other services' business — this one only joins
+// roles to permissions.
 const { Op } = require('sequelize');
 const logger = require('../../logger');
 // Role is the primary model for this service
 // Permission is needed for includes in getRolesAndPermissions
 const { Role, Permission } = require('../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../utils/modelHelpers');
-const companyService = require('./companyService');
 const permissionService = require('./permissionService');
+const { formatPermissions } = require('../data_formatters/permission_formatter');
 const userService = require('./userService');
 const { sequelizeErrors } = require('../constants/errors');
 
@@ -57,79 +60,24 @@ const createRole = async (name, description, companyId = null) => {
   return newRole;
 };
 
-const createPermission = async (name, display_name, description, type) => {
-  // Use permissionService for Permission operations
-  return await permissionService.createPermission(name, display_name, description, type);
-};
-
-
-const fetchAllUsers = async () => {
-  try {
-    // Use userService to get users, but we need to include role info
-    const companies = await companyService.getAllCompanies();
-    const allUsers = [];
-
-    for (const company of companies) {
-      const { users } = await userService.getAllUsers(company.id);
-      allUsers.push(...users);
-    }
-
-    return allUsers;
-  } catch (error) {
-    throw { status: 500, message: error.message };
-  }
-};
-
-/**
- * Retrieves all roles visible to a company (global + company-specific), with permissions eagerly loaded.
- * Adds an `isGlobal` flag to each role for frontend differentiation.
- * @param {string|null} companyId - Company ID to scope by
- * @returns {Promise<Array<Object>>} Array of role objects with permissions and isGlobal flag
- * @throws {{ status: number, message: string }} On query failure
- */
 const getRolesAndPermissions = async (companyId) => {
-  try {
-    // All users see global roles (default roles) + company-specific roles
-    const whereClause = {
-      [Op.or]: [
-        { companyId: null }, // Global/default roles (visible to all users)
-        { companyId: companyId } // Company-specific roles
-      ]
-    };
+  // Everyone sees the global (default) roles plus their own company's.
+  const roles = await Role.findAll({
+    where: { [Op.or]: [{ companyId: null }, { companyId }] },
+    include: {
+      model: Permission,
+      as: 'permissions',
+      through: { attributes: [] },
+      attributes: ['id', 'name', 'display_name', 'description', 'type']
+    },
+    order: [['name', 'ASC']]
+  });
 
-    // Permission is imported at top level for includes
-    const roles = await Role.findAll({
-      where: whereClause,
-      include: {
-        model: Permission,
-        as: 'permissions',
-        through: { attributes: [] }, // Don't include the join table attributes
-        attributes: ['id', 'name', 'description', 'type'] // Explicitly specify attributes that exist
-      },
-      order: [['name', 'ASC']]
-    });
-
-    // Add isGlobal flag to each role for frontend
-    return roles.map(role => {
-      const roleJson = role.toJSON();
-      // Check companyId before toJSON() or from the JSON object
-      const isGlobal = (role.companyId === null || roleJson.companyId === null);
-      // Ensure permissions are included (they should be from the include)
-      const result = {
-        ...roleJson,
-        isGlobal,
-        permissions: roleJson.permissions || []
-      };
-      return result;
-    });
-  } catch (error) {
-    throw { status: 500, message: error.message };
-  }
-};
-
-const getAllPermissions = async () => {
-  // Use permissionService for Permission operations
-  return await permissionService.getAllPermissions();
+  return roles.map((role) => ({
+    ...role.toJSON(),
+    isGlobal: role.companyId === null,
+    permissions: formatPermissions(role.permissions)
+  }));
 };
 
 /**
@@ -213,85 +161,9 @@ const addPermissionToRole = async (roleId, permissionIds, userId) => {
   }
 };
 
-const deletePermission = async (permissionId) => {
-  // Use permissionService for Permission operations
-  return await permissionService.deletePermission(permissionId);
-};
-
-// User-Company Assignment methods
-const getSupportUsers = async () => {
-  try {
-    // Use companyService to get all companies, then multiCompanyService for each
-    const companies = await companyService.getAllCompanies();
-    const allUsers = [];
-
-    for (const company of companies) {
-      const  users  = await userService.getAllUsers(company.id);
-      const supportUsers = users.filter(user => user.isSupportUser && user.isActive);
-      allUsers.push(...supportUsers);
-    }
-
-    // Sort by name
-    return allUsers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  } catch (error) {
-    logger.error('Error fetching support users', error);
-    throw new Error(`Failed to fetch support users at  ${new Date()}`);
-  }
-};
-
-const getAllCompanies = async () => {
-  try {
-    // Use companyService instead of direct model access
-    return await companyService.getAllCompanies();
-  } catch (error) {
-    logger.error('Error fetching companies', error);
-    throw new Error(`Failed to fetch companies at  ${new Date()}`);
-  }
-};
-
-
-const getCompanyUsers = async (companyId) => {
-  try {
-    // Validate company exists - use companyService
-    await companyService.getCompanySettings(companyId);
-
-    // MultiCompanyModule operations should use multiCompanyService
-    return await userService.getAllUsers(companyId);
-  } catch (error) {
-    logger.error('Error fetching company users', error);
-    throw new Error(`Failed to fetch company users ${companyId}`);
-  }
-};
-
-/**
- * Get reusable include configuration for User with Role and Permissions
- * @returns {array} Sequelize include configuration
- */
-const getUserWithRoleInclude = () => [
-  // todo: this should be removed. make it like a structure?
-  {
-    model: Role,
-    as: 'role',
-    include: [{
-      model: Permission,
-      as: 'permissions',
-      through: { attributes: [] },
-      attributes: ['id', 'name', 'description', 'type']
-    }]
-  }
-];
-
 module.exports = {
   createRole,
-  createPermission,
-  fetchAllUsers,
   getRolesAndPermissions,
-  getAllPermissions,
   removePermissionFromRole,
-  addPermissionToRole,
-  deletePermission,
-  getSupportUsers,
-  getAllCompanies,
-  getCompanyUsers,
-  getUserWithRoleInclude
+  addPermissionToRole
 };

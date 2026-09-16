@@ -127,6 +127,14 @@ const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId =
     .filter((id) => id !== excludeUserId);
 };
 
+/** Active support users, with the company each sits in. */
+const getSupportUsers = async () => User.findAll({
+  where: { isSupportUser: true, isActive: true },
+  attributes: ['id', 'name', 'username'],
+  include: [{ model: Company, as: 'company', attributes: ['id', 'name'] }],
+  order: [['name', 'ASC']]
+});
+
 const getActiveUserIdsByPermissionName = async (companyId, permissionName, { excludeUserId = null } = {}) => {
   if (!companyId || !permissionName) {
     return [];
@@ -419,6 +427,7 @@ const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefres
 
 module.exports = {
   getAllUsers,
+  getSupportUsers,
   getUserById,
   getUserNamesByIds,
   isSupportUser,
