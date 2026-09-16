@@ -77,12 +77,15 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
       maxWidth="sm"
     >
       <div className="p-4">
-        {step === 'generate' && (
+        {step === 'generate' && error ? (
+          <p className="text-red-600 text-sm text-center">{error}</p>
+        ) : null}
+        {step === 'generate' && !error ? (
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Generating TOTP secret...</p>
           </div>
-        )}
+        ) : null}
 
         {step === 'scan' && totpData && (
           <div className="space-y-4">

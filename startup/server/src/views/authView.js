@@ -154,6 +154,9 @@ async function generateTotpSecret(req, res) {
     if (error.message.includes('User not found')) {
       return res.status(404).json({ error: error.message });
     }
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
     logger.error('Generate TOTP secret error', error);
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }

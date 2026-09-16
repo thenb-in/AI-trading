@@ -27,10 +27,11 @@ function verifyTotpCode(secret, totpCode, username) {
 
 /**
  * Generates a new TOTP secret for a user, stores it in the database, and returns a QR code.
- * If the user already has a secret, it is regenerated (overwritten).
+ * A secret only replaces one that was never confirmed: once 2FA is enabled the user's
+ * authenticator app holds that secret, and replacing it would stop every code it shows.
  * @param {string} username - Username to generate the secret for
  * @returns {Promise<{ secret: string, qrCodeUrl: string, otpauthUrl: string, message: string }>}
- * @throws {Error} If user not found
+ * @throws {Error} If user not found (404), or 2FA is already enabled (409)
  * @side_effects Stores totp_secret on the User record
  */
 const generateTotpSecret = async (username) => {
@@ -43,9 +44,11 @@ const generateTotpSecret = async (username) => {
     throw new Error(`User not found: ${username}`);
   }
 
-  // Check if user already has a TOTP secret
-  if (user.totp_secret) {
-    logger.info(`User already has TOTP secret, regenerating: ${username}`);
+  if (user.is_totp_enabled) {
+    logger.warn(`TOTP secret not replaced, 2FA already enabled for user: ${username}`);
+    const error = new Error(`Two-factor authentication is already set up for ${username}; its authenticator app keeps working`);
+    error.statusCode = 409;
+    throw error;
   }
 
   // Generate TOTP secret
