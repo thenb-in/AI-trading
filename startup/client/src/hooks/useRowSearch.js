@@ -1,9 +1,13 @@
 import { useMemo } from 'react';
 
 // JSON-shaped cells (e.g. a stored filter set) stringify to "[object Object]"
-// and would never match, so serialise them instead of coercing.
+// and would never match, so serialise them instead of coercing. Rich text is
+// searched as the words it shows, not its markup, so "p" or "strong" don't
+// match every row.
 const searchableText = (value) => (
-  value !== null && typeof value === 'object' ? JSON.stringify(value) : String(value ?? '')
+  value !== null && typeof value === 'object'
+    ? JSON.stringify(value)
+    : String(value ?? '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ')
 );
 
 /**
