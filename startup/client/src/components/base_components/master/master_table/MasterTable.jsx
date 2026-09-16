@@ -6,6 +6,10 @@ import { formatTime } from '@utils/formattingUtils';
 import { NbNextDataGrid } from '@/components/nbnext_data_grid';
 import PropTypes from 'prop-types';
 import { MdiIcon } from '../../MdiIcon';
+import { measureColumnWidth, measureActionsWidth } from './columnWidths';
+
+// A row action shows unless its `show` says otherwise.
+const isActionVisible = (action, row) => !action.show || action.show(row);
 
 /** The swatch is the value itself, so its colour cannot come from a class. */
 const swatchStyle = (color) => ({ backgroundColor: color });
@@ -61,6 +65,14 @@ const MasterTable = ({
   const openFileViewer = useCallback((href, mime, title) => {
     setViewerState({ open: true, url: href, mime: mime || '', title: title || 'File Preview' });
   }, []);
+
+  // Widths sized to what the rows hold (see columnWidths.js) — a column's own `width`
+  // wins — measured apart from the columns below, so only a change of columns, rows
+  // or actions re-measures them.
+  const { columnWidths, actionsWidth } = useMemo(() => ({
+    columnWidths: (columns || []).map((column) => (Number.isFinite(column.width) ? column.width : measureColumnWidth(column, data))),
+    actionsWidth: actions?.length ? measureActionsWidth(actions, data, isActionVisible) : 0,
+  }), [columns, data, actions]);
 
   const gridColumns = useMemo(() => {
     const cols = (columns || []).map((column) => {
@@ -253,6 +265,7 @@ const MasterTable = ({
       if (!cols[i]) return;
       if (column.skip_insight === true) cols[i].skip_insight = true;
       if (column.is_export === false) cols[i].is_export = false;
+      cols[i].width = columnWidths[i];
     });
 
     if (actions && actions.length > 0) {
@@ -260,12 +273,12 @@ const MasterTable = ({
         field: '__actions__',
         headerName: 'Actions',
         sortable: false,
-        width: Math.max(160, 100 * actions.length),
+        width: actionsWidth,
         renderCell: ({ row }) => {
-          const visibleActions = actions.filter((action) => !action.show || action.show(row));
+          const visibleActions = actions.filter((action) => isActionVisible(action, row));
           if (visibleActions.length === 0) return null;
           return (
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
               {visibleActions.map((action, idx) => {
                 // An action may draw itself instead of being a button — a
                 // status chip, a small menu. Clicks stay inside it so the row
@@ -293,7 +306,7 @@ const MasterTable = ({
                   <button
                     key={idx}
                     onClick={handleClick}
-                    className={`inline-flex items-center px-2 py-1 border text-xs font-medium rounded ${
+                    className={`inline-flex shrink-0 items-center px-2 py-1 border text-xs font-medium rounded whitespace-nowrap ${
                       type === 'danger'
                         ? 'border-red-300 text-red-700 bg-white hover:bg-red-50 focus:ring-2 focus:ring-red-500'
                         : type === 'primary'
@@ -317,7 +330,7 @@ const MasterTable = ({
     }
 
     return cols;
-  }, [columns, actions, openFileViewer]);
+  }, [columns, actions, openFileViewer, columnWidths, actionsWidth]);
 
   const handleGridRowClick = useCallback(
     (row) => {
