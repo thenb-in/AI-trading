@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
 import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
-import { BaseModal } from './master_modal/BaseModal';
+import { BaseModal, recordTitle } from './master_modal/BaseModal';
 import { FormModal } from './master_modal/FormModal';
 import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
@@ -421,7 +421,8 @@ const BaseMaster = ({
           {...formModalProps}
           isOpen={isModalOpen && Boolean(ModalBody)}
           onClose={handleCloseModal}
-          title={isSaved ? (modalEditTitle ?? title) : modalAddTitle}
+          // A form titles itself (FormModal); a saved record's details by what the record is known by.
+          title={(isSaved ? modalEditTitle : modalAddTitle) ?? (isForm ? undefined : recordTitle({ masterName, record: selectedRow, isNew: false, isEditable: false }))}
           maxWidth={modalMaxWidth}
           auditHead={auditHead}
           auditObjectId={selectedRow?.id}
@@ -462,6 +463,7 @@ BaseMaster.propTypes = {
   addButtonText: PropTypes.string,
   searchPlaceholder: PropTypes.string,
   searchKeys: PropTypes.arrayOf(PropTypes.string),
+  /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
   modalAddTitle: PropTypes.string,
   modalEditTitle: PropTypes.string,
   modalMaxWidth: PropTypes.string,

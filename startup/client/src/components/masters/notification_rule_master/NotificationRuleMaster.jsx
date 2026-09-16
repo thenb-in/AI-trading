@@ -71,8 +71,6 @@ const NotificationRuleMaster = () => {
       addButtonText="Add Rule"
       searchPlaceholder="Search rules by name, recipient or channel..."
       baseMasterContainerWidth = 'max-w-8xl'
-      modalAddTitle="New Notification Rule"
-      modalEditTitle="Edit Notification Rule"
       createLabel="Create Rule"
       updateLabel="Update Rule"
       modalMaxWidth="lg"

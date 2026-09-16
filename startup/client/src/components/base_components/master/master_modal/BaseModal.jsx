@@ -1,14 +1,40 @@
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
 import { useAutoFocusFirstField } from '@startup/hooks/useAutoFocusFirstField';
+import { recordIdentifier } from '@startup/data/masterIdentifierRegistry';
 import { useCreatorInitialName } from './MasterModalProvider';
 import { RecordNav } from './RecordNav';
+
+/**
+ * A record's modal title: "Add Purchase Order" while it is new, "Edit PO-0012"
+ * while this user can edit it, and just "PO-0012" when it opens read-only — the
+ * record's identifier (masterIdentifierRegistry), or the master's name until
+ * the record has one. Every form modal is titled this way; a `title` given to
+ * the modal is only for the exception.
+ */
+const recordTitle = ({ masterName, record, isNew, isEditable }) => {
+  if (isNew) return `Add ${masterName}`;
+  const name = recordIdentifier(masterName, record) || masterName;
+  return isEditable ? `Edit ${name}` : name;
+};
+
+// Lets a form rendered inside a modal title it (useModalTitle).
+const ModalTitleContext = createContext(null);
+
+/** Titles the modal this form sits in, unless that modal was given a `title` of its own. */
+const useModalTitle = (title) => {
+  const setTitle = useContext(ModalTitleContext);
+  useLayoutEffect(() => {
+    setTitle(title);
+    return () => setTitle('');
+  }, [setTitle, title]);
+};
 
 const BaseModal = ({
   isOpen,
@@ -35,9 +61,11 @@ const BaseModal = ({
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const hasFooter = actions || actionsLeft;
-  const isTitleString = typeof titleProp === 'string';
-  const isTitleNode = titleProp != null && typeof titleProp === 'object' && titleProp.$$typeof != null;
-  const hasTitle = isTitleString ? titleProp !== '' : (isTitleNode || Boolean(titleProp));
+  const [formTitle, setFormTitle] = useState('');
+  const title = titleProp ?? formTitle;
+  const isTitleString = typeof title === 'string';
+  const isTitleNode = title != null && typeof title === 'object' && title.$$typeof != null;
+  const hasTitle = isTitleString ? title !== '' : (isTitleNode || Boolean(title));
   const shouldShowAudit = Boolean(showAudit && auditHead && auditObjectId != null);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
 
@@ -95,7 +123,7 @@ const BaseModal = ({
             gap: 2,
           }}>
             <Box sx={{ minWidth: 0 }}>
-              {isTitleNode ? titleProp : (isTitleString ? titleProp : String(titleProp || ''))}
+              {isTitleNode || isTitleString ? title : String(title || '')}
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
@@ -155,7 +183,7 @@ const BaseModal = ({
             }),
           }}
         >
-          {children}
+          <ModalTitleContext.Provider value={setFormTitle}>{children}</ModalTitleContext.Provider>
         </DialogContent>
 
         {hasFooter && (
@@ -214,5 +242,5 @@ BaseModal.propTypes = {
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };
 
-export { BaseModal };
+export { BaseModal, recordTitle, useModalTitle };
 

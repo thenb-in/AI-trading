@@ -1,7 +1,7 @@
 import { createContext, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
-import { BaseModal } from './BaseModal';
+import { BaseModal, recordTitle } from './BaseModal';
 import { useModalRecord } from './useModalRecord';
 import { FormFooter } from '../FormFooter';
 import { DEFAULT_WORKFLOW, amendCopy } from '../../workflow/workflow';
@@ -105,6 +105,7 @@ const FormModal = ({
   return (
     <BaseModal
       {...modalProps}
+      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
       onClose={onClose}
       actions={
         <FormFooter
