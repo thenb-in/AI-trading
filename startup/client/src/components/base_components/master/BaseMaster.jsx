@@ -135,9 +135,12 @@ const BaseMaster = ({
 
   // A master with no read permission (e.g. one over the browser's own cache) is open to all.
   const canRead = !permissionKeys.read || hasPermission(userData, permissionKeys.read);
-  // Without a FormComponent there is nothing for Add to open, so it is not offered.
-  const canAdd = Boolean(FormComponent);
-  const canCreate = canAdd ? permissionKeys.create : null;
+  // Add needs something to open and the permission to create with. A master
+  // that declares no create permission offers no Add — a missing declaration is
+  // not a reason to let everyone add.
+  const canAdd = Boolean(FormComponent)
+    && Boolean(permissionKeys.create)
+    && hasPermission(userData, permissionKeys.create);
   const canDelete = permissionKeys.delete && hasPermission(userData, permissionKeys.delete);
 
   const canImport =
@@ -357,7 +360,7 @@ const BaseMaster = ({
           description={description}
           onAdd={canAdd && showAdd ? handleAdd : undefined}
           userData={userData}
-          permissionKey={canCreate}
+          permissionKey={permissionKeys.create}
           addButtonText={addButtonText}
           backUrl={backUrl}
           showBack={showBack}

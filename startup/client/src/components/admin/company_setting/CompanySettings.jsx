@@ -1,16 +1,8 @@
-import { useDataContext, hasPermission } from "@context/useDataContext";
-import { AccessDenied } from "../../AccessDenied";
 import { CompanySettingsProvider } from "./CompanySettingsContext";
 import { CompanySettingsShell } from "./CompanySettingsShell";
 
+// Who may open this page is decided by its route (see RequireAccess in AdminDashboard).
 function CompanySettings() {
-  const requiredPermission = "view_company_settings";
-  const canViewCompanySettings = hasPermission(requiredPermission, useDataContext());
-
-  if (!canViewCompanySettings) {
-    return <AccessDenied requiredPermission={requiredPermission} />;
-  }
-
   return (
     <CompanySettingsProvider>
       <CompanySettingsShell />

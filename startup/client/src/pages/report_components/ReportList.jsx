@@ -3,27 +3,22 @@ import PropTypes from 'prop-types';
 import { Search } from 'lucide-react';
 import { ReportCard } from './ReportCard';
 import { NoReportsFound } from './NoReportsFound';
-import { hasPermission, useDataContext } from '@context/useDataContext';
-import { getModulePermissionName } from '@data/getModulePermissionName';
+import { useDataContext } from '@context/useDataContext';
+import { canSeeModule } from '@data/canSeeModule';
 import { SearchTypeField } from '@startup/components/base_components/fields/SearchTypeField';
 
 const ReportList = ({ reports, categories }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-  const dataContext = useDataContext();
+  const { userData } = useDataContext();
 
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       const matchesFilter = activeFilter === 'all' || report.category === activeFilter;
       const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const permissionName = getModulePermissionName(report);
-      const isPermissionGranted = hasPermission(permissionName, dataContext);
-      if (!isPermissionGranted) {
-        // console.log(`No permission for ${permissionName}`, report);
-      }
-      return matchesFilter && matchesSearch && isPermissionGranted;
+      return matchesFilter && matchesSearch && canSeeModule(report, userData);
     });
-  }, [reports, searchTerm, activeFilter, dataContext]);
+  }, [reports, searchTerm, activeFilter, userData]);
 
   const handleResetFilters = () => {
     setSearchTerm('');

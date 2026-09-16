@@ -10,8 +10,8 @@ import {
 import { getMasterModules } from "@data/getMasterModules";
 import { reports, categories as reportCategories } from "@data/getReportModules";
 import { getAppModuleSearchItems } from "@data/getAppModules";
-import { getModulePermissionName } from "@data/getModulePermissionName";
-import { useDataContext, hasPermission } from "@context/useDataContext";
+import { canSeeModule } from "@data/canSeeModule";
+import { useDataContext } from "@context/useDataContext";
 import { shortcutLabel } from "@utils/keyboardShortcut";
 import { SHORTCUTS } from "../../constants/shortcuts";
 import { BaseModal, MasterSearch } from "../base_components";
@@ -32,7 +32,7 @@ function GlobalSearchPalette({
   onClose: externalOnClose
 }) {
   const navigate = useNavigate();
-  const dataContext = useDataContext();
+  const { userData } = useDataContext();
   const inputRef = useRef(null);
 
   const [internalOpen, setInternalOpen] = useState(false);
@@ -71,11 +71,7 @@ function GlobalSearchPalette({
     const masterModules = getMasterModules(handleOpenMaster);
 
     const masters = masterModules
-      .filter((module) => {
-        if (module.skipPermissionCheck) return true;
-        const permissionName = getModulePermissionName(module);
-        return hasPermission(permissionName, dataContext);
-      })
+      .filter((module) => canSeeModule(module, userData))
       .map((module) => ({
         type: MASTER,
         title: module.title,
@@ -87,10 +83,7 @@ function GlobalSearchPalette({
       }));
 
     const reportItems = reports
-      .filter((report) => {
-        const permissionName = getModulePermissionName(report);
-        return hasPermission(permissionName, dataContext);
-      })
+      .filter((report) => canSeeModule(report, userData))
       .map((report) => {
         const handleSelect = () => navigate(`/admin/report/${report.slug}`);
         return {
@@ -104,13 +97,10 @@ function GlobalSearchPalette({
         };
       });
 
-    const moduleItems = getAppModuleSearchItems(
-      { navigate },
-      { hasPermissionFn: hasPermission, dataContext, userData: dataContext.userData }
-    );
+    const moduleItems = getAppModuleSearchItems({ navigate }, userData);
 
     return [...masters, ...reportItems, ...moduleItems];
-  }, [dataContext, navigate]);
+  }, [userData, navigate]);
 
   const { items: filtered, total: totalFound } = useMemo(() => 
     filterAndSortItems(items, query, MAX_RESULTS), 

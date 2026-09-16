@@ -1,21 +1,18 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "@context/useDataContext";
+import { useDataContext } from "@context/useDataContext";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getMasterCategoriesForUser } from "../data/getMasterModules";
-import { getAppModuleDefinitions, isAppModuleVisible } from "../data/getAppModules";
+import { getAppModuleDefinitions } from "../data/getAppModules";
+import { canSeeModule } from "../data/canSeeModule";
 import { MasterCategoryIcon } from "./base_components/master/MasterCategoryIcon";
 
 // Hook to get App-specific menu items (single source: getAppModuleDefinitions)
 function useAppMenuItems() {
   const navigate = useNavigate();
   const location = useLocation();
-  const dataContext = useDataContext();
-  const { userData } = dataContext;
+  const { userData } = useDataContext();
 
-  const categories = useMemo(
-    () => getMasterCategoriesForUser(hasPermission, dataContext),
-    [dataContext]
-  );
+  const categories = useMemo(() => getMasterCategoriesForUser(userData), [userData]);
 
   const [showMasterFlyout, setShowMasterFlyout] = useState(false);
   const [showMasterSubmenu, setShowMasterSubmenu] = useState(false);
@@ -162,14 +159,8 @@ function useAppMenuItems() {
     );
   };
 
-  const access = {
-    hasPermissionFn: hasPermission,
-    dataContext,
-    userData,
-  };
-
   return getAppModuleDefinitions()
-    .filter((def) => isAppModuleVisible(def, access))
+    .filter((def) => canSeeModule(def, userData))
     .map((def) => {
       const base = {
         id: def.id,

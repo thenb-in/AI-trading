@@ -5,6 +5,7 @@ import { ReportList } from './report_components/ReportList';
 import { DummyComponent } from './DummyComponent';
 import { reports, categories } from '../data/getReportModules';
 import { getReportStaticPages } from '../data/appRouteRegistry';
+import { RequireAccess } from '../components/RequireAccess';
 
 const ReportContent = () => {
   const location = useLocation();
@@ -40,14 +41,16 @@ const ReportContent = () => {
               key={report.slug}
               path={report.slug}
               element={
-                report.component ? (
-                  <Component
-                    report={report}
-                    locationState={location.state}
-                  />
-                ) : (
-                  <DummyComponent component={report} />
-                )
+                <RequireAccess definition={report}>
+                  {report.component ? (
+                    <Component
+                      report={report}
+                      locationState={location.state}
+                    />
+                  ) : (
+                    <DummyComponent component={report} />
+                  )}
+                </RequireAccess>
               }
             />
           );

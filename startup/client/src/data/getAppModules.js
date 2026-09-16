@@ -1,44 +1,24 @@
 import { getAppModuleDefinitions } from './appModuleRegistry';
 import { getGenericAppModuleDefinitions } from './genericAppModules';
+import { canSeeModule } from './canSeeModule';
 
 
-function getAppModuleSearchItems(handlers, access) {
-  const { navigate } = handlers;
-  const { hasPermissionFn, dataContext, userData } = access;
-
+function getAppModuleSearchItems({ navigate }, userData) {
   return getAppModuleDefinitions()
-    .filter((def) => isAppModuleVisible(def, { hasPermissionFn, dataContext, userData }))
-    .map((def) => {
-      const onSelect = () => navigate(def.navigatePath);
-
-      return {
-        type: "Module",
-        title: def.title,
-        description: def.description,
-        category: def.category,
-        tags: def.tags,
-        keywords: def.keywords,
-        onSelect,
-      };
-    });
-}
-
-function isAppModuleVisible(def, { hasPermissionFn, dataContext, userData }) {
-  if (def.requireSupportUser) {
-    return Boolean(userData?.isSupportUser);
-  }
-  if (def.skipPermissionCheck) {
-    return true;
-  }
-  if (def.permissionName) {
-    return hasPermissionFn(def.permissionName, dataContext);
-  }
-  return false;
+    .filter((def) => canSeeModule(def, userData))
+    .map((def) => ({
+      type: "Module",
+      title: def.title,
+      description: def.description,
+      category: def.category,
+      tags: def.tags,
+      keywords: def.keywords,
+      onSelect: () => navigate(def.navigatePath),
+    }));
 }
 
 export {
   getAppModuleDefinitions,
   getGenericAppModuleDefinitions,
   getAppModuleSearchItems,
-  isAppModuleVisible,
 };

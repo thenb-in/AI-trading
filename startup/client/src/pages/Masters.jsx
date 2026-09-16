@@ -12,10 +12,10 @@ import {
 import { MasterCard } from "./master_components/MasterCard";
 import { SearchFilter } from "./master_components/SearchFilter";
 import { getMasterModules, getMasterCategoriesForUser } from "../data/getMasterModules";
-import { getModulePermissionName } from "../data/getModulePermissionName";
+import { canSeeModule } from "../data/canSeeModule";
 import { spacing } from "@startup/constants/theme";
 import { SearchableDropdown } from "@startup/components/base_components/fields/SearchableDropdown";
-import { useDataContext, hasPermission } from "@context/useDataContext";
+import { useDataContext } from "@context/useDataContext";
 
 
 const MasterContent = () => {
@@ -25,13 +25,13 @@ const MasterContent = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const theme = useTheme();
   const isLargeScreen = useMediaQuery(theme.breakpoints.up("lg"));
-  const dataContext = useDataContext();
+  const { userData } = useDataContext();
   const handleOpenMaster = (path) => {
     navigate(path);
   };
 
   const masterModules = getMasterModules(handleOpenMaster);
-  const categories = getMasterCategoriesForUser(hasPermission, dataContext);
+  const categories = getMasterCategoriesForUser(userData);
 
   // Sync selectedCategory with URL query param `category` (no param = show All masters)
   useEffect(() => {
@@ -79,15 +79,12 @@ const MasterContent = () => {
     return filtered;
   }, [searchTerm, selectedCategory, masterModules]);
 
-  // Only modules the user can actually see (after permission check) count as results
+  // What the grid shows: the search/category result, minus what this user may
+  // not see. Everything below counts these — the cards, Enter-to-open, and the
+  // "no masters found" message.
   const visibleMasterModules = useMemo(
-    () =>
-      filteredMasterModules.filter(
-        (master) =>
-          master.skipPermissionCheck ||
-          hasPermission(getModulePermissionName(master), dataContext)
-      ),
-    [filteredMasterModules, dataContext]
+    () => filteredMasterModules.filter((master) => canSeeModule(master, userData)),
+    [filteredMasterModules, userData]
   );
 
   const handleSearchChange = (value) => {
@@ -187,7 +184,7 @@ const MasterContent = () => {
             onClear={handleClearSearch}
             onEnter={handleSearchEnter}
             totalCards={masterModules.length}
-            filteredCount={filteredMasterModules.length}
+            filteredCount={visibleMasterModules.length}
           />
 
           <Divider
@@ -209,42 +206,31 @@ const MasterContent = () => {
                 mx: "auto",
               }}
             >
-              {filteredMasterModules.map((master, index) => {
-                const permission = getModulePermissionName(master);
-                // Skip permission check if skipPermissionCheck is true
-                const hasMasterPermission = master.skipPermissionCheck || hasPermission(permission, dataContext);
-                if (!hasMasterPermission && !master.skipPermissionCheck) {
-                  // console.log(`No permission for ${permission}`, master);
-                  return null;
-                }
-                return (
-                  <Grid
-                    item
-                    xs={12}
-                    sm={6}
-                    lg={4}
-                    key={index}
-                    sx={{ display: "flex", justifyContent: "center" }}
-                  >
-                    {hasMasterPermission && (
-                      <MasterCard
-                        title={master.title}
-                        description={master.description}
-                        icon={master.icon}
-                        color={master.color}
-                        onClick={master.onClick}
-                        buttonText={master.buttonText}
-                        tags={master.tags}
-                        isVisible={true}
-                        fullWidth={isLargeScreen}
-                      />
-                    )}
-                  </Grid>
-                );
-              })}
+              {visibleMasterModules.map((master, index) => (
+                <Grid
+                  item
+                  xs={12}
+                  sm={6}
+                  lg={4}
+                  key={index}
+                  sx={{ display: "flex", justifyContent: "center" }}
+                >
+                  <MasterCard
+                    title={master.title}
+                    description={master.description}
+                    icon={master.icon}
+                    color={master.color}
+                    onClick={master.onClick}
+                    buttonText={master.buttonText}
+                    tags={master.tags}
+                    isVisible={true}
+                    fullWidth={isLargeScreen}
+                  />
+                </Grid>
+              ))}
             </Grid>
 
-            {filteredMasterModules.length === 0 && (
+            {visibleMasterModules.length === 0 && (
               <Box sx={{ textAlign: "center", py: spacing.xl }}>
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   No masters found

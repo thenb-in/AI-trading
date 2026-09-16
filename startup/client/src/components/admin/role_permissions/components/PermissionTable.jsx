@@ -7,6 +7,7 @@ import {
   getOperationDisplayName,
   getPermissionLabel,
   isPermissionAssigned,
+  isLinkedPermission,
   getPermissionSubscriptionStatus,
 } from '../utils/permissionUtils';
 
@@ -165,7 +166,7 @@ function PermissionTable({
                         <div className="flex items-center justify-center gap-1 flex-wrap">
                           {operationPermissions.map((permission, index) => {
                             const assigned = isPermissionAssigned(selectedRole, permission.id);
-                            const isLinked = permission._isLinked;
+                            const isLinked = isLinkedPermission(permission);
                             const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permission.id);
                             const isHidden = subscriptionStatus === 'hidden';
                             // Hidden means subscribed but hidden - enable for superadmins
@@ -184,13 +185,8 @@ function PermissionTable({
                               tooltipText = `${tooltipText} (Read-only: Only superadmins can modify default roles)`;
                             }
                             
-                            // Use a unique key that includes the linked context to avoid React key conflicts
-                            const uniqueKey = permission._linkedContext 
-                              ? `${permission.id}-${permission._linkedContext}-${index}`
-                              : `${permission.id}-${index}`;
-                            
                             return (
-                              <div key={uniqueKey} className="flex items-center gap-0.5">
+                              <div key={`${permission.id}-${index}`} className="flex items-center gap-0.5">
                                 <CheckboxTypeField
                                   mode="bare"
                                   checked={assigned}

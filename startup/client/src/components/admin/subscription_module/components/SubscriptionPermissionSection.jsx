@@ -3,44 +3,8 @@ import { useCallback, useMemo } from 'react';
 import { Layers } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { getSubscriptionPermissionStatus } from '../utils/permissionUtils';
+import { getPermissionLabel } from '../../role_permissions/utils/permissionUtils';
 import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS } from '../../permissionCategoryStyles';
-
-function getEntityKeyFromPermissionName(permissionName) {
-  if (!permissionName) return 'Other';
-  const name = String(permissionName).toLowerCase();
-
-  const prefixes = [
-    'deactivate_',
-    'approve_',
-    'create_',
-    'read_',
-    'update_',
-    'delete_',
-    'view_',
-    'download_',
-    'export_',
-    'import_',
-    'reject_',
-  ];
-
-  let entity = name;
-  for (const prefix of prefixes) {
-    if (entity.startsWith(prefix)) {
-      entity = entity.slice(prefix.length);
-      break;
-    }
-  }
-
-  entity = entity.replace(/_module$/, '');
-
-  return (
-    entity
-      .split('_')
-      .filter(Boolean)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ') || 'Other'
-  );
-}
 
 function getGroupStatus(subscription, permissionIds) {
   if (!subscription || !Array.isArray(permissionIds) || permissionIds.length === 0) {
@@ -101,7 +65,7 @@ function SubscriptionPermissionSection({
     if (Array.isArray(permissions)) {
       const map = new Map();
       permissions.forEach((p) => {
-        const groupKey = getEntityKeyFromPermissionName(p.name || p.display_name);
+        const groupKey = p.group || getPermissionLabel(p);
         const existing = map.get(groupKey);
         if (!existing) {
           map.set(groupKey, {

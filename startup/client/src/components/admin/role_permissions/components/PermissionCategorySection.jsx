@@ -162,8 +162,7 @@ function PermissionCategorySection({
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Name</th>
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Display Name</th>
                 <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Description</th>
-                <th className="text-left p-1.5 font-semibold text-gray-700 border-r border-gray-200">Type</th>
-                <th className={`text-left p-1.5 font-semibold text-gray-700 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>Original Type</th>
+                <th className={`text-left p-1.5 font-semibold text-gray-700 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>Type</th>
                 {canDeletePermission && (
                   <th className="text-center p-1.5 font-semibold text-gray-700">Actions</th>
                 )}
@@ -201,8 +200,7 @@ function PermissionCategorySection({
                     <td className="p-1.5 text-gray-700 border-r border-gray-200 font-mono text-xs">{permission.name || '—'}</td>
                     <td className="p-1.5 text-gray-700 border-r border-gray-200">{permission.display_name || '—'}</td>
                     <td className="p-1.5 text-gray-600 border-r border-gray-200">{permission.description || '—'}</td>
-                    <td className="p-1.5 text-gray-700 border-r border-gray-200">{permission.type || '—'}</td>
-                    <td className={`p-1.5 text-gray-600 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>{permission.originalType || '—'}</td>
+                    <td className={`p-1.5 text-gray-700 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>{permission.type || '—'}</td>
                     {canDeletePermission && (
                       <td className="p-1.5 text-center">
                         <button

@@ -21,14 +21,8 @@ function getReportDisplayName(permissionName) {
   return ensureReportPermissionNameMap()[permissionName.toLowerCase()] || null;
 }
 
-
-function getReportPermissionNameMap() {
-  return { ...ensureReportPermissionNameMap() };
-}
-
 export {
   getReportDisplayName,
-  getReportPermissionNameMap,
   reports,
   categories,
 };

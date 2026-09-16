@@ -224,27 +224,14 @@ const ApiService = {
     return this.request('POST', '/admin/roles', data, { invalidates: ['roles', 'users'] });
   },
 
-  updateRole(role_id, data) {
-    return this.request('PUT', `/admin/roles/${role_id}`, data, { invalidates: ['roles', 'users'] });
-  },
 
-  deleteRole(role_id) {
-    return this.request('DELETE', `/admin/roles/${role_id}`, null, { invalidates: ['roles', 'users'] });
-  },
 
   // Admin - Permissions
   getPermissions(options = {}) {
     return this.request('GET', '/admin/permissions', null, { cache: 'permissions', ...options });
   },
 
-  createPermission(data) {
-    return this.request('POST', '/admin/permissions', data, { invalidates: ['permissions'] });
-  },
 
-  updatePermission(permission_id, data) {
-    return this.request('PUT', `/admin/permissions/${permission_id}`, data,
-      { invalidates: ['permissions'] });
-  },
 
   deletePermission(permission_id) {
     return this.request('DELETE', `/admin/permissions/${permission_id}`, null,

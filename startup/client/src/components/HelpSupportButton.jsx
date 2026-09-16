@@ -2,7 +2,8 @@ import { Headset } from "lucide-react";
 import PropTypes from "prop-types";
 import { useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDataContext, hasPermission } from "@context/useDataContext";
+import { useDataContext } from "@context/useDataContext";
+import { hasPermission } from "@utils/hasPermission";
 import { openHelpSupportNav } from "../utils/openHelpSupportNav";
 import { shortcutTitle } from "../utils/keyboardShortcut";
 import { ROUTE_HELP_SUPPORT } from "../constants/routes";
@@ -14,9 +15,9 @@ const HELP_SUPPORT_PERMISSION = "view_help_and_support";
 function HelpSupportButton({ collapsed }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const dataContext = useDataContext();
+  const { userData } = useDataContext();
 
-  const canOpen = hasPermission(HELP_SUPPORT_PERMISSION, dataContext);
+  const canOpen = hasPermission(userData, HELP_SUPPORT_PERMISSION);
 
   const handleClick = useCallback(() => {
     void openHelpSupportNav({ navigate, location }).catch(() => {

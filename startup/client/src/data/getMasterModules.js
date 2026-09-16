@@ -1,6 +1,6 @@
 import { getMasterModules, getMasterCategoryOrder } from './masterModuleRegistry';
 import { defaultMasterCategoryIcon } from './genericMasterModules';
-import { getModulePermissionName } from './getModulePermissionName';
+import { canSeeModule } from './canSeeModule';
 
 /**
  * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
@@ -31,19 +31,11 @@ const buildCategoryList = (predicate = () => true) => {
 const getMasterCategories = () => buildCategoryList();
 
 /**
- * Returns only categories where the user has permission to at least one master,
- * with count = number of permitted masters in that category.
- * @param {function(string, object)} hasPermissionFn - (permissionName, dataContext) => boolean
- * @param {object} dataContext - from useDataContext()
- * @returns {Array<{ name: string, count: number }>} categories with permitted count
+ * Only the categories holding at least one master this user may see, counting
+ * just those masters.
  */
-const getMasterCategoriesForUser = (hasPermissionFn, dataContext) => {
-  if (!hasPermissionFn || !dataContext) return [];
-  return buildCategoryList((module) => {
-    if (module.skipPermissionCheck) return true;
-    return hasPermissionFn(getModulePermissionName(module), dataContext);
-  });
-};
+const getMasterCategoriesForUser = (userData) =>
+  buildCategoryList((module) => canSeeModule(module, userData));
 
 export {
   getMasterModules,

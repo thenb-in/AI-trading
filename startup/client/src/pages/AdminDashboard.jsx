@@ -15,6 +15,8 @@ import { NotificationRuleMaster } from "../components/masters/notification_rule_
 import { AppGuide } from "./AppGuide";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
 import { NotificationsPage } from "../notifications/NotificationsPage";
+import { RequireAccess } from "../components/RequireAccess";
+import { getAppModuleDefinitions } from "../data/getAppModules";
 // App-provided routes and dashboard content, plugged in via the registry.
 import {
   getAppRoutes,
@@ -23,6 +25,9 @@ import {
 } from "../data/appRouteRegistry";
 
 const AdminDashboard = () => {
+  // The same definitions the navigator gates its cards on, so a URL typed by
+  // hand is judged exactly as the card would be.
+  const moduleById = Object.fromEntries(getAppModuleDefinitions().map((definition) => [definition.id, definition]));
   const appRoutes = getAppRoutes();
   const appRoutesWithoutSidebar = getAppRoutesWithoutSidebar();
   const DashboardContent = getDashboardContent();
@@ -35,22 +40,52 @@ const AdminDashboard = () => {
         <Route path="navigator" element={<Navigator />} />
         <Route path="dashboards" element={DashboardContent ? <DashboardContent /> : null} />
         <Route path="dashboard/*" element={DashboardContent ? <DashboardContent /> : null} />
-        <Route path="reports" element={<ReportContent />} />
-        <Route path="report/*" element={<ReportContent />} />
+        <Route
+          path="reports"
+          element={<RequireAccess definition={moduleById.reportsListing}><ReportContent /></RequireAccess>}
+        />
+        <Route
+          path="report/*"
+          element={<RequireAccess definition={moduleById.reportsListing}><ReportContent /></RequireAccess>}
+        />
 
-        <Route path="masters" element={<MasterContent />} />
-        <Route path="master/users" element={<UserManagement />} />
-        <Route path="master/*" element={<MasterContent />} />
+        <Route
+          path="masters"
+          element={<RequireAccess definition={moduleById.mastersListing}><MasterContent /></RequireAccess>}
+        />
+        <Route
+          path="master/users"
+          element={<RequireAccess definition={moduleById.userManagement}><UserManagement /></RequireAccess>}
+        />
+        <Route
+          path="master/*"
+          element={<RequireAccess definition={moduleById.mastersListing}><MasterContent /></RequireAccess>}
+        />
         <Route path="master/activity" element={<ActivityMaster />} />
         <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
         <Route path="master/cache" element={<CacheMaster />} />
         <Route path="master/notification-rule" element={<NotificationRuleMaster />} />
         
-        <Route path="users" element={<UserManagement />} />
-        <Route path="company" element={<CompanySettings />} />
-        <Route path="role-permissions" element={<RolePermissionsManagement />} />
-        <Route path="multi-company-setup" element={<MultiCompanyModule />} />
-        <Route path="subscription" element={<SubscriptionPage/>}/>
+        <Route
+          path="users"
+          element={<RequireAccess definition={moduleById.userManagement}><UserManagement /></RequireAccess>}
+        />
+        <Route
+          path="company"
+          element={<RequireAccess definition={moduleById.companySettings}><CompanySettings /></RequireAccess>}
+        />
+        <Route
+          path="role-permissions"
+          element={<RequireAccess definition={moduleById.rolesPermissions}><RolePermissionsManagement /></RequireAccess>}
+        />
+        <Route
+          path="multi-company-setup"
+          element={<RequireAccess definition={moduleById.multiCompanySetup}><MultiCompanyModule /></RequireAccess>}
+        />
+        <Route
+          path="subscription"
+          element={<RequireAccess definition={moduleById.subscription}><SubscriptionPage /></RequireAccess>}
+        />
         <Route path="app-guide" element={<AppGuide />} />
         <Route path="help-support" element={<HelpSupportPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

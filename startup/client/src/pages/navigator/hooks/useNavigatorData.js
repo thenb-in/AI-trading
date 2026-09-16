@@ -4,25 +4,24 @@ import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { getAppModuleDefinitions } from "@data/getAppModules";
 import { reports as reportModules, categories as reportCategories } from "@data/getReportModules";
 import { getModulePermissionName } from "@data/getModulePermissionName";
-import { useDataContext, hasPermission } from "@context/useDataContext";
+import { canSeeModule } from "@data/canSeeModule";
+import { useDataContext } from "@context/useDataContext";
 import { ApiService } from "@services/ApiService";
-import { getPermissionSubscriptionStatus } from "@startup/components/admin/role_permissions/utils/permissionUtils";
+import { getPermissionSubscriptionStatusByName } from "@startup/components/admin/role_permissions/utils/permissionUtils";
 
 const isSuperadminCategory = (module) =>
   (module?.category || "").toLowerCase() === "superadmin";
 
 /**
- * Returns `{ subscriptionStatus, isSubscribed, isHidden }` for a module with permission `permissionId`,
- * or `null` to signal "hide this module from the current user" (when a hidden permission is encountered
- * by a non-superadmin user).
- *
- * Hidden permissions are subscribed but only visible to support users; everyone else gets them filtered out.
+ * `{ subscriptionStatus, isSubscribed, isHidden }` for a card, or null to say
+ * "do not show this one" — a hidden permission is subscribed but advertised to
+ * support staff only, so everyone else never sees the card.
  */
-function resolveSubscriptionStatus(permissionId, companySubscriptions, userData) {
-  if (!permissionId || companySubscriptions.length === 0) {
+function resolveSubscriptionStatus(permissionName, companySubscriptions, userData) {
+  if (!permissionName || companySubscriptions.length === 0) {
     return { subscriptionStatus: null, isSubscribed: true, isHidden: false };
   }
-  const subscriptionStatus = getPermissionSubscriptionStatus(companySubscriptions, permissionId);
+  const subscriptionStatus = getPermissionSubscriptionStatusByName(companySubscriptions, permissionName);
   const isHidden = subscriptionStatus === 'hidden';
   if (isHidden) {
     if (!userData?.isSupportUser) return null;
@@ -33,45 +32,25 @@ function resolveSubscriptionStatus(permissionId, companySubscriptions, userData)
 
 const useNavigatorData = (searchTerm, categoryFilter) => {
   const navigate = useNavigate();
-  const dataContext = useDataContext();
-  const { userData } = dataContext;
+  const { userData } = useDataContext();
   const [companySubscriptions, setCompanySubscriptions] = useState([]);
-  const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch company subscriptions and permissions
   useEffect(() => {
-    const fetchSubscriptions = async () => {
-      setLoading(true);
-      try {
-        const companyId = userData?.companyId || userData?.company?.id;
-        if (companyId) {
-          const [subscriptionsResponse, permissionsResponse] = await Promise.all([
-            ApiService.getCompanySubscriptions(companyId),
-            ApiService.getPermissions(),
-          ]);
-          
-          const subscriptionsData = subscriptionsResponse?.data?.data || subscriptionsResponse?.data || [];
-          const permissionsData = permissionsResponse?.data?.data || permissionsResponse?.data || [];
-          
-          setCompanySubscriptions(subscriptionsData);
-          setPermissions(permissionsData);
-        } else {
-          // No company ID, set empty arrays
-          setCompanySubscriptions([]);
-          setPermissions([]);
-        }
-      } catch (error) {
-        console.error('Error fetching subscriptions:', error);
-        // On error, set empty arrays
+    const companyId = userData?.companyId || userData?.company?.id;
+    if (!companyId) {
+      setCompanySubscriptions([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    ApiService.getCompanySubscriptions(companyId)
+      .then((response) => setCompanySubscriptions(response?.data?.data || response?.data || []))
+      .catch((error) => {
+        console.error(`Navigator: could not load subscriptions for company ${companyId}`, error);
         setCompanySubscriptions([]);
-        setPermissions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubscriptions();
+      })
+      .finally(() => setLoading(false));
   }, [userData]);
 
   const handleOpenMaster = useCallback((path) => {
@@ -114,188 +93,83 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
     return text.toLowerCase().includes(term);
   }, [searchTerm]);
 
-  // Create permission name to ID mapping
-  const permissionNameToIdMap = useMemo(() => {
-    const map = {};
-    if (permissions && Array.isArray(permissions)) {
-      permissions.forEach(perm => {
-        if (perm.name) {
-          map[perm.name.toLowerCase()] = perm.id;
-        }
-      });
+  /**
+   * A card, as the navigator shows it: may they open it, and if not, why —
+   * their role lacks the permission, or their plan does not carry it. Returns
+   * null for a definition that should not be listed at all: it does not match
+   * the search, is filtered out by category, or is hidden from this user.
+   */
+  const enrich = useCallback((definition, { searchText, categoryPrefix }) => {
+    const permissionName = getModulePermissionName(definition);
+    const subscription = resolveSubscriptionStatus(permissionName, companySubscriptions, userData);
+    if (subscription === null) return null;
+    if (!matchesSearch(searchText.filter(Boolean).join(" "))) return null;
+
+    if (categoryFilter !== "all") {
+      if (!categoryFilter.startsWith(`${categoryPrefix}-`)) return null;
+      if (definition.category !== categoryFilter.replace(`${categoryPrefix}-`, "")) return null;
     }
-    return map;
-  }, [permissions]);
 
-  // Process masters with permissions and category filtering
-  const allMasters = useMemo(() => {
-    return masterModules
+    const hasPermissionAccess = canSeeModule(definition, userData);
+    return {
+      ...definition,
+      // Opening a card needs both: the role grants it and the plan carries it.
+      // They are kept apart so the card can say which one is missing.
+      hasAccess: hasPermissionAccess && subscription.isSubscribed,
+      hasPermissionAccess,
+      permissionName,
+      ...subscription
+    };
+  }, [companySubscriptions, userData, matchesSearch, categoryFilter]);
+
+  const byTitle = (a, b) => a.title.localeCompare(b.title);
+
+  const allMasters = useMemo(
+    () => masterModules
+      .map((module) => enrich(module, {
+        searchText: [module.title, module.description, module.keywords, ...(module.tags || [])],
+        categoryPrefix: "master"
+      }))
+      .filter(Boolean)
+      .sort(byTitle),
+    [masterModules, enrich]
+  );
+
+  const allAppModules = useMemo(
+    () => appModuleDefinitions
+      .filter((module) => !isSuperadminCategory(module))
       .map((module) => {
-        const permission = getModulePermissionName(module);
-
-        const hasPermissionAccess = module.skipPermissionCheck || hasPermission(permission, dataContext);
-
-        const permissionId = permissionNameToIdMap[permission.toLowerCase()];
-        const result = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
-        if (result === null) return null;
-        const { subscriptionStatus, isSubscribed, isHidden } = result;
-
-        const textBucket = [
-          module.title,
-          module.description,
-          module.keywords,
-          ...(module.tags || []),
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        if (!matchesSearch(textBucket)) return null;
-
-        // hasAccess = has permission AND is subscribed (for enabling/disabling)
-        // hasPermissionAccess = whether they have the role permission (for showing correct message)
-        const enrichedModule = {
-          ...module,
-          hasAccess: hasPermissionAccess && isSubscribed, // Must have both permission and subscription to access
-          hasPermissionAccess, // Track permission separately for tooltip
-          permissionName: permission,
-          subscriptionStatus,
-          isSubscribed,
-          isHidden,
-        };
-
-        // Filter by category if not "all"
-        if (categoryFilter !== 'all') {
-          if (categoryFilter.startsWith('master-')) {
-            const filterCategory = categoryFilter.replace('master-', '');
-            if (module.category !== filterCategory) return null;
-          } else {
-            return null; // If filtering by report category, exclude masters
-          }
-        }
-
-        return enrichedModule;
+        const enriched = enrich(module, {
+          searchText: [module.title, module.description, module.keywords, ...(module.tags || [])],
+          categoryPrefix: "module"
+        });
+        return enriched && { ...enriched, onClick: () => navigate(module.navigatePath) };
       })
       .filter(Boolean)
-      .sort((a, b) => a.title.localeCompare(b.title));
-  }, [dataContext, masterModules, matchesSearch, categoryFilter, companySubscriptions, permissionNameToIdMap, userData]);
+      .sort(byTitle),
+    [appModuleDefinitions, enrich, navigate]
+  );
 
-  // Process app modules with permissions and category filtering
-  const allAppModules = useMemo(() => {
-    return appModuleDefinitions
-      .map((module) => {
-        if (isSuperadminCategory(module)) {
-          return null;
-        }
-
-        const permissionName = getModulePermissionName(module);
-        const hasPermissionAccess = module.requireSupportUser
-          ? Boolean(userData?.isSupportUser)
-          : (module.skipPermissionCheck || hasPermission(permissionName, dataContext));
-
-        const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
-        const appModuleSub = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
-        if (appModuleSub === null) return null;
-        const { subscriptionStatus, isSubscribed, isHidden } = appModuleSub;
-
-        const textBucket = [
-          module.title,
-          module.description,
-          module.keywords,
-          ...(module.tags || []),
-        ]
-          .filter(Boolean)
-          .join(" ");
-
-        if (!matchesSearch(textBucket)) return null;
-
-        const enrichedModule = {
-          ...module,
-          color: module.color,
-          hasAccess: hasPermissionAccess && isSubscribed,
-          hasPermissionAccess,
-          permissionName,
-          subscriptionStatus,
-          isSubscribed,
-          isHidden,
-          onClick: () => navigate(module.navigatePath),
-        };
-
-        if (categoryFilter !== "all") {
-          if (categoryFilter.startsWith("module-")) {
-            const filterCategory = categoryFilter.replace("module-", "");
-            if (module.category !== filterCategory) return null;
-          } else {
-            return null;
-          }
-        }
-
-        return enrichedModule;
-      })
+  const allReports = useMemo(
+    () => reportModules
+      .map((report) => enrich(report, {
+        searchText: [report.title, report.desc],
+        categoryPrefix: "report"
+      }))
       .filter(Boolean)
-      .sort((a, b) => a.title.localeCompare(b.title));
-  }, [appModuleDefinitions, categoryFilter, companySubscriptions, dataContext, matchesSearch, navigate, permissionNameToIdMap, userData]);
+      .sort(byTitle),
+    [enrich]
+  );
 
-  // Process reports with permissions and category filtering
-  const allReports = useMemo(() => {
-    return reportModules
-      .map((report) => {
-        const permissionName = getModulePermissionName(report);
-        const hasPermissionAccess = hasPermission(permissionName, dataContext);
+  const countAccess = (items) => ({
+    total: items.length,
+    accessible: items.filter((item) => item.hasAccess).length,
+    restricted: items.filter((item) => !item.hasAccess).length
+  });
 
-        const permissionId = permissionNameToIdMap[permissionName.toLowerCase()];
-        const result = resolveSubscriptionStatus(permissionId, companySubscriptions, userData);
-        if (result === null) return null;
-        const { subscriptionStatus, isSubscribed, isHidden } = result;
-
-        const textBucket = [report.title, report.desc].filter(Boolean).join(" ");
-        if (!matchesSearch(textBucket)) return null;
-
-        // hasAccess = has permission AND is subscribed (for enabling/disabling)
-        // hasPermissionAccess = whether they have the role permission (for showing correct message)
-        const enrichedReport = {
-          ...report,
-          hasAccess: hasPermissionAccess && isSubscribed, // Must have both permission and subscription to access
-          hasPermissionAccess, // Track permission separately for tooltip
-          permissionName,
-          subscriptionStatus,
-          isSubscribed,
-          isHidden,
-        };
-
-        // Filter by category if not "all"
-        if (categoryFilter !== 'all') {
-          if (categoryFilter.startsWith('report-')) {
-            const filterCategory = categoryFilter.replace('report-', '');
-            if (report.category !== filterCategory) return null;
-          } else {
-            return null; // If filtering by master category, exclude reports
-          }
-        }
-
-        return enrichedReport;
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.title.localeCompare(b.title));
-  }, [dataContext, matchesSearch, categoryFilter, companySubscriptions, permissionNameToIdMap, userData]);
-
-  // Calculate statistics
-  const masterStats = useMemo(() => {
-    const total = allMasters.length;
-    const accessible = allMasters.filter(module => module.hasAccess).length;
-    return { total, accessible, restricted: total - accessible };
-  }, [allMasters]);
-
-  const reportStats = useMemo(() => {
-    const total = allReports.length;
-    const accessible = allReports.filter(report => report.hasAccess).length;
-    return { total, accessible, restricted: total - accessible };
-  }, [allReports]);
-
-  const appModuleStats = useMemo(() => {
-    const total = allAppModules.length;
-    const accessible = allAppModules.filter(module => module.hasAccess).length;
-    return { total, accessible, restricted: total - accessible };
-  }, [allAppModules]);
+  const masterStats = useMemo(() => countAccess(allMasters), [allMasters]);
+  const reportStats = useMemo(() => countAccess(allReports), [allReports]);
+  const appModuleStats = useMemo(() => countAccess(allAppModules), [allAppModules]);
 
   // Handle clicks
   const handleReportClick = useCallback(
