@@ -140,24 +140,8 @@ const addCompanySubscription = async (companyId, subscriptionId, transaction) =>
   return link;
 };
 
-/**
- * Is `permissionName` actually subscribed for this company?
- */
-const hasSubscribedPermission = async (companyId, permissionName) => {
-  if (!companyId || !permissionName) {
-    return false;
-  }
-  const subscriptions = await getCompanySubscriptions(companyId);
-  return subscriptions.some((subscription) =>
-    (subscription.permissions || []).some(
-      (permission) => permission.name === permissionName && permission.subscriptionStatus === 'subscribed'
-    )
-  );
-};
-
 module.exports = {
   getCompanySubscriptions,
-  hasSubscribedPermission,
   getAvailableSubscriptions,
   setCompanySubscriptions,
   addCompanySubscription

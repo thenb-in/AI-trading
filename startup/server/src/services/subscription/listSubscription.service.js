@@ -3,6 +3,7 @@ const logger = require('../../../logger');
 const env = require('../../config/env');
 const { Subscription } = require('../../models');
 const { permissionsInclude, permissionStatusOf, isGlobalSubscription } = require('./helpers');
+const { formatPermission } = require('../../data_formatters/permission_formatter');
 const { fetchAvailableSubscriptionsFromWallet, hasWallet } = require('../../../interfaces/wallet/subscriptionInterface');
 
 
@@ -39,7 +40,7 @@ const getSubscriptionsAndPermissions = async (companyId) => {
     return subscriptions.map((subscription) => {
       const subscriptionJson = subscription.toJSON();
       const permissionsWithStatus = subscriptionJson.permissions.map((perm) => ({
-        ...perm,
+        ...formatPermission(perm),
         subscriptionStatus: permissionStatusOf(perm)
       }));
 

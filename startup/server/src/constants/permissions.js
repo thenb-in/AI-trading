@@ -25,34 +25,21 @@ const SYSTEM_ROLE_CONSTANTS = baseRoles.SYSTEM_ROLE_CONSTANTS;
  * @param {object} [appPermissions.reports] app report permissions (flat)
  * @returns {object} the composed MODULE / MASTER / REPORT sets and roles
  */
-const buildPermissionSets = ({ masters = {}, modules = {}, reports = {} } = {}) => {
-  const MASTER_PERMISSION_CONSTANTS = {
+const buildPermissionSets = ({ masters = {}, modules = {}, reports = {} } = {}) => ({
+  MODULE_PERMISSION_CONSTANTS: {
+    ...basePermissions.MODULE_PERMISSION_CONSTANTS,
+    ...modules
+  },
+  MASTER_PERMISSION_CONSTANTS: {
     ...basePermissions.MASTER_PERMISSION_CONSTANTS,
     ...masters
-  };
-
-  // Masters are spread in so callers can reach a master's CRUD entries off the
-  // module set (e.g. MODULE_PERMISSION_CONSTANTS.USER.update). They carry no
-  // top-level `name`, so the seeder's flat module walk skips them and picks
-  // them up from MASTER_PERMISSION_CONSTANTS instead.
-  const MODULE_PERMISSION_CONSTANTS = {
-    ...basePermissions.MODULE_PERMISSION_CONSTANTS,
-    ...MASTER_PERMISSION_CONSTANTS,
-    ...modules
-  };
-
-  const REPORT_PERMISSION_CONSTANTS = {
+  },
+  REPORT_PERMISSION_CONSTANTS: {
     ...basePermissions.REPORT_PERMISSION_CONSTANTS,
     ...reports
-  };
-
-  return {
-    MODULE_PERMISSION_CONSTANTS,
-    MASTER_PERMISSION_CONSTANTS,
-    REPORT_PERMISSION_CONSTANTS,
-    SYSTEM_ROLE_CONSTANTS
-  };
-};
+  },
+  SYSTEM_ROLE_CONSTANTS
+});
 
 module.exports = {
   ...buildPermissionSets(),  // raw framework surface (no app contributions)

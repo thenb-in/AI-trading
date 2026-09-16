@@ -1,6 +1,7 @@
 const logger = require('../../logger');
 const { Permission } = require('../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../utils/modelHelpers');
+const { formatPermissions } = require('../data_formatters/permission_formatter');
 
 const createPermission = async (name, display_name, description, type) => {
   const trimmedName = validateName(name, { fieldName: 'Permission name' });
@@ -53,15 +54,11 @@ const createMissingPermissions = async (permissions) => {
 };
 
 const getAllPermissions = async () => {
-  try {
-    const permissions = await Permission.findAll({
-      attributes: ['id', 'name', 'display_name', 'description', 'type'],
-      order: [['name', 'ASC']]
-    });
-    return permissions;
-  } catch (error) {
-    throw { status: 500, message: error.message };
-  }
+  const permissions = await Permission.findAll({
+    attributes: ['id', 'name', 'display_name', 'description', 'type'],
+    order: [['name', 'ASC']]
+  });
+  return formatPermissions(permissions);
 };
 
 const getPermissionById = async (permissionId) => {

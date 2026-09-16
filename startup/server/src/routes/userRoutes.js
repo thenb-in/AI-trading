@@ -3,9 +3,9 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/authMiddleware');
 const requirePermission = require('../middleware/requirePermission');
-const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
+const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
 
-const { USER } = MODULE_PERMISSION_CONSTANTS;
+const { USER } = MASTER_PERMISSION_CONSTANTS;
 
 router.get('/', authMiddleware.protect, userController.getAllUsers);
 router.get('/me', authMiddleware.protect, userController.getMe);

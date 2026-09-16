@@ -4,11 +4,11 @@
 // (app/server/scripts/create_new_company.js) injects its composed set; running
 // startup's own entrypoint directly seeds just the framework permissions.
 const { SYSTEM_ROLE_CONSTANTS } = require('../../src/constants/permissions');
-const { PRODUCTION_HIDDEN_PERMISSION_NAMES } = require('../../src/constants/productionHiddenSubscriptionPermissions');
+const { registerPermissionSets, declaredPermissions } = require('../../src/constants/permissionCatalog');
+const { SUBSCRIPTION_STATUS } = require('../../src/constants/subscription');
 const db = require('../../src/models'); // Sequelize models index
 const { Op } = require('sequelize');
 const logger = require('../../logger');
-const env = require('../../src/config/env');
 
 
 /**
@@ -41,93 +41,17 @@ async function createDefaultRoles(transaction) {
 
 
 /**
- * Collect all permissions from all constant sources
- * Handles nested structures and detects duplicates
- *
- * @param {object} permissionSets composed sets, as returned by
- *   `buildPermissionSets` in src/constants/permissions.js
- */
-function collectAllPermissions({
-  MODULE_PERMISSION_CONSTANTS,
-  MASTER_PERMISSION_CONSTANTS,
-  REPORT_PERMISSION_CONSTANTS
-}) {
-  const allPermissions = [];
-  const seenNames = new Map(); // Track duplicates: name -> [sources]
-
-  // Collect module permissions
-  Object.values(MODULE_PERMISSION_CONSTANTS).forEach((permission) => {
-    if (permission && permission.name) {
-      if (seenNames.has(permission.name)) {
-        seenNames.get(permission.name).push('MODULE_PERMISSION_CONSTANTS');
-      } else {
-        seenNames.set(permission.name, ['MODULE_PERMISSION_CONSTANTS']);
-        allPermissions.push({
-          name: permission.name,
-          display_name: permission.display_name,
-          description: permission.description,
-          type: 'module'
-        });
-      }
-    }
-  });
-
-  // Collect report permissions
-  Object.values(REPORT_PERMISSION_CONSTANTS).forEach((permission) => {
-    if (permission && permission.name) {
-      if (seenNames.has(permission.name)) {
-        seenNames.get(permission.name).push('REPORT_PERMISSION_CONSTANTS');
-      } else {
-        seenNames.set(permission.name, ['REPORT_PERMISSION_CONSTANTS']);
-        allPermissions.push({
-          name: permission.name,
-          display_name: permission.display_name,
-          description: permission.description,
-          type: 'report'
-        });
-      }
-    }
-  });
-
-  // Collect master permissions (nested structure)
-  Object.values(MASTER_PERMISSION_CONSTANTS).forEach((master) => {
-    if (master && typeof master === 'object') {
-      Object.values(master).forEach((permission) => {
-        if (permission && permission.name) {
-          if (seenNames.has(permission.name)) {
-            seenNames.get(permission.name).push('MASTER_PERMISSION_CONSTANTS');
-          } else {
-            seenNames.set(permission.name, ['MASTER_PERMISSION_CONSTANTS']);
-            allPermissions.push({
-              name: permission.name,
-              display_name: permission.display_name,
-              description: permission.description,
-              type: 'master'
-            });
-          }
-        }
-      });
-    }
-  });
-
-  // Log warnings for duplicates
-  seenNames.forEach((sources, name) => {
-    if (sources.length > 1) {
-      logger.warn(`Duplicate permission name detected: "${name}" found in ${sources.join(', ')}. Skipping duplicates.`);
-    }
-  });
-
-  return allPermissions;
-}
-
-/**
- * Create permissions
+ * Create every permission the app declares. The catalog holds one entry per
+ * name — it is built from the same constants, so a name declared in two sets
+ * (a module permission that is also a master's read) is one permission here.
  */
 async function createDefaultPermissions(transaction, permissionSets) {
-  const permissionsArray = collectAllPermissions(permissionSets);
-  logger.info(`Collecting ${permissionsArray.length} unique permissions from all constants...`);
+  registerPermissionSets(permissionSets);
+  const permissionsArray = declaredPermissions().map(({ name, display_name, description, type }) => ({
+    name, display_name, description, type
+  }));
+  logger.info(`Collecting ${permissionsArray.length} declared permissions...`);
 
-  // find permissions which are not already created
   const existingPermissions = await db.Permission.findAll({
     where: { name: { [Op.in]: permissionsArray.map((p) => p.name) } },
     transaction
@@ -135,22 +59,16 @@ async function createDefaultPermissions(transaction, permissionSets) {
   const existingPermissionsNames = existingPermissions.map((p) => p.name);
   const permissionsToCreate = permissionsArray.filter((p) => !existingPermissionsNames.includes(p.name));
 
-  if (permissionsToCreate.length > 0) {
-    logger.info(`Permissions to create: ${permissionsToCreate.map((p) => p.name).join(', ')}`);
-    const permissions = await db.Permission.bulkCreate(permissionsToCreate, {
-      transaction,
-      returning: true
-    });
-    logger.info(`Extra permissions created: ${permissions.map((p) => p.name).join(', ')}`);
-    // Return all permissions (existing + newly created)
-    return [...existingPermissions, ...permissions];
+  if (permissionsToCreate.length === 0) {
+    logger.info(`Permissions were already created: ${existingPermissionsNames.join(', ')}`);
+    return existingPermissions;
   }
-  logger.info(`Permissions were already created: ${existingPermissionsNames.join(', ')}`);
-  return existingPermissions;
+
+  logger.info(`Permissions to create: ${permissionsToCreate.map((p) => p.name).join(', ')}`);
+  const permissions = await db.Permission.bulkCreate(permissionsToCreate, { transaction, returning: true });
+  logger.info(`Extra permissions created: ${permissions.map((p) => p.name).join(', ')}`);
+  return [...existingPermissions, ...permissions];
 }
-
-
-
 
 
 const DEFAULT_SUBSCRIPTION_NAME = 'All';
@@ -186,18 +104,15 @@ async function createDefaultSubscription(company, permissions, transaction) {
   const linksToCreate = [];
   const linksToUpdate = [];
   for (const permission of permissions) {
-    const desiredStatus = env.isProduction && PRODUCTION_HIDDEN_PERMISSION_NAMES.has(permission.name)
-      ? 'hidden'
-      : 'subscribed';
     const existing = existingByPermissionId.get(permission.id);
     if (!existing) {
       linksToCreate.push({
         subscription_id: subscription.id,
         permission_id: permission.id,
-        status: desiredStatus
+        status: SUBSCRIPTION_STATUS.SUBSCRIBED
       });
-    } else if (existing.status !== desiredStatus) {
-      linksToUpdate.push({ link: existing, status: desiredStatus });
+    } else if (existing.status !== SUBSCRIPTION_STATUS.SUBSCRIBED) {
+      linksToUpdate.push({ link: existing, status: SUBSCRIPTION_STATUS.SUBSCRIBED });
     }
   }
 
@@ -215,10 +130,6 @@ async function createDefaultSubscription(company, permissions, transaction) {
   if (linksToCreate.length === 0 && linksToUpdate.length === 0) {
     logger.info(`"${DEFAULT_SUBSCRIPTION_NAME}" already grants all ${permissions.length} permissions`);
   }
-  if (env.isProduction && PRODUCTION_HIDDEN_PERMISSION_NAMES.size > 0) {
-    logger.info(`Production: ${PRODUCTION_HIDDEN_PERMISSION_NAMES.size} permission(s) seeded as hidden (${[...PRODUCTION_HIDDEN_PERMISSION_NAMES].join(', ')})`);
-  }
-
   // TODO: only the Subscription + permission links belong in seed data. Auto-
   // subscribing the company to "All" should move into the e2e test setup —
   // production companies should pick a subscription explicitly, not inherit
