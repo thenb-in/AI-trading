@@ -18,8 +18,10 @@ const useModalRecord = ({ isOpen, record, recordId, loadRecord, label, onClose }
   const needsLoad = Boolean(isOpen && !record && recordId !== null && recordId !== undefined);
 
   useEffect(() => {
-    setLoaded(null);
+    // Closing keeps the record: the dialog is still fading out and its form still draws it.
+    // A new load clears it, so the form waits for the record it is opened on.
     if (!needsLoad) return undefined;
+    setLoaded(null);
     // A modal closed or moved to another record before the read lands keeps what it has now.
     let isCurrent = true;
     loadRecord(recordId)

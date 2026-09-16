@@ -27,10 +27,10 @@ const MasterModalContext = createContext(null);
 // What the picker's create row had typed, for the creator's modal to fill its first field with.
 const CreatorInitialNameContext = createContext('');
 
-const EMPTY_STATE = { masterName: null, data: null, recordId: null, onSuccess: null, defaults: {} };
-
 function MasterModalProvider({ children }) {
-  const [state, setState] = useState(EMPTY_STATE);
+  // Open modals, bottom first: a creator opened from inside another (an item
+  // group from the item form) sits on top of it, and the one below keeps what was typed.
+  const [stack, setStack] = useState([]);
 
   const openMasterModal = useCallback(
     ({ masterName, data = null, recordId = null, onSuccess = null, defaults = {} }) => {
@@ -43,7 +43,7 @@ function MasterModalProvider({ children }) {
         );
         return;
       }
-      setState({ masterName, data, recordId, onSuccess, defaults });
+      setStack((open) => [...open, { masterName, data, recordId, onSuccess, defaults }]);
     },
     []
   );
@@ -64,41 +64,44 @@ function MasterModalProvider({ children }) {
     return () => bound.forEach(([n, h]) => window.removeEventListener(n, h));
   }, [openMasterModal]);
 
-  const closeMasterModal = useCallback(() => {
-    setState(EMPTY_STATE);
-  }, []);
+  // Closing a modal closes whatever was opened on top of it too.
+  const closeAt = useCallback((index) => setStack((open) => open.slice(0, index)), []);
 
-  const handleSuccess = useCallback(
-    (created) => {
-      const cb = state.onSuccess;
-      setState(EMPTY_STATE);
-      if (cb) cb(created);
-    },
-    [state.onSuccess]
-  );
+  // A modal that saved closes first, then hands the record to whoever opened it.
+  const succeedAt = useCallback((index, entry, created) => {
+    closeAt(index);
+    entry.onSuccess?.(created);
+  }, [closeAt]);
+
+  // The top modal, for code outside the modals.
+  const closeMasterModal = useCallback(() => setStack((open) => open.slice(0, -1)), []);
 
   const value = useMemo(
     () => ({ openMasterModal, closeMasterModal, hasCreator: (masterName) => Boolean(getMasterCreators()[masterName]) }),
     [openMasterModal, closeMasterModal]
   );
 
-  const Component = state.masterName ? getMasterCreators()[state.masterName] : null;
+  const creators = getMasterCreators();
 
   return (
     <MasterModalContext.Provider value={value}>
       {children}
-      {Component && (
-        <CreatorInitialNameContext.Provider value={state.defaults.initialName || ''}>
-          <Component
-            isOpen={Boolean(state.masterName)}
-            modalData={state.data}
-            recordId={state.recordId}
-            defaults={state.defaults}
-            onClose={closeMasterModal}
-            onSuccess={handleSuccess}
-          />
-        </CreatorInitialNameContext.Provider>
-      )}
+      {stack.map((entry, index) => {
+        const Component = creators[entry.masterName];
+        return (
+          // Modals only open and close at the top, so the position is a stable key.
+          <CreatorInitialNameContext.Provider key={index} value={entry.defaults.initialName || ''}>
+            <Component
+              isOpen
+              modalData={entry.data}
+              recordId={entry.recordId}
+              defaults={entry.defaults}
+              onClose={() => closeAt(index)}
+              onSuccess={(created) => succeedAt(index, entry, created)}
+            />
+          </CreatorInitialNameContext.Provider>
+        );
+      })}
     </MasterModalContext.Provider>
   );
 }
