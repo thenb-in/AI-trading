@@ -7,6 +7,7 @@ import { useDataContext } from '@context/useDataContext';
 import { masterKeyOf } from '@startup/utils/masterKey';
 import { SearchableDropdown } from './SearchableDropdown';
 import { useMasterCreator } from '../master/master_modal/MasterModalProvider';
+import { useFieldError } from './shared/formEditable';
 
 /**
  * The picker for any master record, wherever that record is picked.
@@ -61,13 +62,15 @@ function MasterSelector({
   allowEdit = true,
   disabled = false,
   required = false,
-  error,
+  error: errorProp,
+  name = '',
   renderOption,
   autoOpen = false,
   onClose,
   allowOptionsOutsideSelectBox = false,
   className = '',
 }) {
+  const error = useFieldError(name, errorProp);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -156,7 +159,7 @@ function MasterSelector({
   );
 
   return (
-    <div className={className}>
+    <div className={className} data-field={name || undefined}>
       {label ? (
         <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
@@ -231,6 +234,8 @@ MasterSelector.propTypes = {
   disabled: PropTypes.bool,
   required: PropTypes.bool,
   error: PropTypes.string,
+  /** The form field it fills (itemGroupId): a form's validate names it to show its reason here and take the user to it. */
+  name: PropTypes.string,
   /** (option) => node for its menu row. Keep it stable. */
   renderOption: PropTypes.func,
   /** Opens the menu on mount, for a field shown only while it is being edited. */

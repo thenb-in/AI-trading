@@ -6,9 +6,10 @@ import { useModalRecord } from './useModalRecord';
 import { FormFooter } from '../FormFooter';
 import { DEFAULT_WORKFLOW, amendCopy } from '../../workflow/workflow';
 import { useWorkflow } from '../../workflow/useWorkflow';
-import { FormEditableContext } from '../../fields/shared/formEditable';
+import { FormBlockedFieldContext, FormEditableContext } from '../../fields/shared/formEditable';
 
 const FormModalContext = createContext(null);
+const NOT_BLOCKED = { message: '', field: '' };
 
 /**
  * A BaseModal that is a form: header from BaseModal, the caller's fields in
@@ -17,10 +18,11 @@ const FormModalContext = createContext(null);
  *
  * Every form has a workflow: `DEFAULT_WORKFLOW` (one `saved` status) unless one
  * is given with the `record`. The footer offers its actions and runs each one's
- * default (see workflow.js); `hooks` override them per action key, and
- * `onAmend(copy)` opens the copy an amend makes. `masterName` ("UOM") names the
- * record and turns permission verbs into names (update_uom); `permissions` names
- * them outright (a BaseMaster's keys).
+ * default (see workflow.js); `hooks` override them per action key, `showWhen`
+ * narrows one to the records it suits (a job card is never cancelled on its
+ * own), and `onAmend(copy)` opens the copy an amend makes. `masterName` ("UOM")
+ * names the record and turns permission verbs into names (update_uom);
+ * `permissions` names them outright (a BaseMaster's keys).
  *
  * Base fields inside lock themselves while the record is not editable. A form
  * that needs more (a field shown only once approved) reads the workflow back
@@ -47,6 +49,7 @@ const FormModal = ({
   masterName,
   permissions,
   hooks = {},
+  showWhen = {},
   onAmend,
   onClose,
   children,
@@ -59,6 +62,10 @@ const FormModal = ({
   const [isSaving, setIsSaving] = useState(false);
   // Save shows only once a form has registered what it runs (not while the body is still loading).
   const [hasForm, setHasForm] = useState(false);
+  // Why the form cannot be saved as it stands (useFormModal's validate), and the field it
+  // names if any; an empty message when it can be saved.
+  const [blocked, setBlocked] = useState(NOT_BLOCKED);
+  const blockedReason = blocked.message;
   const [actionsSlot, setActionsSlot] = useState(null);
   const { record, isLoading } = useModalRecord({
     isOpen: modalProps.isOpen,
@@ -88,10 +95,19 @@ const FormModal = ({
   };
 
   const form = {
-    // The browser's own check of required and constrained fields, shown on the fields.
-    validate: () => formRef.current.reportValidity(),
+    // The browser's own check of required and constrained fields, then the form's own.
+    validate: () => formRef.current.reportValidity() && !blockedReason,
     submit: (args) => registrationRef.current.onSubmit(args),
     formData: () => registrationRef.current.formData,
+  };
+
+  // Takes the user to the field the reason names: scrolled into view and focused.
+  const showBlockedField = () => {
+    const target = formRef.current.querySelector(`[name="${blocked.field}"], [data-field="${blocked.field}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = target.matches('input, textarea, select') ? target : target.querySelector('input, textarea, select, [tabindex]');
+    focusable?.focus({ preventScroll: true });
   };
 
   const handleSubmit = (event) => {
@@ -99,6 +115,8 @@ const FormModal = ({
     // A form can open another FormModal (an inline creator); React carries the inner
     // submit up through the portal, and it must not save the outer form too.
     event.stopPropagation();
+    // Enter in a field submits too, past the disabled Save.
+    if (blockedReason) return undefined;
     return save(() => form.submit({}));
   };
 
@@ -114,17 +132,22 @@ const FormModal = ({
           workflow={recordWorkflow}
           record={record}
           hooks={hooks}
+          showWhen={showWhen}
           onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
           run={save}
           isSaving={isSaving}
           hasForm={hasForm}
+          blockedReason={blockedReason}
+          blockedField={blocked.field}
+          onShowBlockedField={showBlockedField}
           actionsRef={setActionsSlot}
           submitLabel={isEditMode ? updateLabel : createLabel}
           savingLabel={savingLabel}
         />
       }
     >
-      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, actionsSlot, workflow: recordWorkflow }}>
+      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
+        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
         <FormEditableContext.Provider value={recordWorkflow.isEditable}>
           <form ref={formRef} id={formId} onSubmit={handleSubmit} className="space-y-4">
             {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
@@ -132,6 +155,7 @@ const FormModal = ({
             {!isLoading && typeof children !== 'function' ? children : null}
           </form>
         </FormEditableContext.Provider>
+        </FormBlockedFieldContext.Provider>
       </FormModalContext.Provider>
     </BaseModal>
   );
@@ -154,6 +178,8 @@ FormModal.propTypes = {
   permissions: PropTypes.objectOf(PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)])),
   /** { [action key]: ({ record, formData, to }) => ..., isEditable: ({ status, record, isEditable }) => boolean } */
   hooks: PropTypes.objectOf(PropTypes.func),
+  /** { [action key]: (record) => boolean } — offers an action only on the records it suits, as on a list. */
+  showWhen: PropTypes.objectOf(PropTypes.func),
   /** Opens the copy an amend makes; without it (and without an amend hook) Amend is not offered. */
   onAmend: PropTypes.func,
   onClose: PropTypes.func.isRequired,
@@ -165,12 +191,20 @@ FormModal.propTypes = {
  * Registers the form with its FormModal: `onSubmit({ to, done })` saves it —
  * `to` is the status to save with when a workflow action runs it (Send for
  * Approval, Approve...), left out for Save; `done` words the toast
- * ("approved"). `formData` is handed to the screen's workflow hooks. Returns
- * `save(run)`, which runs a form's own action under the footer spinner,
- * `isSaving`, and `workflow` — where the record stands (useWorkflow's result).
+ * ("approved"). `formData` is handed to the screen's workflow hooks.
+ * `validate()` is required: it says why the form cannot be saved as it stands
+ * ("Name is required", a line short of stock), or '' when it can. It returns
+ * the message, or `{ message, field }` where `field` is the input's `name` (or
+ * an element's `data-field`): the reason then takes the user to that field, and
+ * a base field of that name shows the message. While it has a reason, Save is
+ * disabled and shows it before anyone presses it, and no action saves the form,
+ * so a form's checks live here rather than in its submit handler.
+ * Returns `save(run)`, which runs a
+ * form's own action under the footer spinner, `isSaving`, and `workflow` —
+ * where the record stands (useWorkflow's result).
  */
-const useFormModal = (onSubmit, formData) => {
-  const { registrationRef, save, isSaving, setHasForm, workflow } = useContext(FormModalContext);
+const useFormModal = (onSubmit, formData, validate) => {
+  const { registrationRef, save, isSaving, setHasForm, setBlocked, workflow } = useContext(FormModalContext);
   // Before the registration below, so the footer's first render already sees them.
   useLayoutEffect(() => {
     registrationRef.current = { onSubmit, formData };
@@ -179,6 +213,13 @@ const useFormModal = (onSubmit, formData) => {
     setHasForm(true);
     return () => setHasForm(false);
   }, [setHasForm]);
+  const reason = validate() || '';
+  const message = typeof reason === 'string' ? reason : reason.message;
+  const field = typeof reason === 'string' ? '' : reason.field || '';
+  useLayoutEffect(() => {
+    setBlocked({ message, field });
+    return () => setBlocked(NOT_BLOCKED);
+  }, [setBlocked, message, field]);
   return { save, isSaving, workflow };
 };
 

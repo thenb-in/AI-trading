@@ -6,14 +6,18 @@ import { RuleNameSection } from './form/RuleNameSection';
 import { RecipientSection } from './form/RecipientSection';
 import { ChannelSection } from './form/channel/ChannelSection';
 
+// Nothing to check beyond the browser's required fields.
+const validate = () => '';
 
-const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
+const NotificationRuleMasterForm =({ isOpen, onClose, initialData, onSaved }) => {
   const form = useNotificationRuleForm({ isOpen, initialData, onSaved, onClose });
-  useFormModal(form.submit);
+  useFormModal(form.submit, form.rule, validate);
 
   if (!isOpen) {
     return null;
   }
+
+  const toggleActive = () => form.patchRule({ is_active: !form.rule.is_active });
 
   return (
     <>
@@ -22,7 +26,7 @@ const NotificationRuleMasterForm = ({ isOpen, onClose, initialData, onSaved }) =
           type="button"
           role="switch"
           aria-checked={Boolean(form.rule.is_active)}
-          onClick={() => form.patchRule({ is_active: !form.rule.is_active })}
+          onClick={toggleActive}
           className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
             form.rule.is_active
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700'

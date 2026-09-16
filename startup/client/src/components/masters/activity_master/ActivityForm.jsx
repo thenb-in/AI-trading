@@ -23,6 +23,9 @@ const ActivityForm = ({ onClose, onSuccess }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Nothing to check beyond the browser's required fields.
+  const validate = () => '';
+
   useFormModal(async () => {
     try {
       await activityService.createActivity(
@@ -38,7 +41,7 @@ const ActivityForm = ({ onClose, onSuccess }) => {
     } catch (error) {
       toast.error(error?.error || `Failed to create activity log for ${formData.head}`);
     }
-  });
+  }, formData, validate);
 
   return (
     <>

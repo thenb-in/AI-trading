@@ -6,7 +6,7 @@ import { ClearButton } from './ClearButton';
 import { getBaseInputClasses } from './getBaseInputClasses';
 import { emitChange } from './emitChange';
 import { basicSanitize } from '../utils/sanitize';
-import { useFieldDisabled } from './formEditable';
+import { useFieldDisabled, useFieldError } from './formEditable';
 
 /**
  * Shared input/textarea renderer with optional left icon + optional clear button.
@@ -31,7 +31,7 @@ function BaseInputField({
   placeholder = '',
   label = '',
   hint = '',
-  error = '',
+  error: errorProp = '',
   disabled: disabledProp,
   readOnly = false,
   required = false,
@@ -51,6 +51,7 @@ function BaseInputField({
   ...restProps
 }) {
   const disabled = useFieldDisabled(disabledProp);
+  const error = useFieldError(name, errorProp);
   const inputId = id || name;
   // `icon={false}` drops the type's own icon too, for compact cells.
   const leftIcon = icon === false ? null : icon || defaultIcon;

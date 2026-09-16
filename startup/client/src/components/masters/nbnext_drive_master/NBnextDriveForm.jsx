@@ -21,11 +21,10 @@ const NBnextDriveForm = ({ onClose, onSuccess }) => {
     setReference((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Why the upload can't run yet; the footer shows it beside a disabled button.
+  const validate = () => (selectedFiles.length === 0 ? 'Select at least one file to upload to NBnext Drive.' : '');
+
   useFormModal(async () => {
-    if (selectedFiles.length === 0) {
-      toast.error('Please select at least one file to upload');
-      return;
-    }
     try {
       for (const file of selectedFiles) {
         await nbnextDriveService.uploadFile(file, reference.objectName || null, reference.objectId || null);
@@ -36,7 +35,7 @@ const NBnextDriveForm = ({ onClose, onSuccess }) => {
     } catch (error) {
       toast.error(error?.response?.data?.error || `Failed to upload ${selectedFiles.length} file(s) to NBnext Drive`);
     }
-  });
+  }, { selectedFiles, reference }, validate);
 
   return (
     <>

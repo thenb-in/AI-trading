@@ -7,7 +7,7 @@ import { getBaseInputClasses } from './shared/getBaseInputClasses';
 import { emitChange } from './shared/emitChange';
 import { commonFieldPropTypes } from './shared/fieldPropTypes';
 import { parseEmailList, isValidEmail, joinEmailList } from './utils/emailList';
-import { useFieldDisabled } from './shared/formEditable';
+import { useFieldDisabled, useFieldError } from './shared/formEditable';
 
 /**
  * Multi-address email field. Type an address and press Enter (or comma, or
@@ -21,7 +21,7 @@ function EmailListTypeField({
   onChange,
   label = '',
   placeholder = 'Enter email and press Enter',
-  error = '',
+  error: errorProp = '',
   disabled: disabledProp,
   required = false,
   className = '',
@@ -30,6 +30,7 @@ function EmailListTypeField({
   addButtonLabel = 'Add'
 }) {
   const disabled = useFieldDisabled(disabledProp);
+  const error = useFieldError(name, errorProp);
   const inputId = id || name;
   const errorId = error ? `${inputId}-error` : undefined;
   const [draft, setDraft] = useState('');
