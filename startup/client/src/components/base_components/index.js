@@ -1,4 +1,5 @@
 // Base Master Components - Base functionality for all masters
+// we don't have fields imported or exported here. fields are to be used directly from their respective paths.
 export { MasterHeader } from './master/master_header/MasterHeader.jsx';
 export { useMasterHeader } from './master/master_header/useMasterHeader';
 export { MasterTable } from './master/master_table/MasterTable.jsx';
@@ -11,10 +12,6 @@ export { BaseFilter } from '../base_filter/BaseFilter';
 export { MasterSearch } from './master/MasterSearch';
 export { MasterAdvancedFilter } from './master/MasterAdvancedFilter';
 export { MasterModalActions } from './master/MasterModalActions';
-export { RichTextEditorField } from './fields/RichTextEditorField.jsx';
-export { AutocompleteTypeField } from './fields/AutocompleteTypeField.jsx';
-export { TimeTypeField } from './fields/TimeTypeField.jsx';
-export { EmailListTypeField } from './fields/EmailListTypeField.jsx';
 export { MasterModalProvider, useMasterCreator } from './master/master_modal/MasterModalProvider.jsx';
 export { ShortcutHint } from './ShortcutHint.jsx';
 export { LockActionButton } from './LockActionButton.jsx';
