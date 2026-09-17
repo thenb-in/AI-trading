@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Plus, RefreshCw, Download, Upload, FileText } from 'lucide-react';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { exportMaster, importMaster } from '@utils/masterExportimport.js';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { useShortcut } from '@startup/hooks/useShortcut';
@@ -60,7 +60,7 @@ const useMasterHeader = ({
     await importMaster({ event: e, api: importApi, setImporting: setIsImporting });
   };
 
-  const canAdd = onAdd && (!permissionKey || hasPermission(userData, permissionKey));
+  const canAdd = onAdd && (!permissionKey || hasPermission(permissionKey, userData));
 
   // Header shortcuts stand down while a dialog is open (see useShortcut), so
   // Alt+N can't reset a record the user is editing in the modal.

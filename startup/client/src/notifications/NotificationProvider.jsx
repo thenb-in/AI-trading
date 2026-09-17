@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { useNavigate } from "react-router-dom";
 import { useDataContext } from "@context/useDataContext";
-import { hasPermission } from "@utils/hasPermission";
+import { hasPermission } from "@startup/hooks/hasPermission";
 import { VIEW_NOTIFICATION_PERMISSION } from "../constants/notifications";
 import { useToast } from "../components/toast";
 import { NotificationContext } from "./NotificationContext";
@@ -32,7 +32,7 @@ function isViewingLinkTarget(link) {
 
 function NotificationProvider({ children }) {
   const { userData } = useDataContext();
-  const canViewNotifications = hasPermission(userData, VIEW_NOTIFICATION_PERMISSION);
+  const canViewNotifications = hasPermission(VIEW_NOTIFICATION_PERMISSION, userData);
   const { showToast } = useToast();
   const navigate = useNavigate();
   const activeCompanyId = userData?.companyId || userData?.company?.id || null;

@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { toast } from 'react-toastify';
 import { useDataContext } from '@startup/context/useDataContext';
-import { hasPermission } from '@startup/utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
 import { actionsOf, permissionFor, statusOf } from './workflow';
 
@@ -43,7 +43,7 @@ const useWorkflowRowActions = ({
   };
 
   return actionsOf(workflow)
-    .filter((action) => hooks[action.key] && hasPermission(userData, permissionFor(action.permission, masterName, permissions)))
+    .filter((action) => hooks[action.key] && hasPermission(permissionFor(action.permission, masterName, permissions), userData))
     .map((action) => ({
       label: action.label,
       icon: createElement(action.icon, { className: 'w-4 h-4' }),

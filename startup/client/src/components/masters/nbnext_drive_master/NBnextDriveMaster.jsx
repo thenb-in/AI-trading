@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import { Download } from 'lucide-react';
 import { BaseMaster } from '@startup/components/base_components/master';
 import { MASTERS } from '@startup/constants/masters';
-import { useDataContext } from '@context/useDataContext';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { nbnextDriveService } from '@/services/nbnextDriveService';
 import { NBnextDriveForm } from './NBnextDriveForm';
 import { NBnextDriveDetails } from './NBnextDriveDetails';
@@ -29,9 +28,8 @@ const deleteFile = async (id) => ({ data: await nbnextDriveService.deleteFile(id
 const extractResponse = (response) => ({ rows: response.data, columns: response.columns });
 
 const NBnextDriveMaster = () => {
-  const { userData } = useDataContext();
-  const scope = hasPermission(userData, 'read_nbnext_drive') ? 'all files' : 'your personal files';
-  const canDownload = hasPermission(userData, 'download_nbnext_drive');
+  const scope = hasPermission('read_nbnext_drive') ? 'all files' : 'your personal files';
+  const canDownload = hasPermission('download_nbnext_drive');
 
   const extraActions = useCallback(
     () => [

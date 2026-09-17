@@ -1,5 +1,5 @@
 import { useDataContext } from '@startup/context/useDataContext';
-import { hasPermission } from '@startup/utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { actionsOf, permissionFor, statusOf } from './workflow';
 
 /**
@@ -17,7 +17,7 @@ import { actionsOf, permissionFor, statusOf } from './workflow';
 const useWorkflow = ({ workflow, record, masterName, permissions = {}, hooks = {}, isNew = false }) => {
   const { userData } = useDataContext();
   const status = statusOf(workflow, record?.[workflow.statusKey]);
-  const can = (verb) => hasPermission(userData, permissionFor(verb, masterName, permissions));
+  const can = (verb) => hasPermission(permissionFor(verb, masterName, permissions), userData);
   const isOffered = (action) => (isNew
     ? Boolean(action.createPermission) && can(action.createPermission)
     : action.from.includes(status) && can(action.permission));

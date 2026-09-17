@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { useDataContext } from "@context/useDataContext";
-import { hasPermission } from "@utils/hasPermission";
+import { hasPermission } from "@startup/hooks/hasPermission";
 import { VIEW_NOTIFICATION_PERMISSION } from "../constants/notifications";
 import { useNotifications } from "./hooks/useNotifications";
 import { NotificationGroups } from "./components/NotificationGroups";
@@ -15,8 +14,7 @@ const FILTERS = [
 ];
 
 function NotificationsPage() {
-  const { userData } = useDataContext();
-  const canViewNotifications = hasPermission(userData, VIEW_NOTIFICATION_PERMISSION);
+  const canViewNotifications = hasPermission(VIEW_NOTIFICATION_PERMISSION);
   const {
     items,
     unreadCount,

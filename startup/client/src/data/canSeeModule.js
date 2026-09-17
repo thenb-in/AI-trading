@@ -1,4 +1,4 @@
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { getModulePermissionName } from './getModulePermissionName';
 
 /**
@@ -14,7 +14,7 @@ const canSeeModule = (definition, userData) => {
   if (definition.requireSupportUser) {
     return Boolean(userData?.isSupportUser);
   }
-  return hasPermission(userData, getModulePermissionName(definition));
+  return hasPermission(getModulePermissionName(definition), userData);
 };
 
 export { canSeeModule };

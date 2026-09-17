@@ -9,7 +9,7 @@ import { useMasterCreator } from '@startup/components/base_components/master/mas
 import { PermissionLegend } from './components/PermissionLegend';
 import { MASTERS } from '@startup/constants/masters';
 import { organizePermissions, hasNoOrganizedPermissions, isUndeclaredPermission } from './utils/permissionUtils';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { useDataContext } from '@context/useDataContext';
   
 function RolePermissionsManagement() {
@@ -41,7 +41,7 @@ function RolePermissionsManagement() {
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
   // The trash icon only exists where there is something to clear up, so the
   // legend only explains it then.
-  const canDeleteUndeclared = hasPermission(userData, 'delete_permission')
+  const canDeleteUndeclared = hasPermission('delete_permission', userData)
     && permissions.some(isUndeclaredPermission);
 
   if (loading) {

@@ -11,7 +11,7 @@ import {
 } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
 import { CategoryCard, SelectAllButton } from './CategoryCard';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS, UNDECLARED_PERMISSION_STYLES } from '../../permissionCategoryStyles';
 
 function PermissionCategorySection({
@@ -57,7 +57,7 @@ function PermissionCategorySection({
     }
   }, [onDeletePermission]);
 
-  const canDeletePermission = hasPermission(userData, 'delete_permission');
+  const canDeletePermission = hasPermission('delete_permission', userData);
 
   // Validate permissions based on category type
   let hasPermissions = false;

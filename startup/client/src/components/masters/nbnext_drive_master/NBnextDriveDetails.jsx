@@ -1,15 +1,13 @@
 import PropTypes from 'prop-types';
 import { Download } from 'lucide-react';
-import { useDataContext } from '@context/useDataContext';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { FileViewer } from '@/components/common/FileViewer';
 import { MasterRecordDetails } from '@startup/components/base_components/master/MasterRecordDetails';
 import { downloadDriveFile } from './downloadDriveFile';
 
 /** A Drive file opened from the grid: what it is, and the file itself. */
 const NBnextDriveDetails = ({ initialData, columns }) => {
-  const { userData } = useDataContext();
-  const canDownload = hasPermission(userData, 'download_nbnext_drive');
+  const canDownload = hasPermission('download_nbnext_drive');
   const handleDownload = () => downloadDriveFile(initialData);
 
   return (

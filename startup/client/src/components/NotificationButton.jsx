@@ -1,16 +1,14 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import { Bell } from "lucide-react";
 import PropTypes from "prop-types";
-import { useDataContext } from "@context/useDataContext";
-import { hasPermission } from "@utils/hasPermission";
+import { hasPermission } from "@startup/hooks/hasPermission";
 import { VIEW_NOTIFICATION_PERMISSION } from "../constants/notifications";
 import { NotificationPanel } from "../notifications/NotificationPanel";
 import { useNotifications } from "../notifications/hooks/useNotifications";
 import { useToast } from "./toast";
 
 function NotificationButton({ collapsed }) {
-  const { userData } = useDataContext();
-  const canViewNotifications = hasPermission(userData, VIEW_NOTIFICATION_PERMISSION);
+  const canViewNotifications = hasPermission(VIEW_NOTIFICATION_PERMISSION);
   const [open, setOpen] = useState(false);
   const buttonRef = useRef(null);
   const wrapperRef = useRef(null);

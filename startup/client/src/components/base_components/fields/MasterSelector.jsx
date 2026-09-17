@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { useDataContext } from '@context/useDataContext';
 import { masterKeyOf } from '@startup/utils/masterKey';
 import { SearchableDropdown } from './SearchableDropdown';
@@ -126,7 +126,7 @@ function MasterSelector({
   const { userData } = useDataContext();
   // Nothing would open without a creator, so don't offer the row at all.
   const isCreatable = hasCreator(masterName);
-  const canCreate = allowCreate && isCreatable && hasPermission(userData, `create_${masterKey}`);
+  const canCreate = allowCreate && isCreatable && hasPermission(`create_${masterKey}`, userData);
 
   // Reload before selecting, so the new record is in the list by the time it
   // is the value — a value with no matching option renders as an empty field.
@@ -151,7 +151,7 @@ function MasterSelector({
 
   // Typed text has no record to edit, so only a listed pick gets the button.
   const pickedRecord = rowsByValue.get(selectedValues);
-  const canEdit = allowEdit && isCreatable && Boolean(pickedRecord) && hasPermission(userData, `read_${masterKey}`);
+  const canEdit = allowEdit && isCreatable && Boolean(pickedRecord) && hasPermission(`read_${masterKey}`, userData);
 
   const openEditor = useCallback(
     () => openMasterModal({ masterName, recordId: pickedRecord.id, onSuccess: load }),

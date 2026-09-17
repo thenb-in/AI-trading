@@ -12,7 +12,7 @@ import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { DEFAULT_WORKFLOW, amendCopy, statusOf } from '../workflow/workflow';
@@ -134,18 +134,18 @@ const BaseMaster = ({
   const { handleVisibleRowsChange, recordNav } = useRecordNav(selectedRow, setSelectedRow);
 
   // A master with no read permission (e.g. one over the browser's own cache) is open to all.
-  const canRead = !permissionKeys.read || hasPermission(userData, permissionKeys.read);
+  const canRead = !permissionKeys.read || hasPermission(permissionKeys.read, userData);
   // Add needs something to open and the permission to create with. A master
   // that declares no create permission offers no Add — a missing declaration is
   // not a reason to let everyone add.
   const canAdd = Boolean(FormComponent)
     && Boolean(permissionKeys.create)
-    && hasPermission(userData, permissionKeys.create);
-  const canDelete = permissionKeys.delete && hasPermission(userData, permissionKeys.delete);
+    && hasPermission(permissionKeys.create, userData);
+  const canDelete = permissionKeys.delete && hasPermission(permissionKeys.delete, userData);
 
   const canImport =
-    hasPermission(userData, permissionKeys.create) ||
-    (permissionKeys.update ? hasPermission(userData, permissionKeys.update) : false);
+    hasPermission(permissionKeys.create, userData) ||
+    (permissionKeys.update ? hasPermission(permissionKeys.update, userData) : false);
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
   const fetchRows = useCallback(async (filterOverride, { pageToLoad = 1, append = false, silent = false } = {}) => {

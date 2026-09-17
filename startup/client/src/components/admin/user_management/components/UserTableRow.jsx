@@ -5,8 +5,7 @@ import { toast } from 'react-toastify';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe, ExternalLink } from 'lucide-react';
 import { RoleBadge } from './RoleBadge';
 import { EditFieldModal } from './EditFieldModal';
-import { useDataContext } from '@context/useDataContext';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { RoleSelector } from '@startup/components/admin/RoleSelector';
 
@@ -31,8 +30,7 @@ const UserTableRow = ({
   walletUserManagementUrl,
   extraColumns = []
 }) => {
-  const dataContext = useDataContext();
-  const canUpdateUser = hasPermission(dataContext.userData, 'update_user');
+  const canUpdateUser = hasPermission('update_user');
   const [editingRole, setEditingRole] = useState(false);
   const [editingDevice, setEditingDevice] = useState(false);
   // Which identity field (name | username | email | phone) is being edited in the modal, or null.
@@ -48,7 +46,7 @@ const UserTableRow = ({
   const deviceRef = useRef(null);
 
   const isSelected = selectedUsers?.includes(user.id);
-  const canUpdateRole = hasPermission(dataContext.userData, 'update_role');
+  const canUpdateRole = hasPermission('update_role');
   const fieldEditClass = canUpdateUser
     ? 'cursor-pointer hover:text-blue-600 hover:underline'
     : 'cursor-default';
