@@ -122,7 +122,7 @@ const refPropType = PropTypes.shape({ current: PropTypes.any });
 
 DropdownField.propTypes = {
   isMuted: PropTypes.bool.isRequired,
-  wrapLabel: PropTypes.bool.isRequired,
+  wrapLabel: PropTypes.bool,
   triggerRef: refPropType.isRequired,
   inputRef: refPropType.isRequired,
   onFieldClick: PropTypes.func.isRequired,
