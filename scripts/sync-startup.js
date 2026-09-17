@@ -8,8 +8,15 @@
 // but also runnable by hand for backfill / debugging.
 //
 // File classification (see FRAMEWORK_PREFIXES + NEVER_PICK below):
-//   * FRAMEWORK — `startup/`, `nucleus/`, `lints/`, `deploy/`, `.github/`,
-//     `.vscode/`, `.husky/`. Always picked.
+//   * FRAMEWORK — `startup/`, `nucleus/`, `report_runner/`, `lints/`,
+//     `deploy/`, `.github/`, `.vscode/`, `.husky/`. Always picked, and
+//     anchors the commit (see Rules below).
+//   * DB SCRIPT — `db-scripts/startup/`. Always picked, but only on a
+//     commit that also has a FRAMEWORK change; it never anchors a commit
+//     by itself. A commit that touches only `db-scripts/startup/` is
+//     skipped like any other commit with no framework change — a schema
+//     script for the framework only makes sense synced alongside the
+//     framework change it belongs to.
 //   * NEVER PICK — `tests/`, any `package.json`, any `package-lock.json`.
 //     Always skipped: tests are mostly app-specific, and pkg manifests +
 //     lockfiles tie the app's identity (name, version, deps) to its repo
@@ -20,11 +27,14 @@
 // Rules:
 //   * For each source commit that touches at least one FRAMEWORK file:
 //       - Apply every FRAMEWORK change.
+//       - Apply every DB SCRIPT change (riding along with the framework
+//         change in the same commit).
 //       - Apply each APP change only when the target already has the file.
 //       - Drop every NEVER-PICK change silently (logged for visibility).
 //       - On any content conflict, prefer the source's post-commit blob
 //         (overwrite the target file with what the source has).
-//   * Skip commits with no FRAMEWORK file changes.
+//   * Skip commits with no FRAMEWORK file changes (DB SCRIPT changes alone
+//     don't count).
 //   * Skip merge commits (their diffs are already covered by their
 //     non-merge parents).
 //   * Renames are atomic: an APP rename is picked when the OLD path
@@ -84,6 +94,12 @@ const FRAMEWORK_PREFIXES = [
   '.vscode/',
   '.husky/',
 ];
+
+// Schema scripts for framework tables (users, roles, activity, …). Always
+// picked, but — unlike FRAMEWORK_PREFIXES — never anchors a commit on its
+// own; see classifyPath()/syncCommit() below. App scripts stay in
+// db-scripts/ root and follow the pick-if-exists rule.
+const DB_SCRIPT_PREFIXES = ['db-scripts/'];
 
 // Paths we never sync, even if they'd otherwise qualify. Tests are
 // largely app-specific; pkg manifests + lockfiles tie name/version/deps
@@ -182,10 +198,8 @@ function getCommitFiles(sourceRepo, sha) {
   return items.filter((f) => f.path);
 }
 
-function isFrameworkPath(p) {
-  return FRAMEWORK_PREFIXES.some(
-    (pfx) => p === pfx.slice(0, -1) || p.startsWith(pfx)
-  );
+function matchesPrefix(p, prefixes) {
+  return prefixes.some((pfx) => p === pfx.slice(0, -1) || p.startsWith(pfx));
 }
 
 function isNeverPickPath(p) {
@@ -194,7 +208,8 @@ function isNeverPickPath(p) {
 
 function classifyPath(p) {
   if (isNeverPickPath(p)) return 'excluded';
-  if (isFrameworkPath(p)) return 'framework';
+  if (matchesPrefix(p, FRAMEWORK_PREFIXES)) return 'framework';
+  if (matchesPrefix(p, DB_SCRIPT_PREFIXES)) return 'dbScript';
   return 'app';
 }
 
@@ -301,6 +316,11 @@ function syncCommit(sourceRepo, targetRepo, sha) {
       cleanPicks: [],   // [{ path, status, oldPath? }]
       forcePicks: [],
     },
+    dbScript: {
+      total: 0,
+      cleanPicks: [],   // rides along with a framework change in the same commit
+      forcePicks: [],
+    },
     app: {
       total: 0,
       picks: [],        // file existed in target, change applied
@@ -321,23 +341,25 @@ function syncCommit(sourceRepo, targetRepo, sha) {
   // or excluded (skip even if it exists). For rename/copy entries the
   // "primary" path used for classification is the NEW path, since that's
   // where the file ends up in the target.
-  const buckets = { framework: [], app: [], excluded: [] };
+  const buckets = { framework: [], dbScript: [], app: [], excluded: [] };
   for (const f of files) buckets[classifyPath(f.path)].push(f);
 
   if (buckets.framework.length === 0) {
     // Commit-level skip: nothing to anchor the commit on the framework
-    // side. We don't try to apply app or excluded edits in this case
-    // (without a framework change the commit doesn't belong here).
+    // side. We don't try to apply dbScript, app or excluded edits in this
+    // case (without a framework change the commit doesn't belong here —
+    // a db-scripts/startup/ change alone doesn't anchor it either).
     // Reason includes the per-bucket counts so the log is honest about
     // what we looked at vs. what we ignored.
     result.skipped = true;
     result.skipReason =
-      `no framework file changes ` +
-      `(app: ${buckets.app.length}, excluded: ${buckets.excluded.length} ignored)`;
+      `no framework file changes (dbScript: ${buckets.dbScript.length}, ` +
+      `app: ${buckets.app.length}, excluded: ${buckets.excluded.length} ignored)`;
     return result;
   }
 
   result.framework.total = buckets.framework.length;
+  result.dbScript.total = buckets.dbScript.length;
   result.app.total = buckets.app.length;
   result.excluded.total = buckets.excluded.length;
   for (const f of buckets.excluded) {
@@ -354,6 +376,16 @@ function syncCommit(sourceRepo, targetRepo, sha) {
       const cls = applyFileAndClassify(sourceRepo, targetRepo, sha, f);
       const bucket = cls === 'force' ? 'forcePicks' : 'cleanPicks';
       result.framework[bucket].push({
+        path: f.path,
+        oldPath: f.oldPath,
+        status: f.status,
+      });
+    }
+
+    for (const f of buckets.dbScript) {
+      const cls = applyFileAndClassify(sourceRepo, targetRepo, sha, f);
+      const bucket = cls === 'force' ? 'forcePicks' : 'cleanPicks';
+      result.dbScript[bucket].push({
         path: f.path,
         oldPath: f.oldPath,
         status: f.status,
@@ -436,6 +468,8 @@ function summarize(results) {
     failed: 0,
     frameworkCleanPicks: 0,
     frameworkForcePicks: 0,
+    dbScriptCleanPicks: 0,
+    dbScriptForcePicks: 0,
     appPicks: 0,
     appNonPicks: 0,
     excluded: 0,
@@ -447,6 +481,10 @@ function summarize(results) {
     if (c.framework) {
       sum.frameworkCleanPicks += c.framework.cleanPicks.length;
       sum.frameworkForcePicks += c.framework.forcePicks.length;
+    }
+    if (c.dbScript) {
+      sum.dbScriptCleanPicks += c.dbScript.cleanPicks.length;
+      sum.dbScriptForcePicks += c.dbScript.forcePicks.length;
     }
     if (c.app) {
       sum.appPicks += c.app.picks.length;
@@ -469,8 +507,10 @@ function renderMarkdown(results) {
   lines.push(`- **Target branch:** \`${results.targetBranch}\``);
   lines.push('');
   lines.push(
-    '> **Framework paths** (always picked): ' +
+    '> **Framework paths** (always picked, anchors the commit): ' +
     FRAMEWORK_PREFIXES.map((p) => `\`${p}\``).join(', ') + '.  \n' +
+    '> **DB script paths** (always picked, but only on a commit that also has a framework ' +
+    'change): ' + DB_SCRIPT_PREFIXES.map((p) => `\`${p}\``).join(', ') + '.  \n' +
     '> **Never-pick** (always skipped): `tests/`, all `package.json`, all `package-lock.json`.  \n' +
     '> **App paths** (everything else): picked only when the file already exists in the target.'
   );
@@ -485,6 +525,8 @@ function renderMarkdown(results) {
   lines.push(`| Commits failed | ${sum.failed} |`);
   lines.push(`| Framework clean picks (files) | ${sum.frameworkCleanPicks} |`);
   lines.push(`| Framework force picks (files) | ${sum.frameworkForcePicks} |`);
+  lines.push(`| DB script clean picks (files) | ${sum.dbScriptCleanPicks} |`);
+  lines.push(`| DB script force picks (files) | ${sum.dbScriptForcePicks} |`);
   lines.push(`| App picks (files) | ${sum.appPicks} |`);
   lines.push(`| App non-picks (files) | ${sum.appNonPicks} |`);
   lines.push(`| Excluded never-pick (files) | ${sum.excluded} |`);
@@ -546,6 +588,23 @@ function renderMarkdown(results) {
           for (const f of c.framework.forcePicks) lines.push(`  - ${f.status} ${fmt(f)}`);
         }
       }
+      if (c.dbScript && c.dbScript.total > 0) {
+        lines.push('');
+        lines.push(
+          `**db script** files: ${c.dbScript.total} ` +
+          `(clean: ${c.dbScript.cleanPicks.length}, force: ${c.dbScript.forcePicks.length})`
+        );
+        if (c.dbScript.cleanPicks.length) {
+          lines.push('');
+          lines.push('_clean picks:_');
+          for (const f of c.dbScript.cleanPicks) lines.push(`  - ${f.status} ${fmt(f)}`);
+        }
+        if (c.dbScript.forcePicks.length) {
+          lines.push('');
+          lines.push('_force picks (target had divergent content; overwritten):_');
+          for (const f of c.dbScript.forcePicks) lines.push(`  - ${f.status} ${fmt(f)}`);
+        }
+      }
       if (c.app) {
         lines.push('');
         lines.push(
@@ -597,6 +656,8 @@ function renderText(results) {
     ['Commits failed', sum.failed],
     ['Framework clean picks (files)', sum.frameworkCleanPicks],
     ['Framework force picks (files)', sum.frameworkForcePicks],
+    ['DB script clean picks (files)', sum.dbScriptCleanPicks],
+    ['DB script force picks (files)', sum.dbScriptForcePicks],
     ['App picks (files)', sum.appPicks],
     ['App non-picks (files)', sum.appNonPicks],
     ['Excluded never-pick (files)', sum.excluded],
@@ -609,6 +670,7 @@ function renderText(results) {
   }
   out.push(headTable.toString());
   out.push(`framework prefixes: ${FRAMEWORK_PREFIXES.join(', ')}`);
+  out.push(`db script prefixes (need a framework change in the same commit): ${DB_SCRIPT_PREFIXES.join(', ')}`);
   out.push('never-pick:         tests/, **/package.json, **/package-lock.json');
   out.push('');
 
@@ -628,6 +690,14 @@ function renderText(results) {
         );
         for (const f of c.framework.cleanPicks) out.push(`      [clean] ${f.status} ${fmt(f)}`);
         for (const f of c.framework.forcePicks) out.push(`      [force] ${f.status} ${fmt(f)}`);
+      }
+      if (c.dbScript && c.dbScript.total > 0) {
+        out.push(
+          `    dbScript:  total=${c.dbScript.total} ` +
+          `clean=${c.dbScript.cleanPicks.length} force=${c.dbScript.forcePicks.length}`
+        );
+        for (const f of c.dbScript.cleanPicks) out.push(`      [clean] ${f.status} ${fmt(f)}`);
+        for (const f of c.dbScript.forcePicks) out.push(`      [force] ${f.status} ${fmt(f)}`);
       }
       if (c.app) {
         out.push(

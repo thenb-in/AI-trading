@@ -1,6 +1,5 @@
+import { plural } from '@utils/formattingUtils';
 import { RECIPIENT_MODE } from '../constants';
-
-const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`;
 
 const audienceSummary = (recipients = {}, countFor) => {
   const parts = [

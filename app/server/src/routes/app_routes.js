@@ -10,8 +10,13 @@
 const logger = require('@startup/logger');
 const reportRoutes = require('../routes/reportRoutes');
 const layoutRoutes = require('@startup/src/routes/layoutRoutes');
+const registerUndoables = require('../undo/registerUndoables');
 
 const appRoutes = (app, prefix) => {
+  // Tell the framework which masters' creations can be undone, and with which
+  // delete. Done alongside route wiring because it is the same decision.
+  registerUndoables();
+
   app.get(`${prefix}/health`, (req, res) => {
     const healthData = {
       message: 'NB Next Server is running',

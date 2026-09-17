@@ -18,6 +18,27 @@ const normalizeIntegerIds = (rawValues) => {
     .filter((value) => Number.isInteger(value));
 };
 
+/** True when nothing was entered: an empty string, null or undefined. 0 and false are values. */
+const isEmptyValue = (rawValue) => rawValue === '' || rawValue === undefined || rawValue === null;
+
+/**
+ * Normalise a single optional numeric input into a number, or null.
+ *
+ */
+const numberOrNull = (rawValue) => {
+  if (isEmptyValue(rawValue)) {
+    return null;
+  }
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+/** A whole number of 1 or more, or null when the input is empty or anything else. */
+const positiveIntegerOrNull = (rawValue) => {
+  const parsed = numberOrNull(rawValue);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
+
 /**
  * Normalise a single optional id into a positive integer, or null.
  *
@@ -25,25 +46,7 @@ const normalizeIntegerIds = (rawValues) => {
  * collapse to null. Use for nullable foreign keys coming from forms or query
  * params (e.g. a parent id where "" means "no parent").
  */
-const normalizeOptionalId = (rawValue) => {
-  if (rawValue === '' || rawValue === undefined || rawValue === null) {
-    return null;
-  }
-  const parsed = Number(rawValue);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-};
-
-/**
- * Normalise a single optional numeric input into a number, or null.
- *
- */
-const numberOrNull = (rawValue) => {
-  if (rawValue === '' || rawValue === undefined || rawValue === null) {
-    return null;
-  }
-  const parsed = Number(rawValue);
-  return Number.isFinite(parsed) ? parsed : null;
-};
+const normalizeOptionalId = (rawValue) => positiveIntegerOrNull(rawValue);
 
 /**
  * `part` as a percentage of `whole`, to two decimals. Null when there is nothing
@@ -121,7 +124,9 @@ const lastTenDigits = (value) => String(value || '').replace(/\D/g, '').slice(-1
 module.exports = {
   normalizeIntegerIds,
   normalizeOptionalId,
+  isEmptyValue,
   numberOrNull,
+  positiveIntegerOrNull,
   percentOf,
   applyRounding,
   normalizeEmail,

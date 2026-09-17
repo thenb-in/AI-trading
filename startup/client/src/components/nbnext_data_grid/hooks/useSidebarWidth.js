@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
+// Layout effect so the fullscreen grid is offset past the sidebar before its
+// first paint, instead of painting over the sidebar and then jumping right.
 const useSidebarWidth = (fullScreen) => {
   const [sidebarWidth, setSidebarWidth] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!fullScreen) {
       setSidebarWidth(0);
       return;

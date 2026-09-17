@@ -166,6 +166,16 @@ const getStatusClass = (value, statusDefinitions) => {
   return statusDef ? `bg-${statusDef.color}-100 text-${statusDef.color}-800` : '';
 };
 
+/** The count with the word that fits it: plural(1, 'hour') -> "1 hour", plural(2, 'person', 'people') -> "2 people". */
+const plural = (count, one, many) => `${count} ${Number(count) === 1 ? one : many || `${one}s`}`;
+
+/** A position as people say it: 1 -> "1st", 2 -> "2nd", 11 -> "11th", 23 -> "23rd". */
+const ordinal = (n) => {
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const lastTwo = n % 100;
+  return `${n}${suffixes[(lastTwo - 20) % 10] || suffixes[lastTwo] || suffixes[0]}`;
+};
+
 const formatDurationJson = (duration) => {
   // xd yh zm
   // don't show if x or y or z is 0
@@ -182,4 +192,4 @@ const formatDurationJson = (duration) => {
   return formatted.trim();
 };
 
-export { formatDateTime, formatTime, formatDate, formatDuration, splitFullName, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson };
+export { formatDateTime, formatTime, formatDate, formatDuration, splitFullName, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson, plural, ordinal };

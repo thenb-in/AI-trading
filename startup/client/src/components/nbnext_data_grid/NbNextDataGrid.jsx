@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, forwardRef } from "react";
-import { hasAnyActiveFilter, inferColumnType } from "./utils/columnFilters";
 import PropTypes from "prop-types";
 
 // Hooks
@@ -41,7 +40,6 @@ import {
   indexRows,
   filterRows,
   sortRows,
-  unwrapGridRows,
   getKeyForRow,
   calculateIsSummaryTotals,
   calculateFrozenOffsets,
@@ -156,12 +154,6 @@ const NbNextDataGrid = forwardRef(({
   hasMore = false,
   onLoadMore = null,
   isLoadingMore = false,
-  /**
-   * Optional `(rows) => void`. Called with the data rows in the order the grid
-   * shows them — after column filters, sort and grouping, before paging — so a
-   * consumer can step through records in that same order.
-   */
-  onVisibleRowsChange = null,
   /**
    * Optional multi-row selection (checkbox column). Off by default.
    * When enabled, a leading sticky checkbox column is rendered and selection
@@ -372,12 +364,6 @@ const NbNextDataGrid = forwardRef(({
     return sortedHeads.flatMap((head) => sections[heads.indexOf(head)]);
   }, [filteredRows, merged.sortModel, l1, isSectionHeaderRow]);
 
-  useEffect(() => {
-    if (typeof onVisibleRowsChange === "function") {
-      onVisibleRowsChange(unwrapGridRows(sortedRows));
-    }
-  }, [sortedRows, onVisibleRowsChange]);
-
   // Grouping injects synthetic total rows between groups
   const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
     l1,
@@ -539,23 +525,11 @@ const NbNextDataGrid = forwardRef(({
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
-  // Which operators each column's filter box should offer. Resolved here
-  // because it needs the data: most grid columns declare no type, and a column
-  // of amounts should offer "greater than" rather than "starts with".
-  // Off `indexedRows` (pre-filter) so narrowing a column can't change the
-  // operators it offers underneath the user.
-  const columnFilterTypes = useMemo(() => {
-    const types = {};
-    l1.forEach((col) => {
-      types[col.field] = inferColumnType(col, indexedRows);
-    });
-    return types;
-  }, [l1, indexedRows]);
-
-  // An "is set" / "is not set" column filters with an empty box, so activity
-  // can't be read off the typed value alone.
   const hasActiveFilters = useMemo(
-    () => hasAnyActiveFilter(merged.filterModel),
+    () =>
+      Object.entries(merged.filterModel || {}).some(
+        ([, value]) => value != null && value !== ""
+      ),
     [merged.filterModel]
   );
 
@@ -692,7 +666,6 @@ const NbNextDataGrid = forwardRef(({
               handleColumnResize={setColumnWidth}
               fullScreen={fullScreen}
               filterModel={merged.filterModel}
-              columnFilterTypes={columnFilterTypes}
               handleFilterChange={setFilterValue}
               groupByField={groupByField}
               toggleGroupBy={toggleGroupBy}
@@ -716,7 +689,7 @@ const NbNextDataGrid = forwardRef(({
               columnWidths={merged.columnWidths}
               virtualScrolling={fullScreen}
               offsetY={fullScreen ? virtualScrollingResult.offsetY : 0}
-              totalHeight={fullScreen ? virtualScrollingResult.totalHeight : 0}
+              bottomOffset={fullScreen ? virtualScrollingResult.bottomOffset : 0}
               startIndex={fullScreen ? virtualScrollingResult.startIndex : 0}
               showTotalRow={showTotalRow}
               allRows={sortedRows}
@@ -827,7 +800,6 @@ NbNextDataGrid.propTypes = {
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
   isLoadingMore: PropTypes.bool,
-  onVisibleRowsChange: PropTypes.func,
   enableRowSelection: PropTypes.bool,
   selectedRowIds: PropTypes.oneOfType([PropTypes.array, PropTypes.instanceOf(Set)]),
   onSelectionChange: PropTypes.func,

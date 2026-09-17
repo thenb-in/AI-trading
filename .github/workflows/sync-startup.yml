@@ -40,6 +40,7 @@ jobs:
     # Defaults are minimal; we explicitly elevate where needed.
     permissions:
       contents: write  # needed to push the `startup-sync-state` tag on this repo
+      id-token: write  # needed to federate an Octo STS token for thenb-in/startup
 
     env:
       # Branch on the target repo to base every sync branch off of.
@@ -56,7 +57,20 @@ jobs:
           fetch-depth: 0  # need full history to walk arbitrary ranges
           # Default GITHUB_TOKEN is fine for reading + pushing the state tag
           # back to this same repo. We only need a cross-repo token for the
-          # target push (see STARTUP_SYNC_TOKEN below).
+          # target push (see the Octo STS step below).
+
+      - name: Mint a token for thenb-in/startup (Octo STS)
+        uses: octo-sts/action@main
+        id: octo-sts
+        with:
+          scope: thenb-in/startup
+          identity: app-token
+        # No stored secret: this federates the run's own OIDC identity
+        # against the trust policy at
+        # thenb-in/startup/.github/chainguard/app-token.sts.yaml
+        # (any thenb-in/* repo, on main, gets contents:write +
+        # pull_requests:write scoped to thenb-in/startup). Token expires
+        # in ~1h. Replaces the old STARTUP_SYNC_TOKEN PAT.
 
       - name: Checkout target repo (thenb-in/startup)
         uses: actions/checkout@v5
@@ -65,7 +79,7 @@ jobs:
           ref: ${{ env.TARGET_BASE_BRANCH }}
           path: target-startup
           fetch-depth: 0
-          token: ${{ secrets.STARTUP_SYNC_TOKEN }}
+          token: ${{ steps.octo-sts.outputs.token }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -164,7 +178,7 @@ jobs:
           steps.sync.outputs.has_changes == 'true'
         working-directory: target-startup
         env:
-          GH_TOKEN: ${{ secrets.STARTUP_SYNC_TOKEN }}
+          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           set -euo pipefail
@@ -200,9 +214,10 @@ jobs:
             echo "---"
             echo ""
             echo "Rules applied (from \`scripts/sync-startup.js\`):"
-            echo "- All changes inside \`startup/\` are applied; on conflict, the source version wins (force pick)."
-            echo "- Changes outside \`startup/\` are applied **only if the file already exists** in this repo (no new non-startup files created)."
-            echo "- Merge commits and commits with no \`startup/\` changes are skipped."
+            echo "- All changes inside framework paths (\`startup/\`, \`nucleus/\`, \`report_runner/\`, \`lints/\`, \`deploy/\`, \`.github/\`, \`.vscode/\`, \`.husky/\`) are applied; on conflict, the source version wins (force pick)."
+            echo "- \`db-scripts/startup/\` changes are applied the same way, but only on a commit that also touches a framework path — a schema script alone doesn't pull the commit in."
+            echo "- Changes outside framework paths are applied **only if the file already exists** in this repo (no new app files created)."
+            echo "- Merge commits and commits with no framework-path changes are skipped."
           } > /tmp/pr-body.md
 
           gh pr create \

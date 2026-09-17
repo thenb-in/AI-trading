@@ -1,4 +1,3 @@
-import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from "prop-types";
 import {
   cellBaseStyle,
@@ -30,7 +29,7 @@ function DataGridBody({
   // Virtual scrolling props
   virtualScrolling = false,
   offsetY = 0,
-  totalHeight = 0,
+  bottomOffset = 0,
   startIndex = 0,
   // Total row props
   showTotalRow = false,
@@ -61,10 +60,10 @@ function DataGridBody({
     }
   };
 
-  const setTotalHeight = (el) => {
+  const setBottomOffsetHeight = (el) => {
     if (el) {
       const totalRowHeight = shouldShowTotalRow ? rowHeight : 0;
-      el.style.height = `${Math.max(0, totalHeight - offsetY - (pagedRows.length * rowHeight) - totalRowHeight)}px`;
+      el.style.height = `${Math.max(0, bottomOffset - totalRowHeight)}px`;
     }
   };
 
@@ -137,12 +136,9 @@ function DataGridBody({
         const isSectionHeader = !isGroupTotal && typeof isSectionHeaderRow === "function" && isSectionHeaderRow(row);
         // Caller-flagged problem row (duplicate entry, failed record …): tinted red.
         const isAlert = !isGroupTotal && typeof isAlertRow === "function" && isAlertRow(row);
-        // Per-row tint supplied by the data (`row._highlightColor`); a hidden
-        // column keeps the value through the grid. Group totals keep theirs.
-        const highlightColor = isGroupTotal ? null : row._highlightColor || null;
 
         const rowStyle = {
-          ...getRowStyle(isEven, isSelected, highlightColor),
+          ...getRowStyle(isEven, isSelected),
           ...(isAlert && !isSelected && {
             background: ALERT_ROW_CELL_BACKGROUND,
             boxShadow: `inset 3px 0 0 0 ${ALERT_ROW_ACCENT}`,
@@ -195,7 +191,7 @@ function DataGridBody({
         const renderDataCell = (col, frozen) => {
           const content = isGroupTotal ? renderGroupTotalCell(col, row) : renderCellContent(col, row);
           const width = columnWidths[col.field] || fallbackColumnWidth(col);
-          let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, highlightColor);
+          let cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
           if (isSectionHeader && !isSelected && !sectionHeaderRuleOnly) {
             cellBg = SECTION_HEADER_CELL_BACKGROUND;
           }
@@ -242,6 +238,7 @@ function DataGridBody({
           <tr
             key={key}
             ref={idx === 0 ? firstRowRef : null}
+            data-grid-row
             style={rowStyle}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -249,7 +246,7 @@ function DataGridBody({
             className={isDisabled ? 'data-grid-row-disabled' : ''}
           >
             {selectionEnabled && (() => {
-              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected, highlightColor);
+              const cellBg = isGroupTotal ? "#f3f4f6" : getCellBackgroundColor(isEven, isSelected);
               const setSelectionCellStyles = (element) => {
                 if (element) {
                   Object.assign(element.style, baseCellStyle);
@@ -268,8 +265,8 @@ function DataGridBody({
                   onClick={stopPropagation}
                 >
                   {!isGroupTotal && (
-                    <CheckboxTypeField
-                      mode="bare"
+                    <input
+                      type="checkbox"
                       checked={isRowSelected}
                       onChange={handleSelectionChange}
                       onClick={stopPropagation}
@@ -286,11 +283,11 @@ function DataGridBody({
           </tr>
         );
       })}
-      {virtualScrolling && totalHeight > 0 && (
+      {virtualScrolling && bottomOffset > 0 && (
         <tr>
-          <td 
+          <td
             className="p-0 border-none"
-            ref={setTotalHeight}
+            ref={setBottomOffsetHeight}
             colSpan={totalColSpan}
           />
         </tr>
@@ -385,7 +382,7 @@ DataGridBody.propTypes = {
   getRowIdFunc: PropTypes.func,
   virtualScrolling: PropTypes.bool,
   offsetY: PropTypes.number,
-  totalHeight: PropTypes.number,
+  bottomOffset: PropTypes.number,
   startIndex: PropTypes.number,
   showTotalRow: PropTypes.bool,
   allRows: PropTypes.array,

@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 import { BaseReport } from '@startup/components/base_report/BaseReport';
 import { useFilterDynamicOptions } from '@startup/hooks/useFilterDynamicOptions';
 import { useFilterConfig } from '@startup/components/base_filter/filterUtils';
-import { NotificationLogReportFilters } from './notificationLogFilters';
+import { NotificationLogReportFilters } from '@startup/filter/reportFilterConfig';
+import { FILTER_DYNAMIC_LOADERS } from '@startup/filter/filterDynamicLoaders';
 import { statusChip } from '@startup/components/base_report/statusChip';
 
 
@@ -15,7 +16,7 @@ const STATUS_CHIP = statusChip('status_label', {
 
 
 const NotificationLogReport = ({ report, locationState }) => {
-  const { dynamicOptions } = useFilterDynamicOptions(NotificationLogReportFilters);
+  const { dynamicOptions, isLoading } = useFilterDynamicOptions(NotificationLogReportFilters, FILTER_DYNAMIC_LOADERS);
   const filtersConfig = useFilterConfig(NotificationLogReportFilters, dynamicOptions);
 
   return (
@@ -24,6 +25,7 @@ const NotificationLogReport = ({ report, locationState }) => {
       locationState={locationState}
       documentName={report.slug}
       filtersConfig={filtersConfig}
+      isFilterLoading={isLoading}
       frozenColumns={['user_name']}
       decorateColumns={STATUS_CHIP}
       defaultSortField="sent_at"

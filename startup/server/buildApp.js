@@ -34,7 +34,8 @@ const userRoutes = require('./src/routes/userRoutes');
 function mountFrameworkMiddleware(app, opts = {}) {
   const {
     bodyParserLimit,
-    additionalExposedHeaders = []
+    additionalExposedHeaders = [],
+    mountBeforeBodyParser
   } = opts;
 
   app.use(httpLogger);
@@ -63,7 +64,24 @@ function mountFrameworkMiddleware(app, opts = {}) {
 
   app.set('trust proxy', ['loopback', '172.31.0.0/16']);  // trust first proxy (nginx) for correct client IP logging and secure cookies
 
-  const jsonOpts = bodyParserLimit ? { limit: bodyParserLimit } : {};
+  // Hook for routes that must see the raw body (e.g. ADMS /iclock, where
+  // ZK devices POST tab-delimited ATTLOG as application/x-www-form-urlencoded
+  // and json/urlencoded parsers would clobber it into "[object Object]").
+  if (typeof mountBeforeBodyParser === 'function') {
+    mountBeforeBodyParser(app);
+  }
+
+  // Stash the raw request body so webhook handlers (e.g. Razorpay) can verify
+  // signatures computed over the exact bytes — express.json() otherwise discards
+  // the buffer after parsing. Cheap: just keeps a reference, no extra copy.
+  const captureRawBody = (req, res, buf) => {
+    if (buf && buf.length) {
+      req.rawBody = buf;
+    }
+  };
+  const jsonOpts = bodyParserLimit
+    ? { limit: bodyParserLimit, verify: captureRawBody }
+    : { verify: captureRawBody };
   const urlencodedOpts = bodyParserLimit
     ? { extended: false, limit: bodyParserLimit }
     : { extended: false };
@@ -109,9 +127,9 @@ function mountFrameworkRoutes(app) {
 }
 
 function mountStaticAndErrorHandlers(app, opts = {}) {
-  const { additionalStaticDirs = [], clientStaticDir } = opts;
-  // App-specific statics first — they're typically more specific paths that
-  // must win over the catch-all /uploads below.
+  const { additionalStaticDirs = [], clientStaticDir, serverOnlyPrefixes = [] } = opts;
+  // App-specific statics first — they're typically more specific paths
+  // (e.g. /uploads/bills) that must win over the catch-all /uploads below.
   for (const { urlPrefix, fsPath } of additionalStaticDirs) {
     app.use(urlPrefix, express.static(fsPath));
   }
@@ -126,11 +144,14 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
   if (env.isOnPremDeployment && clientStaticDir) {
     const indexFile = path.join(clientStaticDir, 'index.html');
     if (fs.existsSync(indexFile)) {
-      // Server-owned prefix: /api. Static-mount prefixes: framework's /static + /uploads,
+      // Server-owned prefixes: API + any caller-supplied server-only paths
+      // (e.g. /iclock). Static-mount prefixes: framework's /static + /uploads,
       // plus every urlPrefix the caller registered in additionalStaticDirs.
       // The SPA fallback skips any path under these — so they 404 on miss
       // instead of being shadowed by index.html.
-      const serverToHandle = ['/api', '/static', '/uploads', ...additionalStaticDirs.map((d) => d.urlPrefix)];
+      const serverPrefixes = ['/api', ...serverOnlyPrefixes];
+      const staticPrefixes = ['/static', '/uploads', ...additionalStaticDirs.map((d) => d.urlPrefix)];
+      const serverToHandle = [...serverPrefixes, ...staticPrefixes];
       const isServerOnly = (urlPath) =>
         serverToHandle.some((p) => urlPath === p || urlPath.startsWith(`${p}/`));
       const clientStatic = express.static(clientStaticDir);
@@ -175,6 +196,9 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
  *   (e.g. '5mb' for apps that accept image uploads).
  * @param {string[]} [options.additionalExposedHeaders]
  *   Extra response headers to expose via CORS, beyond the framework defaults.
+ * @param {(app: import('express').Express) => void} [options.mountBeforeBodyParser]
+ *   Mount routes that must see the raw request body (i.e. before the json
+ *   and urlencoded parsers run).
  * @param {Array<{urlPrefix: string, fsPath: string}>} [options.additionalStaticDirs]
  *   Extra static-file mounts. Order is preserved; mounted before /uploads.
  * @param {string} [options.clientStaticDir]
@@ -182,12 +206,17 @@ function mountStaticAndErrorHandlers(app, opts = {}) {
  *   env.isSecureCookie is false, Express serves the bundle for any path
  *   that isn't a server route or static mount. Use for single-origin
  *   deploys where the API server also fronts the UI.
+ * @param {string[]} [options.serverOnlyPrefixes]
+ *   Additional path prefixes that should stay strictly server-handled
+ *   (i.e. NOT fall back to index.html). /api, /static, /uploads, and every
+ *   urlPrefix from additionalStaticDirs are already excluded by default;
+ *   use this for app-specific server-only prefixes like /iclock.
  * @param {() => void | Promise<void>} [options.onAfterListen]
  *   Invoked once the HTTP server is listening (after schedulers start).
- *   Use for app-level startup work like socket clients or timers.
+ *   Use for app-level startup work like piscina pool init or auto-sync timers.
  * @param {() => Promise<void>} [options.onBeforeShutdown]
  *   Awaited during SIGTERM/SIGINT before the framework stops schedulers.
- *   Use to drain app-level resources (worker pools, periodic timers, etc.).
+ *   Use to drain app-level resources (Piscina pool, periodic timers, etc.).
  */
 function buildApp(options = {}) {
   const {
@@ -196,8 +225,10 @@ function buildApp(options = {}) {
     registerSchedulerJobs,
     bodyParserLimit,
     additionalExposedHeaders = [],
+    mountBeforeBodyParser,
     additionalStaticDirs = [],
     clientStaticDir,
+    serverOnlyPrefixes = [],
     onAfterListen,
     onBeforeShutdown
   } = options;
@@ -207,7 +238,8 @@ function buildApp(options = {}) {
 
   mountFrameworkMiddleware(app, {
     bodyParserLimit,
-    additionalExposedHeaders
+    additionalExposedHeaders,
+    mountBeforeBodyParser
   });
   mountFrameworkRoutes(app);
 
@@ -219,7 +251,7 @@ function buildApp(options = {}) {
     mountAppRoutes(app, API_PREFIX);
   }
 
-  mountStaticAndErrorHandlers(app, { additionalStaticDirs, clientStaticDir });
+  mountStaticAndErrorHandlers(app, { additionalStaticDirs, clientStaticDir, serverOnlyPrefixes });
 
   /**
    * Synchronizes models when SYNC_DB is enabled (dev + first-time installs),

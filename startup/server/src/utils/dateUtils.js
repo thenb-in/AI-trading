@@ -575,14 +575,15 @@ function convert_time_to_str(time) {
 
 
 /**
- * Format duration in seconds to hours.minutes format
+ * Format duration in seconds to hours.minutes format, or to hours and minutes with units
  * @param {number} seconds - Duration in seconds
+ * @param {boolean} [withUnits=false] - "2h 30m", "9h" or "45m" instead of "2.30"
  * @returns {string} - Formatted duration (e.g., "2.30" for 2 hours 30 minutes)
  */
-function format_duration_hours_minutes(seconds) {
+function format_duration_hours_minutes(seconds, withUnits = false) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}.${String(minutes).padStart(2, '0')}`;
+  return withUnits ? [hours && `${hours}h`, (minutes || !hours) && `${minutes}m`].filter(Boolean).join(' ') : `${hours}.${String(minutes).padStart(2, '0')}`;
 }
 
 /**

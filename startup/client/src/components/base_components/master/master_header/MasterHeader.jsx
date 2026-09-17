@@ -171,7 +171,7 @@ MasterHeader.propTypes = {
   onAdd: PropTypes.func,
   onRefresh: PropTypes.func,
   userData: PropTypes.object,
-  permissionKey: PropTypes.string,
+  permissionKey: PropTypes.oneOfType([PropTypes.string, PropTypes.shape({ all: PropTypes.arrayOf(PropTypes.string) })]),
   showRefresh: PropTypes.bool,
   showBack: PropTypes.bool,
   backUrl: PropTypes.string,

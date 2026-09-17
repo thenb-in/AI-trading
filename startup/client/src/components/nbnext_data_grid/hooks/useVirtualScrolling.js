@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useLayoutEffect, useMemo, useCallback } from "react";
 
 /**
  * Virtual scrolling hook for efficient rendering of large datasets
  * Only renders visible rows plus a buffer for smooth scrolling
+ *
+ * Scroll position and row height are read in layout effects (before paint), so
+ * entering fullscreen never flashes an empty or wrong window of rows.
  */
 const useVirtualScrolling = (
   allRows,
@@ -11,22 +14,49 @@ const useVirtualScrolling = (
   scrollElement = null,
   overscan = 5 // Number of rows to render outside visible area
 ) => {
-  const [scrollTop, setScrollTop] = useState(0);
-  const scrollElementRef = useRef(scrollElement);
+  const hasRows = allRows.length > 0;
+  const [measuredRowHeight, setMeasuredRowHeight] = useState(0);
+  const effectiveRowHeight = measuredRowHeight || rowHeight;
+  const [firstVisibleIndex, setFirstVisibleIndex] = useState(0);
 
-  // Update scroll element ref
-  useEffect(() => {
-    scrollElementRef.current = scrollElement;
-  }, [scrollElement]);
+  const syncFirstVisibleIndex = useCallback(() => {
+    if (scrollElement && effectiveRowHeight) {
+      setFirstVisibleIndex(Math.floor(scrollElement.scrollTop / effectiveRowHeight));
+    }
+  }, [scrollElement, effectiveRowHeight]);
+
+  // Attach scroll listener
+  useLayoutEffect(() => {
+    if (!hasRows || !scrollElement) return undefined;
+
+    syncFirstVisibleIndex();
+    scrollElement.addEventListener("scroll", syncFirstVisibleIndex, { passive: true });
+
+    return () => {
+      scrollElement.removeEventListener("scroll", syncFirstVisibleIndex);
+    };
+  }, [hasRows, scrollElement, syncFirstVisibleIndex]);
+
+
+  useLayoutEffect(() => {
+    if (!hasRows || !scrollElement) return;
+    const renderedRows = scrollElement.querySelectorAll(":scope > table > tbody > tr[data-grid-row]");
+    if (renderedRows.length === 0) return;
+
+    const firstTop = renderedRows[0].getBoundingClientRect().top;
+    const lastBottom = renderedRows[renderedRows.length - 1].getBoundingClientRect().bottom;
+    setMeasuredRowHeight((lastBottom - firstTop) / renderedRows.length);
+  }, [hasRows, allRows, containerHeight, scrollElement]);
 
   // Calculate visible range
   const visibleRange = useMemo(() => {
-    if (!allRows || allRows.length === 0 || !rowHeight || !containerHeight) {
-      return { start: 0, end: 0, visibleRows: [] };
+    if (!hasRows || !effectiveRowHeight || !containerHeight) {
+      return { start: 0, visibleRows: [], offsetY: 0, bottomOffset: 0 };
     }
 
-    const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-    const visibleCount = Math.ceil(containerHeight / rowHeight);
+    const visibleCount = Math.ceil(containerHeight / effectiveRowHeight);
+    const lastWindowIndex = Math.max(0, allRows.length - visibleCount);
+    const startIndex = Math.max(0, Math.min(firstVisibleIndex, lastWindowIndex) - overscan);
     const endIndex = Math.min(
       allRows.length,
       startIndex + visibleCount + overscan * 2
@@ -34,41 +64,17 @@ const useVirtualScrolling = (
 
     return {
       start: startIndex,
-      end: endIndex,
       visibleRows: allRows.slice(startIndex, endIndex),
-      totalHeight: allRows.length * rowHeight,
-      offsetY: startIndex * rowHeight,
+      offsetY: startIndex * effectiveRowHeight,
+      bottomOffset: (allRows.length - endIndex) * effectiveRowHeight,
     };
-  }, [allRows, rowHeight, containerHeight, scrollTop, overscan]);
-
-  // Handle scroll event
-  const handleScroll = useCallback((e) => {
-    const target = e.target;
-    setScrollTop(target.scrollTop);
-  }, []);
-
-  // Attach scroll listener
-  useEffect(() => {
-    const element = scrollElementRef.current;
-    if (!element) return;
-
-    // Initial scroll position
-    setScrollTop(element.scrollTop || 0);
-
-    element.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      element.removeEventListener("scroll", handleScroll);
-    };
-  }, [handleScroll, scrollElement]);
+  }, [hasRows, allRows, effectiveRowHeight, containerHeight, firstVisibleIndex, overscan]);
 
   return {
     visibleRows: visibleRange.visibleRows,
     startIndex: visibleRange.start,
-    endIndex: visibleRange.end,
-    totalHeight: visibleRange.totalHeight,
     offsetY: visibleRange.offsetY,
-    handleScroll,
+    bottomOffset: visibleRange.bottomOffset,
   };
 };
 
