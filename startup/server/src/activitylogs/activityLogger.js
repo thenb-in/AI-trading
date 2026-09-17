@@ -57,7 +57,7 @@ const createActivityLogger = ({
             : responseBody;
 
           // Some routes only know which action they performed once it is done —
-          // an upsert creates for one employee and updates for the next. Those
+          // an upsert creates for one row and updates for the next. Those
           // pass a function and decide from the response; the rest pass a
           // string, as before. Logging "created" for an update would make undo
           // offer to delete a record the user never created.
@@ -159,8 +159,8 @@ const createActivityLogger = ({
  * High-level helper you can use for ANY route.
  *
  * Example:
- *   const employeeCreateLog = createStandardActivityLogger({
- *     objectName: 'Employee',
+ *   const geographyCreateLog = createStandardActivityLogger({
+ *     objectName: 'Geography',
  *     action: 'CREATE'
  *   });
  */

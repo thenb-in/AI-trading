@@ -18,8 +18,8 @@ const { enqueue } = require('./jobQueue');
 const { announceRunFinished } = require('./runAnnouncer');
 const { withCancellation, stopRun } = require('./runCancellation');
 
-// Most reports answer with a single { columns, data }. Multi-section reports —
-// employee lifecycle, for one — answer with named sections, each carrying its
+// Most reports answer with a single { columns, data }. Multi-section reports
+// answer with named sections instead, each carrying its
 // own { columns, data } and nothing at the top level. Counting only result.data
 // reported those as 0 rows even though the report was full of them, so the
 // sections are summed when there is no top-level array.

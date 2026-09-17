@@ -49,7 +49,7 @@ const createImportFunction = ({
   api = {},
   codeField = 'code',
   requiredFields = [],
-  uniqueFields = null, // Array of fields to use for composite key matching (e.g., ['employee_code', 'att_date'])
+  uniqueFields = null, // Array of fields to use for composite key matching (e.g., ['code', 'valid_from'])
   fetchData,
   fieldTransform = null, // Optional function to transform field names
   dateFields = [], // Fields that should be treated as dates
@@ -331,7 +331,7 @@ const createImportFunction = ({
             uniqueFields,
             codeField,
             key,
-            'Skipped: rejected record exists for this employee and date',
+            `Skipped: the caller asked for rows keyed ${key} to be left alone`,
           ));
           skipped += 1;
           continue;

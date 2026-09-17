@@ -20,8 +20,8 @@ const walletHeadsService = require('./walletHeadsService');
 // stopped, over the last X months.
 //
 // Every event carries `occurredAt`, which is the whole point — a CREATE posted
-// this afternoon for an employee hired in March has to be dated March or the
-// March invoice still sees an empty company.
+// this afternoon for an object that came into existence in March has to be
+// dated March or the March invoice still sees an empty company.
 //
 // Safe to run twice. The wallet reads each object's most recent event to decide
 // what changed, so a repeated CREATE for someone already counted moves nothing,
@@ -29,8 +29,8 @@ const walletHeadsService = require('./walletHeadsService');
 // same story was told. Running it again costs rows, not correctness.
 //
 // What the framework cannot know is WHERE a head's history lives: only the app
-// knows Employee sits in nbnext_personnel_employee and that is_active is what
-// makes one count. So the app registers a source per head at boot and this owns
+// knows which of its own tables a head sits in and which column makes one
+// count. So the app registers a source per head at boot and this owns
 // the replay. A head with no source is reported as unsupported rather than
 // skipped in silence — a head the wallet bills on that nobody can rebuild is
 // something an operator needs told, not something to find out in an invoice.
@@ -60,11 +60,11 @@ function resolveMonths(requested) {
  *
  * That distinction is the difference between a rebuild you can run twice and
  * one you cannot. Dating the CREATE at the window's start seemed harmless (the
- * wallet only has to believe the employee was there by then) but it makes the
- * event a fact about the REQUEST rather than about the employee: three months
- * says "hired 1 June", six months says "hired 1 March", and the same person
- * lands twice because the two statements genuinely differ. Dated by hire date,
- * every run says the identical thing and the second one stores nothing.
+ * wallet only has to believe the object was there by then) but it makes the
+ * event a fact about the REQUEST rather than about the object: three months
+ * says "arrived 1 June", six months says "arrived 1 March", and the same object
+ * lands twice because the two statements genuinely differ. Dated by its own
+ * arrival, every run says the identical thing and the second one stores nothing.
  *
  * Departures before the window are dropped along with their arrivals: the
  * object was already gone when the period being rebuilt began, so it cannot

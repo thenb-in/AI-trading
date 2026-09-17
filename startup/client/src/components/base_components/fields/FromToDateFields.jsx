@@ -2,9 +2,8 @@ import PropTypes from 'prop-types';
 import { DateTypeField } from './DateTypeField';
 
 /**
- * Two stacked "From Date" + "To Date" inputs sharing the same change wrapper. Used by the
- * employee history items (ExperienceTab, insurance_item) where the two dates are the standard
- * pair on the form.
+ * Two stacked "From Date" + "To Date" inputs sharing the same change wrapper, for
+ * the forms where a record runs between two dates and the pair is entered together.
  */
 const FromToDateFields = ({ fromValue, toValue, onFromChange, onToChange, disabled = false, maxToday = false }) => (
   <>

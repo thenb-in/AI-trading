@@ -4,12 +4,12 @@ import { getFilterOptionResolvers } from './filterOptionResolverRegistry';
 
 /**
  * Returns a config transformer for activity-aware option lists (whose entries
- * carry a boolean `is_active` flag, e.g. the employee filter), matching what
+ * carry a boolean `is_active` flag), matching what
  * the "Is Active" filter is showing:
- *   - is_active ON  → show active employees only (inactive entries dropped)
+ *   - is_active ON  → show active entries only (inactive ones dropped)
  *   - is_active OFF → show active + inactive; inactive entries get `highlight`
  *
- * App-specific rules (e.g. weekly employees vs debug mode) register via
+ * App-specific rules register via
  * `registerFilterOptionResolver` and run after the built-in transforms.
  */
 const useFilterOptionResolver = (filters) => {

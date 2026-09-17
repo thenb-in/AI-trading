@@ -40,7 +40,7 @@ const ACTION_TO_ACTIVITY_TYPE = {
   REJECT: ACTIVITY_TYPE.REJECT
 };
 
-/** Professional message label per action (e.g. "Employee was updated"). */
+/** Professional message label per action (e.g. "Geography was updated"). */
 const ACTION_TO_MESSAGE_LABEL = {
   CREATE: 'was created',
   UPDATE: 'was updated',
@@ -90,7 +90,7 @@ const HEAD_BASE_MAX_MONTHS = 36;
 
 /**
  * How many backfilled activities travel in one request. Four thousand
- * employees is four thousand events; sent one at a time that is minutes of
+ * counted objects is four thousand events; sent one at a time that is minutes of
  * round trips, and sent all at once it is a request body nobody wants to
  * retry. Five hundred is about 150KB, well inside the wallet's 5MB limit.
  */

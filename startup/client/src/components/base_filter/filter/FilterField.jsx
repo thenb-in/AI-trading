@@ -91,7 +91,7 @@ const FilterField = ({
       const isMulti = !!config.multiselect;
       const showSearch = config.searchable === true || config.multiselect === true;
       // Surface 'all' rather than the placeholder so the user sees the active
-      // default ("All Employees"). Multi wants an array, single a plain string.
+      // default ("All Places"). Multi wants an array, single a plain string.
       const selected = isMulti
         ? (Array.isArray(value) ? value : [String(value || 'all')])
         : String(value || 'all');

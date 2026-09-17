@@ -15,7 +15,7 @@ import { loadFirstWorksheet } from '../utils/importParsingEngine';
  * stale. `extraBooleanFields` stays available for a column the server does not type.
  *
  * A select value that matches nothing is reported rather than guessed at — writing an
- * unrecognised department name into an id column just moves the failure to the server.
+ * unrecognised name into an id column just moves the failure to the server.
  */
 function buildCellCoercer(columns, extraBooleanFields) {
   const booleanFields = new Set([

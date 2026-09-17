@@ -8,7 +8,7 @@ const MENU_ROW_CAP = 25;
 
 /**
  * What the open menu lists for the current search. Options that describe a
- * hierarchy (the Department filter) make it a tree, with its own collapse state
+ * hierarchy (a geography filter) make it a tree, with its own collapse state
  * and the default ("All") option set apart above it; every other dropdown is a
  * flat list capped at MENU_ROW_CAP rows, ranked by how well each option's
  * `searchKeys` (or label) match the term. `filter` leaves options out of a flat

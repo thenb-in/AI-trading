@@ -20,8 +20,9 @@ const NOT_BLOCKED = { message: '', field: '' };
  * is given with the `record`. The footer offers its actions and runs each one's
  * default (see workflow.js); `hooks` override them per action key, `showWhen`
  * narrows one to the records it suits (a job card is never cancelled on its
- * own), and `onAmend(copy)` opens the copy an amend makes. `masterName` ("UOM")
- * names the record and turns permission verbs into names (update_uom);
+ * own), and `onAmend(copy)` opens the copy an amend makes. `masterName`
+ * ("Geography") names the record and turns permission verbs into names
+ * (update_geography);
  * `permissions` names them outright (a BaseMaster's keys).
  *
  * Base fields inside lock themselves while the record is not editable, and the

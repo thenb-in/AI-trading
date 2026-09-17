@@ -6,7 +6,7 @@ import { ApiService } from '@services/ApiService';
 
 // Rebuild the wallet's picture of this company's heads.
 //
-// The wallet counts billable heads — employees — by replaying the activity it
+// The wallet counts billable heads — whatever this app is billed per — by replaying the activity it
 // was told about, so it knows the company from the day pushes started reaching
 // it and no earlier. Anything billed before that counts nobody. This sends the
 // missing history, read back out of the master data and dated when it actually

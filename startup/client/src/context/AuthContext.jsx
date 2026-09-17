@@ -26,7 +26,7 @@ const isAnonymousPath = (path, publicPaths = []) =>
  * `publicPaths` lets an app declare entry paths of its own that an anonymous
  * visitor may land on — app-owned routes passed to <App extraRoutes>, which the
  * framework's own list above cannot know about (e.g. a self-serve signup page,
- * or an employee's own onboarding form). Without it those routes bounce to "/"
+ * or a new user's own onboarding form). Without it those routes bounce to "/"
  * before they ever render.
  */
 const DataProvider = ({ children, publicPaths = [] }) => {

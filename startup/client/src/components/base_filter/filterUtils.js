@@ -14,7 +14,7 @@ import { useMemo } from 'react';
  * whose label has to be resolved. Once a list has loaded, its `refresh` is
  * exposed as `onRefreshOptions` — what the filter panel's refresh button calls.
  *
- * Generic — knows nothing about employees/departments/etc. App-side hooks
+ * Generic — knows nothing about what an app's own masters are. App-side hooks
  * own the fetching and provide the keyed map.
  */
 const injectDynamicOptions = (filters, dynamicOptions) =>

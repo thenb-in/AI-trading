@@ -43,7 +43,7 @@ const FilterHeader = ({
       <button
         onClick={onRefresh}
         disabled={isBusy}
-        title="Reload filter options (employees, departments, cost centres…) from the server"
+        title="Reload filter options from the server"
         aria-label="Refresh filter options"
         className="p-2 text-gray-600 hover:text-gray-800 hover:bg-blue-100 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-transparent hover:border-blue-200"
       >

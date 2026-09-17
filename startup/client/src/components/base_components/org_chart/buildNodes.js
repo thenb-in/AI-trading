@@ -9,11 +9,11 @@
  * Returning null drops the row, and its children take its place. That is what
  * lets a branch nobody may see step aside without hiding the leaves under it.
  *
- *   buildNodes(departments, (department, { id, children }) => ({
+ *   buildNodes(places, (place, { id, children }) => ({
  *     id,
- *     title: department.dept_name,
- *     children: [...children, ...positionCards(department)],
- *   }), { prefix: 'department' })
+ *     title: place.name,
+ *     children,
+ *   }), { prefix: 'place' })
  */
 const buildNodes = (rows = [], toNode, { idKey = 'id', childrenKey = 'children', prefix = 'node' } = {}) =>
   rows.flatMap((row) => {

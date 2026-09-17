@@ -4,7 +4,7 @@ import { canSeeModule } from './canSeeModule';
 
 /**
  * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
- * Used by AppGuide to show Department, Position, Employee steps.
+ * Used by AppGuide to walk someone through an app's masters in setup order.
  * @param {function(string)} handleOpenMaster - (path) => void, e.g. navigate to /admin/master/{path}
  */
 const getOnboardingMasters = (handleOpenMaster) => {

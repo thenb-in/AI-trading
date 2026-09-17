@@ -131,7 +131,7 @@ function DataGridBody({
           : band % 2 === 0;
         const isSelected = key === selectedRowId;
         const isDisabled = row._isDisabled === true || isGroupTotal === true;
-        // The row that opens a section (one employee's set of rows, say) is drawn as
+        // The row that opens a section (one record's set of rows, say) is drawn as
         // its header: a rule above it and a tint, so the section's extent is obvious.
         const isSectionHeader = !isGroupTotal && typeof isSectionHeaderRow === "function" && isSectionHeaderRow(row);
         // Caller-flagged problem row (duplicate entry, failed record …): tinted red.

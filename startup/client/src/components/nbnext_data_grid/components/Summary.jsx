@@ -6,7 +6,7 @@ import {
 } from "@startup/data/summaryFieldRegistry";
 
 const Summary = ({ summary = {}, columns = [], compact = false }) => {
-  // App-registered identity/header fields (e.g. employee code/name). The grid
+  // App-registered identity/header fields (a record's code and name). The grid
   // itself stays domain-agnostic — see summaryFieldRegistry.
   const headerFields = getSummaryHeaderFields();
   const headerKeySet = getSummaryHeaderFieldKeys();

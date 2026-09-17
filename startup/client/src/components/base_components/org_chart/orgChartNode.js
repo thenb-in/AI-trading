@@ -1,4 +1,4 @@
-/** ['3 positions', null, '17 people'] -> '3 positions · 17 people'; a string passes through. */
+/** ['MH', null, '4 places'] -> 'MH · 4 places'; a string passes through. */
 const line = (parts) => {
   const text = Array.isArray(parts) ? parts.filter(Boolean).join(' · ') : parts;
   return text || undefined;
@@ -12,9 +12,9 @@ const line = (parts) => {
  * chart reads it.
  *
  *   orgChartNode({
- *     id, title: department.dept_name, icon: Building, tone: 'branch',
- *     stat: [plural(seats, 'position'), plural(people, 'person', 'people')],
- *     actions: [canManage && { id: 'add', title: 'Add a position', icon: Plus, onClick }],
+ *     id, title: place.name, icon: MapPin, tone: 'branch',
+ *     stat: [place.code, plural(children.length, 'place')],
+ *     actions: [canManage && { id: 'add', title: 'Add a place under it', icon: Plus, onClick }],
  *     children,
  *   })
  *

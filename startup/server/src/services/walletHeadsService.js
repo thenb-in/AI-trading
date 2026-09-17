@@ -50,7 +50,7 @@ const walletHeadsService = {
    * Fails OPEN on purpose. This filter saves a round trip for heads nobody
    * wants; it is not what decides whether usage is billed. The wallet drops an
    * untracked head itself and answers 200 either way, so an unreachable wallet
-   * or a stale cache costs a wasted request, never a lost employee. Deciding
+   * or a stale cache costs a wasted request, never a lost head. Deciding
    * the other way — silently not sending while we are unsure — would lose the
    * one head that is actually billed on the day the head endpoint is down.
    */

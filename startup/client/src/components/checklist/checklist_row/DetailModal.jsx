@@ -4,21 +4,16 @@ import { ChecklistBreakdown } from '../ChecklistProgress';
 import { STATUS_STYLES } from '../constants/checklistConstants';
 import { RowActions } from './RowActions';
 
+// Whatever a check wants said about its result beyond the count, as the check
+// itself worded it — the framework counts rows and knows nothing of what they are.
 const Highlights = ({ result }) => {
   const highlights = result.highlights ?? [];
-  const showEmployeeCount = result.employee_count > 0 && result.row_unit !== 'employees';
-  if (highlights.length === 0 && !showEmployeeCount) {
+  if (highlights.length === 0) {
     return null;
   }
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4">
-      {showEmployeeCount && (
-        <span className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-600">
-          <span className="font-semibold text-gray-900 tabular-nums">{result.employee_count.toLocaleString()}</span>
-          {' employees affected'}
-        </span>
-      )}
       {highlights.map((highlight) => (
         <span key={highlight.key} className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs text-gray-600">
           <span className="font-semibold text-gray-900 tabular-nums">{highlight.value.toLocaleString()}</span>

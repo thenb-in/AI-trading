@@ -74,7 +74,7 @@ const NbNextDataGrid = forwardRef(({
    * Optional `(row) => boolean`. Rows it accepts are drawn as the header of the section
    * they open — a rule above them and a tint — so a reader can see where one section
    * ends and the next begins. For views that stack several rows per entity (e.g. the
-   * detailed attendance print view, which lists one row per parameter per employee).
+   * detailed print view, which lists one row per parameter per record).
    */
   isSectionHeaderRow = null,
   sectionHeaderRuleOnly = false,
