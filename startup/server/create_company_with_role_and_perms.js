@@ -10,6 +10,10 @@ const { YES, INPUT_SKIP_KEY } = require('./src/constants/standard_constants');
 const db = require('./src/models'); // Sequelize models index
 const licenseService = require('./src/license/licenseService');
 const companyService = require('./src/services/companyService');
+const userService = require('./src/services/userService');
+const multiCompanyService = require('./src/services/multiCompanyService');
+const { isValidUuid } = require('./src/utils/uuidUtils');
+const { normalizeUsername } = require('./src/utils/normalizeUtils');
 // signup moved out of authService into the services/auth barrel with the SSO
 // work; approveUser stayed behind. Importing both from authService left signup
 // undefined here, so seeding died with "undefined is not a function" the moment
@@ -42,8 +46,6 @@ const askQuestion = (query) =>
 const reasonOf = (err) =>
   err?.message || (err && typeof err === 'object' ? JSON.stringify(err) : String(err));
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /**
  * Decide the id the company is created with.
  *
@@ -60,7 +62,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * refused here, while the id is still free to choose.
  */
 async function resolveCompanyId(requestedId) {
-  if (requestedId && !UUID_PATTERN.test(requestedId)) {
+  if (requestedId && !isValidUuid(requestedId)) {
     throw new Error(`Company id "${requestedId}" is not a UUID — pass the wallet customer_id the license was issued for`);
   }
 
@@ -80,7 +82,7 @@ async function resolveCompanyId(requestedId) {
     return licensedId;
   }
   if (!requestedId) {
-    logger.info(`No company id given and no license installed — the database will generate one. Install the license FIRST, or pass its customer_id, if this install is licensed.`);
+    logger.info(`No company id given and no license installed — the database will generate one for ${env.DEFAULT_COMPANY}. Install the license FIRST, or pass its customer_id, if this install is licensed.`);
   }
   return requestedId || null;
 }
@@ -119,6 +121,32 @@ async function createCompany(transaction, userRole, companyId) {
 }
 
 /**
+ * Link a user that already exists to this company, the way the user-management
+ * screen assigns an existing user to another company. Returns null when the
+ * username is free, so the caller goes on to collect a password and sign them up.
+ *
+ * Re-running the seeder against an existing sadmin is the normal case at a site
+ * that is adding a second company: asking for a password there would only reject
+ * it (signup refuses a username that exists), so the prompt is skipped entirely.
+ */
+async function linkExistingUser(username, company) {
+  const existingUser = await userService.getUserByUsername(username);
+  if (!existingUser) {
+    return null;
+  }
+
+  const existingLink = await multiCompanyService.findUserCompanyLink(existingUser.id, company.id);
+  if (existingLink) {
+    logger.info(`User ${username} already exists (id ${existingUser.id}) and is already linked to company ${company.id} — nothing to assign`);
+    return existingUser;
+  }
+
+  await multiCompanyService.assignUserToCompany(existingUser.id, company.id);
+  logger.info(`User ${username} already exists (id ${existingUser.id}) — assigned to company ${company.id}`);
+  return existingUser;
+}
+
+/**
  * Create a user and assign to company
  */
 async function createUser(company, transaction) {
@@ -131,10 +159,20 @@ async function createUser(company, transaction) {
     // CI / scripted runs: pull credentials from env. If they're missing,
     // skip user creation rather than guess — downstream tests will fail
     // loudly on missing login, which is the right signal.
-    username = env.SADMIN_USERNAME;
+    username = normalizeUsername(env.SADMIN_USERNAME);
+    if (!username) {
+      logger.info(`Non-interactive run: SADMIN_USERNAME ${env.SADMIN_USERNAME} not set — skipping user creation`);
+      return null;
+    }
+
+    const existingUser = await linkExistingUser(username, company);
+    if (existingUser) {
+      return existingUser;
+    }
+
     password = env.SADMIN_PASSWORD;
-    if (!username || !password) {
-      logger.info(`Non-interactive run: SADMIN_USERNAME ${username}/SADMIN_PASSWORD ${password} not set — skipping user creation`);
+    if (!password) {
+      logger.info(`Non-interactive run: SADMIN_PASSWORD not set for new user ${username} — skipping user creation`);
       return null;
     }
     phone = null;
@@ -148,7 +186,17 @@ async function createUser(company, transaction) {
       return null;
     }
 
-    username = await askQuestion('Enter username: ');
+    username = normalizeUsername(await askQuestion('Enter username: '));
+    if (!username) {
+      logger.info(`No username entered for company ${company.id} — skipping user creation`);
+      return null;
+    }
+
+    const existingUser = await linkExistingUser(username, company);
+    if (existingUser) {
+      return existingUser;
+    }
+
     password = await askQuestion('Enter password: ');
     phone = await askQuestion(`Enter phone number (optional, press ${INPUT_SKIP_KEY} to skip): `) || null;
     name = await askQuestion(`Enter user name (optional, press ${INPUT_SKIP_KEY} to use username): `) || username;
@@ -230,10 +278,10 @@ async function main({
 
     const user = await createUser(company, null); // No transaction needed after commit
 
-    // approve user
+    // approve user — approveUser logs the outcome itself, and the lines above
+    // already tie this id to its username, so nothing is repeated here.
     if (user) {
       await approveUser(user.id);
-      logger.info(`User ${user.username} approved successfully ${user.id}`);
     }
 
     // Always run createStartingAppData to ensure all default data exists
