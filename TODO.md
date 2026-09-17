@@ -126,6 +126,52 @@
 - **Issue:** Loops through all companies and fetches users for each.
 - **Fix:** Single query across companies or use pagination.
 
+### P1 — Hooks Called From Places Hooks May Not Go
+- **File:** `startup/client/src/hooks/hasPermission.js`, and every other hook in `startup/client/src/hooks/`
+
+- **Background — why React cares:** React does not track hooks by name. On each render it hands
+  out hook state *by call order*: the first `useState`/`useContext`/`useEffect` gets slot 1, the
+  second gets slot 2, and so on. Next render it counts again and matches slot to slot. This only
+  works if a component calls the same hooks, in the same order, on every render. Skip one and
+  everything after it shifts up a slot, so a component is handed state belonging to something
+  else; React detects the changed count and throws **"Rendered fewer hooks than expected"**. Hence
+  the rule: hooks run at the top of a component, unconditionally — never inside an `if`, a loop,
+  a callback or behind a `&&`.
+
+- **Issue:** `hasPermission(names, userData)` breaks that rule conditionally. When the caller
+  omits `userData` it reads the signed-in user from context — a hook call — and when the caller
+  passes one it does not. The same function is a hook or not depending on its arguments, which
+  means whether a call site is legal depends on how it calls:
+
+  ```js
+  const canView = hasPermission('read_x');                       // fine: runs every render
+  const canEdit = allowEdit && hasPermission('update_x');        // BROKEN: 2 hooks this render,
+                                                                 // 1 the next -> React throws
+  rows.filter((r) => hasPermission(permissionOf(r)));            // BROKEN: count varies with rows
+  ```
+
+  Seventeen call sites therefore pass `userData` deliberately — they sit inside a `.filter()`
+  (`useWorkflowRowActions`), in a plain module that is not a component at all (`canSeeModule`,
+  `getAppModules`, `getMasterModules`), or behind a short-circuit (`permissionKeys.delete &&
+  hasPermission(...)` in `BaseMaster`, `allowCreate && isCreatable && hasPermission(...)` in
+  `MasterSelector`). Nothing enforces that: `react-hooks/rules-of-hooks` identifies components and
+  hooks *by name* — `UpperCase` is a component, `useThing` is a hook, anything else is an ordinary
+  function where hooks are simply not allowed. `hasPermission` is neither, so the rule fires on the
+  definition and is silenced with an eslint-disable, leaving every call site unchecked.
+
+- **Fix:** Split the two shapes so the rule can do its job: a plain `checkPermission(names,
+  userData)` for loops, plain modules and short-circuits, and a `useCheckPermission()` for
+  components that want the signed-in user. The lint rule then checks each call site by name, with
+  no suppression anywhere. This was built and verified (client lint clean with the disable removed,
+  build green, 9 call sites on the hook and 17 on the plain function) and then reverted on request
+  — see the conversation of 2026-09-17.
+
+  Then audit the rest of `startup/client/src/hooks/` for the same shape: any exported function that
+  calls `useContext`/`useState`/`useEffect` on some paths but not others, or that is reachable from
+  a loop, callback or condition. Renaming such a function to `use*` without splitting it does not
+  fix anything — it just moves the error from the definition to every call site that was relying on
+  the non-hook path (measured: 12 of them).
+
 ---
 
 ## Documentation
@@ -146,10 +192,10 @@
 | Priority | Count |
 |----------|-------|
 | P0 (Critical) | 1 |
-| P1 (High) | 5 |
+| P1 (High) | 6 |
 | P2 (Medium) | 11 |
 | P3 (Low) | 5 |
-| **Total** | **22** |
+| **Total** | **23** |
 
 ---
 
