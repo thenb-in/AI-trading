@@ -377,7 +377,43 @@ longer has, and Deactivate to take away their access.
 
 ---
 
-## 6. Help & Support
+## 6. Geography
+
+**What it does:** Holds every place the app knows — country, state, district, city, zone, site — as one tree.
+
+**When to use:** Before anything that needs a place: an address, a filter, a report grouped by region.
+
+**Module Path:** Masters → Geography
+
+#### Add a Place
+1. Open the tree and hover the place it belongs under
+2. Click the **+** on that card (or **Add Place** in the header for a top level one)
+3. Name it. The level is filled in from the one above it and can be changed
+4. Optionally give it a code — what other systems call this place
+5. Save
+
+#### Move or Rename a Place
+1. Hover the card and click the pencil
+2. Change its name, code, level, or the place it sits under
+3. Save
+
+Everything under it moves with it — a place stores only what contains it, so a
+branch is re-parented by one change.
+
+#### Delete a Place
+- **Permission required:** `Geography.delete`
+1. Hover a place with nothing under it and click the bin
+2. Confirm
+
+A place that still holds others is refused, and says how many — empty it first.
+
+#### Tree or List
+The header switches between the two. The tree is for finding where something
+sits; the list is for searching, sorting and exporting every place at once.
+
+---
+
+## 7. Help & Support
 
 **What it does:** Submit support tickets with context.
 
@@ -392,7 +428,7 @@ longer has, and Deactivate to take away their access.
 
 ---
 
-## 7. Global Search
+## 8. Global Search
 
 **What it does:** Quick-search across all application modules.
 
@@ -406,7 +442,7 @@ longer has, and Deactivate to take away their access.
 
 ---
 
-## 8. Keyboard Shortcuts
+## 9. Keyboard Shortcuts
 
 Every shortcut below is advertised on the button that performs the same action —
 hover a button to see it, and desktop buttons carry the combination as a small badge.
@@ -430,7 +466,7 @@ record you are editing.
 
 ---
 
-## 9. Company Switching
+## 10. Company Switching
 
 **What it does:** Switch your active company context.
 
@@ -449,7 +485,7 @@ record you are editing.
 
 ---
 
-## 10. API Usage Guide (For Developers)
+## 11. API Usage Guide (For Developers)
 
 All API endpoints require the `accessToken` cookie to be present (set automatically after login) unless marked as public.
 

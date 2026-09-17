@@ -276,6 +276,15 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 |--------|------|------|-------------|
 | POST | `/open-ticket` | Yes | Submit a support ticket |
 
+### 3.9 Geography (`/api/v1/geography`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/` | Yes + `read_geography` | Every place, depth first, each carrying its depth, its path and what it holds |
+| POST | `/` | Yes + `create_geography` | Add a place under another, or at the top |
+| PUT | `/:id` | Yes + `update_geography` | Rename, re-code, re-level or re-parent a place |
+| DELETE | `/:id` | Yes + `delete_geography` | Delete a place; refused with 409 while it holds others |
+
 ---
 
 ## 4. Security Architecture

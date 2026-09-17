@@ -6,10 +6,12 @@ import {
   NotificationsActive as NotificationsActiveIcon,
   Memory as MemoryIcon,
   Assessment as AssessmentIcon,
+  AccountTree as AccountTreeIcon,
 } from "@mui/icons-material";
 
 
 const GENERIC_MASTER_CATEGORIES = {
+  ORGANISATION: "Organisation",
   COMMUNICATION: "Communication",
   FILE_MANAGEMENT: "File Management",
   REPORTING: "Reporting",
@@ -18,6 +20,7 @@ const GENERIC_MASTER_CATEGORIES = {
 
 
 const genericMasterCategoryOrder = [
+  { name: GENERIC_MASTER_CATEGORIES.ORGANISATION, order: 5, icon: AccountTreeIcon },
   { name: GENERIC_MASTER_CATEGORIES.COMMUNICATION, order: 6, icon: NotificationsActiveIcon },
   { name: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT, order: 7, icon: CloudUploadIcon },
   { name: GENERIC_MASTER_CATEGORIES.REPORTING, order: 8, icon: AssessmentIcon },
@@ -42,6 +45,21 @@ const getGenericMasterModules = (handleOpenMaster) => [
       "notification rule alert in-app bell email mail whatsapp message recipient role permission channel",
     category: GENERIC_MASTER_CATEGORIES.COMMUNICATION,
     permissionName: "read_notification_rule",
+  },
+  {
+    id: "geography",
+    title: "Geography",
+    description:
+      "Country, state, city, site — held as a tree, so every address, filter and report in the app reads the same places.",
+    icon: AccountTreeIcon,
+    color: "info",
+    onClick: () => handleOpenMaster("geography"),
+    buttonText: "Open Geography",
+    tags: ["Geography", "Location", "Tree", "Hierarchy", "Region"],
+    keywords:
+      "geography location place country state province district city town zone site region area tree hierarchy parent child address",
+    category: GENERIC_MASTER_CATEGORIES.ORGANISATION,
+    permissionName: "read_geography",
   },
   {
     id: "report-run",

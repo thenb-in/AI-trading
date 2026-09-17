@@ -9,6 +9,7 @@ const MASTERS = {
   PERMISSION: 'Permission',
   SUBSCRIPTION: 'Subscription',
   NOTIFICATION_RULE: 'Notification Rule',
+  GEOGRAPHY: 'Geography',
   NBNEXT_DRIVE: 'NBnext Drive',
   ACTIVITY: 'Activity',
   REPORT_RUN: 'Report Run',

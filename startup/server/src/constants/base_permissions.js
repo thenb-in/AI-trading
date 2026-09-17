@@ -194,6 +194,8 @@ const MASTER_PERMISSION_CONSTANTS = {
 
   NOTIFICATION_RULE: create_master_permission(MASTERS.NOTIFICATION_RULE),
 
+  GEOGRAPHY: create_master_permission(MASTERS.GEOGRAPHY),
+
   // The drive ships with the framework, so its permissions live here rather
   // than in an app's set. read_personal_nbnext_drive scopes a user to the files
   // they uploaded; read_nbnext_drive widens that to the whole company and is the
