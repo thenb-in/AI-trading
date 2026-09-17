@@ -6,6 +6,7 @@ import { useHelpSupportShortcut } from "@/hooks/useHelpSupportShortcut";
 import { useClearCacheShortcut } from "@/hooks/useClearCacheShortcut";
 import { getAppLayout } from "@data/appLayoutRegistry";
 import { NotificationProvider } from "../../notifications/NotificationProvider";
+import { AnnouncementBanner } from "../announcements/AnnouncementBanner";
 import { ToastProvider } from "../toast";
 
 
@@ -55,6 +56,9 @@ function AdminLayout() {
             } min-h-screen bg-gray-50`}
           >
             <div className="max-w-full">
+              {/* Above the page, not over it: an announcement is read once and
+                  dismissed, and must never sit on top of what someone is doing. */}
+              <AnnouncementBanner />
               <Outlet />
             </div>
           </div>

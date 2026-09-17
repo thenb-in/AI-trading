@@ -6,6 +6,7 @@ import {
   NotificationsActive as NotificationsActiveIcon,
   Memory as MemoryIcon,
   Assessment as AssessmentIcon,
+  Campaign as CampaignIcon,
   AccountTree as AccountTreeIcon,
 } from "@mui/icons-material";
 
@@ -60,6 +61,21 @@ const getGenericMasterModules = (handleOpenMaster) => [
       "geography location place country state province district city town zone site region area tree hierarchy parent child address",
     category: GENERIC_MASTER_CATEGORIES.ORGANISATION,
     permissionName: "read_geography",
+  },
+  {
+    id: "announcement",
+    title: "Announcements",
+    description:
+      "Tell everyone something once — a banner across the app, for the roles you choose, between the dates you set.",
+    icon: CampaignIcon,
+    color: "secondary",
+    onClick: () => handleOpenMaster("announcement"),
+    buttonText: "Manage Announcements",
+    tags: ["Announcement", "Banner", "Broadcast", "Notice", "Downtime"],
+    keywords:
+      "announcement banner broadcast notice message downtime maintenance release note company wide alert roles schedule",
+    category: GENERIC_MASTER_CATEGORIES.COMMUNICATION,
+    permissionName: "read_announcement",
   },
   {
     id: "report-run",

@@ -15,6 +15,7 @@ const frameworkIdentifiers = {
   [MASTERS.REPORT_RUN]: 'reportTitle',
   [MASTERS.NBNEXT_DRIVE]: 'fileName',
   [MASTERS.ACTIVITY]: 'head',
+  [MASTERS.ANNOUNCEMENT]: 'title',
   // A place is known by where it sits — two cities called Springfield are only
   // told apart by what is above them.
   [MASTERS.GEOGRAPHY]: 'path',

@@ -194,6 +194,10 @@ const MASTER_PERMISSION_CONSTANTS = {
 
   NOTIFICATION_RULE: create_master_permission(MASTERS.NOTIFICATION_RULE),
 
+  // The banner everyone reads is the master's; being SHOWN one is not, so
+  // /announcements/active asks for none of these.
+  ANNOUNCEMENT: create_master_permission(MASTERS.ANNOUNCEMENT),
+
   GEOGRAPHY: create_master_permission(MASTERS.GEOGRAPHY),
 
   // The drive ships with the framework, so its permissions live here rather

@@ -17,6 +17,7 @@ const httpLogger = require('./src/middleware/httpLogger');
 const licenseGate = require('./src/middleware/licenseGate');
 const db = require('./src/models');
 const activityRoutes = require('./src/routes/activityRoutes');
+const announcementRoutes = require('./src/routes/announcementRoutes');
 const adminRoutes = require('./src/routes/admin.route');
 const authRoutes = require('./src/routes/authRoutes');
 const companyRoutes = require('./src/routes/companyRoutes');
@@ -120,6 +121,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/notifications`, notificationRoutes);
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
+  app.use(`${API_PREFIX}/announcements`, announcementRoutes);
   app.use(`${API_PREFIX}/geography`, geographyRoutes);
   // Framework-shipped reports share the app's /reports namespace, so one the
   // framework provides is fetched exactly like one the app added. The app mounts

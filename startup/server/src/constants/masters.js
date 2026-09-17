@@ -6,6 +6,7 @@ const MASTERS = {
   ROLE: 'Role',
   PERMISSION: 'Permission',
   NOTIFICATION_RULE: 'Notification Rule',
+  ANNOUNCEMENT: 'Announcement',
   GEOGRAPHY: 'Geography',
   NBNEXT_DRIVE: 'NBnext Drive'
 };

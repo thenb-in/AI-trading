@@ -84,6 +84,7 @@ const GENERIC_STATIC_TITLES = {
   '/admin/master/notification-rule': 'Notification Rules',
   '/admin/master/report-run': 'Reporting Manager',
   '/admin/master/geography': 'Geography',
+  '/admin/master/announcement': 'Announcements',
   '/admin/users': 'User Management',
   '/admin/company': 'Company Settings',
   '/admin/role-permissions': 'Roles & Permissions',

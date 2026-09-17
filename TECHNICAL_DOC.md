@@ -285,6 +285,16 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 | PUT | `/:id` | Yes + `update_geography` | Rename, re-code, re-level or re-parent a place |
 | DELETE | `/:id` | Yes + `delete_geography` | Delete a place; refused with 409 while it holds others |
 
+### 3.10 Announcements (`/api/v1/announcements`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/active` | Yes | What the signed-in user should be shown right now — running, and meant for their role |
+| GET | `/` | Yes + `read_announcement` | Every announcement in the company |
+| POST | `/` | Yes + `create_announcement` | Post an announcement |
+| PUT | `/:id` | Yes + `update_announcement` | Edit one; readers who dismissed it see the edited one again |
+| DELETE | `/:id` | Yes + `delete_announcement` | Delete an announcement |
+
 ---
 
 ## 4. Security Architecture

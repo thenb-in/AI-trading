@@ -413,7 +413,36 @@ sits; the list is for searching, sorting and exporting every place at once.
 
 ---
 
-## 7. Help & Support
+## 7. Announcements
+
+**What it does:** Shows a banner across the app to the whole company, or to chosen roles, between chosen dates.
+
+**When to use:** Planned downtime, a release note, anything everyone has to read once.
+
+**Module Path:** Masters → Announcements
+
+#### Post an Announcement
+1. Click "Add Announcement"
+2. Write the title and the message
+3. Choose how loud it is — Information, Warning or Critical (this styles the banner)
+4. Choose who sees it. Leave the roles empty and it is for everyone in the company
+5. Set "Shown from" and "Shown until". Leave either empty for "from now" and "until someone stops it"
+6. Save
+
+#### Stop an Announcement
+1. Open it and clear **Running**, or set "Shown until" to now
+2. Save
+
+It stops appearing for everyone at once.
+
+#### What a Reader Sees
+The banner sits above the page, never over it. Dismissing one hides it for that
+reader on that browser only; editing an announcement brings it back, because an
+edited announcement is a new thing to say.
+
+---
+
+## 8. Help & Support
 
 **What it does:** Submit support tickets with context.
 
@@ -428,7 +457,7 @@ sits; the list is for searching, sorting and exporting every place at once.
 
 ---
 
-## 8. Global Search
+## 9. Global Search
 
 **What it does:** Quick-search across all application modules.
 
@@ -442,7 +471,7 @@ sits; the list is for searching, sorting and exporting every place at once.
 
 ---
 
-## 9. Keyboard Shortcuts
+## 10. Keyboard Shortcuts
 
 Every shortcut below is advertised on the button that performs the same action —
 hover a button to see it, and desktop buttons carry the combination as a small badge.
@@ -466,7 +495,7 @@ record you are editing.
 
 ---
 
-## 10. Company Switching
+## 11. Company Switching
 
 **What it does:** Switch your active company context.
 
@@ -485,7 +514,7 @@ record you are editing.
 
 ---
 
-## 11. API Usage Guide (For Developers)
+## 12. API Usage Guide (For Developers)
 
 All API endpoints require the `accessToken` cookie to be present (set automatically after login) unless marked as public.
 
