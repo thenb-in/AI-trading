@@ -1,7 +1,7 @@
 // @nucleus foundational layer (logger + generic constants) build-bytecode
-// config. Built as its own --src and staged at nucleus/ so gateway runnables
-// (and the app, via the @nucleus alias / startup re-export shims) resolve the
-// compiled logger/constants in the deployed bundle.
+// config. Built as its own --src and staged at nucleus/ so the app, via the
+// @nucleus alias / startup re-export shims, resolves the compiled
+// logger/constants in the deployed bundle.
 module.exports = {
   copy: [
     'package.json',

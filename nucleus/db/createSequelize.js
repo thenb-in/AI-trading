@@ -13,8 +13,8 @@
 // option with the URL's protocol regardless, so a separate DB_DIALECT was inert.
 // `sequelize.getDialect()` is the honest source of truth for anyone who needs it.
 //
-// `sequelize` resolves through the host's `sequelize` module-alias, which both
-// app/server and the gateways point at startup/server/node_modules/sequelize.
+// `sequelize` resolves through the host's `sequelize` module-alias, which
+// app/server points at startup/server/node_modules/sequelize.
 // That single instance is what makes the `instanceof` in `retry.match` work —
 // do NOT add sequelize to nucleus's own dependencies.
 
