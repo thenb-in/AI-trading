@@ -13,11 +13,10 @@ const companyService = require('../companyService');
 const userService = require('../userService');
 const { isSsoManagedAccount } = require('../../config/ssoUserAccess');
 const env = require('../../config/env');
-
-const normalize = (val) => val?.trim().toLowerCase();
+const { normalizeUsername } = require('../../utils/normalizeUtils');
 
 const findUserWithRole = async (username) => {
-  const normalizedUsername = normalize(username);
+  const normalizedUsername = normalizeUsername(username);
   return await User.findOne({
     where: where(fn('LOWER', col('username')), normalizedUsername),
     include: getUserWithRoleInclude(),
@@ -113,7 +112,7 @@ const buildLoginPayload = (user, activeCompany, accessToken, refreshToken, profi
  * loginUser so any caller that just needs the vetted user can reuse it.
  */
 const verifyCredentials = async (username, password) => {
-  const trimmedUsername = normalize(username);
+  const trimmedUsername = normalizeUsername(username);
   logger.info(`Looking up user by username: ${trimmedUsername}`);
   const user = await findUserWithRole(trimmedUsername);
   await validateUserStatusAndPassword(user, password, trimmedUsername);
@@ -122,7 +121,7 @@ const verifyCredentials = async (username, password) => {
 
 const loginUser = async (credentials, isSsoFlow = false) => {
   const { username, password } = credentials;
-  logger.info(`User login attempt: ${normalize(username)} - SSO: ${isSsoFlow}`);
+  logger.info(`User login attempt: ${normalizeUsername(username)} - SSO: ${isSsoFlow}`);
   const user = await verifyCredentials(username, password);
   logger.info(`User login successful: ${user.id}`);
   const { accessToken, refreshToken } = await issueTokensAndPersist(user);

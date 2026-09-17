@@ -3,11 +3,10 @@ const { User, Company, Role, MultiCompanyModule, UserProfile } = require('../../
 const logger = require('../../../logger');
 const { findModelByIdOrThrow } = require('../../utils/modelHelpers');
 const { assertPasswordPolicy } = require('./passwordPolicy');
-
-const normalize = (val) => val?.trim().toLowerCase();
+const { normalizeUsername } = require('../../utils/normalizeUtils');
 
 const signup = async (username, password, companyId, { phone, email, name, role, is_approved = false, last_active = null }, transaction) => {
-  username = normalize(username);
+  username = normalizeUsername(username);
   password = password?.trim();
   assertPasswordPolicy(password);
   logger.info(`Signup attempt: ${phone} - ${name} - ${companyId} - ${role}`);

@@ -85,6 +85,15 @@ const normalizeEmail = (value) => {
 };
 
 /**
+ * A trimmed, lower-cased username, or null when there is nothing left of it.
+ *
+ * The one shape a username is stored and looked up in: signup writes it this
+ * way, so login and every other lookup has to ask for it this way or "Admin"
+ * and "admin " would be treated as accounts that do not exist.
+ */
+const normalizeUsername = (value) => String(value ?? '').trim().toLowerCase() || null;
+
+/**
  * A phone number as digits only, or null when there are no digits in it.
  *
  * The twin of `normalizeEmail`, and null for the same reason: a recipient list holds phone
@@ -130,6 +139,7 @@ module.exports = {
   percentOf,
   applyRounding,
   normalizeEmail,
+  normalizeUsername,
   normalizePhone,
   singleLine,
   lastTenDigits
