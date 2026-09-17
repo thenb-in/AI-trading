@@ -64,7 +64,7 @@ function IconTypeField({
       return;
     }
     let cancelled = false;
-    import('./shared/mdiIconNames.json')
+    import('@data/mdiIconNames.json')
       .then((module) => {
         if (!cancelled) {
           setAllNames(module.default || []);
