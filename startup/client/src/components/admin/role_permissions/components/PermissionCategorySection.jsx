@@ -1,9 +1,16 @@
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { useCallback } from 'react';
-import { Layers, Loader2, Trash2 } from 'lucide-react';
+import { Layers, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { isPermissionAssigned, getPermissionSubscriptionStatus, getPermissionLabel, isUndeclaredPermission } from '../utils/permissionUtils';
+import {
+  isPermissionAssigned,
+  getPermissionSubscriptionStatus,
+  getPermissionLabel,
+  isUndeclaredPermission,
+  categoryTotals,
+} from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
+import { CategoryCard, SelectAllButton } from './CategoryCard';
 import { hasPermission } from '@utils/hasPermission';
 import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS, UNDECLARED_PERMISSION_STYLES } from '../../permissionCategoryStyles';
 
@@ -27,22 +34,13 @@ function PermissionCategorySection({
     onTogglePermission(permission_id, isAssigned);
   }, [onTogglePermission]);
 
-  // Handler for category-level toggle (module/report)
+  // Grant or revoke the whole category. Only the matrix categories hand over a
+  // grouped object rather than a list, and they have no such control.
   const handleCategoryToggle = useCallback(() => {
     if (!Array.isArray(permissions)) return;
-    // Filter to only subscribed permissions
-    const subscribedPermissions = permissions.filter((p) => {
-      const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
-      return status === 'subscribed';
-    });
-    
-    if (subscribedPermissions.length === 0) return;
-    
-    const allPermIds = subscribedPermissions.map((p) => p.id);
-    const allAssigned = allPermIds.every((id) =>
-      isPermissionAssigned(selectedRole, id)
-    );
-    onToggleOperation(allPermIds, !allAssigned);
+    const { subscribed, allAssigned } = categoryTotals(permissions, selectedRole, companySubscriptions);
+    if (subscribed.length === 0) return;
+    onToggleOperation(subscribed.map((permission) => permission.id), !allAssigned);
   }, [permissions, selectedRole, onToggleOperation, companySubscriptions]);
 
   // Deleting the permissions no constant declares — one, or a whole master's
@@ -83,15 +81,12 @@ function PermissionCategorySection({
     const totalCount = Object.values(permissions).reduce((sum, perms) => sum + perms.length, 0);
     
     return (
-      <div className={`border rounded p-2 ${colorClass}`}>
-        <div className="flex items-center gap-1.5 mb-2">
-          <Icon className="w-4 h-4 text-gray-700" />
-          <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
-          <span className="ml-auto text-xs text-gray-600">
-            {totalCount} permissions
-          </span>
-        </div>
-
+      <CategoryCard
+        icon={Icon}
+        title={title}
+        colorClass={colorClass}
+        summary={`${totalCount} permissions`}
+      >
         <PermissionTable
           groups={permissions}
           selectedRole={selectedRole}
@@ -104,65 +99,36 @@ function PermissionCategorySection({
           userData={userData}
           companySubscriptions={companySubscriptions}
         />
-      </div>
+      </CategoryCard>
     );
   }
 
   // For "other" category - detailed table view with all information
   if (category === 'other') {
-    // Filter to only subscribed permissions for "Select All" logic
-    const subscribedPermissions = permissions.filter((p) => {
-      const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
-      return status === 'subscribed';
-    });
-    
-    const assignedCount = permissions.filter((p) =>
-      isPermissionAssigned(selectedRole, p.id)
-    ).length;
-    const allCategoryAssigned = subscribedPermissions.length > 0 && subscribedPermissions.every((p) =>
-      isPermissionAssigned(selectedRole, p.id)
-    );
-    const hasSubscribedPermissions = subscribedPermissions.length > 0;
+    const { assignedCount, allAssigned, hasSubscribed } = categoryTotals(permissions, selectedRole, companySubscriptions);
 
     return (
-      <div className={`border rounded p-2 ${colorClass}`}>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Icon className="w-4 h-4 text-gray-700" />
-            <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
-            <span className="text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded">
-              Investigation Needed
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">
-              {assignedCount}/{permissions.length}
-            </span>
-            {permissions.length > 0 && (
-              <button
-                onClick={handleCategoryToggle}
-                disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedPermissions}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-                title={
-                  !hasSubscribedPermissions 
-                    ? 'No subscribed permissions available' 
-                    : isRoleReadOnly 
-                      ? 'Read-only: Only superadmins can modify default roles' 
-                      : ''
-                }
-              >
-                {updating ? (
-                  <Loader2 className="w-3 h-3 animate-spin inline" />
-                ) : allCategoryAssigned ? (
-                  'Deselect All'
-                ) : (
-                  'Select All'
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
+      <CategoryCard
+        icon={Icon}
+        title={title}
+        colorClass={colorClass}
+        badge={(
+          <span className="text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded">
+            Investigation Needed
+          </span>
+        )}
+        summary={`${assignedCount}/${permissions.length}`}
+        toggle={permissions.length > 0 && (
+          <SelectAllButton
+            onToggle={handleCategoryToggle}
+            allAssigned={allAssigned}
+            hasSubscribed={hasSubscribed}
+            isRoleReadOnly={isRoleReadOnly}
+            updating={updating}
+            disabled={!selectedRole}
+          />
+        )}
+      >
         <div className="overflow-x-auto border border-gray-200 rounded bg-white">
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -236,61 +202,30 @@ function PermissionCategorySection({
             </tbody>
           </table>
         </div>
-      </div>
+      </CategoryCard>
     );
   }
 
   // For module permissions - simple list view
-  // Filter to only subscribed permissions for "Select All" logic
-  const subscribedPermissions = permissions.filter((p) => {
-    const status = getPermissionSubscriptionStatus(companySubscriptions, p.id);
-    return status === 'subscribed';
-  });
-  
-  const assignedCount = permissions.filter((p) =>
-    isPermissionAssigned(selectedRole, p.id)
-  ).length;
-  const allCategoryAssigned = subscribedPermissions.length > 0 && subscribedPermissions.every((p) =>
-    isPermissionAssigned(selectedRole, p.id)
-  );
-  const hasSubscribedPermissions = subscribedPermissions.length > 0;
+  const { assignedCount, allAssigned, hasSubscribed } = categoryTotals(permissions, selectedRole, companySubscriptions);
 
   return (
-    <div className={`border rounded p-2 ${colorClass}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <Icon className="w-4 h-4 text-gray-700" />
-          <h3 className="text-xs font-semibold text-gray-900">{title}</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-600">
-            {assignedCount}/{permissions.length}
-          </span>
-          {permissions.length > 0 && (
-            <button
-              onClick={handleCategoryToggle}
-              disabled={updating || !selectedRole || isRoleReadOnly || !hasSubscribedPermissions}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
-              title={
-                !hasSubscribedPermissions 
-                  ? 'No subscribed permissions available' 
-                  : isRoleReadOnly 
-                    ? 'Read-only: Only superadmins can modify default roles' 
-                    : ''
-              }
-            >
-              {updating ? (
-                <Loader2 className="w-3 h-3 animate-spin inline" />
-              ) : allCategoryAssigned ? (
-                'Deselect All'
-              ) : (
-                'Select All'
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-
+    <CategoryCard
+      icon={Icon}
+      title={title}
+      colorClass={colorClass}
+      summary={`${assignedCount}/${permissions.length}`}
+      toggle={permissions.length > 0 && (
+        <SelectAllButton
+          onToggle={handleCategoryToggle}
+          allAssigned={allAssigned}
+          hasSubscribed={hasSubscribed}
+          isRoleReadOnly={isRoleReadOnly}
+          updating={updating}
+          disabled={!selectedRole}
+        />
+      )}
+    >
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-1">
         {permissions.map((permission) => {
           const assigned = isPermissionAssigned(selectedRole, permission.id);
@@ -347,7 +282,7 @@ function PermissionCategorySection({
           );
         })}
       </div>
-    </div>
+    </CategoryCard>
   );
 }
 

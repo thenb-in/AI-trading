@@ -176,6 +176,27 @@ function filterPermissionsBySubscription(permissions, companySubscriptions, user
     || userData?.isSupportUser === true);
 }
 
+/**
+ * What a whole category adds up to for the role in hand: which of its
+ * permissions this company's plan allows, how many are granted, and whether
+ * every allowed one is granted. The count beside a category title and its
+ * "Select All" control are both built from these, and so is the toggle itself,
+ * so they cannot drift apart.
+ */
+const categoryTotals = (permissions, selectedRole, companySubscriptions) => {
+  const subscribed = (permissions || []).filter((permission) =>
+    getPermissionSubscriptionStatus(companySubscriptions, permission.id) === 'subscribed');
+
+  return {
+    subscribed,
+    hasSubscribed: subscribed.length > 0,
+    assignedCount: (permissions || []).filter((permission) =>
+      isPermissionAssigned(selectedRole, permission.id)).length,
+    allAssigned: subscribed.length > 0
+      && subscribed.every((permission) => isPermissionAssigned(selectedRole, permission.id))
+  };
+};
+
 const hasNoOrganizedPermissions = (organized) =>
   organized.module.length === 0 &&
   Object.keys(organized.report).length === 0 &&
@@ -189,6 +210,7 @@ export {
   groupReportPermissionsByOperation,
   getOperationDisplayName,
   isPermissionAssigned,
+  categoryTotals,
   isLinkedPermission,
   isUndeclaredPermission,
   undeclaredPermissions,
