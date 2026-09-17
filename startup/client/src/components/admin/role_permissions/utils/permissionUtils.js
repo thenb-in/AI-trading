@@ -4,8 +4,10 @@
  * The server describes every permission it hands over: what kind it is
  * (`type`), what it belongs to (`group` — a master or a report) and what it
  * grants there (`operation`). Nothing here reads a permission's name to work
- * that out; a permission no constant declares arrives as type "other" and is
- * listed on its own.
+ * that out. It also says whether the constants still declare it (`declared`) —
+ * a permission left behind by a build that dropped it is shown where its name
+ * puts it, with a delete button; one whose name says nothing arrives as type
+ * "other" and is listed on its own.
  */
 
 // Which column of the master table an operation belongs under. Reading only
@@ -51,6 +53,17 @@ const UNGROUPED_MASTER = 'Other';
  * either ticks the other, because it is one permission.
  */
 const isLinkedPermission = (permission) => permission?.type === 'module' && Boolean(permission.operation);
+
+/**
+ * A permission no constant declares — a row a build left behind after dropping
+ * the master, module or report that asked for it. The server marks it; nothing
+ * here guesses from the name. It still grants what it always did, so it is
+ * shown as usual, with a delete button beside it.
+ */
+const isUndeclaredPermission = (permission) => permission?.declared === false;
+
+/** The undeclared ones out of a list, for the delete button to act on. */
+const undeclaredPermissions = (permissions) => (permissions || []).filter(isUndeclaredPermission);
 
 const addToGroup = (groups, groupName, permission) => {
   if (!groups[groupName]) {
@@ -177,6 +190,8 @@ export {
   getOperationDisplayName,
   isPermissionAssigned,
   isLinkedPermission,
+  isUndeclaredPermission,
+  undeclaredPermissions,
   getPermissionSubscriptionStatus,
   getPermissionSubscriptionStatusByName,
   hasNoOrganizedPermissions,

@@ -8,7 +8,8 @@ import { AlertMessage } from './components/AlertMessage';
 import { useMasterCreator } from '@startup/components/base_components/master/master_modal/MasterModalProvider';
 import { PermissionLegend } from './components/PermissionLegend';
 import { MASTERS } from '@startup/constants/masters';
-import { organizePermissions, hasNoOrganizedPermissions } from './utils/permissionUtils';
+import { organizePermissions, hasNoOrganizedPermissions, isUndeclaredPermission } from './utils/permissionUtils';
+import { hasPermission } from '@utils/hasPermission';
 import { useDataContext } from '@context/useDataContext';
   
 function RolePermissionsManagement() {
@@ -25,7 +26,7 @@ function RolePermissionsManagement() {
     togglePermission,
     toggleMultiplePermissions,
     refetch,
-    deletePermission,
+    deletePermissions,
   } = useRolePermissions();
 
   // A second way in, beside the picker's own create row: the header button,
@@ -38,6 +39,10 @@ function RolePermissionsManagement() {
   );
 
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
+  // The trash icon only exists where there is something to clear up, so the
+  // legend only explains it then.
+  const canDeleteUndeclared = hasPermission(userData, 'delete_permission')
+    && permissions.some(isUndeclaredPermission);
 
   if (loading) {
     return <Loader message="Loading roles and permissions..." />;
@@ -111,7 +116,10 @@ function RolePermissionsManagement() {
         </div>
       ) : (
         <div className="space-y-3">
-          <PermissionLegend isRoleReadOnly={Boolean(selectedRole?.isGlobal) && !userData?.isSupportUser} />
+          <PermissionLegend
+            isRoleReadOnly={Boolean(selectedRole?.isGlobal) && !userData?.isSupportUser}
+            canDeleteUndeclared={canDeleteUndeclared}
+          />
 
           {/* Module Permissions */}
           {organizedPermissions.module.length > 0 && (
@@ -122,6 +130,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              onDeletePermission={deletePermissions}
               userData={userData}
               updating={updating}
               companySubscriptions={companySubscriptions}
@@ -137,6 +146,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              onDeletePermission={deletePermissions}
               userData={userData}
               updating={updating}
               companySubscriptions={companySubscriptions}
@@ -152,6 +162,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
+              onDeletePermission={deletePermissions}
               userData={userData}
               updating={updating}
               companySubscriptions={companySubscriptions}
@@ -167,7 +178,7 @@ function RolePermissionsManagement() {
               selectedRole={selectedRole}
               onTogglePermission={togglePermission}
               onToggleOperation={toggleMultiplePermissions}
-              onDeletePermission={deletePermission}
+              onDeletePermission={deletePermissions}
               userData={userData}
               updating={updating}
               companySubscriptions={companySubscriptions}

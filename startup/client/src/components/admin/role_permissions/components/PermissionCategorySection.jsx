@@ -2,10 +2,10 @@ import { CheckboxTypeField } from '@startup/components/base_components/fields/Ch
 import { useCallback } from 'react';
 import { Layers, Loader2, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
-import { isPermissionAssigned, getPermissionSubscriptionStatus, getPermissionLabel } from '../utils/permissionUtils';
+import { isPermissionAssigned, getPermissionSubscriptionStatus, getPermissionLabel, isUndeclaredPermission } from '../utils/permissionUtils';
 import { PermissionTable } from './PermissionTable';
 import { hasPermission } from '@utils/hasPermission';
-import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS } from '../../permissionCategoryStyles';
+import { PERMISSION_CATEGORY_ICONS, PERMISSION_CATEGORY_COLORS, UNDECLARED_PERMISSION_STYLES } from '../../permissionCategoryStyles';
 
 function PermissionCategorySection({
   title,
@@ -45,12 +45,21 @@ function PermissionCategorySection({
     onToggleOperation(allPermIds, !allAssigned);
   }, [permissions, selectedRole, onToggleOperation, companySubscriptions]);
 
-  // Handler for permission deletion
-  const handleDeletePermission = useCallback((permission_id, permissionName) => {
-    if (window.confirm(`Are you sure you want to delete the permission "${permissionName}"? This action cannot be undone.`)) {
-      onDeletePermission(permission_id);
+  // Deleting the permissions no constant declares — one, or a whole master's
+  // worth from its row header. The names go in the prompt so whoever is
+  // clearing up sees exactly which rows leave the database.
+  const handleDeleteUndeclared = useCallback((permissionsToDelete) => {
+    const names = permissionsToDelete.map((permission) => permission.name).join(', ');
+    const confirmed = window.confirm(
+      `Delete ${permissionsToDelete.length} permission(s) that no constant declares — ${names}? ` +
+      `They will be removed from every role that holds them. This cannot be undone.`
+    );
+    if (confirmed) {
+      onDeletePermission(permissionsToDelete.map((permission) => permission.id));
     }
   }, [onDeletePermission]);
+
+  const canDeletePermission = hasPermission(userData, 'delete_permission');
 
   // Validate permissions based on category type
   let hasPermissions = false;
@@ -88,6 +97,8 @@ function PermissionCategorySection({
           selectedRole={selectedRole}
           onTogglePermission={handlePermissionToggle}
           onToggleOperation={onToggleOperation}
+          onDeleteUndeclared={handleDeleteUndeclared}
+          canDeletePermission={canDeletePermission}
           updating={updating}
           groupByOperation={category}
           userData={userData}
@@ -112,7 +123,6 @@ function PermissionCategorySection({
       isPermissionAssigned(selectedRole, p.id)
     );
     const hasSubscribedPermissions = subscribedPermissions.length > 0;
-    const canDeletePermission = hasPermission(userData, 'delete_permission');
 
     return (
       <div className={`border rounded p-2 ${colorClass}`}>
@@ -185,7 +195,12 @@ function PermissionCategorySection({
                       : getPermissionLabel(permission);
                 
                 return (
-                  <tr key={permission.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <tr
+                    key={permission.id}
+                    className={`border-b border-gray-200 hover:bg-gray-50 ${
+                      isUndeclaredPermission(permission) ? UNDECLARED_PERMISSION_STYLES.tint : ''
+                    }`}
+                  >
                     <td className="p-1.5 text-center border-r border-gray-200">
                       <CheckboxTypeField
                         mode="bare"
@@ -197,20 +212,22 @@ function PermissionCategorySection({
                       />
                     </td>
                     <td className="p-1.5 text-gray-700 border-r border-gray-200 font-mono text-xs">{permission.id}</td>
-                    <td className="p-1.5 text-gray-700 border-r border-gray-200 font-mono text-xs">{permission.name || '—'}</td>
+                    <td className={`p-1.5 border-r border-gray-200 font-mono text-xs ${isUndeclaredPermission(permission) ? UNDECLARED_PERMISSION_STYLES.text : 'text-gray-700'}`}>{permission.name || '—'}</td>
                     <td className="p-1.5 text-gray-700 border-r border-gray-200">{permission.display_name || '—'}</td>
                     <td className="p-1.5 text-gray-600 border-r border-gray-200">{permission.description || '—'}</td>
                     <td className={`p-1.5 text-gray-700 ${canDeletePermission ? 'border-r border-gray-200' : ''}`}>{permission.type || '—'}</td>
                     {canDeletePermission && (
                       <td className="p-1.5 text-center">
-                        <button
-                          onClick={() => handleDeletePermission(permission.id, permission.display_name || permission.name)}
-                          disabled={updating}
-                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          title="Delete permission"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isUndeclaredPermission(permission) && (
+                          <button
+                            onClick={() => handleDeleteUndeclared([permission])}
+                            disabled={updating}
+                            className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title={`Delete ${permission.name} — no constant declares this permission`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -290,23 +307,43 @@ function PermissionCategorySection({
                 ? 'Read-only: Only superadmins can modify default roles' 
                 : '';
           
+          const isUndeclared = isUndeclaredPermission(permission);
+
           return (
-            <label
+            <div
               key={permission.id}
-              className={`flex items-center gap-1 p-1 bg-white rounded border border-gray-200 hover:border-blue-300 ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-              title={tooltipText || getPermissionLabel(permission)}
+              className={`flex items-center gap-1 p-1 rounded border hover:border-blue-300 ${
+                isUndeclared
+                  ? `${UNDECLARED_PERMISSION_STYLES.tint} ${UNDECLARED_PERMISSION_STYLES.border}`
+                  : 'bg-white border-gray-200'
+              }`}
             >
-              <CheckboxTypeField
-                mode="bare"
-                checked={assigned}
-                onChange={() => handlePermissionToggle(permission.id, assigned)}
-                disabled={isDisabled}
-                className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
-              />
-              <span className="text-xs text-gray-700 truncate flex-1">
-                {getPermissionLabel(permission)}
-              </span>
-            </label>
+              <label
+                className={`flex items-center gap-1 flex-1 min-w-0 ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                title={tooltipText || getPermissionLabel(permission)}
+              >
+                <CheckboxTypeField
+                  mode="bare"
+                  checked={assigned}
+                  onChange={() => handlePermissionToggle(permission.id, assigned)}
+                  disabled={isDisabled}
+                  className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                />
+                <span className={`text-xs truncate flex-1 ${isUndeclared ? UNDECLARED_PERMISSION_STYLES.text : 'text-gray-700'}`}>
+                  {getPermissionLabel(permission)}
+                </span>
+              </label>
+              {canDeletePermission && isUndeclared && (
+                <button
+                  onClick={() => handleDeleteUndeclared([permission])}
+                  disabled={updating}
+                  className="p-0.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  title={`Delete ${permission.name} — no constant declares this permission`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           );
         })}
       </div>

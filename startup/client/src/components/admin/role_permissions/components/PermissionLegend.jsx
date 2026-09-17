@@ -1,6 +1,7 @@
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import PropTypes from 'prop-types';
-import { Link2 } from 'lucide-react';
+import { Link2, Trash2 } from 'lucide-react';
+import { UNDECLARED_PERMISSION_STYLES } from '../../permissionCategoryStyles';
 
 /**
  * The permission tables speak in symbols — ✓/✕ buttons that act on a whole row
@@ -23,7 +24,7 @@ const SYMBOL_CELL = 'flex h-5 w-5 shrink-0 items-center justify-center';
 const GRID = 'grid grid-cols-1 gap-px overflow-hidden rounded bg-gray-200 sm:grid-cols-2 xl:grid-cols-3';
 const ITEM = 'flex items-center gap-2 bg-white px-3 py-2';
 
-const PermissionLegend = ({ isRoleReadOnly = false }) => (
+const PermissionLegend = ({ isRoleReadOnly = false, canDeleteUndeclared = false }) => (
   <div className="rounded-lg border border-gray-300 bg-white p-3 shadow-sm">
     <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-500">
       What the symbols mean
@@ -74,9 +75,26 @@ const PermissionLegend = ({ isRoleReadOnly = false }) => (
           <span className="font-medium text-gray-900">Linked</span> — also toggles its module permission
         </span>
       </li>
+      {canDeleteUndeclared && (
+        <li className={ITEM}>
+          {/* The swatch is the mark itself, drawn as the tables draw it, so the
+              reader matches it by sight rather than by the word "red". */}
+          <span className={SYMBOL_CELL}>
+            <span className={`flex h-4 w-4 items-center justify-center ${UNDECLARED_PERMISSION_STYLES.mark}`}>
+              <Trash2 className="h-2.5 w-2.5 text-red-600" />
+            </span>
+          </span>
+          <span className="text-xs text-gray-700">
+            <span className={`font-medium ${UNDECLARED_PERMISSION_STYLES.text}`}>Red</span>
+            {' '}— nothing in the code asks for it; delete the row
+          </span>
+        </li>
+      )}
+
       {/* Fills the last cell so the grid backdrop does not show as a grey
-          patch; unnecessary when the list is a single column. */}
-      <li aria-hidden className="hidden bg-white sm:block" />
+          patch; unnecessary when the list is a single column, and when the
+          delete entry has already made the count even. */}
+      {!canDeleteUndeclared && <li aria-hidden className="hidden bg-white sm:block" />}
     </ul>
   </div>
 );
@@ -85,6 +103,9 @@ PermissionLegend.propTypes = {
   /** Global roles are read-only for everyone but support, which dims the same
    *  controls a missing subscription does — so the legend has to say both. */
   isRoleReadOnly: PropTypes.bool,
+  /** Whether any permission on screen is one no constant declares, and this
+   *  user may delete it — only then does a trash icon appear in the tables. */
+  canDeleteUndeclared: PropTypes.bool,
 };
 
 export { PermissionLegend };

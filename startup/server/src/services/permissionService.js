@@ -2,6 +2,7 @@ const logger = require('../../logger');
 const { Permission } = require('../models');
 const { findModelByIdOrThrow, validateName, validateDescription } = require('../utils/modelHelpers');
 const { formatPermissions } = require('../data_formatters/permission_formatter');
+const { isDeclaredPermission } = require('../constants/permissionCatalog');
 
 const createPermission = async (name, display_name, description, type) => {
   const trimmedName = validateName(name, { fieldName: 'Permission name' });
@@ -80,6 +81,17 @@ const deletePermission = async (permissionId) => {
     const permission = await findModelByIdOrThrow(Permission, permissionId, {}, 'Permission');
     if (!permission) {
       throw { status: 404, message: `Permission with id ${permissionId} not found` };
+    }
+
+    // Only the rows nothing asks for go. A permission the constants declare is
+    // one the code checks for at runtime — deleting it would lock everyone out
+    // of whatever it guards, and the next seed would put it straight back.
+    if (isDeclaredPermission(permission.name)) {
+      throw {
+        status: 400,
+        message: `Permission "${permission.name}" is declared in the permission constants and cannot be deleted. `
+          + `Remove it from the constants first, then delete it here.`
+      };
     }
 
     await permission.destroy();

@@ -219,40 +219,31 @@ function useRolePermissions() {
     [selectedRoleId, permissions, fetchData]
   );
 
-  const deletePermission = useCallback(
-    async (permission_id) => {
-      // Optimistically remove the permission from local state
+  // Deleting the permissions no constant declares — one from a module chip, or
+  // a whole master's worth from its row header. Whatever the server refuses
+  // comes back on the refetch, so nothing has to be put back by hand here.
+  const deletePermissions = useCallback(
+    async (permission_ids) => {
+      // Optimistically remove them, and drop them from every role holding them
       setPermissions((prevPermissions) =>
-        prevPermissions.filter((p) => p.id !== permission_id)
+        prevPermissions.filter((p) => !permission_ids.includes(p.id))
       );
 
-      // Also remove the permission from all roles that have it assigned
       setRoles((prevRoles) =>
-        prevRoles.map((role) => {
-          if (role.permissions && role.permissions.some((p) => p.id === permission_id)) {
-            return {
-              ...role,
-              permissions: role.permissions.filter((p) => p.id !== permission_id),
-            };
-          }
-          return role;
-        })
+        prevRoles.map((role) => ({
+          ...role,
+          permissions: (role.permissions || []).filter((p) => !permission_ids.includes(p.id)),
+        }))
       );
 
       setUpdating(true);
       try {
-        const response = await ApiService.deletePermission(permission_id);
-        if (response.data?.success) {
-          toast.success(response.data.message || 'Permission deleted successfully');
-        } else {
-          // On error, revert by refetching
-          await fetchData();
-          toast.error(response.data?.message || 'Failed to delete permission');
-        }
+        await Promise.all(permission_ids.map((permission_id) => ApiService.deletePermission(permission_id)));
+        toast.success(`${permission_ids.length} permission(s) deleted successfully`);
       } catch (err) {
         // On error, revert by refetching
         await fetchData();
-        const errorMessage = err?.message || err?.data?.message || 'Failed to delete permission';
+        const errorMessage = err?.message || err?.data?.message || 'Failed to delete permissions';
         toast.error(errorMessage);
       } finally {
         setUpdating(false);
@@ -273,7 +264,7 @@ function useRolePermissions() {
     selectRole,
     togglePermission,
     toggleMultiplePermissions,
-    deletePermission,
+    deletePermissions,
     refetch: fetchData,
   };
 }

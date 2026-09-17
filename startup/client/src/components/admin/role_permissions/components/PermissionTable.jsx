@@ -1,6 +1,7 @@
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
-import { Loader2, Link2 } from 'lucide-react';
+import { Loader2, Link2, Trash2 } from 'lucide-react';
 import PropTypes from 'prop-types';
+import { UNDECLARED_PERMISSION_STYLES } from '../../permissionCategoryStyles';
 import {
   groupMasterPermissionsByOperation,
   groupReportPermissionsByOperation,
@@ -8,6 +9,8 @@ import {
   getPermissionLabel,
   isPermissionAssigned,
   isLinkedPermission,
+  isUndeclaredPermission,
+  undeclaredPermissions,
   getPermissionSubscriptionStatus,
 } from '../utils/permissionUtils';
 
@@ -16,6 +19,8 @@ function PermissionTable({
   selectedRole,
   onTogglePermission,
   onToggleOperation,
+  onDeleteUndeclared,
+  canDeletePermission,
   updating,
   groupByOperation,
   userData,
@@ -136,14 +141,34 @@ function PermissionTable({
               isPermissionAssigned(selectedRole, p.id)
             );
             const hasSubscribedInGroup = subscribedGroupPermissions.length > 0;
+            const undeclaredInGroup = undeclaredPermissions(groupPermissions);
+            const hasUndeclared = undeclaredInGroup.length > 0;
 
             return (
               <tr
                 key={groupName}
                 className="border-b border-gray-200 hover:bg-gray-50"
               >
-                <td className="p-1.5 font-medium text-gray-800 sticky left-0 bg-white z-10 border-r border-gray-200 whitespace-nowrap">
-                  {groupName}
+                <td
+                  className={`p-1.5 font-medium sticky left-0 z-10 border-r border-gray-200 whitespace-nowrap ${
+                    hasUndeclared
+                      ? `${UNDECLARED_PERMISSION_STYLES.tint} ${UNDECLARED_PERMISSION_STYLES.text}`
+                      : 'bg-white text-gray-800'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    {groupName}
+                    {canDeletePermission && hasUndeclared && (
+                      <button
+                        onClick={() => onDeleteUndeclared(undeclaredInGroup)}
+                        disabled={updating}
+                        className="p-0.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title={`Delete ${undeclaredInGroup.length} permission(s) under ${groupName} that no constant declares`}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
                 </td>
                 {operations.map((operation) => {
                   const operationPermissions = operationGroups[operation] || [];
@@ -177,6 +202,10 @@ function PermissionTable({
                               ? `${displayName} (Linked to Module Permission - toggling this will also toggle the module permission)`
                               : displayName;
                             
+                            if (isUndeclaredPermission(permission)) {
+                              tooltipText = `${tooltipText} (${permission.name} — no constant declares this permission; delete it from the row header)`;
+                            }
+
                             if (!isSubscribed) {
                               tooltipText = `You don't have subscription to use this permission. Upgrade to use.`;
                             } else if (isHidden && userData?.isSupportUser) {
@@ -186,7 +215,12 @@ function PermissionTable({
                             }
                             
                             return (
-                              <div key={`${permission.id}-${index}`} className="flex items-center gap-0.5">
+                              <div
+                                key={`${permission.id}-${index}`}
+                                className={`flex items-center gap-0.5 ${
+                                  isUndeclaredPermission(permission) ? UNDECLARED_PERMISSION_STYLES.mark : ''
+                                }`}
+                              >
                                 <CheckboxTypeField
                                   mode="bare"
                                   checked={assigned}
@@ -359,6 +393,8 @@ PermissionTable.propTypes = {
   selectedRole: PropTypes.object,
   onTogglePermission: PropTypes.func.isRequired,
   onToggleOperation: PropTypes.func.isRequired,
+  onDeleteUndeclared: PropTypes.func.isRequired,
+  canDeletePermission: PropTypes.bool,
   updating: PropTypes.bool,
   groupByOperation: PropTypes.oneOf(['master', 'report']).isRequired,
   userData: PropTypes.object,

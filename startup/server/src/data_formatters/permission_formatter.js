@@ -15,6 +15,7 @@ const formatPermission = (permission) => {
     display_name: described.display_name || row.display_name || row.name,
     description: described.description || row.description || null,
     type: described.type,
+    declared: described.declared,
     // What it belongs to (the master or report), and what it does there. Null
     // on a module permission that opens no master.
     group: described.group,

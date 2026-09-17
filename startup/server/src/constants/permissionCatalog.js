@@ -110,9 +110,18 @@ const derive = (name) => {
 /**
  * What this permission is: what the constants declare, or what its name says
  * for one they do not. An undeclared permission brings no words of its own —
- * the database row keeps whatever label it was created with.
+ * the database row keeps whatever label it was created with — and is marked as
+ * such, so the role screen can offer to delete the row nothing asks for.
  */
-const describePermission = (name) => catalog.get(name) || { name, ...derive(name) };
+const describePermission = (name) => {
+  const declared = catalog.get(name);
+  return declared
+    ? { ...declared, declared: true }
+    : { name, declared: false, ...derive(name) };
+};
+
+/** Whether the constants still ask for this permission. */
+const isDeclaredPermission = (name) => catalog.has(name);
 
 /** Every declared permission, for the seeder to create. */
 const declaredPermissions = () => [...catalog.values()];
@@ -123,5 +132,6 @@ module.exports = {
   PERMISSION_TYPE,
   registerPermissionSets,
   describePermission,
+  isDeclaredPermission,
   declaredPermissions
 };
