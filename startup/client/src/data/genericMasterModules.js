@@ -5,12 +5,14 @@ import {
   History as HistoryIcon,
   NotificationsActive as NotificationsActiveIcon,
   Memory as MemoryIcon,
+  Assessment as AssessmentIcon,
 } from "@mui/icons-material";
 
 
 const GENERIC_MASTER_CATEGORIES = {
   COMMUNICATION: "Communication",
   FILE_MANAGEMENT: "File Management",
+  REPORTING: "Reporting",
   SYSTEM_LOGS: "System Logs",
 };
 
@@ -18,7 +20,8 @@ const GENERIC_MASTER_CATEGORIES = {
 const genericMasterCategoryOrder = [
   { name: GENERIC_MASTER_CATEGORIES.COMMUNICATION, order: 6, icon: NotificationsActiveIcon },
   { name: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT, order: 7, icon: CloudUploadIcon },
-  { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 8, icon: HistoryIcon },
+  { name: GENERIC_MASTER_CATEGORIES.REPORTING, order: 8, icon: AssessmentIcon },
+  { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 9, icon: HistoryIcon },
 ];
 
 const defaultMasterCategoryIcon = CategoryIcon;
@@ -39,6 +42,21 @@ const getGenericMasterModules = (handleOpenMaster) => [
       "notification rule alert in-app bell email mail whatsapp message recipient role permission channel",
     category: GENERIC_MASTER_CATEGORIES.COMMUNICATION,
     permissionName: "read_notification_rule",
+  },
+  {
+    id: "report-run",
+    title: "Reporting Manager",
+    description:
+      "Every report you have run, kept with the filters that produced it. Open one to load it instantly, re-run it, or stop one still computing.",
+    icon: AssessmentIcon,
+    color: "primary",
+    onClick: () => handleOpenMaster("report-run"),
+    buttonText: "Open Reporting Manager",
+    tags: ["Reports", "Runs", "Saved", "Queue", "History"],
+    keywords:
+      "report run saved runs reporting manager queue re-run rerun stop cancel export history results",
+    category: GENERIC_MASTER_CATEGORIES.REPORTING,
+    permissionName: "view_report_module",
   },
   {
     id: "activity",

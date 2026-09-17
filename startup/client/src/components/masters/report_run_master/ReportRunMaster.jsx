@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Eye, RefreshCw, Square } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -35,6 +35,10 @@ const extractResponse = (response) => ({
 
 const ReportRunMaster = () => {
   const navigate = useNavigate();
+  // The same screen is reached from Reports and from the Masters page, so Back
+  // returns to whichever of the two it was opened from.
+  const { pathname } = useLocation();
+  const backUrl = pathname.startsWith(REPORTS_ROOT_PATH) ? REPORTS_ROOT_PATH : '/admin/master';
 
   // Open the report itself on this run. The payload load lives on the report
   // page (keyed off ?runId=), so the destination is just a URL — which means it
@@ -110,7 +114,7 @@ const ReportRunMaster = () => {
       description="Reports you have run, kept with the filters that produced them. Open one to load it instantly instead of computing it again."
       searchPlaceholder="Search by report name or filter..."
       permissionKeys={PERMISSION_KEYS}
-      backUrl={REPORTS_ROOT_PATH}
+      backUrl={backUrl}
       loadRows={loadRuns}
       deleteRow={deleteRun}
       deleteConfirmText="Delete this saved report run? The stored result will be removed."
