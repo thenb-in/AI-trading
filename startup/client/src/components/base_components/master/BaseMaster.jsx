@@ -5,7 +5,7 @@ import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
 import { MasterHeader } from './master_header/MasterHeader';
 import { MasterTable } from './master_table/MasterTable';
-import { MasterModal } from './master_modal/MasterModal';
+import { BaseModal } from './master_modal/BaseModal';
 import { MasterSearch } from './MasterSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
@@ -364,7 +364,7 @@ const BaseMaster = ({
           <UnauthorisedTable />
         )}
         {isEditable && (
-          <MasterModal
+          <BaseModal
             isOpen={isModalOpen}
             onClose={handleCloseModal}
             title={selectedRow ? modalEditTitle : modalAddTitle}
@@ -380,7 +380,7 @@ const BaseMaster = ({
               {...{ [formSuccessProp]: fetchRows }}
               {...(formProps ? formProps(selectedRow) : {})}
             />
-          </MasterModal>
+          </BaseModal>
         )}
         {auditHead && historyRowId !== null && (
           <AuditHistoryModal

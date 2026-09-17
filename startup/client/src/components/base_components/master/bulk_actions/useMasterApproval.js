@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { useDataContext } from '@context/useDataContext';
-import { hasPermission } from '@utils/hasPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
 import { useBulkActions } from './useBulkActions';
 
 // A record waiting for somebody: 0 pending, 1 approved, 2 rejected — the codes every
@@ -17,8 +17,8 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
 
   const noun = approval?.noun || 'record';
   const isPending = approval?.isPending || isPendingByStatus;
-  const canApprove = Boolean(approval) && hasPermission(userData, approval.permissionKeys?.approve);
-  const canReject = Boolean(approval) && hasPermission(userData, approval.permissionKeys?.reject);
+  const canApprove = Boolean(approval) && hasPermission(approval.permissionKeys?.approve, userData);
+  const canReject = Boolean(approval) && hasPermission(approval.permissionKeys?.reject, userData);
 
   const runDecision = useCallback(async (row, status) => {
     await approval.updateStatus(row.id, status);
