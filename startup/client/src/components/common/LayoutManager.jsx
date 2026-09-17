@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
   TextField,
   Box,
@@ -23,6 +19,7 @@ import {
 } from '@mui/material';
 import { parseDateValue } from '@utils/dateTimeUtils';
 import { spacing } from '@startup/constants/theme';
+import { BaseModal } from '@startup/components/base_components/master';
 import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
@@ -284,87 +281,98 @@ const LayoutManager = ({
     </Box>
   );
 
+  const openSaveDialog = () => setSaveDialogOpen(true);
+  const closeSaveDialog = () => setSaveDialogOpen(false);
+  const clearError = () => setError(null);
+  const handleLayoutNameChange = (e) => setNewLayoutName(e.target.value);
+
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle>
+      <BaseModal
+        isOpen={open}
+        onClose={onClose}
+        title={(
           <Box sx={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
             <SaveIcon />
-            Layout Manager - {documentName}
+            {`Layout Manager - ${documentName}`}
           </Box>
-        </DialogTitle>
-        
-        <DialogContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: spacing.md }} onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+        )}
+        maxWidth="md"
+        showAudit={false}
+        actions={(
+          <>
+            <Button onClick={openSaveDialog} startIcon={<SaveIcon />}>
+              Save Current Layout
+            </Button>
+            <Button onClick={onClose}>Close</Button>
+          </>
+        )}
+      >
+        {error && (
+          <Alert severity="error" sx={{ mb: spacing.md }} onClose={clearError}>
+            {error}
+          </Alert>
+        )}
 
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: spacing.xl }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
-              {renderLayoutList(layouts.private, 'Private Layouts')}
-              
-              <Divider />
-              
-              {renderLayoutList(layouts.public, 'Public Layouts')}
-            </Box>
-          )}
-        </DialogContent>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: spacing.xl }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+            {renderLayoutList(layouts.private, 'Private Layouts')}
 
-        <DialogActions>
-          <Button onClick={() => setSaveDialogOpen(true)} startIcon={<SaveIcon />}>
-            Save Current Layout
-          </Button>
-          <Button onClick={onClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
+            <Divider />
+
+            {renderLayoutList(layouts.public, 'Public Layouts')}
+          </Box>
+        )}
+      </BaseModal>
 
       {/* Save Layout Dialog */}
-      <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
-        <DialogTitle>Save Layout</DialogTitle>
-        
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing.md, pt: spacing.sm }}>
-            <TextField
-              label="Layout Name"
-              value={newLayoutName}
-              onChange={(e) => setNewLayoutName(e.target.value)}
-              fullWidth
-              placeholder="Enter a name for this layout"
-            />
-            
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Layout Type
-              </Typography>
-              <SearchableDropdown
-                options={LAYOUT_TYPE_OPTIONS}
-                selectedValues={newLayoutType}
-                onChange={setNewLayoutType}
-                placeholder="Select layout type"
-                multiple={false}
-              />
-            </Box>
-          </Box>
-        </DialogContent>
+      <BaseModal
+        isOpen={saveDialogOpen}
+        onClose={closeSaveDialog}
+        title="Save Layout"
+        maxWidth="xs"
+        showAudit={false}
+        actions={(
+          <>
+            <Button onClick={closeSaveDialog}>Cancel</Button>
+            <Button
+              onClick={handleSaveLayout}
+              variant="contained"
+              disabled={saving || !newLayoutName.trim()}
+              startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
+            >
+              {saving ? 'Saving...' : 'Save Layout'}
+            </Button>
+          </>
+        )}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: spacing.md, pt: spacing.sm }}>
+          <TextField
+            label="Layout Name"
+            value={newLayoutName}
+            onChange={handleLayoutNameChange}
+            fullWidth
+            placeholder="Enter a name for this layout"
+          />
 
-        <DialogActions>
-          <Button onClick={() => setSaveDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleSaveLayout} 
-            variant="contained"
-            disabled={saving || !newLayoutName.trim()}
-            startIcon={saving ? <CircularProgress size={16} /> : <SaveIcon />}
-          >
-            {saving ? 'Saving...' : 'Save Layout'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+          <Box>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Layout Type
+            </Typography>
+            <SearchableDropdown
+              options={LAYOUT_TYPE_OPTIONS}
+              selectedValues={newLayoutType}
+              onChange={setNewLayoutType}
+              placeholder="Select layout type"
+              multiple={false}
+            />
+          </Box>
+        </Box>
+      </BaseModal>
     </>
   );
 };

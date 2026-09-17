@@ -54,6 +54,9 @@ const BaseModal = ({
   // neighbouring records of the list this one was opened from.
   recordNav,
   autoFocusFirstField = true,
+  // A modal opened from inside another one (the audit history) has to sit above
+  // it. 50 is a modal over the page; 60 is a modal over a modal.
+  zIndex = 50,
   PaperProps: paperPropsFromCaller,
   sx: sxFromCaller,
   ...props
@@ -93,7 +96,7 @@ const BaseModal = ({
     }),
   };
 
-  const baseSidebarSx = getDialogSidebarSx(fullScreen);
+  const baseSidebarSx = getDialogSidebarSx(fullScreen, zIndex);
   const callerSxArray = Array.isArray(sxFromCaller)
     ? sxFromCaller
     : sxFromCaller
@@ -238,6 +241,8 @@ BaseModal.propTypes = {
     onNext: PropTypes.func,
   }),
   autoFocusFirstField: PropTypes.bool,
+  /** 50 for a modal over the page, 60 for one opened from inside another modal. */
+  zIndex: PropTypes.number,
   PaperProps: PropTypes.object,
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };

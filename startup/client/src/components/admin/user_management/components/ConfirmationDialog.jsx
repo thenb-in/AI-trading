@@ -1,8 +1,24 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { AlertTriangle } from 'lucide-react';
+import { ConfirmModal } from '@startup/components/base_components/master';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { RoleSelector } from '@startup/components/admin/RoleSelector';
+
+// What each action asks, and how loudly. Approve is the only one that needs an
+// answer before it can go ahead, which is why it carries fields below.
+const ACTIONS = {
+  approve: { title: 'Approve User', confirmText: 'Approve', tone: 'success' },
+  deactivate: { title: 'Deactivate User', confirmText: 'Deactivate', tone: 'warning' },
+  signOut: { title: 'Sign User Out', confirmText: 'Sign Out', tone: 'primary' },
+  delete: { title: 'Delete User', confirmText: 'Delete', tone: 'danger' }
+};
+
+const message = (action, username) => ({
+  approve: `Are you sure you want to approve ${username}?`,
+  deactivate: `Are you sure you want to deactivate ${username}?`,
+  signOut: `Sign ${username} out of every device? They stay approved and can sign in again.`,
+  delete: `Are you sure you want to permanently delete ${username}? This action cannot be undone.`
+}[action]);
 
 const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false, extraContent = null }) => {
   const [requirePasswordReset, setRequirePasswordReset] = useState(false);
@@ -23,56 +39,23 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
     }
   }, [dialog.show, dialog.action, isSupportUser, dialog.userRole]);
 
-  if (!dialog.show) return null;
-
-  const actions = {
-    approve: {
-      title: 'Approve User',
-      message: `Are you sure you want to approve ${dialog.username}?`,
-      buttonText: 'Approve',
-      buttonClass: 'bg-green-600 hover:bg-green-700',
-    },
-    deactivate: {
-      title: 'Deactivate User',
-      message: `Are you sure you want to deactivate ${dialog.username}?`,
-      buttonText: 'Deactivate',
-      buttonClass: 'bg-yellow-600 hover:bg-yellow-700',
-    },
-    signOut: {
-      title: 'Sign User Out',
-      message: `Sign ${dialog.username} out of every device? They stay approved and can sign in again.`,
-      buttonText: 'Sign Out',
-      buttonClass: 'bg-blue-600 hover:bg-blue-700',
-    },
-    delete: {
-      title: 'Delete User',
-      message: `Are you sure you want to permanently delete ${dialog.username}? This action cannot be undone.`,
-      buttonText: 'Delete',
-      buttonClass: 'bg-red-600 hover:bg-red-700',
-    },
-  };
-
-  const currentAction = actions[dialog.action] || {};
+  const action = ACTIONS[dialog.action] || ACTIONS.delete;
+  const isApprove = dialog.action === 'approve';
+  // Approving someone who holds no role has to give them one first.
+  const needsRole = isApprove && !dialog.userRole && !selectedRoleId;
 
   const handleConfirm = () => {
-    if (dialog.action === 'approve') {
-      // If user has no role and no role is selected, don't allow approval
-      const needsRole = !dialog.userRole;
-      if (needsRole && !selectedRoleId) {
-        return; // Don't proceed if role is required but not selected
-      }
-      // If user already has a role, pass null to keep it unchanged
-      // If user has no role, pass the selected roleId
-      const roleIdToPass = dialog.userRole ? null : selectedRoleId;
-      onConfirm(requirePasswordReset, roleIdToPass);
-    } else {
+    if (!isApprove) {
       onConfirm();
+      return;
     }
+    // If user already has a role, pass null to keep it unchanged
+    // If user has no role, pass the selected roleId
+    onConfirm(requirePasswordReset, dialog.userRole ? null : selectedRoleId);
   };
 
-  const handleRoleChange = (value) => {
-    setSelectedRoleId(value ? Number(value) : null);
-  };
+  const handleRoleChange = (value) => setSelectedRoleId(value ? Number(value) : null);
+  const handlePasswordResetChange = (e) => setRequirePasswordReset(e.target.checked);
 
   const handleCancel = () => {
     setRequirePasswordReset(false);
@@ -81,64 +64,47 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-        <div className="flex items-center mb-4">
-          <AlertTriangle className="text-red-500 mr-3" size={24} />
-          <h2 className="text-xl font-bold">{currentAction.title}</h2>
-        </div>
-        <p className="mb-6 text-gray-700">{currentAction.message}</p>
-        {dialog.action === 'approve' && (
-          <div className="mb-6 space-y-4">
-            {!dialog.userRole && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Role <span className="text-red-500">*</span>
-                </label>
-                <RoleSelector
-                  value={selectedRoleId}
-                  onChange={handleRoleChange}
-                  label={null}
-                  className=""
-                  allowCreate={false}
-                />
-              </div>
-            )}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <CheckboxTypeField
-                mode="bare"
-                checked={requirePasswordReset}
-                onChange={(e) => setRequirePasswordReset(e.target.checked)}
-                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+    <ConfirmModal
+      isOpen={dialog.show}
+      onClose={handleCancel}
+      onConfirm={handleConfirm}
+      title={action.title}
+      message={message(dialog.action, dialog.username)}
+      confirmText={action.confirmText}
+      tone={action.tone}
+      confirmDisabled={needsRole}
+    >
+      {isApprove && (
+        <div className="mt-4 space-y-4">
+          {!dialog.userRole && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Role <span className="text-red-500">*</span>
+              </label>
+              <RoleSelector
+                value={selectedRoleId}
+                onChange={handleRoleChange}
+                label={null}
+                className=""
+                allowCreate={false}
               />
-              <span className="text-sm text-gray-700">
-                User must reset password on next login
-              </span>
-            </label>
-            {extraContent}
-          </div>
-        )}
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={handleCancel}
-            className="px-4 py-2 rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={dialog.action === 'approve' && !dialog.userRole && !selectedRoleId}
-            className={`px-4 py-2 rounded-md text-white ${currentAction.buttonClass} transition-colors ${
-              dialog.action === 'approve' && !dialog.userRole && !selectedRoleId
-                ? 'opacity-50 cursor-not-allowed'
-                : ''
-            }`}
-          >
-            {currentAction.buttonText}
-          </button>
+            </div>
+          )}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <CheckboxTypeField
+              mode="bare"
+              checked={requirePasswordReset}
+              onChange={handlePasswordResetChange}
+              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+            />
+            <span className="text-sm text-gray-700">
+              User must reset password on next login
+            </span>
+          </label>
+          {extraContent}
         </div>
-      </div>
-    </div>
+      )}
+    </ConfirmModal>
   );
 };
 

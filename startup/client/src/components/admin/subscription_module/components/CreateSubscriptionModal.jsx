@@ -1,10 +1,10 @@
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { TextareaTypeField } from '@startup/components/base_components/fields/TextareaTypeField';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useId } from 'react';
 import PropTypes from 'prop-types';
-import { X, Loader2, Globe } from 'lucide-react';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { Globe } from 'lucide-react';
+import { BaseModal, MasterModalActions } from '@startup/components/base_components/master';
 import { useRecordCreateForm } from '@/hooks/useRecordCreateForm';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
@@ -28,6 +28,8 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [],
     resetWith,
     submit,
   } = useRecordCreateForm('Subscription', { initialName });
+  // The footer sits outside the form element and reaches it by id.
+  const formId = useId();
 
   const draft = useSubscriptionPermissionDraft(permissions);
 
@@ -36,8 +38,6 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [],
     if (isOpen) resetWith();
     // resetWith is stable and reads the latest seed from a ref.
   }, [isOpen]);
-
-  useEscapeKey(onClose, isOpen);
 
   const resetForm = useCallback(() => {
     resetFields();
@@ -50,12 +50,6 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [],
       onClose();
     }
   }, [submitting, resetForm, onClose]);
-
-  const handleBackdropClick = useCallback((e) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  }, [handleClose]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -76,129 +70,93 @@ function CreateSubscriptionModal({ isOpen, onClose, onSuccess, permissions = [],
     }
   };
 
-  if (!isOpen) return null;
+  const actions = (
+    <MasterModalActions
+      onCancel={handleClose}
+      formId={formId}
+      confirmLabel="Create Subscription"
+      isBusy={submitting}
+      busyLabel="Creating..."
+    />
+  );
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4"
-      onClick={handleBackdropClick}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Create New Subscription"
+      maxWidth="lg"
+      showAudit={false}
+      actionsLeft={<span className="text-xs text-gray-600">{`${draft.changedRows.length} selected`}</span>}
+      actions={actions}
     >
-      <div
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-bold text-gray-900">Create New Subscription</h2>
-          <button
-            onClick={handleClose}
+      <form id={formId} onSubmit={handleSubmit} className="space-y-4">
+        {/* Name */}
+        <div>
+          <TextTypeField
+            label="Subscription Name"
+            required
+            value={name}
+            onChange={handleNameChange}
             disabled={submitting}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <X className="w-5 h-5" />
-          </button>
+            error={errors.name || ''}
+            placeholder="Enter subscription name"
+          />
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="p-4 space-y-4 overflow-y-auto">
-            {/* Name */}
-            <div>
-              <TextTypeField
-                label="Subscription Name"
-                required
-                value={name}
-                onChange={handleNameChange}
-                disabled={submitting}
-                error={errors.name || ''}
-                placeholder="Enter subscription name"
-              />
-            </div>
+        {/* Description */}
+        <div>
+          <TextareaTypeField
+            label="Description"
+            value={description}
+            onChange={handleDescriptionChange}
+            disabled={submitting}
+            rows={2}
+            error={errors.description || ''}
+            placeholder="Enter subscription description (optional)"
+          />
+        </div>
 
-            {/* Description */}
-            <div>
-              <TextareaTypeField
-                label="Description"
-                value={description}
-                onChange={handleDescriptionChange}
-                disabled={submitting}
-                rows={2}
-                error={errors.description || ''}
-                placeholder="Enter subscription description (optional)"
-              />
-            </div>
-
-            {/* Global toggle - only for super users */}
-            {canCreateGlobal && (
-              <div className="flex items-start gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
-                <CheckboxTypeField
-                  mode="bare"
-                  id="subscription-isGlobal"
-                  checked={isGlobal}
-                  onChange={(e) => setIsGlobal(e.target.checked)}
-                  disabled={submitting}
-                  className="mt-0.5"
-                />
-                <label htmlFor="subscription-isGlobal" className="text-xs text-purple-900 select-none">
-                  <span className="inline-flex items-center gap-1 font-medium">
-                    <Globe className="w-3 h-3" />
-                    Create as global subscription
-                  </span>
-                  <p className="text-purple-700 mt-0.5">
-                    Available to every company instead of just yours.
-                  </p>
-                </label>
-              </div>
-            )}
-
-            {/* Permissions */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Permissions</label>
-              <p className="text-xs text-gray-500 mb-2">
-                Set permission status now. Anything left unset stays <strong>Not Subscribed</strong>.
+        {/* Global toggle - only for super users */}
+        {canCreateGlobal && (
+          <div className="flex items-start gap-2 p-2 bg-purple-50 border border-purple-200 rounded">
+            <CheckboxTypeField
+              mode="bare"
+              id="subscription-isGlobal"
+              checked={isGlobal}
+              onChange={(e) => setIsGlobal(e.target.checked)}
+              disabled={submitting}
+              className="mt-0.5"
+            />
+            <label htmlFor="subscription-isGlobal" className="text-xs text-purple-900 select-none">
+              <span className="inline-flex items-center gap-1 font-medium">
+                <Globe className="w-3 h-3" />
+                Create as global subscription
+              </span>
+              <p className="text-purple-700 mt-0.5">
+                Available to every company instead of just yours.
               </p>
-              <SubscriptionPermissionEditor
-                permissions={permissions}
-                getStatus={draft.getStatus}
-                onUpdatePermissionStatus={draft.setStatus}
-                onUpdateMultiplePermissionStatuses={draft.setMany}
-                updating={submitting}
-                namePrefix="create-"
-              />
-            </div>
+            </label>
           </div>
+        )}
 
-          {/* Actions */}
-          <div className="flex justify-between items-center gap-2 p-4 border-t bg-white">
-            <span className="text-xs text-gray-600">{draft.changedRows.length} selected</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={submitting}
-                className="px-4 py-2 text-sm rounded text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 text-sm rounded text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Creating...
-                  </>
-                ) : (
-                  'Create Subscription'
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+        {/* Permissions */}
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Permissions</label>
+          <p className="text-xs text-gray-500 mb-2">
+            Set permission status now. Anything left unset stays <strong>Not Subscribed</strong>.
+          </p>
+          <SubscriptionPermissionEditor
+            permissions={permissions}
+            getStatus={draft.getStatus}
+            onUpdatePermissionStatus={draft.setStatus}
+            onUpdateMultiplePermissionStatuses={draft.setMany}
+            updating={submitting}
+            namePrefix="create-"
+          />
+        </div>
+      </form>
+    </BaseModal>
   );
 }
 

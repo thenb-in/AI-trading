@@ -1,5 +1,4 @@
 import { memo, useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { Trash2, Clock, AlertTriangle, Monitor, Smartphone, MonitorSmartphone, UserRoundCheck,Globe, ExternalLink } from 'lucide-react';
@@ -399,14 +398,14 @@ const UserTableRow = ({
         </div>
       </td>
 
-      {editField && createPortal(
+      {/* BaseModal portals itself, so this no longer needs one of its own. */}
+      {editField && (
         <EditFieldModal
           field={editField}
           initialValue={user[editField] ?? ''}
           onSave={(val) => updateUser(user.id, { [editField]: val })}
           onClose={() => setEditField(null)}
-        />,
-        document.body
+        />
       )}
     </tr>
   );

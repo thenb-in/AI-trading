@@ -3,6 +3,8 @@
 export { MasterHeader } from './master_header/MasterHeader';
 export { BaseModal } from './master_modal/BaseModal';
 export { FormModal, useFormModal, FormModalActions } from './master_modal/FormModal';
+export { ConfirmModal } from './master_modal/ConfirmModal';
+export { MasterModalActions } from './MasterModalActions';
 export { MasterTable } from './master_table/MasterTable';
 export { BaseFilter } from '../../base_filter/BaseFilter';
 export { MasterSearch } from './MasterSearch';

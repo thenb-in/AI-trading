@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Loader2 } from 'lucide-react';
-import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { toast } from 'react-toastify';
+import { BaseModal } from '@startup/components/base_components/master';
 import { useCompanyUserData } from './useCompanyUserData';
-import { UserCompanyAssignmentHeader } from './UserCompanyAssignmentHeader';
 import { UserAssignmentForm } from './UserAssignmentForm';
 import { UserAssignmentList } from './UserAssignmentList';
 import { ApiService } from '@services/ApiService';
@@ -19,8 +18,6 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
 
   // Use the company ID from props - modal is always for a specific company
   const selectedCompany = company?.id || '';
-
-  useEscapeKey(onClose, isOpen);
 
   const resetSelection = useCallback(() => {
     setSelectedUser('');
@@ -41,14 +38,6 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
   const handleSelectUser = useCallback((value, user) => {
     setSelectedUser(value ?? '');
     setSelectedUserName(user?.name || user?.username || '');
-  }, []);
-
-  const handleBackdropClick = useCallback((e) => {
-    if (e.target === e.currentTarget) onClose();
-  }, [onClose]);
-
-  const handleStopPropagation = useCallback((e) => {
-    e.stopPropagation();
   }, []);
 
   const handleAssignUser = useCallback(async () => {
@@ -100,51 +89,47 @@ function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
     onClose();
   }, [assigning, removing, resetSelection, onClose]);
 
-  if (!isOpen) return null;
+  const title = (
+    <span className="text-xl font-bold text-gray-900">
+      {'Assign Users for '}
+      <span className="text-blue-600">{company?.name || 'N/A'}</span>
+    </span>
+  );
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
-      onClick={handleBackdropClick}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={title}
+      maxWidth="md"
+      showAudit={false}
     >
-      <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-        onClick={handleStopPropagation}
-      >
-        <UserCompanyAssignmentHeader
-          companyName={company?.name}
-          onClose={handleClose}
-          disabled={assigning || removing}
-        />
+      <div className="space-y-6">
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          </div>
+        ) : (
+          <>
+            <UserAssignmentForm
+              selectedUser={selectedUser}
+              assigning={assigning}
+              loading={loading}
+              onSelectUser={handleSelectUser}
+              onAssign={handleAssignUser}
+              isUnassigned={isUnassigned}
+            />
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-            </div>
-          ) : (
-            <>
-              <UserAssignmentForm
-                selectedUser={selectedUser}
-                assigning={assigning}
-                loading={loading}
-                onSelectUser={handleSelectUser}
-                onAssign={handleAssignUser}
-                isUnassigned={isUnassigned}
-              />
-
-              <UserAssignmentList
-                companyName={company?.name}
-                companyUsers={companyUsers}
-                removing={removing}
-                onRemove={handleRemoveUser}
-              />
-            </>
-          )}
-        </div>
+            <UserAssignmentList
+              companyName={company?.name}
+              companyUsers={companyUsers}
+              removing={removing}
+              onRemove={handleRemoveUser}
+            />
+          </>
+        )}
       </div>
-    </div>
+    </BaseModal>
   );
 }
 

@@ -3,7 +3,7 @@ import { PhoneTypeField } from '@startup/components/base_components/fields/Phone
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { X } from 'lucide-react';
+import { BaseModal } from '@startup/components/base_components/master';
 import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 
@@ -50,43 +50,42 @@ function EditFieldModal({ field, initialValue, onSave, onClose }) {
 
   const handleChange = (e) => setValue(e.target.value);
   const handleKeyDown = (e) => { if (e.key === 'Enter') handleSave(); };
-  const stopPropagation = (e) => e.stopPropagation();
+
+  const actions = (
+    <>
+      <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100">
+        Cancel
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={!canSave}
+        className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-lg bg-white p-5 shadow-xl" onClick={stopPropagation}>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-800">Edit {cfg.label}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-
-        <cfg.Input
-          label={cfg.label}
-          autoFocus
-          value={value}
-          placeholder={cfg.placeholder}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-        />
-        {showHint && <AvailabilityHint status={availability.status} takenLabel="This username is already taken." />}
-        {saveError && <p className="mt-1.5 text-xs font-medium text-red-600">{saveError}</p>}
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100">
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
-    </div>
+    <BaseModal
+      isOpen
+      onClose={onClose}
+      title={`Edit ${cfg.label}`}
+      maxWidth="xs"
+      showAudit={false}
+      actions={actions}
+    >
+      <cfg.Input
+        label={cfg.label}
+        autoFocus
+        value={value}
+        placeholder={cfg.placeholder}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+      />
+      {showHint && <AvailabilityHint status={availability.status} takenLabel="This username is already taken." />}
+      {saveError && <p className="mt-1.5 text-xs font-medium text-red-600">{saveError}</p>}
+    </BaseModal>
   );
 }
 
