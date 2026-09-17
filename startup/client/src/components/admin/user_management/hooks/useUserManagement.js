@@ -18,6 +18,8 @@ const useUserManagement = () => {
     show: false,
     selectedUsers: [],
   });
+  // { [userId]: { online, signedIn, lastActive, devices: [{ label, ip, since }] } }
+  const [sessions, setSessions] = useState({});
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -33,8 +35,22 @@ const useUserManagement = () => {
     }
   };
 
+  // Who was signed in, and who was connected, when this screen loaded. Read
+  // once: nothing here polls, so what is on screen is the picture the page was
+  // opened with. Kept apart from the roster so a failure here does not take the
+  // user list down with it.
+  const fetchSessions = async () => {
+    try {
+      const response = await ApiService.getUserSessions();
+      setSessions(response.data?.data?.sessions ?? {});
+    } catch (err) {
+      console.error(`Failed to load user sessions: ${err.message}`);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchSessions();
   }, []);
 
   useEffect(() => {
@@ -82,6 +98,27 @@ const useUserManagement = () => {
       setError("");
     } catch (err) {
       setError(err?.error || "Failed to deactivate user");
+    } finally {
+      setConfirmDialog(INITIAL_CONFIRM_DIALOG);
+    }
+  };
+
+  // Ends every session the user has. They stay approved and can sign in again —
+  // this is the button for a device left signed in somewhere it should not be.
+  const handleSignOut = async (userId) => {
+    try {
+      await ApiService.signOutUser(userId);
+      // The screen holds the picture it loaded with; this one session just
+      // ended, so say so here rather than re-reading everyone else's.
+      setSessions((current) => ({
+        ...current,
+        [userId]: { ...current[userId], online: false, signedIn: false, devices: [] }
+      }));
+      setError("");
+      return true;
+    } catch (err) {
+      setError(err.message || "Failed to sign the user out");
+      return false;
     } finally {
       setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
@@ -262,6 +299,7 @@ const useUserManagement = () => {
     filteredUsers,
     handleApprove,
     handleDeactivate,
+    handleSignOut,
     handleDelete,
     handleBulkDelete,
     handleRoleChange,
@@ -273,6 +311,7 @@ const useUserManagement = () => {
     handleDeviceOptionUpdate,
     updateUser,
     updateUserProfileInState,
+    sessions,
   };
 };
 

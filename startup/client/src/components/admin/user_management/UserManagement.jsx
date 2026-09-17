@@ -32,6 +32,7 @@ function UserManagement() {
     filteredUsers,
     handleApprove,
     handleDeactivate,
+    handleSignOut,
     handleDelete,
     handleBulkDelete,
     handleRoleChange,
@@ -45,6 +46,7 @@ function UserManagement() {
     updateUser,
     updateUserProfileInState,
     walletUserManagementUrl,
+    sessions,
   } = useUserManagement();
   const [showInactive, setShowInactive] = useState(false);
   const [showNewUsers, setShowNewUsers] = useState(true);
@@ -62,6 +64,7 @@ function UserManagement() {
       if (user) await approveExtension.runAfterApprove(user);
     }
     if (action === 'deactivate') handleDeactivate(userId);
+    if (action === 'signOut') handleSignOut(userId);
     if (action === 'delete') handleDelete(userId);
   };
 
@@ -119,6 +122,7 @@ function UserManagement() {
     handleDeviceOptionUpdate,
     updateUser,
     walletUserManagementUrl,
+    sessions,
   };
 
   if (loading) {
@@ -211,7 +215,6 @@ function UserManagement() {
       <UserTable
         {...sharedTableProps}
         users={activeUsers}
-        title="Active Users"
         emptyMessage="No active users found."
         statusColor="bg-emerald-100"
         extraColumns={getUserManagementExtraColumns(updateUserProfileInState)}
@@ -226,7 +229,6 @@ function UserManagement() {
           <UserTable
             {...sharedTableProps}
             users={newUsers}
-            title="New Users (Never Signed In)"
             emptyMessage="No new users found."
             statusColor="bg-purple-100"
             extraColumns={getUserManagementExtraColumns()}
@@ -243,7 +245,6 @@ function UserManagement() {
           <UserTable
             {...sharedTableProps}
             users={inactiveUsers}
-            title="Inactive Users"
             emptyMessage="No inactive users found."
             statusColor="bg-red-100"
             extraColumns={getUserManagementExtraColumns()}
@@ -260,7 +261,6 @@ function UserManagement() {
           <UserTable
             {...sharedTableProps}
             users={filteredUsers}
-            title="All Users"
             emptyMessage="No users found."
             statusColor="bg-gray-100"
             extraColumns={getUserManagementExtraColumns()}

@@ -181,6 +181,28 @@
 3. Confirm the deletion
 4. User and their profile are permanently removed
 
+#### See Who Is Signed In
+The **Session** column says where each account stood when this screen loaded.
+Nothing refreshes on its own — reload the page for a newer picture.
+
+| Shown | Means |
+|-------|-------|
+| Online | The user had the app open. Hover the badge to see each device, its address, and when it connected |
+| Signed in | No open tab, but the account can return without signing in again |
+| Offline | The account holds nothing to return on |
+
+#### Sign a User Out
+- **Permission required:** `User.deactivate`
+1. Click the **Online** or **Signed in** badge itself — the badge is the button
+2. Confirm
+
+A badge reading Offline, or one on a screen where you may not deactivate
+users, is not clickable — there is nothing to end, or it is not yours to end.
+
+Every device is signed out at once and their open tabs are disconnected. The
+account stays approved and can sign in again — use this for a device someone no
+longer has, and Deactivate to take away their access.
+
 #### Change User Role
 1. Find the user in the list
 2. Select a new role from the dropdown

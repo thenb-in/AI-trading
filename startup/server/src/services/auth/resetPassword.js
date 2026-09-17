@@ -1,7 +1,6 @@
 const bcrypt = require('bcrypt');
 const logger = require('../../../logger');
 const { User } = require('../../models');
-const { revokeRefreshToken } = require('../../utils/authUtils');
 const totpService = require('../totpService');
 const { assertPasswordPolicy } = require('./passwordPolicy');
 
@@ -66,8 +65,8 @@ const resetPassword = async ({ username, password, otp }) => {
     user.last_active = new Date();
   }
 
-  // Revoke all active refresh tokens
-  await revokeRefreshToken(user.id);
+  // Ending the sessions the old password was signed in on is the controller's,
+  // so a reset, a logout and an admin sign-out are all one call.
   await user.save();
   logger.info(`Password reset: ${user.id} - approved: ${user.is_approved}`);
   return user;

@@ -38,6 +38,12 @@ const ConfirmationDialog = ({ dialog, onConfirm, onCancel, isSupportUser = false
       buttonText: 'Deactivate',
       buttonClass: 'bg-yellow-600 hover:bg-yellow-700',
     },
+    signOut: {
+      title: 'Sign User Out',
+      message: `Sign ${dialog.username} out of every device? They stay approved and can sign in again.`,
+      buttonText: 'Sign Out',
+      buttonClass: 'bg-blue-600 hover:bg-blue-700',
+    },
     delete: {
       title: 'Delete User',
       message: `Are you sure you want to permanently delete ${dialog.username}? This action cannot be undone.`,

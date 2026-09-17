@@ -3,6 +3,9 @@ const { MASTER_PERMISSION_CONSTANTS } = require('../constants/base_permissions')
 const authService = require('../services/authService');
 const userService = require('../services/userService');
 const { getWalletUserManagementUrl } = require('../sso/utils/walletUrl');
+const authController = require('./authController');
+const { connectionsByUser } = require('../socket/utils/presence');
+const { sendSuccess, sendError } = require('../utils/response');
 const allowedPermissions = require('../utils/allowedPermissions');
 
 const getAllUsers = async (req, res) => {
@@ -49,6 +52,46 @@ const deactivateUser = async (req, res) => {
   } catch (error) {
     logger.error('Deactivate user error', error);
     res.status(500).json({ error: `Error in deactivating user ${user.username} ${error.message}` });
+  }
+};
+
+// Who is signed in and who is at the keyboard. Two different facts: a token on
+// the user row means the account can come straight back in without a password,
+// a live socket means someone has the app open right now.
+const getUserSessions = async (req, res) => {
+  const companyId = req.user.company_id;
+  try {
+    const rows = await userService.getSessionState(companyId);
+    const connections = connectionsByUser(companyId);
+    const sessions = Object.fromEntries(rows.map((row) => {
+      const devices = connections.get(String(row.id)) || [];
+      return [row.id, {
+        online: devices.length > 0,
+        signedIn: Boolean(row.refresh_token),
+        lastActive: row.last_active,
+        devices
+      }];
+    }));
+    return sendSuccess(res, { data: { sessions } });
+  } catch (error) {
+    logger.error(`Get user sessions error for company ${companyId}: ${error.message}`, error);
+    return sendError(res, { message: `Error in reading sessions for company ${companyId}: ${error.message}` });
+  }
+};
+
+// Signing someone out is the same operation as their own Logout — the one in
+// authController — so it is that one being called, not a second version of it.
+// The account stays approved: this is the "signed in on a device they no longer
+// have" button, not a deactivation.
+const signOutUser = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await userService.getUserById(userId);
+    await authController.logout(userId);
+    return sendSuccess(res, { message: `${user.username} has been signed out of every device` });
+  } catch (error) {
+    logger.error(`Sign out user ${userId} error: ${error.message}`, error);
+    return sendError(res, { message: `Error in signing out user ${userId}: ${error.message}` });
   }
 };
 
@@ -133,6 +176,8 @@ const updateUser = async (req, res) => {
 
 module.exports = {
   getAllUsers,
+  getUserSessions,
+  signOutUser,
   deactivateUser,
   getMe,
   deleteUser,

@@ -203,7 +203,9 @@ UserDefaultLayout ─ many-to-one ── User + Layout
 |--------|------|------|-------------|
 | GET | `/` | Yes | List all users in current company |
 | GET | `/me` | Yes | Get current user profile |
+| GET | `/sessions` | Yes + `view_user_module` | Who is signed in and who is connected right now, per user |
 | POST | `/:userId/deactivate` | Yes + Permission | Deactivate a user |
+| POST | `/:userId/sign-out` | Yes + `deactivate_user` | End every session a user has and drop their live connections |
 | DELETE | `/:userId` | Yes + Permission | Delete a user |
 | PUT | `/:userId/role` | Yes | Update user's role |
 | PUT | `/:userId/deviceAccess` | Yes | Update device access flags |

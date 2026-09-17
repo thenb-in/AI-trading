@@ -195,6 +195,18 @@ const ApiService = {
     return this.request('POST', `/users/${userId}/deactivate`, null, { invalidates: ['users'] });
   },
 
+  // Who is signed in and who is connected right now. Never cached — a session
+  // list that is a minute old is a session list nobody can act on.
+  getUserSessions() {
+    return this.request('GET', '/users/sessions');
+  },
+
+  // Ends every session the user has: their token is revoked and their live
+  // connections are dropped, so the next thing they do asks them to sign in.
+  signOutUser(userId) {
+    return this.request('POST', `/users/${userId}/sign-out`, null, { invalidates: ['users'] });
+  },
+
   deleteUser(userId) {
     return this.request('DELETE', `/users/${userId}`, null, { invalidates: ['users'] });
   },

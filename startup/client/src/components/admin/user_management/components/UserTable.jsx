@@ -5,7 +5,6 @@ import { UserTableRow } from './UserTableRow';
 
 const UserTable = ({
   users,
-  title,
   emptyMessage,
   statusColor,
   bulkDeleteMode,
@@ -19,9 +18,9 @@ const UserTable = ({
   handleDeviceOptionUpdate,
   updateUser,
   walletUserManagementUrl,
+  sessions = {},
   extraColumns = []
 }) => {
-  console.log('title', title);
   const allUsersInTableSelected = users.length > 0 && users.every(user => selectedUsers.includes(user.id));
 
   const formatLastActive = useCallback((dateString) => {
@@ -74,6 +73,7 @@ const UserTable = ({
                 ))}
                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device Access</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Session</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
@@ -93,6 +93,7 @@ const UserTable = ({
                   handleDeviceOptionUpdate={handleDeviceOptionUpdate}
                   updateUser={updateUser}
                   walletUserManagementUrl={walletUserManagementUrl}
+                  session={sessions[user.id]}
                   extraColumns={extraColumns}
                 />
               ))}
@@ -119,7 +120,6 @@ UserTable.propTypes = {
     is_approved: PropTypes.bool,
     last_active: PropTypes.string,
   })).isRequired,
-  title: PropTypes.string.isRequired,
   emptyMessage: PropTypes.string.isRequired,
   statusColor: PropTypes.string,
   bulkDeleteMode: PropTypes.bool.isRequired,
@@ -133,6 +133,8 @@ UserTable.propTypes = {
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
   updateUser: PropTypes.func.isRequired,
   walletUserManagementUrl: PropTypes.string,
+  /** { [userId]: { online, signedIn, devices } } — who is connected right now. */
+  sessions: PropTypes.object,
   extraColumns: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     header: PropTypes.string.isRequired,

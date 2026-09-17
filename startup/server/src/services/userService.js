@@ -6,7 +6,6 @@ const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyMod
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
 const { normalizeEmail } = require('../utils/normalizeUtils');
-const logger = require('../../logger');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -51,8 +50,6 @@ async function updateUserDeviceAccess(userId, deviceAccess) {
   return user;
 }
 
-
-
 const getAllUsers = async (companyId) => {
   if (!companyId) {
     throw new Error(`Company ID is required ${companyId}.`);
@@ -92,6 +89,16 @@ const getAllUsers = async (companyId) => {
 };
 
 /**
+ * The session half of the roster: whether each account still holds a token it
+ * can come back on, and when it was last seen. Who is connected right this
+ * second is the socket server's to answer, not the database's.
+ */
+const getSessionState = async (companyId) => User.findAll({
+  where: { isActive: true, company_id: companyId },
+  attributes: ['id', 'last_active', 'refresh_token']
+});
+
+/**
  * Just enough to put a name on a user id — what every picker and report filter
  * in the app asks this list for. The roster is not the user screen: phone,
  * email, devices and roles are not in it.
@@ -110,32 +117,6 @@ const getUserById = async (userId) => {
 const isSupportUser = async (userId) => {
   const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
   return !!user.isSupportUser;
-};
-
-/** Display names for a set of user ids, keyed by id as a string. */
-const getUserNamesByIds = async (ids) => {
-  const wanted = [...new Set((ids || []).filter(Boolean).map(String))];
-  if (!wanted.length) {
-    return new Map();
-  }
-  const users = await User.findAll({
-    attributes: ['id', 'name'],
-    where: { id: { [Op.in]: wanted } },
-    raw: true
-  });
-  return new Map(users.map((user) => [String(user.id), user.name]));
-};
-
-const getActiveUserIdsByRoleName = async (companyId, roleName, { excludeUserId = null } = {}) => {
-  const users = await User.findAll({
-    where: { company_id: companyId, isActive: true },
-    include: [{ model: Role, as: 'role', where: { name: roleName }, attributes: [] }],
-    attributes: ['id']
-  });
-
-  return users
-    .map((user) => user.id)
-    .filter((id) => id !== excludeUserId);
 };
 
 /** Active support users, with the company each sits in. */
@@ -344,19 +325,6 @@ const invalidateSessions = async (userId) => {
   );
 };
 
-const setUserApproved = async (userId, approved) => {
-  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
-  if (user.is_approved === approved) {
-    return false;
-  }
-
-  await user.update({ is_approved: approved });
-  if (!approved) {
-    await invalidateSessions(userId);
-  }
-  logger.info(`User ${user.username} is now ${approved ? 'approved' : 'not approved'}`);
-  return true;
-};
 
 const getTokensValidAfter = async (userId) => {
   const user = await User.findByPk(userId, {
@@ -385,65 +353,13 @@ const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
   return user;
 };
 
-const revokeRefreshToken = async (userId) => {
-  const [updated] = await User.update(
-    { refresh_token: null },
-    {
-      where: { id: userId },
-      returning: true
-    }
-  );
-
-  return updated > 0;
-};
-
-const handleRefreshTokenRotation = async (userId, currentRefreshToken, newRefreshToken, companyId) => {
-  const tx = await User.sequelize.transaction();
-  try {
-    const user = await findModelByIdOrThrow(User, userId, {
-      attributes: ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
-      lock: tx.LOCK.UPDATE,
-      transaction: tx
-    }, 'User');
-
-    if (!user.isActive) {
-      await tx.rollback();
-      throw new Error(`User inactive ${user.username || userId}`);
-    }
-
-    // If stored refresh token doesn't match the presented one, it was rotated earlier
-    if (user.refresh_token !== currentRefreshToken) {
-      await tx.rollback();
-      throw new Error(`Invalid or rotated refresh token for user ${user.username || userId}`);
-    }
-
-    // Rotate token
-    user.refresh_token = newRefreshToken;
-    user.last_active = new Date();
-    await user.save({ transaction: tx });
-    await tx.commit();
-
-    return {
-      id: user.id,
-      company_id: companyId || user.company_id,
-      username: user.username
-    };
-  } catch (error) {
-    if (!tx.finished) {
-      await tx.rollback();
-    }
-    throw error;
-  }
-};
-
 module.exports = {
   getAllUsers,
   getSupportUsers,
   getUserRoster,
+  getSessionState,
   getUserById,
-  getUserNamesByIds,
   isSupportUser,
-  getActiveUserIdsByRoleName,
   getActiveUserIdsByPermissionName,
   getUserByUsername,
   getUserByWalletUserId,
@@ -455,11 +371,8 @@ module.exports = {
   updateUserRefreshTokenAndLastActive,
   checkUserActive,
   createSsoUser,
-  setUserApproved,
   invalidateSessions,
   getTokensValidAfter,
   getUserByPkWithLock,
-  updateUserRefreshToken,
-  revokeRefreshToken,
-  handleRefreshTokenRotation
+  updateUserRefreshToken
 };

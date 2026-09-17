@@ -9,7 +9,12 @@ const { USER } = MASTER_PERMISSION_CONSTANTS;
 
 router.get('/', authMiddleware.protect, userController.getAllUsers);
 router.get('/me', authMiddleware.protect, userController.getMe);
+// Before '/:userId', or the literal path is read as a user id.
+router.get('/sessions', authMiddleware.protect, requirePermission(USER.read.name), userController.getUserSessions);
 router.post('/:userId/deactivate', authMiddleware.protect, requirePermission(USER.deactivate.name), userController.deactivateUser);
+// Cutting someone's sessions is cutting their access, so it takes the same
+// permission as deactivating them.
+router.post('/:userId/sign-out', authMiddleware.protect, requirePermission(USER.deactivate.name), userController.signOutUser);
 router.get('/:userId', authMiddleware.protect, userController.getMe);
 router.delete('/:userId', authMiddleware.protect, requirePermission(USER.delete.name), userController.deleteUser);
 // Which role someone holds is what they can do, so changing it is editing the

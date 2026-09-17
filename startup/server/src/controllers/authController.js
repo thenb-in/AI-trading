@@ -2,6 +2,7 @@ const auth = require('../services/auth');
 const authService = require('../services/authService');
 const totpService = require('../services/totpService');
 const userService = require('../services/userService');
+const { disconnectUser } = require('../socket/utils/presence');
 
 const authController = {
   /**
@@ -26,12 +27,19 @@ const authController = {
   },
 
   /**
-   * Reset password
+   * Reset password.
+   *
+   * A new password means the old one is no longer trusted, so whatever the old
+   * one was signed in on is ended — by the same call the user's own Logout and
+   * an administrator's sign-out make, so "signed out" means one thing here.
+   *
    * @param {object} data - Reset password data (username, password, otp)
    * @returns {Promise<object>} Updated user
    */
   async resetPassword(data) {
-    return await auth.resetPassword(data);
+    const user = await auth.resetPassword(data);
+    await authController.logout(user.id);
+    return user;
   },
 
   /**
@@ -93,12 +101,21 @@ const authController = {
   },
 
   /**
-   * Logout user (revoke refresh token)
+   * End every session this user has. One operation whoever asked for it — the
+   * user pressing Logout, or an administrator signing them out from the user
+   * screen — so being signed out means the same thing either way.
+   *
+   * The refresh token goes, so nothing can come back on it; tokens already
+   * issued stop being accepted (isTokenSuperseded reads the same cutoff), so an
+   * access token still in a tab is no longer worth anything; and the live
+   * sockets are dropped, so open tabs stop being fed.
+   *
    * @param {string} userId - User ID
    * @returns {Promise<void>}
    */
   async logout(userId) {
-    await userService.revokeRefreshToken(userId);
+    await userService.invalidateSessions(userId);
+    disconnectUser(userId);
   }
 };
 

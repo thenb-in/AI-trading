@@ -8,6 +8,7 @@ import { EditFieldModal } from './EditFieldModal';
 import { hasPermission } from '@startup/hooks/hasPermission';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { RoleSelector } from '@startup/components/admin/RoleSelector';
+import { UserSessionCell } from './UserSessionCell';
 
 // SearchableDropdown speaks strings, and '' is its "nothing selected" value —
 // which is not the same as deliberately choosing to remove someone's role.
@@ -28,6 +29,7 @@ const UserTableRow = ({
   handleDeviceOptionUpdate,
   updateUser,
   walletUserManagementUrl,
+  session,
   extraColumns = []
 }) => {
   const canUpdateUser = hasPermission('update_user');
@@ -128,6 +130,14 @@ const UserTableRow = ({
   const handleDeleteClick = () => {
     showConfirmation(user.id, 'delete', user.name);
   };
+
+  const handleSignOutClick = () => {
+    showConfirmation(user.id, 'signOut', user.name);
+  };
+
+  // Cutting someone's session off is cutting their access, so it takes the same
+  // permission as deactivating them.
+  const canSignOut = hasPermission('deactivate_user');
 
   const showWalletLink = Boolean(user.isSso && walletUserManagementUrl);
 
@@ -326,6 +336,10 @@ const UserTableRow = ({
       </td>
       
       <td className="px-6 py-4 whitespace-nowrap">
+        <UserSessionCell session={session} canSignOut={canSignOut} onSignOut={handleSignOutClick} />
+      </td>
+
+      <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center text-sm text-gray-500">
           <Clock className="h-4 w-4 mr-2 text-gray-400" />
           <span>{formatLastActive(user.last_active)}</span>
@@ -409,6 +423,7 @@ UserTableRow.propTypes = {
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
   updateUser: PropTypes.func.isRequired,
   walletUserManagementUrl: PropTypes.string,
+  session: PropTypes.object,
   extraColumns: PropTypes.array
 };
 
