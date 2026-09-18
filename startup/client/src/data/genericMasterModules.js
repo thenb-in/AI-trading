@@ -10,6 +10,13 @@ import {
   Campaign as CampaignIcon,
   AccountTree as AccountTreeIcon,
 } from "@mui/icons-material";
+import { NotificationRuleMaster } from "../components/masters/notification_rule_master/NotificationRuleMaster";
+import { GeographyMaster } from "../components/masters/geography_master/GeographyMaster";
+import { AnnouncementMaster } from "../components/masters/announcement_master/AnnouncementMaster";
+import { ReportRunMaster } from "../components/masters/report_run_master/ReportRunMaster";
+import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
+import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
+import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
 
 
 const GENERIC_MASTER_CATEGORIES = {
@@ -34,15 +41,15 @@ const genericMasterCategoryOrder = [
 const defaultMasterCategoryIcon = CategoryIcon;
 
 
-const getGenericMasterModules = (handleOpenMaster) => [
+const getGenericMasterModules = () => [
   {
     id: "notification-rule",
+    component: NotificationRuleMaster,
     title: "Notification Rules",
     description:
       "Decide who hears about what, and where it reaches them — in-app, by email or on WhatsApp.",
     icon: NotificationsActiveIcon,
     color: "primary",
-    onClick: () => handleOpenMaster("notification-rule"),
     buttonText: "Manage Rules",
     tags: ["Notification", "Alert", "In-App", "Email", "WhatsApp"],
     keywords:
@@ -52,12 +59,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "geography",
+    component: GeographyMaster,
     title: "Geography",
     description:
       "Country, state, city, site — held as a tree, so every address, filter and report in the app reads the same places.",
     icon: AccountTreeIcon,
     color: "info",
-    onClick: () => handleOpenMaster("geography"),
     buttonText: "Open Geography",
     tags: ["Geography", "Location", "Tree", "Hierarchy", "Region"],
     keywords:
@@ -67,12 +74,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "announcement",
+    component: AnnouncementMaster,
     title: "Announcements",
     description:
       "Tell everyone something once — a banner across the app, for the roles you choose, between the dates you set.",
     icon: CampaignIcon,
     color: "secondary",
-    onClick: () => handleOpenMaster("announcement"),
     buttonText: "Manage Announcements",
     tags: ["Announcement", "Banner", "Broadcast", "Notice", "Downtime"],
     keywords:
@@ -82,12 +89,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "report-run",
+    component: ReportRunMaster,
     title: "Reporting Manager",
     description:
       "Every report you have run, kept with the filters that produced it. Open one to load it instantly, re-run it, or stop one still computing.",
     icon: AssessmentIcon,
     color: "primary",
-    onClick: () => handleOpenMaster("report-run"),
     buttonText: "Open Reporting Manager",
     tags: ["Reports", "Runs", "Saved", "Queue", "History"],
     keywords:
@@ -97,12 +104,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "activity",
+    component: ActivityMaster,
     title: "Audit Logs",
     description:
       "Track and review all user actions and CRUD operations across every system module and model.",
     icon: SettingsIcon,
     color: "success",
-    onClick: () => handleOpenMaster("activity"),
     buttonText: "View Audit Logs",
     tags: ["Audit", "Activity", "Logs", "CRUD", "Tracking", "System"],
     keywords:
@@ -112,12 +119,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "cache",
+    component: CacheMaster,
     title: "Cache Manager",
     description:
       "Inspect what this browser tab is caching — users, roles, permissions and filter lists, with sizes, ages and expiry — and drop any of it to force a fresh load.",
     icon: MemoryIcon,
     color: "warning",
-    onClick: () => handleOpenMaster("cache"),
     buttonText: "Open Cache Manager",
     tags: ["Cache", "Session", "Performance", "Filters", "Refresh"],
     keywords:
@@ -130,12 +137,12 @@ const getGenericMasterModules = (handleOpenMaster) => [
   },
   {
     id: "nbnext-drive",
+    component: NBnextDriveMaster,
     title: "NBnext Drive",
     description:
       "Upload, view, download, and manage files. Store files with optional object references for future API integration.",
     icon: CloudUploadIcon,
     color: "secondary",
-    onClick: () => handleOpenMaster("nbnext-drive"),
     buttonText: "Open Drive",
     tags: ["Files", "Storage", "Upload", "Download", "Drive", "Documents"],
     keywords: "file storage upload download drive documents files management",

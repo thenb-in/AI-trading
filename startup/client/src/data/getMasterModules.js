@@ -1,4 +1,4 @@
-import { getMasterModules, getMasterCategoryOrder } from './masterModuleRegistry';
+import { getMasterModules, getMasterRoutes, getMasterCategoryOrder } from './masterModuleRegistry';
 import { defaultMasterCategoryIcon } from './genericMasterModules';
 import { canSeeModule } from './canSeeModule';
 
@@ -27,6 +27,7 @@ const getMasterCategoriesForUser = (userData) =>
 
 export {
   getMasterModules,
+  getMasterRoutes,
   getMasterCategoryOrder,
   defaultMasterCategoryIcon,
   getMasterCategories,

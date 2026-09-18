@@ -8,19 +8,12 @@ import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
 import { Navigator } from "./navigator/Navigator";
 import {SubscriptionPage} from '../components/admin/subscription_module/SubscriptionPage';
-import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
-import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
-import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
-import { NotificationRuleMaster } from "../components/masters/notification_rule_master/NotificationRuleMaster";
-import { NamingSeriesMaster } from "../components/masters/naming_series_master/NamingSeriesMaster";
-import { ReportRunMaster } from "../components/masters/report_run_master/ReportRunMaster";
-import { GeographyMaster } from "../components/masters/geography_master/GeographyMaster";
-import { AnnouncementMaster } from "../components/masters/announcement_master/AnnouncementMaster";
 import { AppGuide } from "./AppGuide";
 import { HelpSupportPage } from "../components/admin/help_support/HelpSupportPage";
 import { NotificationsPage } from "../notifications/NotificationsPage";
 import { RequireAccess } from "../components/RequireAccess";
 import { getAppModuleDefinitions } from "../data/getAppModules";
+import { getMasterRoutes } from "../data/getMasterModules";
 // App-provided routes and dashboard content, plugged in via the registry.
 import {
   getAppRoutes,
@@ -65,14 +58,10 @@ const AdminDashboard = () => {
           path="master/*"
           element={<RequireAccess definition={moduleById.mastersListing}><MasterContent /></RequireAccess>}
         />
-        <Route path="master/activity" element={<ActivityMaster />} />
-        <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
-        <Route path="master/cache" element={<CacheMaster />} />
-        <Route path="master/notification-rule" element={<NotificationRuleMaster />} />
-        <Route path="master/naming-series" element={<NamingSeriesMaster />} />
-        <Route path="master/report-run" element={<ReportRunMaster />} />
-        <Route path="master/geography" element={<GeographyMaster />} />
-        <Route path="master/announcement" element={<AnnouncementMaster />} />
+        {/* Every master that brings its page, the app's included — gated on its definition. */}
+        {getMasterRoutes().map(({ path, definition, component: Page }) => (
+          <Route key={path} path={path} element={<RequireAccess definition={definition}><Page /></RequireAccess>} />
+        ))}
         
         <Route
           path="users"
