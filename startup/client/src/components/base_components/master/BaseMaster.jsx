@@ -94,8 +94,10 @@ const BaseMaster = ({
   // Optional `(refresh) => unsubscribe`, for rows that change outside this page
   // (a cache bust elsewhere). They reload in place, keeping the grid's sort and filters.
   subscribeToRefresh,
-  // Shown between the header and the grid — a node, or a function given { rows, columns, refresh, openRecord }
-  // (openRecord(record) opens the modal on it — a new record seeded from a link, say).
+  // Shown between the header and the grid — a node, or a function given
+  // { rows, columns, refresh, openRecord, summary } (openRecord(record) opens the
+  // modal on it — a new record seeded from a link, say; summary is what
+  // extractResponse read about the whole set, e.g. a total over every page).
   headerContent,
   headerRef,
   showRefreshButton = true,
@@ -184,7 +186,7 @@ const BaseMaster = ({
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
   const {
-    rows, setRows, columns, loading, isLoadingMore, hasMore, filters,
+    rows, setRows, columns, summary, loading, isLoadingMore, hasMore, filters,
     fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
   } = useMasterRows({
     title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
@@ -229,7 +231,7 @@ const BaseMaster = ({
     ? extraHeaderActions({ refresh, rows, columns })
     : extraHeaderActions;
   const resolvedHeaderContent = typeof headerContent === 'function'
-    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open })
+    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open, summary })
     : headerContent;
 
   // An amend opens the copy as a new record in the form.

@@ -11,8 +11,9 @@ const SERVER_SEARCH_DEBOUNCE_MS = 400;
  *
  * `loadRows(requestFilters)` answers the framework's shape — `{ data: { columns,
  * [rowsKey], pagination? } }` — or `extractResponse(response)` reads another one
- * into `{ rows, columns, hasMore? }`. With `infiniteScroll` each request also
- * carries `{ page, pageSize }`, and there is more while the page is under
+ * into `{ rows, columns, hasMore?, summary? }`, where `summary` is what the
+ * server says about the whole set (a total over every page). With
+ * `infiniteScroll` each request also carries `{ page, pageSize }`, and there is more while the page is under
  * `pagination.totalPages` (or the extracted `hasMore`), otherwise until a page
  * comes back empty.
  *
@@ -41,6 +42,7 @@ const useMasterRows = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [summary, setSummary] = useState(null);
   const [filters, setFilters] = useState(initialFilters);
   const search = useDebouncedValue(serverSearch ? searchQuery : '', SERVER_SEARCH_DEBOUNCE_MS);
 
@@ -71,6 +73,7 @@ const useMasterRows = ({
         setRows((prev) => (append ? [...prev, ...nextRows] : nextRows));
         setColumns(extracted.columns);
         setHasMore(extracted.hasMore ?? nextRows.length > 0);
+        setSummary(extracted.summary ?? null);
         setPage(pageToLoad);
         if (fetchSuccessToast) toast.success(fetchSuccessToast);
       }
@@ -114,7 +117,7 @@ const useMasterRows = ({
     setRows((prev) => prev.map((row) => (row.id === saved.id ? { ...row, ...saved } : row)));
   }, []);
 
-  return { rows, setRows, columns, loading, isLoadingMore, hasMore, filters, fetchRows, loadMore, applyFilters, reloadQuietly, patchRow };
+  return { rows, setRows, columns, summary, loading, isLoadingMore, hasMore, filters, fetchRows, loadMore, applyFilters, reloadQuietly, patchRow };
 };
 
 export { useMasterRows };
