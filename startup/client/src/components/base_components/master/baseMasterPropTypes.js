@@ -65,7 +65,6 @@ const baseMasterPropTypes = {
   updateLabel: PropTypes.string,
   savingLabel: PropTypes.string,
   filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,
   mapFiltersForApi: PropTypes.func,
   mapRows: PropTypes.func,
