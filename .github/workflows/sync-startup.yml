@@ -67,6 +67,16 @@ jobs:
         with:
           fetch-depth: 0  # need full history to walk arbitrary ranges
 
+      - name: Mint a write token for THIS repo (Octo STS)
+        uses: octo-sts/action@main
+        id: octo-sts-self
+        with:
+          scope: ${{ github.repository }}
+          identity: app-token
+        # The cross-repo token below is scoped to the framework repo, so it
+        # cannot file an issue here. A broken sync is this repo's problem to
+        # see, so it gets its own self-scoped token.
+
       - name: Mint a token for thenb-in/startup (Octo STS)
         uses: octo-sts/action@main
         id: octo-sts
@@ -156,6 +166,9 @@ jobs:
           EXAMINED: ${{ steps.sync.outputs.commits_examined }}
           FROM_SHA: ${{ steps.sync.outputs.from_sha }}
           TO_SHA: ${{ steps.sync.outputs.to_sha }}
+          FROM_DATE: ${{ steps.sync.outputs.from_date }}
+          TO_DATE: ${{ steps.sync.outputs.to_date }}
+          PENDING: ${{ steps.sync.outputs.pending_commits }}
           BASE_MERGE_CONFLICT: ${{ steps.sync.outputs.base_merge_conflict }}
         run: |
           set -euo pipefail
@@ -180,7 +193,8 @@ jobs:
             echo ""
             echo "Automated sync from \`${GITHUB_REPOSITORY}\` → \`${TARGET_REPO}\`."
             echo ""
-            echo "**Source range:** \`${FROM_SHA:-(bootstrap)}\`..\`${TO_SHA}\`"
+            echo "**Source range:** \`${FROM_SHA:-(bootstrap)}\`..\`${TO_SHA}\` (${FROM_DATE:-?} → ${TO_DATE})"
+            echo "**Commits pending on this branch:** ${PENDING}"
             echo "**Commits applied:** ${APPLIED}"
             echo "**Commits skipped:** ${SKIPPED}"
             echo "**Commits examined:** ${EXAMINED}"
@@ -222,7 +236,15 @@ jobs:
 
           # Source repo first: the framework repo receives sync PRs from every
           # app, so the title has to say which one this is at a glance.
+          # "through <date>" is the source commit the branch now carries up to,
+          # and the count is everything pending on the branch — not just
+          # tonight's batch. Together they answer "is this worth opening?" in
+          # the PR list, which the opened/updated timestamps do not.
           TITLE="sync: $(basename "${GITHUB_REPOSITORY}") → $(basename "${TARGET_REPO}")"
+          if [ -n "${TO_DATE}" ]; then
+            [ "${PENDING}" = "1" ] && NOUN=commit || NOUN=commits
+            TITLE="${TITLE} (${PENDING} ${NOUN}, through ${TO_DATE})"
+          fi
 
           EXISTING=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -z "${EXISTING}" ]; then
@@ -247,6 +269,53 @@ jobs:
             gh pr edit "${PR}" --repo "${TARGET_REPO}" --add-label sync-conflict || true
           elif [ -n "${PR}" ]; then
             gh pr edit "${PR}" --repo "${TARGET_REPO}" --remove-label sync-conflict > /dev/null 2>&1 || true
+          fi
+
+      - name: Open / close the sync-failure issue
+        # A nightly job that fails is invisible: nobody watches the Actions
+        # tab. Surface it where work is actually triaged, and reuse one issue
+        # per direction rather than filing a fresh one every night. On the
+        # next green run the same issue is closed, so an open one always means
+        # "the sync is broken right now".
+        if: always() && steps.octo-sts-self.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
+          FAILED: ${{ (job.status == 'failure' || steps.sync.outcome == 'failure') && 'true' || 'false' }}
+          ISSUE_TITLE: 'Nightly sync is failing: ${{ github.repository }} → ${{ env.TARGET_REPO }}'
+        run: |
+          set -euo pipefail
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          gh label create sync-failure --color B60205 \
+            --description "The nightly repo sync is failing and needs manual attention" \
+            --force > /dev/null 2>&1 || true
+
+          EXISTING=$(gh issue list --state open --label sync-failure \
+            --search "${ISSUE_TITLE} in:title" \
+            --json number,title --jq "map(select(.title == \"${ISSUE_TITLE}\")) | .[0].number // empty")
+
+          if [ "${FAILED}" = "true" ]; then
+            BODY=$(printf '%s\n' \
+              "The nightly sync run failed, so commits are **not** crossing between these repos." \
+              "" \
+              "- **Run:** ${RUN_URL}" \
+              "- **Direction:** ${{ github.repository }} → ${{ env.TARGET_REPO }}" \
+              "" \
+              "Until this is fixed the two repos drift apart. The full per-commit log is attached" \
+              "to the run as an artifact; it records exactly which commit it stopped on." \
+              "" \
+              "Re-running is safe — the resume point is read from the sync branch, so nothing is" \
+              "replayed twice and nothing needs unpicking by hand. If it names a commit the source" \
+              "cannot resolve, re-run the workflow manually with \`start_from_sha\` set." \
+              "" \
+              "See \`scripts/lib/sync/README.md\` for what the sync does and how to drive it.")
+            if [ -z "${EXISTING}" ]; then
+              gh issue create --title "${ISSUE_TITLE}" --label sync-failure --body "${BODY}"
+            else
+              gh issue comment "${EXISTING}" --body "Still failing as of $(date -u +%Y-%m-%d). Run: ${RUN_URL}"
+            fi
+          elif [ -n "${EXISTING}" ]; then
+            gh issue comment "${EXISTING}" --body "Recovered — the sync ran clean. Run: ${RUN_URL}"
+            gh issue close "${EXISTING}"
           fi
 
       - name: Summarize on the run page

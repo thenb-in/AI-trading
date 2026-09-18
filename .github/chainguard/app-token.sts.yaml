@@ -18,3 +18,7 @@ permissions:
   # its own `workflows` permission — `contents: write` alone gets the
   # push rejected.
   workflows: write
+  # A failed nightly sync opens (and later closes) a tracking issue, so a
+  # broken sync is visible in issue triage instead of only as a red run in
+  # the Actions tab that nobody is watching.
+  issues: write

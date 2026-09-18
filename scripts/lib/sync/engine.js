@@ -47,6 +47,18 @@ function sameRepo(sourceRepo, targetRepo) {
   return { same: false };
 }
 
+// Short COMMITTER date, for the PR title/body. Answers "how current does this
+// PR bring me?", which the GitHub PR list does not show — it shows when the PR
+// was opened, and on a long-lived sync branch those drift apart.
+//
+// Committer date, not author date: an imported, cherry-picked or backdated
+// commit can carry an author date years old, which would make the range read
+// as going backwards. What a reviewer wants is when the work landed.
+function commitDate(repo, sha) {
+  const r = gitTry(repo, ['log', '-1', '--format=%cd', '--date=short', sha]);
+  return r.ok ? r.out.trim() : '';
+}
+
 function writeGithubOutputs(results, direction, targetBranch) {
   const gho = process.env.GITHUB_OUTPUT;
   if (!gho) return;
@@ -63,6 +75,9 @@ function writeGithubOutputs(results, direction, targetBranch) {
     `target_branch=${targetBranch}`,
     `from_sha=${results.fromSha || ''}`,
     `to_sha=${results.toSha}`,
+    `from_date=${results.fromDate || ''}`,
+    `to_date=${results.toDate || ''}`,
+    `pending_commits=${results.pendingCommits}`,
     `has_changes=${sum.applied > 0 ? 'true' : 'false'}`,
   ];
   fs.appendFileSync(gho, lines.join('\n') + '\n');
@@ -255,6 +270,15 @@ function run(direction) {
   }
 
   results.finishedAt = new Date().toISOString();
+  results.fromDate = fromSha ? commitDate(sourceRepo, fromSha) : '';
+  results.toDate = commitDate(sourceRepo, toSha);
+  // Everything sitting on the branch, not just this run's batch — a standing
+  // branch accumulates across nights, so the per-run count understates it.
+  const pending = gitTry(targetRepo, [
+    'rev-list', '--count', `origin/${targetBaseBranch}..HEAD`,
+  ]);
+  results.pendingCommits = pending.ok ? Number(pending.out.trim()) : 0;
+
   const text = writeLogs(results, logDir, direction);
   writeGithubOutputs(results, direction, targetBranch);
 

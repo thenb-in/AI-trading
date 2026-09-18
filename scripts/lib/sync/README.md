@@ -9,9 +9,13 @@ same in every repo.
 
 ## What this PR is
 
-Its title reads `sync: <source> → <target>`, so the repo the commits came from
-is the first thing in it — the framework repo takes sync PRs from every app,
-and they need telling apart.
+Its title reads
+`sync: <source> → <target> (N commits, through <date>)`. The source repo comes
+first because the framework repo takes sync PRs from every app and they need
+telling apart; the count is everything pending on the branch (not just last
+night's batch) and the date is how current this brings you. GitHub's own
+timestamps say when the PR was *opened*, which on a long-lived sync branch is
+a different thing entirely.
 
 The framework repo (`thenb-in/startup`) and the app repos built on it both get
 real work. A nightly job replays the other side's framework-relevant commits
@@ -154,6 +158,11 @@ round-trips. Merge commits are skipped; their content came from their parents.
 * **A run failed partway** — it halts on the first error rather than
   compounding the mess, and rolls back the half-applied commit. Fix the cause
   and re-run; nothing needs unpicking by hand.
+* **The sync stopped running at all** — a failed nightly run opens an issue
+  labelled `sync-failure` (one per direction, reused rather than refiled every
+  night), and the next clean run closes it. So an open `sync-failure` issue
+  means the two repos are drifting apart *right now*; no open issue means the
+  sync is healthy. Don't rely on noticing a red run in the Actions tab.
 
 ---
 
