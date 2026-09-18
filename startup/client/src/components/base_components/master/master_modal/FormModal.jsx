@@ -12,6 +12,8 @@ import { FormBlockedFieldContext, FormEditableContext } from '../../fields/share
 import { RecordAttachmentsContext, useRecordAttachmentsState } from '../../record_comments/recordAttachments';
 
 const FormModalContext = createContext(null);
+// A label given as text, or worked out from the record it is shown on.
+const labelFor = (label, record) => (typeof label === 'function' ? label(record) : label);
 const NOT_BLOCKED = { message: '', field: '' };
 
 /**
@@ -177,7 +179,7 @@ const FormModal = ({
             onClose={onClose}
             leftSlot={cancelSlot}
             actionsRef={setActionsSlot}
-            submitLabel={isEditMode ? updateLabel : createLabel}
+            submitLabel={isEditMode ? labelFor(updateLabel, record) : createLabel}
             savingLabel={savingLabel}
           />
         }
@@ -205,7 +207,8 @@ const FormModal = ({
 FormModal.propTypes = {
   isEditMode: PropTypes.bool,
   createLabel: PropTypes.string,
-  updateLabel: PropTypes.string,
+  /** Save's wording on a saved record; a function of the record where it depends on it (loaded by id too). */
+  updateLabel: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   savingLabel: PropTypes.string,
   workflow: PropTypes.object,
   /** The record open in the form, whole; its status is read from the workflow's statusKey. */
