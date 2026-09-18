@@ -8,8 +8,7 @@ const {
 const permissionService = require('../../services/permissionService');
 const { formatResponse } = require('../../data_formatters/formatResponse');
 const notificationRuleColumns = require('../../constants/columns/notificationRuleColumns');
-
-const plural = (items, one, many) => `${items.length} ${items.length > 1 ? many : one}`;
+const { plural } = require('../../utils/formattingUtils');
 
 function recipientsLabel(recipients = {}, roleNames = {}, onlyTheSubject = false) {
   if (onlyTheSubject) {
@@ -25,8 +24,8 @@ function recipientsLabel(recipients = {}, roleNames = {}, onlyTheSubject = false
     recipients[RECIPIENT_MODE.COMPANY] && COMPANY_RECIPIENT_LABEL,
     ...listFor(RECIPIENT_MODE.ROLE).map((id) => roleNames[String(id)] || `role ${id}`),
     permissions.length && `anyone who can ${permissions.join(' or ').replace(/_/g, ' ')}`,
-    users.length && plural(users, 'user', 'users'),
-    addresses.length && plural(addresses, 'address', 'addresses')
+    users.length && plural(users.length, 'user', 'users'),
+    addresses.length && plural(addresses.length, 'address', 'addresses')
   ].filter(Boolean);
 
   return parts.length ? parts.join(', ') : NO_RECIPIENTS_LABEL;
