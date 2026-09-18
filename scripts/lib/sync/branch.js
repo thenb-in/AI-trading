@@ -30,10 +30,23 @@
 //
 
 const { git, gitTry } = require('./git');
+const { escapeRegex } = require('./rules');
 
+// `--exit-code` makes git exit 2 for "no such ref". Anything else — an expired
+// token, a network blip, rate limiting — must NOT be read as "branch absent":
+// that would re-cut the standing branch from the base, discarding every
+// unmerged sync commit and every human conflict resolution on it.
 function remoteBranchExists(repo, branch) {
   const r = gitTry(repo, ['ls-remote', '--exit-code', '--heads', 'origin', branch]);
-  return r.ok && Boolean(r.out.trim());
+  if (r.ok) return Boolean(r.out.trim());
+  if (r.err && r.err.status === 2) return false;
+  const detail = String((r.err && r.err.stderr && r.err.stderr.toString()) || r.err);
+  throw new Error(
+    `could not determine whether origin/${branch} exists (git exited ` +
+    `${r.err && r.err.status}): ${detail.trim()}\n` +
+    '  Refusing to continue: treating this as "branch absent" would discard ' +
+    'the standing branch.'
+  );
 }
 
 // Puts the target on the sync branch, either freshly cut from the base or
@@ -73,13 +86,34 @@ function prepareBranch(targetRepo, { targetBranch, targetBaseBranch, direction }
 // Matches the bare trailer only — the `-tail-up` / `-conflicts` variants
 // carry the range head, not the last applied commit, and resuming from those
 // would step over commits that were never applied.
-function readWatermark(targetRepo, ref, trailerKey) {
+//
+// Scans several candidates rather than just the newest, and keeps going when
+// one doesn't parse or doesn't resolve in the source. A single unusable
+// trailer — a human writing `Synced-from-startup: see #412`, or a commit the
+// source force-pushed away — must not cost us the real resume point.
+//
+// Returns { sha, sawCandidates }. `sawCandidates` with a null `sha` means the
+// branch DOES claim to have synced but we can't tell from where: the caller
+// must treat that as fatal, never as a bootstrap.
+const WATERMARK_SCAN_DEPTH = 50;
+
+function readWatermark(targetRepo, ref, trailerKey, resolvesInSource) {
   const r = gitTry(targetRepo, [
-    'log', ref, '--grep', `^${trailerKey}: `, '-n', '1', '--format=%B',
+    'log', ref, '--grep', `^${escapeRegex(trailerKey)}: `,
+    '-n', String(WATERMARK_SCAN_DEPTH), '--format=%B%x00',
   ]);
-  if (!r.ok) return null;
-  const m = r.out.match(new RegExp(`^${trailerKey}:\\s*([0-9a-f]{7,40})`, 'm'));
-  return m ? m[1] : null;
+  if (!r.ok) return { sha: null, sawCandidates: false };
+
+  const bodies = r.out.split('\0').filter((b) => b.trim());
+  const re = new RegExp(`^${escapeRegex(trailerKey)}:\\s*([0-9a-f]{7,40})\\s*$`, 'm');
+  let sawCandidates = false;
+  for (const body of bodies) {
+    sawCandidates = true;
+    const m = body.match(re);
+    if (!m) continue;
+    if (!resolvesInSource || resolvesInSource(m[1])) return { sha: m[1], sawCandidates };
+  }
+  return { sha: null, sawCandidates };
 }
 
 module.exports = { prepareBranch, readWatermark, remoteBranchExists };

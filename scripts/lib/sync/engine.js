@@ -14,7 +14,7 @@ const path = require('path');
 
 const { git, gitTry, remoteIdentity } = require('./git');
 const { listCommitsToSync } = require('./rules');
-const { reconcileParkedConflicts, CONFLICT_DIR } = require('./merge');
+const { reconcileParkedConflicts, listStaleParks, CONFLICT_DIR } = require('./merge');
 const { tailUpAppFiles, landConflictReport } = require('./finalize');
 const { prepareBranch, readWatermark } = require('./branch');
 const { syncCommit } = require('./commit');
@@ -78,32 +78,44 @@ function resolvesInSource(sourceRepo, sha) {
 }
 
 function resolveRange(sourceRepo, targetRepo, direction, args, log, fail) {
-  // Resume point, in order of trust: the newest provenance trailer already on
-  // the branch (the repo's own record of what it has), then an explicit
-  // override, then a 24h anchor so a first run doesn't replay all history.
-  const watermark = readWatermark(targetRepo, 'HEAD', direction.trailerKey);
-  if (watermark && resolvesInSource(sourceRepo, watermark)) {
-    log(`resuming at ${watermark} (newest ${direction.trailerKey} trailer on the branch)`);
-    return watermark;
-  }
-  if (watermark) {
-    log(
-      `WARNING: newest ${direction.trailerKey} trailer names ${watermark}, which does not ` +
-      'resolve in the source repo — ignoring it and falling back.'
-    );
-  }
+  // An explicit override wins outright. It is the only manual recovery lever
+  // when the trailers are damaged, so it must not be quietly ignored on a
+  // branch that has synced before.
   if (args['start-from']) {
     if (!resolvesInSource(sourceRepo, args['start-from'])) {
       fail(`--start-from=${args['start-from']} does not resolve in the source repo`);
     }
-    log(`no usable provenance trailer; using --start-from=${args['start-from']}`);
+    log(`using --start-from=${args['start-from']} (overrides the branch watermark)`);
     return args['start-from'];
   }
+
+  const { sha, sawCandidates } = readWatermark(
+    targetRepo, 'HEAD', direction.trailerKey, (c) => resolvesInSource(sourceRepo, c)
+  );
+  if (sha) {
+    log(`resuming at ${sha} (newest usable ${direction.trailerKey} trailer on the branch)`);
+    return sha;
+  }
+
+  // The branch says it has synced before, but no trailer we can act on. The
+  // 24h anchor below would silently skip everything between the real resume
+  // point and yesterday — a green run, a plausible-looking PR, and weeks of
+  // work never replayed. Refuse instead and make a human choose the range.
+  if (sawCandidates) {
+    fail(
+      `found ${direction.trailerKey} trailer(s) on ${direction.targetLabel}, but none names a ` +
+      'commit this source repo can resolve.\n' +
+      '  That usually means the source branch was force-pushed or rebased, the clone is ' +
+      'shallow, or a sync PR was squash-merged (which destroys the trailers).\n' +
+      '  Refusing to guess a range — re-run with --start-from=<sha> to say where to resume.'
+    );
+  }
+
   const anchor = gitTry(sourceRepo, [
     'rev-list', '-n', '1', '--before=24 hours ago', direction.sourceBranch,
   ]);
   if (anchor.ok && anchor.out.trim()) {
-    log(`bootstrap run: anchoring at ${anchor.out.trim()} (24h ago)`);
+    log(`bootstrap run (no prior sync on this branch): anchoring at ${anchor.out.trim()} (24h ago)`);
     return anchor.out.trim();
   }
   return null;
@@ -192,7 +204,18 @@ function run(direction) {
     }
   }
 
-  if (direction.tailUpApp) {
+  const halted = results.commits.some((c) => c.error);
+
+  // Tail-up pulls app files forward to the SOURCE TIP. After a halt that is
+  // actively harmful: the un-applied commits were rolled back and will be
+  // replayed next run, but their parent blobs would no longer match the
+  // target, so every one of them would merge against content that already
+  // contains its own change. Spurious conflicts and duplicated hunks on a
+  // path the design treats as "just re-run".
+  if (halted) {
+    log('skipping tail-up: run halted on an error, so the tree is not at the source tip');
+  }
+  if (direction.tailUpApp && !halted) {
     results.tailup = tailUpAppFiles(sourceRepo, targetRepo, sourceBranch, toSha, results, direction);
     log(
       `tail-up: refreshed=${results.tailup.refreshed.length} ` +
@@ -201,8 +224,20 @@ function run(direction) {
     );
   }
 
+  // Conflicts parked by earlier runs still block the check, so they have to be
+  // carried into this run's report — otherwise the gate stays red while the
+  // document explaining how to clear it gets deleted.
+  const stale = listStaleParks(targetRepo, new Set(results.conflicts.map((c) => c.path)));
+  if (stale.length) {
+    results.staleConflicts = stale.map((c) => c.path);
+    results.conflicts.push(...stale);
+    log(`${stale.length} conflict(s) still parked from an earlier run`);
+  }
+
   if (results.conflicts.length) {
-    const stage = (p) => git(targetRepo, ['add', '-A', '--', p]);
+    // `-f`: .vscode/ is a framework prefix and is gitignored in plenty of
+    // repos, and `git add -A` without it exits 1 on an ignored path.
+    const stage = (p) => git(targetRepo, ['add', '-A', '-f', '--', p]);
     const { remaining, resolved } = reconcileParkedConflicts(
       targetRepo, results.conflicts, state.conflictBlobs, direction, stage
     );

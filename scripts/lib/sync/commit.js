@@ -8,13 +8,12 @@ const { applyFile } = require('./apply');
 
 const PICK_BUCKETS = {
   clean: 'cleanPicks',
-  force: 'forcePicks',
   merged: 'mergedPicks',
   conflict: 'conflictPicks',
 };
 
 function emptyPickSet() {
-  return { total: 0, cleanPicks: [], forcePicks: [], mergedPicks: [], conflictPicks: [] };
+  return { total: 0, cleanPicks: [], mergedPicks: [], conflictPicks: [] };
 }
 
 function fileRef(f) {
@@ -86,6 +85,12 @@ function syncCommit(sourceRepo, targetRepo, sha, direction, state) {
     result.excluded.files.push({ ...fileRef(f), reason: direction.neverPickReason });
   }
 
+  // High-water mark: parkConflict() pushes onto the shared list as it goes, so
+  // a commit that throws half-way leaves entries pointing at parked files that
+  // the rollback below wipes. Reconciliation would then try to stage a path in
+  // neither index nor worktree, which is a fatal git error.
+  const conflictMark = state.conflicts.length;
+
   const ctx = {
     sourceRepo,
     targetRepo,
@@ -147,6 +152,7 @@ function syncCommit(sourceRepo, targetRepo, sha, direction, state) {
     // the worktree is sane for debugging.
     gitTry(targetRepo, ['reset', '--hard']);
     gitTry(targetRepo, ['clean', '-fd']);
+    state.conflicts.length = conflictMark;
     result.error = String((e && e.stderr && e.stderr.toString()) || e.message || e);
   }
 

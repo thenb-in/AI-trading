@@ -32,7 +32,7 @@
 //
 
 const { run } = require('./lib/sync/engine');
-const { trailerKeyFor, repoSlug } = require('./lib/sync/label');
+const { trailerKeyFor, repoSlug } = require('./lib/sync/git');
 const {
   FRAMEWORK_PREFIXES,
   FRAMEWORK_FILES,
@@ -67,7 +67,6 @@ run({
   neverPick: NEVER_PICK,
   neverPickReason: NEVER_PICK_REASON,
 
-  conflictPolicy: 'merge-then-park',
   // No tail-up this way. Tail-up exists to catch app files that later source
   // commits fixed outside a framework commit; the framework repo's copy of an
   // app file is a synced artefact, not a source of truth, so refreshing from

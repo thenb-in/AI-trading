@@ -145,11 +145,12 @@ jobs:
           success() &&
           inputs.dry_run != true &&
           steps.sync.outputs.skipped_same_repo != 'true' &&
-          steps.sync.outputs.has_changes == 'true'
+          (steps.sync.outputs.has_changes == 'true' || steps.sync.outputs.has_conflicts == 'true')
         working-directory: target-startup
         env:
           GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
           BRANCH: ${{ steps.branch.outputs.name }}
+          CONFLICTS: ${{ steps.sync.outputs.conflicts }}
           APPLIED: ${{ steps.sync.outputs.commits_applied }}
           SKIPPED: ${{ steps.sync.outputs.commits_skipped }}
           EXAMINED: ${{ steps.sync.outputs.commits_examined }}
@@ -171,14 +172,29 @@ jobs:
           done
 
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          GUIDE_URL="${GITHUB_SERVER_URL}/${TARGET_REPO}/blob/${BRANCH}/scripts/lib/sync/README.md"
           {
+            echo "> [!NOTE]"
+            echo "> **New to these PRs? Read [Reviewing a sync PR](${GUIDE_URL}) before you review or merge.**"
+            echo "> It covers the merge-commit rule, how to resolve a conflict, and what crosses between repos."
+            echo ""
             echo "Automated sync from \`${GITHUB_REPOSITORY}\` → \`${TARGET_REPO}\`."
             echo ""
             echo "**Source range:** \`${FROM_SHA:-(bootstrap)}\`..\`${TO_SHA}\`"
             echo "**Commits applied:** ${APPLIED}"
             echo "**Commits skipped:** ${SKIPPED}"
             echo "**Commits examined:** ${EXAMINED}"
+            echo "**Unresolved conflicts:** ${CONFLICTS}"
             echo ""
+            if [ "${CONFLICTS}" != "0" ]; then
+              echo "> [!IMPORTANT]"
+              echo "> ${CONFLICTS} file(s) could not be merged automatically and are parked under"
+              echo "> \`sync-conflicts/\`. The real file holds the incoming version, so the branch"
+              echo "> still builds — but what this repo had is in the \`.conflict\` files, not the"
+              echo "> tree. Resolve each: edit the real file, delete its \`.conflict\` file. The"
+              echo "> \`sync-conflicts\` check stays red until \`sync-conflicts/\` is empty."
+              echo ""
+            fi
             if [ "${BASE_MERGE_CONFLICT}" = "true" ]; then
               echo "> [!WARNING]"
               echo "> \`${TARGET_BASE_BRANCH}\` could not be merged into this branch cleanly."
@@ -195,10 +211,13 @@ jobs:
             echo "---"
             echo ""
             echo "Rules applied (from \`scripts/sync-startup.js\`):"
-            echo "- Framework paths (\`startup/\`, \`nucleus/\`, \`report_runner/\`, \`lints/\`, \`deploy/\`, \`.github/\`, \`.vscode/\`, \`.husky/\`) always cross, and anchor the commit; on conflict the source version wins."
+            echo "- Framework paths (\`startup/\`, \`nucleus/\`, \`report_runner/\`, \`lints/\`, \`deploy/\`, \`.github/\`, \`.vscode/\`, \`.husky/\`) always cross, and anchor the commit."
+            echo "- Divergent files are three-way merged; only genuinely overlapping edits are parked as conflicts."
             echo "- \`db-scripts/startup/\` rides along on a commit that also touches a framework path."
             echo "- Other paths cross **only if the framework repo already has the file** (no new app files created there)."
             echo "- Merge commits, commits with no framework change, and commits that originated in the framework are skipped."
+            echo ""
+            echo "Full rules, review steps and conflict-resolution instructions: [scripts/lib/sync/README.md](${GUIDE_URL})"
           } > /tmp/pr-body.md
 
           EXISTING=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
@@ -213,7 +232,17 @@ jobs:
             # Standing branch: refresh the existing PR rather than opening a second.
             gh pr edit "${EXISTING}" --repo "${TARGET_REPO}" --body-file /tmp/pr-body.md
             gh pr comment "${EXISTING}" --repo "${TARGET_REPO}" \
-              --body "Nightly sync appended ${APPLIED} commit(s). [Run log](${RUN_URL})"
+              --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
+          fi
+
+          PR=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
+          if [ -n "${PR}" ] && [ "${CONFLICTS}" != "0" ]; then
+            gh label create sync-conflict --repo "${TARGET_REPO}" --color B60205 \
+              --description "Sync PR with unresolved conflicts needing manual reconciliation" \
+              --force > /dev/null 2>&1 || true
+            gh pr edit "${PR}" --repo "${TARGET_REPO}" --add-label sync-conflict || true
+          elif [ -n "${PR}" ]; then
+            gh pr edit "${PR}" --repo "${TARGET_REPO}" --remove-label sync-conflict > /dev/null 2>&1 || true
           fi
 
       - name: Summarize on the run page

@@ -55,9 +55,14 @@ jobs:
     if: github.repository != 'thenb-in/startup'
     runs-on: ubuntu-latest
     permissions:
-      contents: write        # push the sync branch to THIS repo
-      pull-requests: write   # open / comment on the PR in THIS repo
-      id-token: write        # federate an Octo STS token to read the framework
+      # GITHUB_TOKEN stays read-only. Every write — the branch push, the PR,
+      # labels — uses a short-lived Octo STS token instead. That matches how
+      # sync-startup.yml already works, and it has a second benefit: GitHub's
+      # recursion guard suppresses workflow runs for anything GITHUB_TOKEN
+      # does, so a PR opened with it would never get its checks run. An app
+      # installation token triggers them normally.
+      contents: read
+      id-token: write        # federate the Octo STS tokens below
 
     env:
       SOURCE_REPO: thenb-in/startup
@@ -66,14 +71,25 @@ jobs:
       SYNC_BRANCH: sync/from-startup
 
     steps:
+      - name: Mint a write token for THIS repo (Octo STS)
+        uses: octo-sts/action@main
+        id: octo-sts-self
+        with:
+          scope: ${{ github.repository }}
+          identity: app-token
+        # Resolves against this repo's own
+        # .github/chainguard/app-token.sts.yaml — which is itself a synced
+        # framework file, so every app repo has it.
+
       - name: Checkout this app repo (the sync target)
         uses: actions/checkout@v5
         with:
           fetch-depth: 0  # need full history to read provenance trailers
+          token: ${{ steps.octo-sts-self.outputs.token }}  # so the push below is authorised
 
       - name: Mint a read token for the framework repo (Octo STS)
         uses: octo-sts/action@main
-        id: octo-sts
+        id: octo-sts-source
         with:
           scope: thenb-in/startup
           identity: app-token
@@ -90,7 +106,7 @@ jobs:
           ref: ${{ env.SOURCE_BRANCH }}
           path: source-startup
           fetch-depth: 0
-          token: ${{ steps.octo-sts.outputs.token }}
+          token: ${{ steps.octo-sts-source.outputs.token }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
@@ -160,7 +176,7 @@ jobs:
       - name: Open or update the PR
         if: steps.push.outputs.pushed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
           CONFLICTS: ${{ steps.sync.outputs.conflicts }}
           APPLIED: ${{ steps.sync.outputs.commits_applied }}
           SKIPPED: ${{ steps.sync.outputs.commits_skipped }}
@@ -172,7 +188,12 @@ jobs:
           set -euo pipefail
 
           RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          GUIDE_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${SYNC_BRANCH}/scripts/lib/sync/README.md"
           {
+            echo "> [!NOTE]"
+            echo "> **New to these PRs? Read [Reviewing a sync PR](${GUIDE_URL}) before you review or merge.**"
+            echo "> It covers the merge-commit rule, how to resolve a conflict, and what crosses between repos."
+            echo ""
             echo "Automated sync from \`${SOURCE_REPO}\` → \`${GITHUB_REPOSITORY}\`."
             echo ""
             echo "**Source range:** \`${FROM_SHA:-(bootstrap)}\`..\`${TO_SHA}\`"
@@ -215,6 +236,8 @@ jobs:
             echo "- Other paths cross **only if this repo already has the file**."
             echo "- Commits that originated in this repo are skipped, so nothing round-trips."
             echo "- Divergent files are three-way merged; only genuinely overlapping edits are parked as conflicts."
+            echo ""
+            echo "Full rules, review steps and conflict-resolution instructions: [scripts/lib/sync/README.md](${GUIDE_URL})"
           } > "${RUNNER_TEMP}/pr-body.md"
 
           EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
@@ -231,7 +254,6 @@ jobs:
             gh pr edit "${EXISTING}" --body-file "${RUNNER_TEMP}/pr-body.md"
             gh pr comment "${EXISTING}" --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
           fi
-          echo "pr=${EXISTING}" >> "$GITHUB_OUTPUT"
 
           if [ "${CONFLICTS}" != "0" ]; then
             gh label create sync-conflict --color B60205 \
@@ -248,7 +270,7 @@ jobs:
         # age of any still-open conflicted sync PR on the PR itself.
         if: always() && steps.sync.outputs.skipped_same_repo != 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
           STALE_AFTER_DAYS: '3'
         run: |
           set -euo pipefail

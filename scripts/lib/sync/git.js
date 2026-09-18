@@ -2,6 +2,7 @@
 // git.js — thin wrappers around the git CLI, shared by both sync directions.
 //
 
+const path = require('path');
 const { execFileSync } = require('child_process');
 
 const MAX_BUFFER = 256 * 1024 * 1024;
@@ -48,4 +49,17 @@ function remoteIdentity(repo, remote = 'origin') {
     .toLowerCase();
 }
 
-module.exports = { git, gitBuf, gitTry, remoteIdentity };
+// The framework receives commits from several app repos, so a provenance
+// trailer has to say WHICH repo a commit came from — that is what lets each
+// direction recognise and skip its own echoes.
+function repoSlug(repoPath, fallback) {
+  const id = remoteIdentity(repoPath);
+  if (id) return id.split('/').pop();
+  return fallback || path.basename(path.resolve(repoPath));
+}
+
+function trailerKeyFor(slug) {
+  return `Synced-from-${slug}`;
+}
+
+module.exports = { git, gitBuf, gitTry, remoteIdentity, repoSlug, trailerKeyFor };

@@ -17,10 +17,11 @@
 //   * Commits this sync already brought IN from the framework are skipped,
 //     so nothing round-trips.
 //
-// Conflict policy: `source-wins`. The framework repo is downstream of the app
-// for these paths, so divergent content there is overwritten rather than
-// merged. The reverse direction is the one that has to reconcile — see
-// scripts/sync-framework.js.
+// Divergence is reconciled, not overwritten: non-overlapping edits three-way
+// merge, and only genuinely overlapping ones are parked under
+// sync-conflicts/ for review. The framework repo is not a passive mirror —
+// framework work is authored there directly, and several apps sync into it,
+// so overwriting would silently revert both.
 //
 // Usage:
 //   node scripts/sync-startup.js \
@@ -29,7 +30,7 @@
 //
 
 const { run, parseArgs } = require('./lib/sync/engine');
-const { repoSlug, trailerKeyFor } = require('./lib/sync/label');
+const { repoSlug, trailerKeyFor } = require('./lib/sync/git');
 const {
   FRAMEWORK_PREFIXES,
   FRAMEWORK_FILES,
@@ -66,7 +67,6 @@ run({
   neverPick: NEVER_PICK,
   neverPickReason: NEVER_PICK_REASON,
 
-  conflictPolicy: 'source-wins',
   tailUpApp: true,
   checkName: 'sync-conflicts',
   botName: BOT_NAME,

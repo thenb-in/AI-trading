@@ -9,7 +9,6 @@ const Table = require('cli-table3');
 
 const PICK_KINDS = [
   ['cleanPicks', 'clean', 'target matched the source pre-image'],
-  ['forcePicks', 'force', 'target had divergent content; overwritten'],
   ['mergedPicks', 'merged', 'target had divergent content; three-way merged'],
   ['conflictPicks', 'conflict', 'overlapping edits; source in tree, target parked'],
 ];
@@ -54,23 +53,15 @@ function metricRows(results, sum, direction) {
     ['Commits failed', sum.failed],
   ];
   for (const [key, label] of PICK_KINDS) {
-    if (direction.conflictPolicy === 'source-wins' && (key === 'mergedPicks' || key === 'conflictPicks')) {
-      continue;
-    }
     rows.push([`Framework ${label} (files)`, sum[`framework_${key}`]]);
   }
   for (const [key, label] of PICK_KINDS) {
-    if (direction.conflictPolicy === 'source-wins' && (key === 'mergedPicks' || key === 'conflictPicks')) {
-      continue;
-    }
     rows.push([`${direction.ridealongLabel} ${label} (files)`, sum[`ridealong_${key}`]]);
   }
   rows.push(['App picks (files)', sum.appPicks]);
   rows.push(['App non-picks (files)', sum.appNonPicks]);
   rows.push(['Excluded never-pick (files)', sum.excluded]);
-  if (direction.conflictPolicy !== 'source-wins') {
-    rows.push(['UNRESOLVED CONFLICTS (files)', sum.conflicts]);
-  }
+  rows.push(['UNRESOLVED CONFLICTS (files)', sum.conflicts]);
   if (results.tailup) {
     rows.push(['Tail-up refreshed (files)', results.tailup.refreshed.length]);
     rows.push(['Tail-up deleted (files)', results.tailup.deleted.length]);

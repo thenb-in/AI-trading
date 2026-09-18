@@ -44,7 +44,12 @@ function writeFileEnsuringDir(absPath, contents) {
 // Three-way merge via `git merge-file`. Returns
 // { clean: boolean, content: Buffer }, where a non-clean result still carries
 // the full diff3-marked output (ours / base / theirs all present).
-function mergeThreeWay({ base, ours, theirs, oursLabel, theirsLabel }) {
+// `favor: 'theirs'` resolves conflicting hunks in favour of the source rather
+// than leaving markers, while still merging every non-conflicting hunk. That
+// is what goes into the tree on a conflict: writing the raw source file there
+// instead would throw away all of the target's OTHER edits to that file, not
+// just the contested ones.
+function mergeThreeWay({ base, ours, theirs, oursLabel, theirsLabel, favor }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-merge-'));
   try {
     const oursPath = path.join(dir, 'ours');
@@ -57,7 +62,8 @@ function mergeThreeWay({ base, ours, theirs, oursLabel, theirsLabel }) {
       const out = execFileSync(
         'git',
         [
-          'merge-file', '-p', '--diff3',
+          'merge-file', '-p',
+          ...(favor ? [`--${favor}`] : ['--diff3']),
           '-L', oursLabel, '-L', 'base (common ancestor)', '-L', theirsLabel,
           oursPath, basePath, theirsPath,
         ],
@@ -146,6 +152,18 @@ function reconcileParkedConflicts(targetRepo, conflicts, blobs, direction, stage
       continue;
     }
 
+    // Still contested: keep the target's non-conflicting edits in the tree and
+    // take the source only where they genuinely overlap.
+    writeFileEnsuringDir(abs, mergeThreeWay({
+      base: rec.base,
+      ours: rec.ours,
+      theirs,
+      oursLabel: 'ours',
+      theirsLabel: 'theirs',
+      favor: 'theirs',
+    }).content);
+    stage(c.path);
+
     writeFileEnsuringDir(
       path.join(targetRepo, c.parkedAs),
       Buffer.concat([
@@ -219,14 +237,44 @@ function renderReport(conflicts, resolved, meta) {
   return lines.join('\n');
 }
 
+// Parked conflicts left by EARLIER runs. Reconciliation only ever looks at the
+// current run's list, so without this a conflict parked last week keeps the
+// check red forever while the report explaining it gets deleted.
+function listStaleParks(targetRepo, knownPaths) {
+  const root = path.join(targetRepo, CONFLICT_DIR, CONFLICT_FILES_SUBDIR);
+  const found = [];
+  const walk = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!entry.name.endsWith(CONFLICT_SUFFIX)) continue;
+      const parkedAs = path.relative(targetRepo, full);
+      const original = path
+        .relative(root, full)
+        .slice(0, -CONFLICT_SUFFIX.length);
+      if (knownPaths.has(original)) continue;
+      found.push({ path: original, kind: 'parked by an earlier run', sha: '', parkedAs });
+    }
+  };
+  walk(root);
+  return found;
+}
+
 function writeReport(targetRepo, conflicts, resolved, meta) {
   const rel = path.join(CONFLICT_DIR, 'REPORT.md');
   const abs = path.join(targetRepo, rel);
+  const conflictDirAbs = path.join(targetRepo, CONFLICT_DIR);
   if (conflicts.length === 0) {
     // Everything reconciled against the tip — leave nothing behind for the
     // check to trip on.
     fs.rmSync(abs, { force: true });
-    git(targetRepo, ['add', '-A', '--', CONFLICT_DIR]);
+    // `-A` on a pathspec matching nothing is a fatal git error, so only stage
+    // the directory when it is actually there. `-f` because a repo may well
+    // gitignore it.
+    if (fs.existsSync(conflictDirAbs)) {
+      git(targetRepo, ['add', '-A', '-f', '--', CONFLICT_DIR]);
+    }
     return null;
   }
   writeFileEnsuringDir(abs, renderReport(conflicts, resolved, meta));
@@ -235,6 +283,7 @@ function writeReport(targetRepo, conflicts, resolved, meta) {
 }
 
 module.exports = {
+  listStaleParks,
   reconcileParkedConflicts,
   CONFLICT_DIR,
   CONFLICT_FILES_SUBDIR,

@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { git } = require('./git');
+const { git, gitTry } = require('./git');
 const { targetHasFile } = require('./rules');
 const { readSourceBlob } = require('./apply');
 const { writeFileEnsuringDir, writeReport, CONFLICT_DIR } = require('./merge');
@@ -30,24 +30,35 @@ function commitAsBot(targetRepo, direction, message) {
 // target ends on a stale intermediate. Refresh every app file we touched to
 // the source's tip and land it as one trailing commit.
 function tailUpAppFiles(sourceRepo, targetRepo, sourceBranch, toSha, results, direction) {
+  // Only files this run applied CLEANLY. For those the target holds exactly
+  // the source's blob at that commit, so fast-forwarding them to the tip is
+  // safe. A file that merged or conflicted holds a reconciled result that is
+  // worth more than the tip blob — blindly overwriting it here would redo the
+  // very silent clobbering that apply.js exists to prevent.
   const touched = new Set();
+  const preserved = [];
   for (const c of results.commits) {
     if (c.error || !c.app) continue;
-    for (const f of c.app.picks) touched.add(f.path);
+    for (const f of c.app.picks) {
+      if (f.classification === 'clean') touched.add(f.path);
+      else preserved.push(f.path);
+    }
   }
+  for (const p of preserved) touched.delete(p);
   const tailup = { refreshed: [], deleted: [], unchanged: 0, skipped: 0 };
   for (const p of touched) {
     // The file may have been deleted in the target by a later applied commit.
     if (!targetHasFile(targetRepo, p)) { tailup.skipped++; continue; }
-    let headBlob;
-    try {
-      headBlob = readSourceBlob(sourceRepo, sourceBranch, p);
-    } catch (_) {
-      // Gone at source HEAD: a later skipped commit removed it. Mirror that.
+    // Distinguish "the path is genuinely gone at source HEAD" from any other
+    // git failure. Treating every error as a deletion means a transient fault
+    // removes a live file.
+    const exists = gitTry(sourceRepo, ['cat-file', '-e', `${sourceBranch}:${p}`]).ok;
+    if (!exists) {
       git(targetRepo, ['rm', '-f', '--', p]);
       tailup.deleted.push(p);
       continue;
     }
+    const headBlob = readSourceBlob(sourceRepo, sourceBranch, p);
     const targetBlob = fs.readFileSync(path.join(targetRepo, p));
     if (headBlob.equals(targetBlob)) { tailup.unchanged++; continue; }
     writeFileEnsuringDir(path.join(targetRepo, p), headBlob);
@@ -65,6 +76,7 @@ function tailUpAppFiles(sourceRepo, targetRepo, sourceBranch, toSha, results, di
       `${direction.trailerKey}-tail-up: ${toSha}\n`
     );
   }
+  tailup.preserved = preserved;
   return tailup;
 }
 
