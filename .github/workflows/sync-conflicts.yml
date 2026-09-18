@@ -1,0 +1,32 @@
+name: Sync conflicts
+
+# The gate that makes an unresolved sync conflict impossible to merge past.
+#
+# A sync run never fails on a conflict: it merges what it can, parks what it
+# cannot under `sync-conflicts/`, and always opens its PR — which keeps the
+# branch buildable so lint, build and tests still say something useful. The
+# cost of that choice is that a conflict would otherwise be just a paragraph
+# in a PR description, and PR descriptions get skimmed.
+#
+# So make this a REQUIRED status check on the default branch. While anything
+# is parked, the PR is mechanically unmergeable, and no amount of not noticing
+# can let a silently-dropped framework change through.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sync-conflicts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Check for parked sync conflicts
+        run: node scripts/check-sync-conflicts.js

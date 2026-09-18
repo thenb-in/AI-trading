@@ -1,0 +1,277 @@
+name: Sync thenb-in/startup → this app
+
+# Nightly PULL of framework changes from `thenb-in/startup` into this app
+# repo, per the rules in `scripts/sync-framework.js`. The mirror of
+# sync-startup.yml, which pushes this app's framework work the other way.
+#
+# It is a pull, run by the repo that receives the commits, so every write is
+# local: the run needs only READ access to the framework repo and no
+# cross-repo write token.
+#
+# State is the sync branch itself. Each replayed commit carries a
+# `Synced-from-startup: <sha>` trailer, and the newest such trailer reachable
+# from the branch IS the resume point — so there is no state tag that can
+# drift out of step with what this repo actually contains. The branch is
+# long-lived on purpose: if its PR sits open for a week, each night appends to
+# it rather than cutting a fresh branch off main that lacks the previous
+# nights' commits (which is what makes one conflict cascade into many), and
+# any conflict resolved by hand in the PR stays resolved.
+#
+# IMPORTANT: merge these PRs with a MERGE COMMIT, never a squash. A squash
+# collapses the per-commit history this whole design exists to preserve, and
+# eats the trailers the resume point is read from — so the next run would
+# replay everything again.
+
+on:
+  schedule:
+    # 19:30 UTC = ~01:00 IST, an hour after sync-startup.yml, so the outbound
+    # batch has landed before we pull back.
+    - cron: '30 19 * * *'
+
+  workflow_dispatch:
+    inputs:
+      start_from_sha:
+        description: >
+          Override the starting source SHA. Normally unnecessary — the resume
+          point is read from the sync branch's own commit trailers.
+        required: false
+        type: string
+      dry_run:
+        description: 'Run the sync but do NOT push the branch or open a PR.'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-framework
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # This workflow lives under `.github/`, which is a framework path, so the
+    # framework repo carries a copy of it too. Without this guard it would run
+    # there with itself as both source and target. The script guards this as
+    # well (and exits 0); this just avoids burning a runner nightly.
+    if: github.repository != 'thenb-in/startup'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the sync branch to THIS repo
+      pull-requests: write   # open / comment on the PR in THIS repo
+      id-token: write        # federate an Octo STS token to read the framework
+
+    env:
+      SOURCE_REPO: thenb-in/startup
+      SOURCE_BRANCH: main
+      TARGET_BASE_BRANCH: main
+      SYNC_BRANCH: sync/from-startup
+
+    steps:
+      - name: Checkout this app repo (the sync target)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # need full history to read provenance trailers
+
+      - name: Mint a read token for the framework repo (Octo STS)
+        uses: octo-sts/action@main
+        id: octo-sts
+        with:
+          scope: thenb-in/startup
+          identity: app-token
+        # Federates this run's OIDC identity against the trust policy at
+        # thenb-in/startup/.github/chainguard/app-token.sts.yaml. This
+        # direction only needs contents:read on the framework; the shared
+        # identity is wider than that, which a dedicated read-only identity
+        # would tighten.
+
+      - name: Checkout the framework repo (the sync source)
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.SOURCE_BRANCH }}
+          path: source-startup
+          fetch-depth: 0
+          token: ${{ steps.octo-sts.outputs.token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install sync-script dependencies
+        # Installed OUTSIDE the workspace on purpose: the workspace is the
+        # sync target, and installing into it would dirty the tree the script
+        # is about to branch and commit.
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/syncdeps"
+          cd "${RUNNER_TEMP}/syncdeps"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund --ignore-scripts cli-table3
+
+      - name: Run sync
+        id: sync
+        env:
+          NODE_PATH: ${{ runner.temp }}/syncdeps/node_modules
+          INPUT_START: ${{ inputs.start_from_sha }}
+        run: |
+          set -euo pipefail
+          ARGS=(
+            --source-repo="${GITHUB_WORKSPACE}/source-startup"
+            --target-repo="${GITHUB_WORKSPACE}"
+            --source-branch="${SOURCE_BRANCH}"
+            --target-base-branch="${TARGET_BASE_BRANCH}"
+            --target-branch="${SYNC_BRANCH}"
+            --log-dir="${RUNNER_TEMP}/sync-logs"
+          )
+          if [ -n "${INPUT_START}" ]; then
+            ARGS+=( --start-from="${INPUT_START}" )
+          fi
+          node scripts/sync-framework.js "${ARGS[@]}"
+
+      - name: Upload sync logs (always, even on failure)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sync-framework-logs-${{ github.run_number }}.${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sync-logs/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Push sync branch
+        id: push
+        if: >-
+          success() &&
+          inputs.dry_run != true &&
+          steps.sync.outputs.skipped_same_repo != 'true' &&
+          (steps.sync.outputs.has_changes == 'true' || steps.sync.outputs.has_conflicts == 'true')
+        run: |
+          set -euo pipefail
+          ATTEMPT=1; DELAY=2
+          until git push -u origin "${SYNC_BRANCH}"; do
+            if [ "${ATTEMPT}" -ge 5 ]; then
+              echo "[push] giving up after ${ATTEMPT} attempts"
+              exit 1
+            fi
+            echo "[push] attempt ${ATTEMPT} failed; retrying in ${DELAY}s"
+            sleep "${DELAY}"; ATTEMPT=$((ATTEMPT + 1)); DELAY=$((DELAY * 2))
+          done
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the PR
+        if: steps.push.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFLICTS: ${{ steps.sync.outputs.conflicts }}
+          APPLIED: ${{ steps.sync.outputs.commits_applied }}
+          SKIPPED: ${{ steps.sync.outputs.commits_skipped }}
+          EXAMINED: ${{ steps.sync.outputs.commits_examined }}
+          FROM_SHA: ${{ steps.sync.outputs.from_sha }}
+          TO_SHA: ${{ steps.sync.outputs.to_sha }}
+          BASE_MERGE_CONFLICT: ${{ steps.sync.outputs.base_merge_conflict }}
+        run: |
+          set -euo pipefail
+
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            echo "Automated sync from \`${SOURCE_REPO}\` → \`${GITHUB_REPOSITORY}\`."
+            echo ""
+            echo "**Source range:** \`${FROM_SHA:-(bootstrap)}\`..\`${TO_SHA}\`"
+            echo "**Commits applied:** ${APPLIED}"
+            echo "**Commits skipped:** ${SKIPPED}"
+            echo "**Commits examined:** ${EXAMINED}"
+            echo "**Unresolved conflicts:** ${CONFLICTS}"
+            echo ""
+            if [ "${CONFLICTS}" != "0" ]; then
+              echo "> [!IMPORTANT]"
+              echo "> ${CONFLICTS} file(s) could not be merged automatically and are parked under"
+              echo "> \`sync-conflicts/\`. Each holds a three-way merge of what this repo had, the"
+              echo "> common ancestor, and the incoming version. **The real file currently holds the"
+              echo "> framework version**, so the branch still builds and the tests still mean"
+              echo "> something — but this repo's own edits to those files are in the \`.conflict\`"
+              echo "> files, not in the tree."
+              echo ">"
+              echo "> Resolve each: edit the real file, delete its \`.conflict\` file. The"
+              echo "> \`sync-conflicts\` check stays red until \`sync-conflicts/\` is empty."
+              echo ""
+            fi
+            if [ "${BASE_MERGE_CONFLICT}" = "true" ]; then
+              echo "> [!WARNING]"
+              echo "> \`${TARGET_BASE_BRANCH}\` could not be merged into this branch cleanly."
+              echo "> Resolve the branch conflict before merging."
+              echo ""
+            fi
+            echo "> [!CAUTION]"
+            echo "> **Merge this with a merge commit, not a squash.** A squash destroys the"
+            echo "> per-commit history and eats the \`Synced-from-startup\` trailers the next"
+            echo "> run reads its resume point from."
+            echo ""
+            echo "Full per-commit log is attached to the workflow run: ${RUN_URL}"
+            echo ""
+            echo "---"
+            echo ""
+            echo "Rules applied (from \`scripts/sync-framework.js\`):"
+            echo "- Framework paths (\`startup/\`, \`nucleus/\`, \`report_runner/\`, \`lints/\`, \`deploy/\`, \`.github/\`, \`.vscode/\`, \`.husky/\`) always cross, and anchor the commit."
+            echo "- \`db-scripts/startup/\` rides along on a commit that also touches a framework path."
+            echo "- Other paths cross **only if this repo already has the file**."
+            echo "- Commits that originated in this repo are skipped, so nothing round-trips."
+            echo "- Divergent files are three-way merged; only genuinely overlapping edits are parked as conflicts."
+          } > "${RUNNER_TEMP}/pr-body.md"
+
+          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+          if [ -z "${EXISTING}" ]; then
+            gh pr create \
+              --base "${TARGET_BASE_BRANCH}" \
+              --head "${SYNC_BRANCH}" \
+              --title "sync(framework): startup → $(basename "${GITHUB_REPOSITORY}")" \
+              --body-file "${RUNNER_TEMP}/pr-body.md"
+            EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+          else
+            # Standing branch: the PR already exists, so refresh its body and
+            # leave a note rather than opening a second one.
+            gh pr edit "${EXISTING}" --body-file "${RUNNER_TEMP}/pr-body.md"
+            gh pr comment "${EXISTING}" --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
+          fi
+          echo "pr=${EXISTING}" >> "$GITHUB_OUTPUT"
+
+          if [ "${CONFLICTS}" != "0" ]; then
+            gh label create sync-conflict --color B60205 \
+              --description "Sync PR with unresolved conflicts needing manual reconciliation" \
+              --force > /dev/null 2>&1 || true
+            gh pr edit "${EXISTING}" --add-label sync-conflict || true
+          else
+            gh pr edit "${EXISTING}" --remove-label sync-conflict > /dev/null 2>&1 || true
+          fi
+
+      - name: Re-ping stale conflict PRs
+        # The realistic failure is not that nobody saw the conflict on night
+        # one — it is that the PR quietly rots. Every night this re-states the
+        # age of any still-open conflicted sync PR on the PR itself.
+        if: always() && steps.sync.outputs.skipped_same_repo != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          STALE_AFTER_DAYS: '3'
+        run: |
+          set -euo pipefail
+          gh pr list --state open --label sync-conflict \
+            --json number,createdAt,title --jq '.[] | @base64' | while read -r row; do
+            [ -z "${row}" ] && continue
+            NUM=$(echo "${row}" | base64 -d | jq -r .number)
+            CREATED=$(echo "${row}" | base64 -d | jq -r .createdAt)
+            AGE=$(( ( $(date -u +%s) - $(date -u -d "${CREATED}" +%s) ) / 86400 ))
+            if [ "${AGE}" -ge "${STALE_AFTER_DAYS}" ]; then
+              gh pr comment "${NUM}" --body "⏳ This sync PR has had unresolved conflicts for ${AGE} day(s). Framework changes are not reaching this app until it is reconciled and merged."
+            fi
+          done
+
+      - name: Summarize on the run page
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/sync-logs/sync-log.md" ]; then
+            {
+              echo "## Framework sync"
+              echo ""
+              echo "**Branch:** \`${SYNC_BRANCH}\`"
+              echo ""
+              awk '/## Run summary/,/## Per-commit detail/' "${RUNNER_TEMP}/sync-logs/sync-log.md" | sed '$d'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
