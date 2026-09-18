@@ -82,10 +82,16 @@ jobs:
           # is materialized by install-deps from tests/e2e-tests/.env.example
           # — single source of truth, no second copy of the values to drift.
           ENV_FILE=tests/e2e-tests/.env
-          SADMIN_USERNAME=$(grep -E '^SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
-          SADMIN_PASSWORD=$(grep -E '^SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
+          # The e2e suite names its own credentials TEST_SADMIN_*; the seed
+          # script (startup/server/create_company_with_role_and_perms.js)
+          # reads SADMIN_*. Same values, so bridge the two names here rather
+          # than keeping a second copy of the credentials that can drift.
+          # `|| true` stops a no-match from tripping `set -e` before the
+          # guard below can name the variable that is actually missing.
+          SADMIN_USERNAME=$(grep -E '^TEST_SADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2- || true)
+          SADMIN_PASSWORD=$(grep -E '^TEST_SADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2- || true)
           if [ -z "$SADMIN_USERNAME" ] || [ -z "$SADMIN_PASSWORD" ]; then
-            echo "[seed] missing SADMIN_USERNAME or SADMIN_PASSWORD in $ENV_FILE"; exit 1
+            echo "[seed] missing TEST_SADMIN_USERNAME or TEST_SADMIN_PASSWORD in $ENV_FILE"; exit 1
           fi
           export SADMIN_USERNAME SADMIN_PASSWORD
           echo "[seed] credentials sourced from $ENV_FILE:"
@@ -95,37 +101,6 @@ jobs:
         env:
           CI: true
           DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
-
-      - name: Seed integration test users (admin + user) via SQL
-        # Creates the admin-role and user-role logins the integration suite
-        # logs in as. Pulls credentials + company name from
-        # tests/integration-tests/.env (materialized from .env.example by
-        # install-deps). The SQL script is idempotent — safe to re-run.
-        # Runs via `docker exec` against the postgres container so we don't
-        # need a psql client on the runner.
-        run: |
-          ENV_FILE=tests/integration-tests/.env
-          TEST_ADMIN_USERNAME=$(grep -E '^TEST_ADMIN_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
-          TEST_ADMIN_PASSWORD=$(grep -E '^TEST_ADMIN_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
-          TEST_USER_USERNAME=$(grep -E '^TEST_USER_USERNAME=' "$ENV_FILE" | cut -d= -f2-)
-          TEST_USER_PASSWORD=$(grep -E '^TEST_USER_PASSWORD=' "$ENV_FILE" | cut -d= -f2-)
-          COMPANY_NAME=$(grep -E '^TEST_COMPANY_NAME=' "$ENV_FILE" | cut -d= -f2-)
-          for var in TEST_ADMIN_USERNAME TEST_ADMIN_PASSWORD TEST_USER_USERNAME TEST_USER_PASSWORD COMPANY_NAME; do
-            if [ -z "${!var}" ]; then echo "[seed-users] missing $var in $ENV_FILE"; exit 1; fi
-          done
-          echo "[seed-users] applying tests/integration-tests/db-scripts/seed_users.sql"
-          echo "[seed-users]   company_name=$COMPANY_NAME"
-          echo "[seed-users]   admin=$TEST_ADMIN_USERNAME / user=$TEST_USER_USERNAME"
-          docker exec -i \
-            -e PGPASSWORD=postgres \
-            "$PG_CONTAINER" psql -U postgres -d "$DB_NAME" \
-            -v ON_ERROR_STOP=on \
-            -v company_name="$COMPANY_NAME" \
-            -v admin_username="$TEST_ADMIN_USERNAME" \
-            -v admin_password="$TEST_ADMIN_PASSWORD" \
-            -v user_username="$TEST_USER_USERNAME" \
-            -v user_password="$TEST_USER_PASSWORD" \
-            < tests/integration-tests/db-scripts/seed_users.sql
 
       - name: Start frontend (vite dev — persists)
         run: |

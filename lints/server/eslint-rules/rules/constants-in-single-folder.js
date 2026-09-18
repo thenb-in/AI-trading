@@ -102,6 +102,14 @@ module.exports = {
             return;
           }
 
+          // A computed key — `{ [REPORT_RUN]: handler }` — reads a constant
+          // rather than defining one, and the constant it reads is already
+          // imported from the constants folder. That is the pattern this rule
+          // is asking for, so flagging it would punish the right answer.
+          if (node.computed) {
+            return;
+          }
+
           // Check if property name follows constant naming convention
           if (node.key.type === 'Identifier' && isConstantName(node.key.name)) {
             // Skip if it's importing from constants or logger

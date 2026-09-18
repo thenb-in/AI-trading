@@ -36,7 +36,7 @@ const { AsyncLocalStorage } = require('node:async_hooks');
 
 const logger = require('@startup/logger');
 const { sequelize, canCancelQueries, cancelBackends } = require('@startup/src/services/databaseService');
-const { RUN_STOPPED_ERROR } = require('./constants');
+const { RUN_STOPPED_ERROR } = require('@startup/src/constants/reportRuns');
 const { dropPending } = require('./jobQueue');
 
 const runStore = new AsyncLocalStorage();

@@ -42,7 +42,7 @@ function createInProcessRunnerClient() {
     return Promise.resolve(handler(payload));
   }
 
-  logger.info('[app->runner] REPORT_RUNNER_URL not set — running reports in-process');
+  logger.info(`[app->runner] REPORT_RUNNER_URL not set — running reports in-process, handling ${Object.keys(HANDLERS).join(', ')}`);
   return { inProcess: true, isConnected: () => true, request, close: () => {} };
 }
 

@@ -123,7 +123,7 @@ files_to_replace=(
 )
 
 # copy the files to app_name instead of base
-for file in ${files_to_replace[@]}; do
+for file in "${files_to_replace[@]}"; do
     source_file="$script_dir/$file"
 
     # Check if source file exists

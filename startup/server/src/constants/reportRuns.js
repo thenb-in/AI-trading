@@ -56,6 +56,20 @@ const REPORT_RUNNER_UNAVAILABLE = 'REPORT_RUNNER_UNAVAILABLE';
 const REPORTS_ROOT_PATH = '/admin/report';
 const SAVED_RUN_PARAM = 'runId';
 
+// Thrown at any query a stopped run tries to open. It travels out through the
+// report exactly like a database error would, which is how a report that was
+// never written to be interruptible ends up unwinding anyway.
+const RUN_STOPPED_ERROR = 'REPORT_RUN_STOPPED: this run was stopped';
+
+// How a run ended, as counted by /metrics. A run that was stopped is counted
+// apart from one that failed: it says how often people give up on a report,
+// which is a fact about the report, while errors are a fact about the code.
+const RUN_OUTCOMES = {
+  SUCCESSES: 'successes',
+  ERRORS: 'errors',
+  CANCELLATIONS: 'cancellations'
+};
+
 function reportPath(reportKey) {
   return `${REPORTS_ROOT_PATH}/${reportKey}`;
 }
@@ -75,6 +89,8 @@ module.exports = {
   REPORT_RUN_LIST_LIMIT,
   REPORT_RUN_LOG_PREFIX,
   REPORT_RUNNER_UNAVAILABLE,
+  RUN_STOPPED_ERROR,
+  RUN_OUTCOMES,
   REPORTS_ROOT_PATH,
   SAVED_RUN_PARAM,
   reportPath,
