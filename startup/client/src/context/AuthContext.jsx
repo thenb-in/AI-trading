@@ -4,6 +4,7 @@ import { ApiService } from "@services/ApiService";
 import { setCacheScope } from "@services/cacheManager";
 import { isAllowedDevice } from "../utils/deviceUtils";
 import { isSsoEnabled } from "@startup/sso/ssoMode";
+import { disconnectSocket } from "@startup/socket";
 import PropTypes from "prop-types";
 import { DataContext } from "./DataContext";
 import {
@@ -112,6 +113,8 @@ const DataProvider = ({ children, publicPaths = [] }) => {
 
   const logout = useCallback(async () => {
     setIsLoggingOut(true);
+    // The socket lives for the whole session, so signing out is what closes it.
+    disconnectSocket();
     try {
       const response = await ApiService.logout();
       const ssoLogoutUrl = response?.data?.ssoLogoutUrl;
