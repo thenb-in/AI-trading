@@ -63,7 +63,7 @@ const ApiService = {
       // are the exception: they say the server disagrees with what this client
       // thought existed — the row is gone, or someone else got there first —
       // so the cached copy is the thing that was wrong, not the request.
-      const status = error?.response?.status;
+      const status = error?.httpStatus;
       if (invalidates && (status === HTTP_GONE_STATUSES.notFound || status === HTTP_GONE_STATUSES.conflict)) {
         invalidates.forEach(cacheExpireNamespace);
       }
