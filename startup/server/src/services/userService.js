@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const logger = require('../../logger');
 // User is the primary model for this service
 // UserProfile is tightly coupled with User (one-to-one relationship)
 const db = require('../models');
@@ -117,6 +118,20 @@ const getUserById = async (userId) => {
 const isSupportUser = async (userId) => {
   const user = await findModelByIdOrThrow(User, userId, { attributes: ['isSupportUser'] }, 'User');
   return !!user.isSupportUser;
+};
+
+/** Display names for a set of user ids, keyed by id as a string. */
+const getUserNamesByIds = async (ids) => {
+  const wanted = [...new Set((ids || []).filter(Boolean).map(String))];
+  if (!wanted.length) {
+    return new Map();
+  }
+  const users = await User.findAll({
+    attributes: ['id', 'name'],
+    where: { id: { [Op.in]: wanted } },
+    raw: true
+  });
+  return new Map(users.map((user) => [String(user.id), user.name]));
 };
 
 /** Active support users, with the company each sits in. */
@@ -326,6 +341,22 @@ const invalidateSessions = async (userId) => {
 };
 
 
+// Approve or unapprove a login; unapproving also ends its sessions. Returns
+// whether anything changed.
+const setUserApproved = async (userId, approved) => {
+  const user = await findModelByIdOrThrow(User, userId, {}, 'User');
+  if (user.is_approved === approved) {
+    return false;
+  }
+
+  await user.update({ is_approved: approved });
+  if (!approved) {
+    await invalidateSessions(userId);
+  }
+  logger.info(`User ${user.username} is now ${approved ? 'approved' : 'not approved'}`);
+  return true;
+};
+
 const getTokensValidAfter = async (userId) => {
   const user = await User.findByPk(userId, {
     attributes: ['tokens_valid_after']
@@ -354,6 +385,8 @@ const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
 };
 
 module.exports = {
+  getUserNamesByIds,
+  setUserApproved,
   getAllUsers,
   getSupportUsers,
   getUserRoster,
