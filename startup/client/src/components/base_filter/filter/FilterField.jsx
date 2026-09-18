@@ -1,5 +1,5 @@
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { parse } from 'date-fns';
 import PropTypes from 'prop-types';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -53,6 +53,12 @@ const FilterField = ({
     [isDisabled]
   );
 
+  // A master picker hands back null (or no ids) when cleared; useFilterState reads that as 'all'.
+  const handleSelectorChange = useCallback(
+    (picked) => onSearchableChange(config, picked),
+    [onSearchableChange, config]
+  );
+
   // Dynamic option lists load when their dropdown is opened. A filter that
   // already holds something other than the default came from the URL, a saved
   // run or a deep link, and its label only exists inside that list — so it has
@@ -87,8 +93,26 @@ const FilterField = ({
     }
 
     case 'select': {
-      const options = Array.isArray(config.options) ? config.options : [];
       const isMulti = !!config.multiselect;
+      // A filter over a master uses that master's own picker; 'all' is simply nothing picked.
+      if (config.Selector) {
+        const picked = isMulti
+          ? (Array.isArray(value) ? value : []).filter((v) => v !== 'all')
+          : (value === 'all' ? '' : value);
+        return (
+          <config.Selector
+            {...config.selectorProps}
+            value={picked}
+            onChange={handleSelectorChange}
+            placeholder={config.placeholder}
+            disabled={isDisabled}
+            multiple={isMulti}
+            allowCreate={false}
+            allowEdit={false}
+          />
+        );
+      }
+      const options = Array.isArray(config.options) ? config.options : [];
       const showSearch = config.searchable === true || config.multiselect === true;
       // Surface 'all' rather than the placeholder so the user sees the active
       // default ("All Places"). Multi wants an array, single a plain string.
@@ -169,7 +193,11 @@ FilterField.propTypes = {
   config: PropTypes.shape({
     name: PropTypes.string.isRequired,
     label: PropTypes.string,
-    type: PropTypes.oneOf(['date', 'select', 'checkbox', 'number']).isRequired,
+    type: PropTypes.oneOf(['date', 'select', 'checkbox', 'number', 'text']).isRequired,
+    /** A master's picker (CustomerSelector...) for a select over that master; `options` are then not used. */
+    Selector: PropTypes.elementType,
+    /** What that picker needs besides the value ({ workflow } for WorkflowStatusSelector). */
+    selectorProps: PropTypes.object,
     options: PropTypes.array,
     multiselect: PropTypes.bool,
     /** (option) => node for its menu row. */

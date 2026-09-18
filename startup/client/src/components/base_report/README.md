@@ -55,18 +55,9 @@ const MyReport = ({ report, locationState }) => {
 const MyReport = ({ report, locationState }) => {
   const reportApi = { /* ... */ };
   
+  // A status filter lists the document's workflow statuses, in their words and colours.
   const additionalFilters = [
-    { 
-      name: 'status', 
-      label: 'Status', 
-      type: 'select', 
-      options: [
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' }
-      ],
-      is_standard: false,
-      order: 10
-    }
+    workflowStatusFilter({ workflow: APPROVAL_WORKFLOW, order: 10 }),
   ];
 
   return (
