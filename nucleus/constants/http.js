@@ -15,6 +15,9 @@ const HTTP_STATUS_UNAUTHORIZED = 401;
 const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_NOT_FOUND = 404;
 const HTTP_STATUS_CONFLICT = 409;
+// The caller is being asked to slow down, not told they were wrong — see
+// middleware/rateLimit.js, which answers this on the endpoints open to anyone.
+const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
 const HTTP_STATUS_INTERNAL_ERROR = 500;
 // Upstream failures. A third-party API that is down or unconfigured is not a
 // bug in this server, and answering 500 tells the caller the wrong thing.
@@ -39,6 +42,7 @@ module.exports = {
   HTTP_STATUS_FORBIDDEN,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_CONFLICT,
+  HTTP_STATUS_TOO_MANY_REQUESTS,
   HTTP_STATUS_INTERNAL_ERROR,
   HTTP_STATUS_BAD_GATEWAY,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
