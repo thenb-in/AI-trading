@@ -94,7 +94,8 @@ const BaseMaster = ({
   // Optional `(refresh) => unsubscribe`, for rows that change outside this page
   // (a cache bust elsewhere). They reload in place, keeping the grid's sort and filters.
   subscribeToRefresh,
-  // Shown between the header and the grid — a node, or a function given { rows, columns, refresh }.
+  // Shown between the header and the grid — a node, or a function given { rows, columns, refresh, openRecord }
+  // (openRecord(record) opens the modal on it — a new record seeded from a link, say).
   headerContent,
   headerRef,
   showRefreshButton = true,
@@ -112,6 +113,8 @@ const BaseMaster = ({
   // Approve / reject a row and a selection of rows, from one declaration — for masters
   // that decide on records by a status code rather than running a workflow.
   approval,
+  // `({ refresh, rows, setRows, openEdit, openRecord }) => row actions`; openRecord opens the
+  // modal on any record — a new one a row seeds (a return against it), not only the row.
   extraActions,
   /** Extra buttons for the header action area (a React node). */
   extraHeaderActions,
@@ -226,7 +229,7 @@ const BaseMaster = ({
     ? extraHeaderActions({ refresh, rows, columns })
     : extraHeaderActions;
   const resolvedHeaderContent = typeof headerContent === 'function'
-    ? headerContent({ refresh, rows, columns })
+    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open })
     : headerContent;
 
   // An amend opens the copy as a new record in the form.
@@ -251,7 +254,7 @@ const BaseMaster = ({
 
   const actions = [
     ...approvalActions,
-    ...(extraActions ? extraActions({ refresh, rows, setRows, openEdit: openRecord }) : []),
+    ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row), openRecord }) : []),
     ...workflowRowActions,
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
