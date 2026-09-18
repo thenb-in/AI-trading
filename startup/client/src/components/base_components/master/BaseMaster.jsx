@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
@@ -10,7 +11,7 @@ import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
 import { useMasterRows } from './useMasterRows';
-import { baseMasterPropTypes } from './baseMasterPropTypes';
+import { useMasterModal } from './useMasterModal';
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
@@ -133,20 +134,32 @@ const BaseMaster = ({
   showEmptyColumns = true,
   hideConstantColumns = true,
 
-  // Server-paged loading. `loadRows` additionally receives { page, pageSize },
-  // and paging stops at the first page that comes back empty.
+  // Server-paged loading. `loadRows` additionally receives { page, pageSize };
+  // there is more while the page is under the response's pagination.totalPages
+  // (or extractResponse's hasMore), otherwise until a page comes back empty.
   infiniteScroll = false,
   pageSize = 50,
+  // The server matches the search box (sent to loadRows as `search`), for rows
+  // too many to load at once; otherwise the loaded rows are matched here.
+  serverSearch = false,
+  // A filter bar of the master's own, in place of filtersConfig:
+  // ({ filters, applyFilters }) => node. Applied filters are kept for paging and refresh.
+  renderFilters,
+  // `(id) => record`: a saved record opens in its form loaded whole, not as its list row.
+  loadRecord,
+  // A URL parameter (`id`) that opens that record on arrival — a link from elsewhere.
+  openParam,
+  // Called when the modal closes, e.g. to go back where a link came from.
+  onModalClose,
 
   // controler add action button
   showAdd = true,
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState(initialFilters);
   const [historyRowId, setHistoryRowId] = useState(null);
   const { userData } = useDataContext();
+  const modal = useMasterModal({ openParam, onClose: onModalClose });
+  const { selectedRow, setSelectedRow } = modal;
   const { handleVisibleRowsChange, recordNav } = useRecordNav(selectedRow, setSelectedRow);
 
   // A master with no read permission (e.g. one over the browser's own cache) is open to all.
@@ -164,26 +177,17 @@ const BaseMaster = ({
     (permissionKeys.update ? hasPermission(permissionKeys.update, userData) : false);
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
-  // `refresh` is silent: every reload after an action (approve, a workflow step, a
-  // save, an import, a row or header action) updates the rows in place. Only the
-  // first load, a filter change and the header's Refresh show "Loading...".
-  const { rows, setRows, columns, loading, isLoadingMore, hasMore, fetchRows, refresh, handleLoadMore } = useMasterRows({
-    title,
-    canRead,
-    loadRows,
-    rowsKey,
-    extractResponse,
-    filters,
-    mapFiltersForApi,
-    infiniteScroll,
-    pageSize,
-    subscribeToRefresh,
-    unauthorizedToast,
-    fetchSuccessToast,
-    fetchFailureToast,
+  const {
+    rows, setRows, columns, loading, isLoadingMore, hasMore, filters,
+    fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
+  } = useMasterRows({
+    title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
+    infiniteScroll, pageSize, serverSearch, searchQuery, unauthorizedToast, fetchSuccessToast, fetchFailureToast,
   });
 
-  const matchedRows = useRowSearch(rows, searchQuery, { columns, searchKeys });
+  useEffect(() => subscribeToRefresh?.(reloadQuietly), [subscribeToRefresh, reloadQuietly]);
+
+  const matchedRows = useRowSearch(rows, serverSearch ? '' : searchQuery, { columns, searchKeys });
   const filteredData = useMemo(() => (mapRows ? mapRows(matchedRows) : matchedRows), [matchedRows, mapRows]);
 
   const exportColumns = useMemo(
@@ -222,16 +226,8 @@ const BaseMaster = ({
     ? headerContent({ refresh, rows, columns })
     : headerContent;
 
-  const { actions: approvalActions, selectionProps, bulkProps, dialog: approvalDialog } = useMasterApproval({
-    approval,
-    rows: filteredData,
-    refresh,
-  });
-  // Opens a record in the modal: a row, or an amend's copy as a new record in the form.
-  const openRecord = (record) => {
-    setSelectedRow(record);
-    setIsModalOpen(true);
-  };
+  // An amend opens the copy as a new record in the form.
+  const openRecord = modal.open;
   const handleAmend = ({ record }) => openRecord(amendCopy(workflow, record));
 
   const workflowRowActions = useWorkflowRowActions({
@@ -239,7 +235,9 @@ const BaseMaster = ({
     masterName,
     permissions: permissionKeys,
     hooks: { amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks },
-    onChanged: () => fetchRows(),
+    // The saved record replaces its row where the move hands one back, so a
+    // long list keeps its place; otherwise the list reloads.
+    onChanged: ({ saved }) => (saved?.id ? patchRow(saved) : fetchRows()),
   });
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
@@ -273,31 +271,30 @@ const BaseMaster = ({
       : []),
   ];
 
-  const handleAdd = () => {
-    setSelectedRow(null);
-    setIsModalOpen(true);
-  };
+  const handleAdd = () => openRecord(null);
 
   // Every row opens: its details, its edit form, or wherever the master sends it.
+  // An override that only sometimes differs can still open the row: `openRecord(row)`.
   const handleRowClick = (row) => {
     if (onRowClickOverride) {
-      onRowClickOverride(row, { openEdit: openRecord });
+      onRowClickOverride(row, { openRecord });
       return;
     }
     openRecord(row);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedRow(null);
-  };
+  const handleCloseModal = modal.close;
 
   const handleCloseHistory = () => setHistoryRowId(null);
   // A form may hand back what it saved; the grid only needs to reload, not read that as filters.
   const handleFormSuccess = () => refresh();
 
+  // A record opened by id alone (a link) is its row, once the rows have it — unless the form loads it.
+  const openRow = loadRecord || !selectedRow?.id
+    ? selectedRow
+    : rows.find((row) => String(row.id) === String(selectedRow.id)) ?? selectedRow;
   // A saved record opens its details or form; a new one (or an amend's copy) the form.
-  const isSaved = Boolean(selectedRow?.id);
+  const isSaved = Boolean(openRow?.id);
   const ModalBody = isSaved ? (DetailComponent ?? FormComponent ?? MasterRecordDetails) : FormComponent;
   const isForm = ModalBody === FormComponent;
   const Modal = isForm ? FormModal : BaseModal;
@@ -308,7 +305,8 @@ const BaseMaster = ({
         updateLabel,
         savingLabel,
         workflow,
-        record: selectedRow,
+        // Loaded whole by the modal where the master says how; otherwise the row is the record.
+        ...(loadRecord && isSaved ? { recordId: openRow.id, loadRecord } : { record: openRow }),
         masterName,
         permissions: permissionKeys,
         hooks: workflowHooks,
@@ -318,7 +316,7 @@ const BaseMaster = ({
       }
     // A form names its record itself; a details modal is a plain BaseModal, so
     // it is told here what it is showing.
-    : { recordName: masterName, recordId: selectedRow?.id };
+    : { recordName: masterName, recordId: openRow?.id };
 
   // Adapters that inject the current rows/columns/refresh into caller-supplied
   // callbacks. Defined here (rather than inline in JSX) to satisfy the
@@ -334,10 +332,19 @@ const BaseMaster = ({
   const boundOnImport = onImport
     ? () => onImport({ columns, rows, refresh })
     : undefined;
-  const handleFiltersApply = (applied) => {
-    setFilters(applied);
-    fetchRows(applied);
-  };
+
+  // Keyed by record so stepping to the next one starts a fresh form.
+  const renderBody = (record) => (
+    <ModalBody
+      key={openRow?.id ?? 'new'}
+      isOpen
+      onClose={handleCloseModal}
+      initialData={record}
+      columns={columns}
+      {...{ [formSuccessProp]: handleFormSuccess }}
+      {...(formProps ? formProps(record) : {})}
+    />
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -367,9 +374,10 @@ const BaseMaster = ({
           extraHeaderActions={resolvedHeaderActions}
         />
         {resolvedHeaderContent}
+        {renderFilters ? renderFilters({ filters, applyFilters }) : null}
         {filtersConfig && (
           <BaseFilter
-            onFiltersApply={handleFiltersApply}
+            onFiltersApply={applyFilters}
             filtersConfig={filtersConfig}
             disabled={loading || isFilterLoading}
           />
@@ -394,7 +402,7 @@ const BaseMaster = ({
               rowClickEnabled
               infiniteScroll={infiniteScroll}
               hasMore={infiniteScroll && hasMore}
-              onLoadMore={handleLoadMore}
+              onLoadMore={loadMore}
               isLoadingMore={isLoadingMore}
               onVisibleRowsChange={handleVisibleRowsChange}
               getRowClassName={getRowClassName}
@@ -416,26 +424,16 @@ const BaseMaster = ({
         )}
         <Modal
           {...formModalProps}
-          isOpen={isModalOpen && Boolean(ModalBody)}
+          isOpen={modal.isOpen && Boolean(ModalBody)}
           onClose={handleCloseModal}
           // A form titles itself (FormModal); a saved record's details by what the record is known by.
-          title={(isSaved ? modalEditTitle : modalAddTitle) ?? (isForm ? undefined : recordTitle({ masterName, record: selectedRow, isNew: false, isEditable: false }))}
+          title={(isSaved ? modalEditTitle : modalAddTitle) ?? (isForm ? undefined : recordTitle({ masterName, record: openRow, isNew: false, isEditable: false }))}
           maxWidth={modalMaxWidth}
           auditHead={auditHead}
           recordNav={recordNav}
         >
-          {/* Keyed by record so stepping to the next one starts a fresh form. */}
-          {ModalBody && (
-            <ModalBody
-              key={selectedRow?.id ?? 'new'}
-              isOpen
-              onClose={handleCloseModal}
-              initialData={selectedRow}
-              columns={columns}
-              {...{ [formSuccessProp]: handleFormSuccess }}
-              {...(formProps ? formProps(selectedRow) : {})}
-            />
-          )}
+          {/* A record the modal loads reaches the form once the modal has it. */}
+          {ModalBody && (isForm && loadRecord && isSaved ? renderBody : renderBody(openRow))}
         </Modal>
         {approvalDialog}
         {auditHead && historyRowId !== null && (
@@ -541,6 +539,11 @@ BaseMaster.propTypes = {
   defaultGroupByField: PropTypes.string,
   initialSortDirection: PropTypes.string,
   infiniteScroll: PropTypes.bool,
+  serverSearch: PropTypes.bool,
+  renderFilters: PropTypes.func,
+  loadRecord: PropTypes.func,
+  openParam: PropTypes.string,
+  onModalClose: PropTypes.func,
   pageSize: PropTypes.number,
   showAdd: PropTypes.bool,
 };
