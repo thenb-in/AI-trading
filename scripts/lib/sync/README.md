@@ -9,6 +9,10 @@ same in every repo.
 
 ## What this PR is
 
+Its title reads `sync: <source> → <target>`, so the repo the commits came from
+is the first thing in it — the framework repo takes sync PRs from every app,
+and they need telling apart.
+
 The framework repo (`thenb-in/startup`) and the app repos built on it both get
 real work. A nightly job replays the other side's framework-relevant commits
 onto a sync branch and opens one PR per direction.
@@ -31,6 +35,23 @@ of what you just merged.
 
 If branch protection forces squash merges, `sync/*` branches need an
 exemption. Rebase-merge is also fine (trailers survive); squash is not.
+
+To be precise about the damage, because it is not "the changes are lost":
+
+* **File content is completely safe.** A squash keeps every line. Nothing you
+  merged goes missing.
+* **Authorship is gone, permanently.** The commits collapse into one authored
+  by whoever clicked merge, so `git blame` on framework code in this repo
+  points at the merger instead of the person who wrote the line.
+* **The next run gets noisy.** With the trailers gone it re-replays commits
+  whose content is already in the base branch, producing a PR full of
+  duplicates and often a conflict that isn't real. Content still converges —
+  it is annoying, not dangerous.
+
+Whether the trailers survive depends on the repo's squash-message setting:
+GitHub's default concatenates the commit messages into the squash body, so
+they often do survive, and then only the authorship is lost. Set to "PR title
+and description", they are stripped and you get the noisy-PR behaviour too.
 
 Two more things not to do:
 

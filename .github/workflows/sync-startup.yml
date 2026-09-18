@@ -220,17 +220,21 @@ jobs:
             echo "Full rules, review steps and conflict-resolution instructions: [scripts/lib/sync/README.md](${GUIDE_URL})"
           } > /tmp/pr-body.md
 
+          # Source repo first: the framework repo receives sync PRs from every
+          # app, so the title has to say which one this is at a glance.
+          TITLE="sync: $(basename "${GITHUB_REPOSITORY}") → $(basename "${TARGET_REPO}")"
+
           EXISTING=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -z "${EXISTING}" ]; then
             gh pr create \
               --repo "${TARGET_REPO}" \
               --base "${TARGET_BASE_BRANCH}" \
               --head "${BRANCH}" \
-              --title "sync(startup): $(basename "${GITHUB_REPOSITORY}") → startup" \
+              --title "${TITLE}" \
               --body-file /tmp/pr-body.md
           else
             # Standing branch: refresh the existing PR rather than opening a second.
-            gh pr edit "${EXISTING}" --repo "${TARGET_REPO}" --body-file /tmp/pr-body.md
+            gh pr edit "${EXISTING}" --repo "${TARGET_REPO}" --title "${TITLE}" --body-file /tmp/pr-body.md
             gh pr comment "${EXISTING}" --repo "${TARGET_REPO}" \
               --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
           fi

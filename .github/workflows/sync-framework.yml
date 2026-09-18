@@ -240,18 +240,26 @@ jobs:
             echo "Full rules, review steps and conflict-resolution instructions: [scripts/lib/sync/README.md](${GUIDE_URL})"
           } > "${RUNNER_TEMP}/pr-body.md"
 
+          # Source repo first, matching sync-startup.yml, so both directions
+          # read the same way wherever you see them.
+          TITLE="sync: $(basename "${SOURCE_REPO}") → $(basename "${GITHUB_REPOSITORY}")"
+
           EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -z "${EXISTING}" ]; then
             gh pr create \
               --base "${TARGET_BASE_BRANCH}" \
               --head "${SYNC_BRANCH}" \
-              --title "sync(framework): startup → $(basename "${GITHUB_REPOSITORY}")" \
+              --title "${TITLE}" \
               --body-file "${RUNNER_TEMP}/pr-body.md"
-            EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+            # Source repo first, matching sync-startup.yml, so both directions
+          # read the same way wherever you see them.
+          TITLE="sync: $(basename "${SOURCE_REPO}") → $(basename "${GITHUB_REPOSITORY}")"
+
+          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
           else
             # Standing branch: the PR already exists, so refresh its body and
             # leave a note rather than opening a second one.
-            gh pr edit "${EXISTING}" --body-file "${RUNNER_TEMP}/pr-body.md"
+            gh pr edit "${EXISTING}" --title "${TITLE}" --body-file "${RUNNER_TEMP}/pr-body.md"
             gh pr comment "${EXISTING}" --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
           fi
 
