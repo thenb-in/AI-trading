@@ -104,7 +104,12 @@ const FormModal = ({
     isNew: !isEditMode,
   });
 
-  const save = async (run) => {
+  const handleSubmit = async (event) => {
+    // A form rendered inside this one (a nested FormModal, or an inline
+    // sub-form) still bubbles its submit up here through React. Only this
+    // form's own submit is a save of this record.
+    if (event.target !== event.currentTarget) return;
+    event.preventDefault();
     setIsSaving(true);
     try {
       await run();
