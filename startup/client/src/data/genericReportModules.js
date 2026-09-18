@@ -11,7 +11,6 @@ const getGenericReportModules = () => [
   {
     id: 'notification-log-report',
     title: 'Notification Log Report',
-    slug: 'notification-log-report',
     permissionName: 'read_notification-log-report',
     desc: 'Every message a notification rule sent, over which channel it went, who it was for and whether it arrived',
     category: 'administration',
