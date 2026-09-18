@@ -12,15 +12,16 @@ import { useDataContext } from '@context/useDataContext';
  * per row in a loop, React sees a different number of hooks between renders and
  * throws "Rendered fewer hooks than expected" — so those call sites pass
  * `userData` instead.
+ *
+ * Only leaving the argument out reads the context. A `userData` that is passed
+ * but empty — signed out, or the session just expired — holds no permissions;
+ * reading the context there would be a hook call inside the caller's callback.
  */
-const hasPermission = (permissionNames, userData) => {
-  if (!userData) {
-    // The rule cannot see that only this branch is a hook call; the contract
-    // above is what keeps callers on the right side of it.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const contextData = useDataContext();
-    userData = contextData.userData;
-  }
+const hasPermission = (permissionNames, ...given) => {
+  // The rule cannot see that only this branch is a hook call; the contract
+  // above is what keeps callers on the right side of it.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const userData = given.length ? given[0] : useDataContext().userData;
 
   if (!userData || !userData.role) {
     return false;
@@ -28,15 +29,8 @@ const hasPermission = (permissionNames, userData) => {
 
   const userPermissions = userData.role.permissions || [];
 
-  if (!Array.isArray(permissionNames)) {
-    permissionNames = [permissionNames]; // Convert to array if it's a single string
-  }
-
-  const hasPerm = permissionNames.some((perm) =>
-      userPermissions.some((userPerm) => userPerm.name === perm)
-    );
-
-  return Boolean(hasPerm);
+  const names = Array.isArray(permissionNames) ? permissionNames : [permissionNames];
+  return names.some((name) => userPermissions.some((permission) => permission.name === name));
 };
 
 export { hasPermission };
