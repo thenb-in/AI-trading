@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { RecordCommentsPanel } from '@startup/components/base_components/record_comments';
+import { RecordAttachmentsContext } from '@startup/components/base_components/record_comments/recordAttachments';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
@@ -79,9 +80,12 @@ const BaseModal = ({
   const hasTitle = isTitleString ? title !== '' : (isTitleNode || Boolean(title));
   const shouldShowAudit = Boolean(showAudit && auditHead && recordId != null);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
-  // Anything saved can be talked about. A record still being created has no id
-  // to file a comment against, and nothing else is in the way.
-  const shouldShowComments = Boolean(recordName && recordId != null);
+  // Anything saved can be talked about and filed against. A record still being
+  // created has no id yet, so it shows the panel only where its form holds files
+  // until the save (attachBeforeSave), and not when the form draws them itself.
+  const attachments = useContext(RecordAttachmentsContext);
+  const shouldShowComments = Boolean(recordName)
+    && (recordId != null || Boolean(attachments?.attachBeforeSave && !attachments.isDrawnByForm));
 
   useEffect(() => {
     if (!isOpen) setIsAuditOpen(false);

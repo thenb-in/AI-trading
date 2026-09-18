@@ -1,12 +1,15 @@
 import { createContext, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
+import { plural } from '@utils/formattingUtils';
 import { BaseModal, recordTitle } from './BaseModal';
 import { useModalRecord } from './useModalRecord';
 import { FormFooter } from '../FormFooter';
 import { DEFAULT_WORKFLOW, amendCopy } from '../../workflow/workflow';
 import { useWorkflow } from '../../workflow/useWorkflow';
 import { FormBlockedFieldContext, FormEditableContext } from '../../fields/shared/formEditable';
+import { RecordAttachmentsContext, useRecordAttachmentsState } from '../../record_comments/recordAttachments';
 
 const FormModalContext = createContext(null);
 const NOT_BLOCKED = { message: '', field: '' };
@@ -39,6 +42,11 @@ const NOT_BLOCKED = { message: '', field: '' };
  * The footer sits outside the scrolling body and reaches the form through the
  * `form` attribute, so Save stays in view on a long form and the browser still
  * checks required fields first.
+ *
+ * A saved record's files and comments sit under the form. With
+ * `attachBeforeSave`, a record being created takes files too: they wait, and go
+ * up under the record once the form's submit hands the saved record back (see
+ * recordAttachments.js for a form that draws or saves them itself).
  */
 const FormModal = ({
   isEditMode: isEditModeProp,
@@ -56,6 +64,7 @@ const FormModal = ({
   onAmend,
   onChanged = () => {},
   onClose,
+  attachBeforeSave = false,
   children,
   ...modalProps
 }) => {
@@ -82,6 +91,7 @@ const FormModal = ({
     onClose,
   });
   const isEditMode = isEditModeProp ?? Boolean(record?.id ?? recordId);
+  const attachments = useRecordAttachmentsState(masterName, record?.id, attachBeforeSave);
   const recordWorkflow = useWorkflow({
     workflow,
     record,
@@ -103,7 +113,16 @@ const FormModal = ({
   const form = {
     // The browser's own check of required and constrained fields, then the form's own.
     validate: () => formRef.current.reportValidity() && !blockedReason,
-    submit: (args) => registrationRef.current.onSubmit(args),
+    // The submit hands back the saved record; files picked before it existed follow it up.
+    submit: async (args) => {
+      const saved = await registrationRef.current.onSubmit(args);
+      const savedId = saved?.id ?? record?.id;
+      if (attachments.pendingFiles.length && savedId == null) {
+        toast.error(`${masterName} was saved, but its ${plural(attachments.pendingFiles.length, 'file')} could not follow it: the form did not hand back the saved record`);
+      }
+      if (savedId != null) await attachments.uploadPending(savedId);
+      return saved;
+    },
     formData: () => registrationRef.current.formData,
   };
 
@@ -130,55 +149,56 @@ const FormModal = ({
   };
 
   return (
-    <BaseModal
-      {...modalProps}
-      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
-      // What the modal is open on. Comments and attachments file themselves
-      // against it, so every form gets them the moment its record is saved.
-      recordName={masterName}
-      recordId={record?.id}
-      onClose={onClose}
-      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
-      actions={
-        <FormFooter
-          formId={formId}
-          form={form}
-          workflow={recordWorkflow}
-          record={record}
-          hooks={hooks}
-          showWhen={showWhen}
-          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
-          onChanged={onChanged}
-          run={save}
-          isSaving={isSaving}
-          hasForm={hasForm}
-          blockedReason={blockedReason}
-          blockedField={blocked.field}
-          onShowBlockedField={showBlockedField}
-          onClose={onClose}
-          leftSlot={cancelSlot}
-          actionsRef={setActionsSlot}
-          submitLabel={isEditMode ? updateLabel : createLabel}
-          savingLabel={savingLabel}
-        />
-      }
-    >
-      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
-        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
-        {/* While Save or a workflow action waits on the server, nothing in the form can
-            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
-        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
-          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
-            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
-              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
-              {!isLoading && typeof children === 'function' ? children(record) : null}
-              {!isLoading && typeof children !== 'function' ? children : null}
-            </fieldset>
-          </form>
-        </FormEditableContext.Provider>
-        </FormBlockedFieldContext.Provider>
-      </FormModalContext.Provider>
-    </BaseModal>
+    <RecordAttachmentsContext.Provider value={attachments}>
+      <BaseModal
+        {...modalProps}
+        title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+        // What the modal is open on. Comments and attachments file themselves
+        // against it; files picked before the first save wait for the save.
+        recordName={masterName}
+        recordId={record?.id}
+        onClose={onClose}
+        actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
+        actions={
+          <FormFooter
+            formId={formId}
+            form={form}
+            workflow={recordWorkflow}
+            record={record}
+            hooks={hooks}
+            showWhen={showWhen}
+            onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+            run={save}
+            isSaving={isSaving}
+            hasForm={hasForm}
+            blockedReason={blockedReason}
+            blockedField={blocked.field}
+            onShowBlockedField={showBlockedField}
+            onClose={onClose}
+            leftSlot={cancelSlot}
+            actionsRef={setActionsSlot}
+            submitLabel={isEditMode ? updateLabel : createLabel}
+            savingLabel={savingLabel}
+          />
+        }
+      >
+        <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
+          <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
+          {/* While Save or a workflow action waits on the server, nothing in the form can
+              change under it: base fields read the lock, and the fieldset holds plain inputs. */}
+          <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
+            <form ref={formRef} id={formId} onSubmit={handleSubmit}>
+              <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
+                {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
+                {!isLoading && typeof children === 'function' ? children(record) : null}
+                {!isLoading && typeof children !== 'function' ? children : null}
+              </fieldset>
+            </form>
+          </FormEditableContext.Provider>
+          </FormBlockedFieldContext.Provider>
+        </FormModalContext.Provider>
+      </BaseModal>
+    </RecordAttachmentsContext.Provider>
   );
 };
 
@@ -206,6 +226,8 @@ FormModal.propTypes = {
   /** Told `{ record, to, saved }` after a hooked workflow action changes the record's status. */
   onChanged: PropTypes.func,
   onClose: PropTypes.func.isRequired,
+  /** A record being created takes files too; its submit must hand the saved record back. */
+  attachBeforeSave: PropTypes.bool,
   /** The fields; a function of the record where they start from it. */
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
 };

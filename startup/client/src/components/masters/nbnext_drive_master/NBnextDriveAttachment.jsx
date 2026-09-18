@@ -6,7 +6,7 @@ import { nbnextDriveService } from '@/services/nbnextDriveService';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import { FilesSection } from './FilesSection';
 import { useExistingAttachments } from './useExistingAttachments';
-import { getApiErrorMessage } from '@utils/apiErrorMessage';
+import { formatDateTime } from '@utils/formattingUtils';
 
 /** Same normalize as NBnextDriveForm: FilesSection can pass array or single File or null. */
 function toFiles(v) {
@@ -166,8 +166,12 @@ const NBnextDriveAttachment = ({
             <li key={f.id} className="flex items-center justify-between rounded border border-gray-200 bg-white px-3 py-2 text-sm">
               <div className="flex min-w-0 items-center gap-2">
                 {f.mimeType?.startsWith('image/') ? <Image className="h-4 w-4 shrink-0 text-gray-500" /> : <FileText className="h-4 w-4 shrink-0 text-gray-500" />}
-                <span className="truncate">{f.fileName}</span>
-                {f.fileSize && <span className="text-gray-400">({f.fileSize})</span>}
+                <span className="min-w-0">
+                  <span className="block truncate">{f.fileName}</span>
+                  <span className="block text-xs text-gray-500">
+                    {f.fileSize} · {f.createdByName || 'Unknown'} · {formatDateTime(f.createdAt)}
+                  </span>
+                </span>
               </div>
               <div className="flex shrink-0 gap-1">
                 <button type="button" data-file-id={f.id} onClick={onExistingView} className="rounded p-1 text-gray-600 hover:bg-gray-100" title="View"><Eye className="h-4 w-4" /></button>
