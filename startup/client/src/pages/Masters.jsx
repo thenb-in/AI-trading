@@ -162,7 +162,7 @@ const MasterContent = () => {
           </Box>
 
           {/* Mobile Category Filter */}
-          <div className="lg:hidden mb-6">
+          <div className="lg:hidden mb-6" data-tour="masters-categories">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filter by Category
@@ -178,14 +178,16 @@ const MasterContent = () => {
             </div>
           </div>
 
-          <SearchFilter
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            onClear={handleClearSearch}
-            onEnter={handleSearchEnter}
-            totalCards={masterModules.length}
-            filteredCount={visibleMasterModules.length}
-          />
+          <div data-tour="masters-search">
+            <SearchFilter
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+              onClear={handleClearSearch}
+              onEnter={handleSearchEnter}
+              totalCards={masterModules.length}
+              filteredCount={visibleMasterModules.length}
+            />
+          </div>
 
           <Divider
             sx={{
@@ -196,7 +198,7 @@ const MasterContent = () => {
             }}
           />
 
-          <Box sx={{ mb: 3 }}>
+          <Box data-tour="masters-grid" sx={{ mb: 3 }}>
             <Grid
               container
               spacing={{ xs: 2, sm: 3, lg: 4 }}

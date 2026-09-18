@@ -2,18 +2,6 @@ import { getMasterModules, getMasterCategoryOrder } from './masterModuleRegistry
 import { defaultMasterCategoryIcon } from './genericMasterModules';
 import { canSeeModule } from './canSeeModule';
 
-/**
- * Returns master modules that have onboarding order, sorted by onboarding (1, 2, 3...).
- * Used by AppGuide to walk someone through an app's masters in setup order.
- * @param {function(string)} handleOpenMaster - (path) => void, e.g. navigate to /admin/master/{path}
- */
-const getOnboardingMasters = (handleOpenMaster) => {
-  const all = getMasterModules(handleOpenMaster);
-  return all
-    .filter((m) => m.onboarding != null)
-    .sort((a, b) => a.onboarding - b.onboarding);
-};
-
 const buildCategoryList = (predicate = () => true) => {
   const categoryCounts = {};
 
@@ -43,5 +31,4 @@ export {
   defaultMasterCategoryIcon,
   getMasterCategories,
   getMasterCategoriesForUser,
-  getOnboardingMasters,
 };

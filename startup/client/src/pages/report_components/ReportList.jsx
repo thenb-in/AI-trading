@@ -43,7 +43,7 @@ const ReportList = ({ reports, categories }) => {
       </div>
 
       <div className="mb-6 bg-white p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div className="w-full lg:w-auto order-2 lg:order-1">
+        <div className="w-full lg:w-auto order-2 lg:order-1" data-tour="reports-categories">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 lg:flex-wrap lg:overflow-visible lg:pb-0 lg:mx-0 lg:px-0">
             {categories.map(category => (
               <button
@@ -59,7 +59,7 @@ const ReportList = ({ reports, categories }) => {
             ))}
           </div>
         </div>
-        <div className="w-full lg:w-64 order-1 lg:order-2">
+        <div className="w-full lg:w-64 order-1 lg:order-2" data-tour="reports-search">
           <SearchTypeField
             icon={<Search className="w-4 h-4 text-gray-400" />}
             placeholder="Search reports..."
@@ -71,7 +71,7 @@ const ReportList = ({ reports, categories }) => {
       </div>
 
       {filteredReports.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" data-tour="reports-grid">
           {filteredReports.map(report => (
             <ReportCard key={report.id} report={report} />
           ))}

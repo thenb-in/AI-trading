@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMasterModules, getMasterCategories } from "@data/getMasterModules";
 import { getAppModuleDefinitions } from "@data/getAppModules";
@@ -6,52 +6,15 @@ import { reports as reportModules, categories as reportCategories } from "@data/
 import { getModulePermissionName } from "@data/getModulePermissionName";
 import { canSeeModule } from "@data/canSeeModule";
 import { useDataContext } from "@context/useDataContext";
-import { ApiService } from "@services/ApiService";
-import { getPermissionSubscriptionStatusByName } from "@startup/components/admin/role_permissions/utils/permissionUtils";
+import { useModuleAccess } from "@startup/hooks/useModuleAccess";
 
 const isSuperadminCategory = (module) =>
   (module?.category || "").toLowerCase() === "superadmin";
 
-/**
- * `{ subscriptionStatus, isSubscribed, isHidden }` for a card, or null to say
- * "do not show this one" — a hidden permission is subscribed but advertised to
- * support staff only, so everyone else never sees the card.
- */
-function resolveSubscriptionStatus(permissionName, companySubscriptions, userData) {
-  if (!permissionName || companySubscriptions.length === 0) {
-    return { subscriptionStatus: null, isSubscribed: true, isHidden: false };
-  }
-  const subscriptionStatus = getPermissionSubscriptionStatusByName(companySubscriptions, permissionName);
-  const isHidden = subscriptionStatus === 'hidden';
-  if (isHidden) {
-    if (!userData?.isSupportUser) return null;
-    return { subscriptionStatus, isSubscribed: true, isHidden };
-  }
-  return { subscriptionStatus, isSubscribed: subscriptionStatus === 'subscribed', isHidden };
-}
-
 const useNavigatorData = (searchTerm, categoryFilter) => {
   const navigate = useNavigate();
   const { userData } = useDataContext();
-  const [companySubscriptions, setCompanySubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const companyId = userData?.companyId || userData?.company?.id;
-    if (!companyId) {
-      setCompanySubscriptions([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    ApiService.getCompanySubscriptions(companyId)
-      .then((response) => setCompanySubscriptions(response?.data?.data || response?.data || []))
-      .catch((error) => {
-        console.error(`Navigator: could not load subscriptions for company ${companyId}`, error);
-        setCompanySubscriptions([]);
-      })
-      .finally(() => setLoading(false));
-  }, [userData]);
+  const { resolveSubscription, loading } = useModuleAccess();
 
   const handleOpenMaster = useCallback((path) => {
     navigate(`/admin/master/${path}`);
@@ -101,7 +64,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
    */
   const enrich = useCallback((definition, { searchText, categoryPrefix }) => {
     const permissionName = getModulePermissionName(definition);
-    const subscription = resolveSubscriptionStatus(permissionName, companySubscriptions, userData);
+    const subscription = resolveSubscription(permissionName);
     if (subscription === null) return null;
     if (!matchesSearch(searchText.filter(Boolean).join(" "))) return null;
 
@@ -120,7 +83,7 @@ const useNavigatorData = (searchTerm, categoryFilter) => {
       permissionName,
       ...subscription
     };
-  }, [companySubscriptions, userData, matchesSearch, categoryFilter]);
+  }, [resolveSubscription, userData, matchesSearch, categoryFilter]);
 
   const byTitle = (a, b) => a.title.localeCompare(b.title);
 

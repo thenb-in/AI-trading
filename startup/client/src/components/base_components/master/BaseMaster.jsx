@@ -407,7 +407,7 @@ const BaseMaster = ({
             disabled={loading || isFilterLoading}
           />
         )}
-        <div className="mb-4 flex w-full md:justify-center">
+        <div className="mb-4 flex w-full md:justify-center" data-tour="master-search">
           <MasterSearch
             value={searchQuery}
             onChange={setSearchQuery}
@@ -416,30 +416,32 @@ const BaseMaster = ({
         </div>
         {canRead && bulkProps ? <BulkActionBar {...bulkProps} /> : null}
         {canRead ? (
-          <MasterTable
-            {...selectionProps}
-            columns={columns}
-            data={filteredData}
-            loading={loading}
-            actions={actions}
-            onRowClick={handleRowClick}
-            rowClickEnabled
-            infiniteScroll={infiniteScroll}
-            hasMore={infiniteScroll && hasMore}
-            onLoadMore={handleLoadMore}
-            isLoadingMore={isLoadingMore}
-            onVisibleRowsChange={handleVisibleRowsChange}
-            getRowClassName={getRowClassName}
-            isAlertRow={isAlertRow}
-            initialSortKey={initialSortKey}
-            initialSortDirection={initialSortDirection}
-            defaultGroupByField={defaultGroupByField}
-            showGridExport={showGridExport}
-            exportReport={exportReport}
-            showInsightsAsHeader={showInsightsAsHeader}
-            showEmptyColumns={showEmptyColumns}
-            hideConstantColumns={hideConstantColumns}
-          />
+          <div data-tour="master-grid">
+            <MasterTable
+              {...selectionProps}
+              columns={columns}
+              data={filteredData}
+              loading={loading}
+              actions={actions}
+              onRowClick={handleRowClick}
+              rowClickEnabled
+              infiniteScroll={infiniteScroll}
+              hasMore={infiniteScroll && hasMore}
+              onLoadMore={handleLoadMore}
+              isLoadingMore={isLoadingMore}
+              onVisibleRowsChange={handleVisibleRowsChange}
+              getRowClassName={getRowClassName}
+              isAlertRow={isAlertRow}
+              initialSortKey={initialSortKey}
+              initialSortDirection={initialSortDirection}
+              defaultGroupByField={defaultGroupByField}
+              showGridExport={showGridExport}
+              exportReport={exportReport}
+              showInsightsAsHeader={showInsightsAsHeader}
+              showEmptyColumns={showEmptyColumns}
+              hideConstantColumns={hideConstantColumns}
+            />
+          </div>
         ) : (
           <UnauthorisedTable />
         )}

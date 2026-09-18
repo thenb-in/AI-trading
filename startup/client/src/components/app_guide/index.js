@@ -1,3 +1,3 @@
 export { AppGuide } from './AppGuide';
-export { defaultAppGuideConfig } from './config/defaultConfig';
-
+export { GuideTourProvider } from './GuideTourProvider';
+export { useGuideTour } from './useGuideTour';

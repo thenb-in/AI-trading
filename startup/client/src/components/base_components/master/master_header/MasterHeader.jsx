@@ -70,12 +70,16 @@ const MasterHeader = forwardRef(({
   });
 
   useImperativeHandle(ref, () => ({
+    // Opens the add form the way the Add button does, so deep links (the App Guide) can too.
+    clickAddButton: () => {
+      if (canAdd && !headerDisabled) onAdd();
+    },
     clickImportInput: () => {
       if (onImport) onImport();
       else importInputRef.current?.click();
     },
     clickDownloadTemplate: () => onDownloadTemplate?.()
-  }), [onImport, onDownloadTemplate, importInputRef]);
+  }), [canAdd, headerDisabled, onAdd, onImport, onDownloadTemplate, importInputRef]);
  
   return (
     <div className="bg-white text-gray-800 px-4 py-3 sm:p-6 mb-3 sm:mb-6 rounded-lg shadow-md flex flex-row items-start md:items-center justify-between gap-3 md:gap-6 border border-gray-100">
@@ -93,7 +97,7 @@ const MasterHeader = forwardRef(({
             <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
           </>
         )}
-        <div className="flex flex-col min-w-0">
+        <div className="flex flex-col min-w-0" data-tour="master-title">
           <h1 className="text-base sm:text-xl md:text-2xl font-bold text-gray-800 truncate leading-tight">{title}</h1>
           {description && (
             <p className="text-xs sm:text-sm text-gray-600 font-medium mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-2">{description}</p>
@@ -129,9 +133,10 @@ const MasterHeader = forwardRef(({
 
         {/* Desktop (sm+): inline labeled secondary buttons */}
         <div className="hidden sm:flex items-center gap-3">
-          {secondaryActions.map(({ icon: Icon, label, onClick, disabled, spinning, shortcut }) => (
+          {secondaryActions.map(({ icon: Icon, label, onClick, disabled, spinning, shortcut, tourId }) => (
             <button
               key={label}
+              data-tour={tourId}
               type="button"
               onClick={onClick}
               disabled={disabled}
@@ -148,6 +153,7 @@ const MasterHeader = forwardRef(({
         {/* Primary Add button — desktop only (mobile has it in the menu) */}
         {canAdd && (
           <button
+            data-tour="master-add"
             onClick={onAdd}
             disabled={headerDisabled}
             title={shortcutTitle(addButtonText, SHORTCUTS.NEW)}

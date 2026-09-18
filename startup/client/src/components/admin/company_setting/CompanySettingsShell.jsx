@@ -94,6 +94,7 @@ function CompanySettingsShell() {
                 <span className="hidden sm:inline">Discard</span>
               </button>
               <motion.button
+                data-tour="company-save"
                 type="button"
                 onClick={handleSaveAll}
                 disabled={isLoading || !canSave}
@@ -124,7 +125,7 @@ function CompanySettingsShell() {
 
           {/* Centred segmented navigation */}
           <div className="flex justify-center px-4 pb-3">
-            <nav className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1">
+            <nav className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-gray-100 p-1" data-tour="company-tabs">
               {tabs.map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
                 return (

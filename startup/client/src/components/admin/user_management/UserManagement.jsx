@@ -143,7 +143,7 @@ function UserManagement() {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" data-tour="users-summary">
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg shadow-sm text-center">
           <p className="text-sm text-gray-500">Total Users</p>
           <p className="text-xl font-semibold text-blue-700">{filteredUsers.length}</p>
@@ -164,7 +164,7 @@ function UserManagement() {
 
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
 
-    <div className="relative w-full sm:w-[20rem] md:w-[24rem]">
+    <div className="relative w-full sm:w-[20rem] md:w-[24rem]" data-tour="users-search">
       <SearchTypeField
         icon={<Search className="w-4 h-4 text-gray-400" />}
         placeholder="Search users Name or Phone Number.."
@@ -174,7 +174,7 @@ function UserManagement() {
       />
     </div>
 
-    <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
+    <div className="w-full sm:w-auto flex flex-wrap items-center gap-2" data-tour="users-signup-link">
 
       <InviteLinkButton
         label="Sign-up link"

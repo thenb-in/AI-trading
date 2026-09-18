@@ -13,6 +13,7 @@ function ToolbarExportButtons({
   return (
     <div className="flex items-center gap-1.5">
       <button
+        data-tour="grid-export"
         type="button"
         onClick={onExcelExport}
         disabled={disabled || isExcelExporting}

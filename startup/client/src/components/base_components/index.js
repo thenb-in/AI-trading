@@ -15,5 +15,6 @@ export { MasterModalActions } from './master/MasterModalActions';
 export { MasterModalProvider, useMasterCreator } from './master/master_modal/MasterModalProvider.jsx';
 export { ShortcutHint } from './ShortcutHint.jsx';
 export { LockActionButton } from './LockActionButton.jsx';
+export { ProgressBar } from './ProgressBar.jsx';
 // Base Org Chart - generic top-down hierarchy graph (org structure, location tree, ...)
 export { OrgChart } from './org_chart/OrgChart.jsx';

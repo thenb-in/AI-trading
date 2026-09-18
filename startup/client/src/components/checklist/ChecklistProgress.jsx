@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types';
+import { ProgressBar } from '@startup/components/base_components/ProgressBar';
 import { STATUS_STYLES } from './constants/checklistConstants';
 
 
@@ -8,14 +9,14 @@ const ChecklistMeter = ({ status, outstanding, total, completion }) => {
 
   return (
     <div className="flex items-center gap-2.5 mt-1.5">
-      <svg
+      <ProgressBar
+        percent={outstandingShare}
+        barClass={statusStyles.bar}
+        trackClass={statusStyles.barTrack}
+        radius={3}
+        label={`${outstanding} of ${total} outstanding, ${completion}% complete`}
         className="h-2 flex-1"
-        role="img"
-        aria-label={`${outstanding} of ${total} outstanding, ${completion}% complete`}
-      >
-        <rect className={statusStyles.barTrack} width="100%" height="100%" rx="3" />
-        <rect className={statusStyles.bar} width={`${outstandingShare}%`} height="100%" rx="3" />
-      </svg>
+      />
       <span className="text-[11px] font-medium text-gray-600 shrink-0 tabular-nums">
         {`${outstanding} of ${total} left · ${completion}% complete`}
       </span>
@@ -43,14 +44,12 @@ const ChecklistBreakdown = ({ status, breakdown }) => {
       {breakdown.map((group) => (
         <li key={group.label} className="flex items-center gap-2.5 text-xs">
           <span className="text-gray-600 w-44 shrink-0 truncate" title={group.label}>{group.label}</span>
-          <svg className="flex-1 h-1.5 min-w-0">
-            <rect
-              className={statusStyles.bar}
-              width={`${largestGroupCount > 0 ? Math.max(2, (group.count / largestGroupCount) * 100) : 0}%`}
-              height="100%"
-              rx="1"
-            />
-          </svg>
+          <ProgressBar
+            percent={largestGroupCount > 0 ? Math.max(2, (group.count / largestGroupCount) * 100) : 0}
+            barClass={statusStyles.bar}
+            radius={1}
+            className="flex-1 h-1.5 min-w-0"
+          />
           <span className="text-gray-500 tabular-nums w-10 text-right shrink-0">{group.count}</span>
         </li>
       ))}

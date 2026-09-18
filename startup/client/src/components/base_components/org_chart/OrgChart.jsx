@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { Search, ZoomIn, ZoomOut, Crosshair, ChevronRight, CornerLeftUp } from 'lucide-react';
 import { OrgChartCard } from './OrgChartCard';
 import { OrgChartLevel } from './OrgChartLevel';
+import { clamp } from '@utils/toValidNumber';
 
 const CARD_REACH = 284;
 
@@ -11,7 +12,7 @@ const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.4;
 const ZOOM_MAX = 1.4;
 
-const clampZoom = (value) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, value));
+const clampZoom = (value) => clamp(value, ZOOM_MIN, ZOOM_MAX);
 
 
 const findPath = (node, id, trail = []) => {
@@ -113,8 +114,8 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
     const maxDown = Math.max(0, canvas.scrollHeight * zoom - viewport.clientHeight);
     const maxSide = Math.max(0, canvas.scrollWidth * zoom - viewport.clientWidth);
     return {
-      x: Math.min(maxSide, Math.max(-maxSide, next.x)),
-      y: Math.min(0, Math.max(-maxDown, next.y))
+      x: clamp(next.x, -maxSide, maxSide),
+      y: clamp(next.y, -maxDown, 0)
     };
   }, [zoom]);
 

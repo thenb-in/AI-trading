@@ -180,6 +180,7 @@ const BaseModal = ({
         )}
 
         <DialogContent
+          data-tour="master-form"
           sx={{
             pt: hasTitle ? 0 : 2,
             // Fill the paper and allow shrinking below the content's height:

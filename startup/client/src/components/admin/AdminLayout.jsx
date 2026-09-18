@@ -8,6 +8,7 @@ import { getAppLayout } from "@data/appLayoutRegistry";
 import { NotificationProvider } from "../../notifications/NotificationProvider";
 import { AnnouncementBanner } from "../announcements/AnnouncementBanner";
 import { ToastProvider } from "../toast";
+import { GuideTourProvider } from "../app_guide";
 
 
 function AdminLayout() {
@@ -48,22 +49,24 @@ function AdminLayout() {
   return (
     <ToastProvider>
       <NotificationProvider>
-        <div className="flex overflow-x-hidden">
-          {renderSidebar()}
-          <div
-            className={`flex-1 transition-all duration-300 overflow-x-hidden ${
-              collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
-            } min-h-screen bg-gray-50`}
-          >
-            <div className="max-w-full">
-              {/* Above the page, not over it: an announcement is read once and
-                  dismissed, and must never sit on top of what someone is doing. */}
-              <AnnouncementBanner />
-              <Outlet />
+        <GuideTourProvider>
+          <div className="flex overflow-x-hidden">
+            {renderSidebar()}
+            <div
+              className={`flex-1 transition-all duration-300 overflow-x-hidden ${
+                collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
+              } min-h-screen bg-gray-50`}
+            >
+              <div className="max-w-full">
+                {/* Above the page, not over it: an announcement is read once and
+                    dismissed, and must never sit on top of what someone is doing. */}
+                <AnnouncementBanner />
+                <Outlet />
+              </div>
             </div>
+            {AppLayout && <AppLayout />}
           </div>
-          {AppLayout && <AppLayout />}
-        </div>
+        </GuideTourProvider>
       </NotificationProvider>
     </ToastProvider>
   );

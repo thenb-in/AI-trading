@@ -1,6 +1,7 @@
 import { memo } from "react";
 import PropTypes from "prop-types";
 import { Lock, LockOpen } from "lucide-react";
+import { moduleLockReason } from "@startup/hooks/useModuleAccess";
 
 const COLOR_CLASSES = {
   info: "from-cyan-600 to-blue-800",
@@ -28,23 +29,13 @@ const ModuleCard = ({ module, type, onClick }) => {
   const colorKey = module.color || (type === "master" ? "primary" : type === "module" ? "indigo" : "secondary");
   const gradientClass = COLOR_CLASSES[colorKey] || COLOR_CLASSES.primary;
 
-  // Determine tooltip text
-  // Check subscription first, then permission (so unsubscribed modules don't show "Access denied")
-  const getTooltipText = () => {
-    // If they have permission but not subscription, show subscription message
-    if (isDisabledBySubscription) {
-      return "Not subscribed. Please upgrade your plan to access this module.";
-    }
-    // If they don't have permission at all, show access denied
-    if (!module.hasPermissionAccess) {
-      return `Access denied. Required permission: ${module.permissionName}`;
-    }
-    // If it's a hidden permission, show that info
-    if (isHidden) {
-      return "Hidden permission (visible to superadmins only)";
-    }
-    return undefined;
-  };
+  // Why the card is shut, in the same words every other page uses.
+  const getTooltipText = () => moduleLockReason({
+    permissionName: module.permissionName,
+    hasPermissionAccess: module.hasPermissionAccess,
+    isSubscribed,
+    isHidden,
+  });
 
   const handleClick = () => {
     if (!isDisabled && !isDisabledBySubscription && onClick) {

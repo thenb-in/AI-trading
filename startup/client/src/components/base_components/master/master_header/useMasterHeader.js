@@ -70,9 +70,10 @@ const useMasterHeader = ({
   useShortcut(SHORTCUTS.IMPORT, onImportClick, { enabled: Boolean(showImport) && !isImporting });
 
   const secondaryActions = [
-    showRefresh && onRefresh && { icon: RefreshCw, label: refreshButtonText, onClick: onRefresh, disabled: headerDisabled, shortcut: SHORTCUTS.REFRESH },
-    showExport && { icon: Download, label: exportButtonText, onClick: onExportClick, disabled: headerDisabled, shortcut: SHORTCUTS.EXPORT },
+    showRefresh && onRefresh && { tourId: 'master-refresh', icon: RefreshCw, label: refreshButtonText, onClick: onRefresh, disabled: headerDisabled, shortcut: SHORTCUTS.REFRESH },
+    showExport && { tourId: 'master-export', icon: Download, label: exportButtonText, onClick: onExportClick, disabled: headerDisabled, shortcut: SHORTCUTS.EXPORT },
     showImport && {
+      tourId: 'master-import',
       icon: isImporting ? RefreshCw : Upload,
       label: isImporting ? 'Importing...' : importButtonText,
       onClick: onImportClick,
@@ -80,7 +81,7 @@ const useMasterHeader = ({
       spinning: isImporting,
       shortcut: SHORTCUTS.IMPORT,
     },
-    onDownloadTemplate && { icon: FileText, label: templateButtonText, onClick: onDownloadTemplate, disabled: headerDisabled },
+    onDownloadTemplate && { tourId: 'master-template', icon: FileText, label: templateButtonText, onClick: onDownloadTemplate, disabled: headerDisabled },
   ].filter(Boolean);
 
   // Mobile menu includes the Add action too (with primary styling).

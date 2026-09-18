@@ -15,4 +15,7 @@ const toValidNumber = (value) => {
   return value;
 };
 
-export { toValidNumber };
+/** `value` held inside `min`..`max`. */
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+export { clamp, toValidNumber };

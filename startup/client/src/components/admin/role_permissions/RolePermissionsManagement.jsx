@@ -57,6 +57,7 @@ function RolePermissionsManagement() {
             <h1 className="text-xl font-bold text-gray-900">Roles & Permissions</h1>
           </div>
           <button
+            data-tour="roles-create"
             onClick={handleCreateRole}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors"
           >
@@ -79,10 +80,12 @@ function RolePermissionsManagement() {
         </div>
       )}
 
-      <RoleSelector
-        value={selectedRoleId}
-        onChange={selectRole}
-      />
+      <div data-tour="roles-selector">
+        <RoleSelector
+          value={selectedRoleId}
+          onChange={selectRole}
+        />
+      </div>
       
       {selectedRole && (
         <div className="mb-3 flex items-center gap-2 text-xs">
@@ -115,7 +118,7 @@ function RolePermissionsManagement() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="roles-permissions">
           <PermissionLegend
             isRoleReadOnly={Boolean(selectedRole?.isGlobal) && !userData?.isSupportUser}
             canDeleteUndeclared={canDeleteUndeclared}
