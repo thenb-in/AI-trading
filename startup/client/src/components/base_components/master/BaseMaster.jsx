@@ -77,6 +77,8 @@ const BaseMaster = ({
   formProps,
   formSuccessProp = 'onSuccess',
   createLabel, updateLabel, savingLabel, // Save button wording; FormModal defaults to Create / Update / Saving...
+  // Any other FormModal props the form's modal needs (attachBeforeSave).
+  modalProps,
   filtersConfig,
   // While the master is still loading what the filters offer (a report's options), the filter bar stays disabled.
   isFilterLoading,
@@ -313,7 +315,7 @@ const BaseMaster = ({
         hooks: workflowHooks,
         showWhen: workflowShowWhen,
         onAmend: openRecord,
-        onChanged: refresh,
+        ...modalProps,
       }
     // A form names its record itself; a details modal is a plain BaseModal, so
     // it is told here what it is showing.
@@ -450,6 +452,97 @@ const BaseMaster = ({
   );
 };
 
-BaseMaster.propTypes = baseMasterPropTypes;
+BaseMaster.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  // Add-button and modal props apply only when a FormComponent is supplied.
+  // A read-only master (no form) renders neither, so none of them are required.
+  addButtonText: PropTypes.string,
+  searchPlaceholder: PropTypes.string,
+  searchKeys: PropTypes.arrayOf(PropTypes.string),
+  /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
+  modalAddTitle: PropTypes.string,
+  modalEditTitle: PropTypes.string,
+  modalMaxWidth: PropTypes.string,
+  baseMasterContainerWidth: PropTypes.string,
+  auditHead: PropTypes.string,
+  permissionKeys: PropTypes.shape({
+    // Any one of a list is enough.
+    read: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
+    create: PropTypes.string,
+    update: PropTypes.string,
+    delete: PropTypes.string,
+  }).isRequired,
+  workflow: PropTypes.object,
+  masterName: PropTypes.string.isRequired,
+  workflowHooks: PropTypes.objectOf(PropTypes.func),
+  loadRows: PropTypes.func.isRequired,
+  deleteRow: PropTypes.func,
+  canDeleteRow: PropTypes.func,
+  deleteConfirmText: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  rowsKey: PropTypes.string,
+  extractResponse: PropTypes.func,
+  onRowClickOverride: PropTypes.func,
+  unauthorizedToast: PropTypes.string,
+  unauthorizedDeleteToast: PropTypes.string,
+  fetchSuccessToast: PropTypes.string,
+  fetchFailureToast: PropTypes.string,
+  showExport: PropTypes.bool,
+  showImport: PropTypes.bool,
+  exportFileName: PropTypes.string,
+  showGridExport: PropTypes.bool,
+  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
+  showInsightsAsHeader: PropTypes.bool,
+  showEmptyColumns: PropTypes.bool,
+  hideConstantColumns: PropTypes.bool,
+  importApi: PropTypes.func,
+  buildExportColumns: PropTypes.func,
+  // Omit for a read-only master — no Add button.
+  FormComponent: PropTypes.elementType,
+  // Receives the same props as FormComponent, plus `columns`.
+  DetailComponent: PropTypes.elementType,
+  formProps: PropTypes.func,
+  formSuccessProp: PropTypes.string,
+  createLabel: PropTypes.string,
+  updateLabel: PropTypes.string,
+  savingLabel: PropTypes.string,
+  modalProps: PropTypes.object,
+  filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
+  initialFilters: PropTypes.object,
+  mapFiltersForApi: PropTypes.func,
+  mapRows: PropTypes.func,
+  subscribeToRefresh: PropTypes.func,
+  headerContent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  headerRef: PropTypes.object,
+  showRefreshButton: PropTypes.bool,
+  backUrl: PropTypes.string,
+  showBack: PropTypes.bool,
+  onDownloadTemplate: PropTypes.func,
+  templateButtonText: PropTypes.string,
+  onExport: PropTypes.func,
+  onImport: PropTypes.func,
+  approval: PropTypes.shape({
+    updateStatus: PropTypes.func.isRequired,
+    permissionKeys: PropTypes.shape({
+      approve: PropTypes.string,
+      reject: PropTypes.string,
+    }).isRequired,
+    noun: PropTypes.string,
+    isPending: PropTypes.func,
+  }),
+  extraActions: PropTypes.func,
+  getRowClassName: PropTypes.func,
+  isAlertRow: PropTypes.func,
+  initialSortKey: PropTypes.string,
+  // Node, or a function given { refresh, rows, columns } so a bulk header action can
+  // reload the grid when it finishes.
+  extraHeaderActions: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  defaultGroupByField: PropTypes.string,
+  initialSortDirection: PropTypes.string,
+  infiniteScroll: PropTypes.bool,
+  pageSize: PropTypes.number,
+  showAdd: PropTypes.bool,
+};
 
 export { BaseMaster };
