@@ -31,6 +31,11 @@ const BaseMaster = ({
   modalEditTitle,
   modalMaxWidth = 'md',
   baseMasterContainerWidth = 'max-w-7xl',
+  // The name the server files this master's activity under ("NotificationRule"),
+  // where its routes log any. Not the master's name: heads are a key the wallet
+  // prices and caps by, so they are spelled the server's way, and a master
+  // without activity logging simply has none. Comments and attachments key off
+  // `masterName` instead, so they need nothing here.
   auditHead,
   permissionKeys,
   // What a record goes through (see workflow.js); a master that declares none
@@ -344,7 +349,9 @@ const BaseMaster = ({
         hooks: workflowHooks,
         onAmend: openRecord,
       }
-    : {};
+    // A form names its record itself; a details modal is a plain BaseModal, so
+    // it is told here what it is showing.
+    : { recordName: masterName, recordId: selectedRow?.id };
 
   // Adapters that inject the current rows/columns/refresh into caller-supplied
   // callbacks. Defined here (rather than inline in JSX) to satisfy the
@@ -444,8 +451,6 @@ const BaseMaster = ({
           title={(isSaved ? modalEditTitle : modalAddTitle) ?? (isForm ? undefined : recordTitle({ masterName, record: selectedRow, isNew: false, isEditable: false }))}
           maxWidth={modalMaxWidth}
           auditHead={auditHead}
-          auditObjectId={selectedRow?.id}
-          showAudit={Boolean(selectedRow?.id)}
           recordNav={recordNav}
         >
           {/* Keyed by record so stepping to the next one starts a fresh form. */}

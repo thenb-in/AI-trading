@@ -3,6 +3,7 @@ import { History, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
+import { RecordCommentsPanel } from '@startup/components/base_components/record_comments';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
 import { SHORTCUTS } from '@startup/constants/shortcuts';
 import { shortcutTitle } from '@utils/keyboardShortcut';
@@ -45,8 +46,15 @@ const BaseModal = ({
   actions,
   actionsLeft,
   showCloseButton = true,
+  // What this modal's record is, and which one. A FormModal has both already —
+  // the master it belongs to and the record it opened — so naming a record is
+  // not something any caller has to remember to do.
+  recordName,
+  recordId,
+  // The name the activity trail files this master's changes under. The wallet
+  // prices and caps heads by it, so it is a key agreed with the outside, not a
+  // name for the record — only masters whose routes log activity have one.
   auditHead,
-  auditObjectId,
   showAudit = true,
   auditPageSize = 25,
   disableContentScroll = false,
@@ -54,8 +62,8 @@ const BaseModal = ({
   // neighbouring records of the list this one was opened from.
   recordNav,
   autoFocusFirstField = true,
-  // A modal opened from inside another one (the audit history) has to sit above
-  // it. 50 is a modal over the page; 60 is a modal over a modal.
+  // A modal opened from inside another one (the audit history, the comments)
+  // has to sit above it. 50 is a modal over the page; 60 is a modal over a modal.
   zIndex = 50,
   PaperProps: paperPropsFromCaller,
   sx: sxFromCaller,
@@ -69,8 +77,11 @@ const BaseModal = ({
   const isTitleString = typeof title === 'string';
   const isTitleNode = title != null && typeof title === 'object' && title.$$typeof != null;
   const hasTitle = isTitleString ? title !== '' : (isTitleNode || Boolean(title));
-  const shouldShowAudit = Boolean(showAudit && auditHead && auditObjectId != null);
+  const shouldShowAudit = Boolean(showAudit && auditHead && recordId != null);
   const [isAuditOpen, setIsAuditOpen] = useState(false);
+  // Anything saved can be talked about. A record still being created has no id
+  // to file a comment against, and nothing else is in the way.
+  const shouldShowComments = Boolean(recordName && recordId != null);
 
   useEffect(() => {
     if (!isOpen) setIsAuditOpen(false);
@@ -205,6 +216,24 @@ const BaseModal = ({
             {actions && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>{actions}</Box>}
           </DialogActions>
         )}
+
+        {/* Below the record and what is being done to it: its files, then what
+            people have said about it. It scrolls on its own so a long
+            conversation never pushes the form out of reach. */}
+        {shouldShowComments && (
+          <Box sx={{
+            flexShrink: 0,
+            maxHeight: '40vh',
+            overflowY: 'auto',
+            borderTop: 1,
+            borderColor: 'divider',
+            bgcolor: 'grey.50',
+            px: 3,
+            py: 2,
+          }}>
+            <RecordCommentsPanel objectName={recordName} objectId={recordId} />
+          </Box>
+        )}
       </Dialog>
 
       {shouldShowAudit && (
@@ -212,7 +241,7 @@ const BaseModal = ({
           isOpen={isAuditOpen}
           onClose={() => setIsAuditOpen(false)}
           head={auditHead}
-          objectId={auditObjectId}
+          objectId={recordId}
           pageSize={auditPageSize}
         />
       )}
@@ -229,8 +258,9 @@ BaseModal.propTypes = {
   actions: PropTypes.node,
   actionsLeft: PropTypes.node,
   showCloseButton: PropTypes.bool,
+  recordName: PropTypes.string,
+  recordId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   auditHead: PropTypes.string,
-  auditObjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   showAudit: PropTypes.bool,
   auditPageSize: PropTypes.number,
   disableContentScroll: PropTypes.bool,

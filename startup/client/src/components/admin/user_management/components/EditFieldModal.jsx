@@ -73,7 +73,6 @@ function EditFieldModal({ field, initialValue, onSave, onClose, label, placehold
       title={title || `Edit ${cfg.label}`}
       maxWidth="xs"
       showAudit={false}
-      showComments={false}
       actions={actions}
     >
       <cfg.Input

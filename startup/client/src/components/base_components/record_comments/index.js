@@ -1,0 +1,1 @@
+export { RecordCommentsPanel } from './RecordCommentsPanel';

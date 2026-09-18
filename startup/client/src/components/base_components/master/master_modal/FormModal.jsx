@@ -129,6 +129,10 @@ const FormModal = ({
     <BaseModal
       {...modalProps}
       title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+      // What the modal is open on. Comments and attachments file themselves
+      // against it, so every form gets them the moment its record is saved.
+      recordName={masterName}
+      recordId={record?.id}
       onClose={onClose}
       actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
       actions={

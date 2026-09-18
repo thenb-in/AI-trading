@@ -27,6 +27,7 @@ const layoutRoutes = require('./src/routes/layoutRoutes');
 const licenseRoutes = require('./src/routes/licenseRoutes');
 const nbnextDriveRoutes = require('./src/routes/nbnextDriveRoutes');
 const notificationRoutes = require('./src/notifications/notificationRoutes');
+const recordCommentRoutes = require('./src/routes/recordCommentRoutes');
 const reportRunRoutes = require('./src/routes/reportRunRoutes');
 const notificationRuleRoutes = require('./src/notifications/rules/notificationRuleRoutes');
 const geographyRoutes = require('./src/routes/geographyRoutes');
@@ -118,6 +119,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/company`, companyRoutes);
   app.use(`${API_PREFIX}/company-details`, companyDetailsRoutes);
   app.use(`${API_PREFIX}/nbnext-drive`, nbnextDriveRoutes);
+  app.use(`${API_PREFIX}/record-comments`, recordCommentRoutes);
   app.use(`${API_PREFIX}/notifications`, notificationRoutes);
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
