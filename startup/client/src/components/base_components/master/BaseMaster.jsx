@@ -52,6 +52,9 @@ const BaseMaster = ({
   masterName,
   workflowHooks = {},
   rowWorkflowHooks = {},
+  // { [action key]: (record) => boolean } — narrows an action to the records it
+  // suits, on the rows and in the form's footer (never on a deleted record, say).
+  workflowShowWhen = {},
   loadRows,
   deleteRow,
   // Optional `(row) => boolean` for masters whose grid holds rows that are not
@@ -234,7 +237,10 @@ const BaseMaster = ({
     workflow,
     masterName,
     permissions: permissionKeys,
-    hooks: { amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks },
+    // Row hooks are handed openRecord too, for an Amend that opens its own copy.
+    hooks: Object.fromEntries(Object.entries({ amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks })
+      .map(([key, hook]) => [key, (args) => hook({ ...args, openRecord })])),
+    showWhen: workflowShowWhen,
     // The saved record replaces its row where the move hands one back, so a
     // long list keeps its place; otherwise the list reloads.
     onChanged: ({ saved }) => (saved?.id ? patchRow(saved) : fetchRows()),
@@ -333,6 +339,9 @@ const BaseMaster = ({
     ? () => onImport({ columns, rows, refresh })
     : undefined;
 
+  // A new record's title can depend on what it is — an amend's copy.
+  const titleOf = (title, record) => (typeof title === 'function' ? title(record) : title);
+
   // Keyed by record so stepping to the next one starts a fresh form.
   const renderBody = (record) => (
     <ModalBody
@@ -427,7 +436,7 @@ const BaseMaster = ({
           isOpen={modal.isOpen && Boolean(ModalBody)}
           onClose={handleCloseModal}
           // A form titles itself (FormModal); a saved record's details by what the record is known by.
-          title={(isSaved ? modalEditTitle : modalAddTitle) ?? (isForm ? undefined : recordTitle({ masterName, record: openRow, isNew: false, isEditable: false }))}
+          title={(isSaved ? modalEditTitle : titleOf(modalAddTitle, openRow)) ?? (isForm ? undefined : recordTitle({ masterName, record: openRow, isNew: false, isEditable: false }))}
           maxWidth={modalMaxWidth}
           auditHead={auditHead}
           recordNav={recordNav}
@@ -458,7 +467,8 @@ BaseMaster.propTypes = {
   searchPlaceholder: PropTypes.string,
   searchKeys: PropTypes.arrayOf(PropTypes.string),
   /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
-  modalAddTitle: PropTypes.string,
+  /** A string, or (record) => string for a new record that says what it is (an amend's copy). */
+  modalAddTitle: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
   modalEditTitle: PropTypes.string,
   modalMaxWidth: PropTypes.string,
   baseMasterContainerWidth: PropTypes.string,
@@ -474,6 +484,7 @@ BaseMaster.propTypes = {
   masterName: PropTypes.string.isRequired,
   workflowHooks: PropTypes.objectOf(PropTypes.func),
   rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
+  workflowShowWhen: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,
   canDeleteRow: PropTypes.func,
