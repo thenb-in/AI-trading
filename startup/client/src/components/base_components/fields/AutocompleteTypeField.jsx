@@ -1,3 +1,14 @@
+// TODO: DEPRECATED — nothing in the codebase uses this field.
+//
+// It is the only free-text input that fetches suggestions as you type, so it
+// stays for that one case. For anything picking from a list that is already
+// known, or one the server hands over on open, use SearchableDropdown or
+// MasterSelector instead — they carry the keyboard handling, grouping and
+// form wiring this field does not.
+//
+// Before you reach for it: it shipped without its useDebouncedValue hook and
+// could not render at all until that was restored, so treat it as untested.
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
