@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: ef1d3bd62bf84d16f009ab2588af40d1a13fa4e8
+# Source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
 # startup/client/src/components/base_components/master/master_modal/FormModal.jsx in the tree now holds the etime-payroll version.
 # Below is the full three-way merge, markers and all.
 #
@@ -113,19 +113,12 @@ const FormModal = ({
     isNew: !isEditMode,
   });
 
-<<<<<<< startup (this repo)
-  const save = async (run) => {
-||||||| base (common ancestor)
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-=======
   const handleSubmit = async (event) => {
     // A form rendered inside this one (a nested FormModal, or an inline
     // sub-form) still bubbles its submit up here through React. Only this
     // form's own submit is a save of this record.
     if (event.target !== event.currentTarget) return;
     event.preventDefault();
->>>>>>> etime-payroll (incoming)
     setIsSaving(true);
     try {
       await run();
@@ -173,6 +166,7 @@ const FormModal = ({
   };
 
   return (
+<<<<<<< startup (this repo)
     <RecordAttachmentsContext.Provider value={attachments}>
       <BaseModal
         {...modalProps}
@@ -224,6 +218,106 @@ const FormModal = ({
         </FormModalContext.Provider>
       </BaseModal>
     </RecordAttachmentsContext.Provider>
+||||||| base (common ancestor)
+    <BaseModal
+      {...modalProps}
+      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+      // What the modal is open on. Comments and attachments file themselves
+      // against it, so every form gets them the moment its record is saved.
+      recordName={masterName}
+      recordId={record?.id}
+      onClose={onClose}
+      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
+      actions={
+        <FormFooter
+          formId={formId}
+          form={form}
+          workflow={recordWorkflow}
+          record={record}
+          hooks={hooks}
+          showWhen={showWhen}
+          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+          run={save}
+          isSaving={isSaving}
+          hasForm={hasForm}
+          blockedReason={blockedReason}
+          blockedField={blocked.field}
+          onShowBlockedField={showBlockedField}
+          onClose={onClose}
+          leftSlot={cancelSlot}
+          actionsRef={setActionsSlot}
+          submitLabel={isEditMode ? updateLabel : createLabel}
+          savingLabel={savingLabel}
+        />
+      }
+    >
+      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
+        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
+        {/* While Save or a workflow action waits on the server, nothing in the form can
+            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
+        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
+          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
+            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
+              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
+              {!isLoading && typeof children === 'function' ? children(record) : null}
+              {!isLoading && typeof children !== 'function' ? children : null}
+            </fieldset>
+          </form>
+        </FormEditableContext.Provider>
+        </FormBlockedFieldContext.Provider>
+      </FormModalContext.Provider>
+    </BaseModal>
+=======
+    <BaseModal
+      {...modalProps}
+      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+      // What the modal is open on. Comments and attachments file themselves
+      // against it, so every form gets them the moment its record is saved.
+      recordName={masterName}
+      recordId={record?.id}
+      onClose={onClose}
+      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
+      actions={
+        <FormFooter
+          formId={formId}
+          form={form}
+          workflow={recordWorkflow}
+          record={record}
+          hooks={hooks}
+          showWhen={showWhen}
+          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+          onChanged={onChanged}
+          run={save}
+          isSaving={isSaving}
+          hasForm={hasForm}
+          blockedReason={blockedReason}
+          blockedField={blocked.field}
+          onShowBlockedField={showBlockedField}
+          onClose={onClose}
+          leftSlot={cancelSlot}
+          actionsRef={setActionsSlot}
+          submitLabel={isEditMode ? updateLabel : createLabel}
+          savingLabel={savingLabel}
+        />
+      }
+    >
+      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
+        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
+        {/* While Save or a workflow action waits on the server, nothing in the form can
+            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
+        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
+          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
+            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
+              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
+              {!isLoading && typeof children === 'function' ? children(record) : null}
+              {!isLoading && typeof children !== 'function' ? children : null}
+            </fieldset>
+          </form>
+        </FormEditableContext.Provider>
+        </FormBlockedFieldContext.Provider>
+      </FormModalContext.Provider>
+    </BaseModal>
+>>>>>>> etime-payroll (incoming)
   );
 };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
@@ -10,7 +10,7 @@ import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
 import { useMasterRows } from './useMasterRows';
-import { useRecordModal } from './useRecordModal';
+import { baseMasterPropTypes } from './baseMasterPropTypes';
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
@@ -45,15 +45,12 @@ const BaseMaster = ({
   // permissionKeys does not (approve_<masterName>). `workflowHooks` override an
   // action's default — { approve: ({ record, formData, to }) => ... } — in the
   // form's footer, and are what a row button runs, since a list has no form.
-  // Amend opens the copy in the form unless hooked. `rowWorkflowHooks` are run
-  // by row buttons only, for a master whose form keeps the default (validate and
-  // save its edits with the new status) but whose list still needs the move.
+  // Amend opens the copy in the form unless hooked. `workflowShowWhen`
+  // ({ [action key]: (record) => boolean }) narrows an action to the records it
+  // suits, on the row buttons and in the form's footer alike.
   workflow = DEFAULT_WORKFLOW,
   masterName,
   workflowHooks = {},
-  rowWorkflowHooks = {},
-  // { [action key]: (record) => boolean } — narrows an action to the records it
-  // suits, on the rows and in the form's footer (never on a deleted record, say).
   workflowShowWhen = {},
   loadRows,
   deleteRow,
@@ -168,6 +165,8 @@ const BaseMaster = ({
   // controler add action button
   showAdd = true,
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [historyRowId, setHistoryRowId] = useState(null);
   const { userData } = useDataContext();
@@ -190,15 +189,24 @@ const BaseMaster = ({
     (permissionKeys.update ? hasPermission(permissionKeys.update, userData) : false);
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
-  const {
-    rows, setRows, columns, summary, loading, isLoadingMore, hasMore, filters,
-    fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
-  } = useMasterRows({
-    title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
-    infiniteScroll, pageSize, serverSearch, searchQuery, fetchSuccessToast, fetchFailureToast,
+  // `refresh` is silent: every reload after an action (approve, a workflow step, a
+  // save, an import, a row or header action) updates the rows in place. Only the
+  // first load, a filter change and the header's Refresh show "Loading...".
+  const { rows, setRows, columns, loading, isLoadingMore, hasMore, fetchRows, refresh, handleLoadMore } = useMasterRows({
+    title,
+    canRead,
+    loadRows,
+    rowsKey,
+    extractResponse,
+    filters,
+    mapFiltersForApi,
+    infiniteScroll,
+    pageSize,
+    subscribeToRefresh,
+    unauthorizedToast,
+    fetchSuccessToast,
+    fetchFailureToast,
   });
-
-  useEffect(() => subscribeToRefresh?.(reloadQuietly), [subscribeToRefresh, reloadQuietly]);
 
   const matchedRows = useRowSearch(rows, serverSearch ? '' : searchQuery, { columns, searchKeys });
   const filteredData = useMemo(() => (mapRows ? mapRows(matchedRows) : matchedRows), [matchedRows, mapRows]);
@@ -233,27 +241,31 @@ const BaseMaster = ({
   // master with a bulk header button has no way to reload after it runs, and the only way
   // out is remounting the whole subtree — which throws away filters, search and sort.
   const resolvedHeaderActions = typeof extraHeaderActions === 'function'
-    ? extraHeaderActions({ refresh: fetchRows, rows, columns })
+    ? extraHeaderActions({ refresh, rows, columns })
     : extraHeaderActions;
   const resolvedHeaderContent = typeof headerContent === 'function'
-    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open, summary })
+    ? headerContent({ refresh, rows, columns })
     : headerContent;
 
-  // An amend opens the copy as a new record in the form.
-  const openRecord = modal.open;
+  const { actions: approvalActions, selectionProps, bulkProps, dialog: approvalDialog } = useMasterApproval({
+    approval,
+    rows: filteredData,
+    refresh,
+  });
+  // Opens a record in the modal: a row, or an amend's copy as a new record in the form.
+  const openRecord = (record) => {
+    setSelectedRow(record);
+    setIsModalOpen(true);
+  };
   const handleAmend = ({ record }) => openRecord(amendCopy(workflow, record));
 
   const workflowRowActions = useWorkflowRowActions({
     workflow,
     masterName,
     permissions: permissionKeys,
-    // Row hooks are handed openRecord too, for an Amend that opens its own copy.
-    hooks: Object.fromEntries(Object.entries({ amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks })
-      .map(([key, hook]) => [key, (args) => hook({ ...args, openRecord })])),
+    hooks: { amend: handleAmend, ...workflowHooks },
     showWhen: workflowShowWhen,
-    // The saved record replaces its row where the move hands one back, so a
-    // long list keeps its place; otherwise the list reloads.
-    onChanged: ({ saved }) => (saved?.id ? patchRow(saved) : fetchRows()),
+    onChanged: refresh,
   });
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
@@ -267,7 +279,7 @@ const BaseMaster = ({
 
   const actions = [
     ...approvalActions,
-    ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row), openRecord }) : []),
+    ...(extraActions ? extraActions({ refresh, rows, setRows, openEdit: openRecord }) : []),
     ...workflowRowActions,
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
@@ -300,7 +312,7 @@ const BaseMaster = ({
   // one that opens a modal of its own reloads the list with `refresh` once that saves.
   const handleRowClick = (row) => {
     if (onRowClickOverride) {
-      onRowClickOverride(row, { openRecord, refresh: fetchRows });
+      onRowClickOverride(row, { openEdit: openRecord });
       return;
     }
     openRecord(row);
@@ -310,7 +322,7 @@ const BaseMaster = ({
 
   const handleCloseHistory = () => setHistoryRowId(null);
   // A form may hand back what it saved; the grid only needs to reload, not read that as filters.
-  const handleFormSuccess = () => fetchRows();
+  const handleFormSuccess = () => refresh();
 
   // A record opened by id alone (a link) is its row, once the rows have it — unless the form loads it.
   const openRow = loadRecord || !selectedRow?.id
@@ -335,7 +347,7 @@ const BaseMaster = ({
         hooks: workflowHooks,
         showWhen: workflowShowWhen,
         onAmend: openRecord,
-        ...modalProps,
+        onChanged: refresh,
       }
     // A form names its record itself; a details modal is a plain BaseModal, so
     // it is told here what it is showing.
@@ -346,14 +358,14 @@ const BaseMaster = ({
   // "no inline arrow in JSX" lint and avoid re-rendering with new identity
   // when those captured values are unchanged.
   const boundImportApi = importApi
-    ? (formData) => importApi(formData, { rows, columns, refresh: fetchRows })
+    ? (formData) => importApi(formData, { rows, columns, refresh })
     : undefined;
   const boundOnDownloadTemplate = onDownloadTemplate
     ? () => onDownloadTemplate({ columns: exportColumns, rows })
     : undefined;
   const boundOnExport = onExport ? () => onExport({ columns, rows }) : undefined;
   const boundOnImport = onImport
-    ? () => onImport({ columns, rows, refresh: fetchRows })
+    ? () => onImport({ columns, rows, refresh })
     : undefined;
 
   // A new record's title can depend on what it is — an amend's copy.
@@ -422,38 +434,39 @@ const BaseMaster = ({
             placeholder={searchPlaceholder}
           />
         </div>
-        {bulkProps ? <BulkActionBar {...bulkProps} /> : null}
-        <div data-tour="master-grid">
-          <MasterTable
-            {...selectionProps}
-            columns={columns}
-            data={filteredData}
-            loading={loading}
-            actions={actions}
-            onRowClick={handleRowClick}
-            rowClickEnabled
-            infiniteScroll={infiniteScroll}
-            hasMore={infiniteScroll && hasMore}
-            onLoadMore={loadMore}
-            isLoadingMore={isLoadingMore}
-            onVisibleRowsChange={handleVisibleRowsChange}
-            getRowClassName={getRowClassName}
-            isAlertRow={isAlertRow}
-            initialSortKey={initialSortKey}
-            initialSortDirection={initialSortDirection}
-            defaultGroupByField={defaultGroupByField}
-            showGridExport={showGridExport}
-            exportReport={exportReport}
-            showInsightsAsHeader={showInsightsAsHeader}
-            showEmptyColumns={showEmptyColumns}
-            hideConstantColumns={hideConstantColumns}
-            density={density}
-            documentName={documentName}
-            viewMode={viewMode}
-            kanbanField={kanbanField}
-            kanbanLaneValues={kanbanLaneValues}
-          />
-        </div>
+        {canRead && bulkProps ? <BulkActionBar {...bulkProps} /> : null}
+        {canRead ? (
+          <div data-tour="master-grid">
+            <MasterTable
+              {...selectionProps}
+              columns={columns}
+              data={filteredData}
+              loading={loading}
+              actions={actions}
+              onRowClick={handleRowClick}
+              rowClickEnabled
+              infiniteScroll={infiniteScroll}
+              hasMore={infiniteScroll && hasMore}
+              onLoadMore={handleLoadMore}
+              isLoadingMore={isLoadingMore}
+              onVisibleRowsChange={handleVisibleRowsChange}
+              getRowClassName={getRowClassName}
+              isAlertRow={isAlertRow}
+              initialSortKey={initialSortKey}
+              initialSortDirection={initialSortDirection}
+              defaultGroupByField={defaultGroupByField}
+              showGridExport={showGridExport}
+              exportReport={exportReport}
+              showInsightsAsHeader={showInsightsAsHeader}
+              showEmptyColumns={showEmptyColumns}
+              hideConstantColumns={hideConstantColumns}
+              density={density}
+              documentName={documentName}
+            />
+          </div>
+        ) : (
+          <UnauthorisedTable />
+        )}
         <Modal
           {...formModalProps}
           isOpen={modal.isOpen && Boolean(ModalBody)}
