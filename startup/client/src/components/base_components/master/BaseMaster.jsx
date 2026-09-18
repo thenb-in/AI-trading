@@ -78,6 +78,8 @@ const BaseMaster = ({
   // What a row click opens. Omit it and a row opens FormComponent to edit, or,
   // on a master with no form, every column of the row read-only.
   DetailComponent,
+  // `(record, { rows }) => props` for the form or details — the loaded rows too,
+  // for a form that checks against its siblings (the next free code, say).
   formProps,
   formSuccessProp = 'onSuccess',
   createLabel, updateLabel, savingLabel, // Save button wording; FormModal defaults to Create / Update / Saving...
@@ -357,7 +359,7 @@ const BaseMaster = ({
       initialData={record}
       columns={columns}
       {...{ [formSuccessProp]: handleFormSuccess }}
-      {...(formProps ? formProps(record) : {})}
+      {...(formProps ? formProps(record, { rows }) : {})}
     />
   );
 
