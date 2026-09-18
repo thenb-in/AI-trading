@@ -44,13 +44,13 @@ const BaseMaster = ({
   // permissionKeys does not (approve_<masterName>). `workflowHooks` override an
   // action's default — { approve: ({ record, formData, to }) => ... } — in the
   // form's footer, and are what a row button runs, since a list has no form.
-  // Amend opens the copy in the form unless hooked. `workflowShowWhen`
-  // ({ [action key]: (record) => boolean }) narrows an action to the records it
-  // suits, on the row buttons and in the form's footer alike.
+  // Amend opens the copy in the form unless hooked. `rowWorkflowHooks` are run
+  // by row buttons only, for a master whose form keeps the default (validate and
+  // save its edits with the new status) but whose list still needs the move.
   workflow = DEFAULT_WORKFLOW,
   masterName,
   workflowHooks = {},
-  workflowShowWhen = {},
+  rowWorkflowHooks = {},
   loadRows,
   deleteRow,
   // Optional `(row) => boolean` for masters whose grid holds rows that are not
@@ -238,9 +238,8 @@ const BaseMaster = ({
     workflow,
     masterName,
     permissions: permissionKeys,
-    hooks: { amend: handleAmend, ...workflowHooks },
-    showWhen: workflowShowWhen,
-    onChanged: refresh,
+    hooks: { amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks },
+    onChanged: () => fetchRows(),
   });
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
@@ -476,6 +475,7 @@ BaseMaster.propTypes = {
   workflow: PropTypes.object,
   masterName: PropTypes.string.isRequired,
   workflowHooks: PropTypes.objectOf(PropTypes.func),
+  rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,
   canDeleteRow: PropTypes.func,

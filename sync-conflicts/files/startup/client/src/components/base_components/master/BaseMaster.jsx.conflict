@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: df3094a31351e5d5043f99219c4998021c948fda
+# Source commit: c2b872cf5f4a442d72f37c74fb5d09c22af3941a
 # startup/client/src/components/base_components/master/BaseMaster.jsx in the tree now holds the erp version.
 # Below is the full three-way merge, markers and all.
 #
@@ -53,13 +53,26 @@ const BaseMaster = ({
   // permissionKeys does not (approve_<masterName>). `workflowHooks` override an
   // action's default — { approve: ({ record, formData, to }) => ... } — in the
   // form's footer, and are what a row button runs, since a list has no form.
+<<<<<<< startup (this repo)
   // Amend opens the copy in the form unless hooked. `workflowShowWhen`
   // ({ [action key]: (record) => boolean }) narrows an action to the records it
   // suits, on the row buttons and in the form's footer alike.
+||||||| base (common ancestor)
+  // Amend opens the copy in the form unless hooked.
+=======
+  // Amend opens the copy in the form unless hooked. `rowWorkflowHooks` are run
+  // by row buttons only, for a master whose form keeps the default (validate and
+  // save its edits with the new status) but whose list still needs the move.
+>>>>>>> erp (incoming)
   workflow = DEFAULT_WORKFLOW,
   masterName,
   workflowHooks = {},
+<<<<<<< startup (this repo)
   workflowShowWhen = {},
+||||||| base (common ancestor)
+=======
+  rowWorkflowHooks = {},
+>>>>>>> erp (incoming)
   loadRows,
   deleteRow,
   // Optional `(row) => boolean` for masters whose grid holds rows that are not
@@ -247,9 +260,17 @@ const BaseMaster = ({
     workflow,
     masterName,
     permissions: permissionKeys,
+<<<<<<< startup (this repo)
     hooks: { amend: handleAmend, ...workflowHooks },
     showWhen: workflowShowWhen,
     onChanged: refresh,
+||||||| base (common ancestor)
+    hooks: { amend: handleAmend, ...workflowHooks },
+    onChanged: () => fetchRows(),
+=======
+    hooks: { amend: handleAmend, ...workflowHooks, ...rowWorkflowHooks },
+    onChanged: () => fetchRows(),
+>>>>>>> erp (incoming)
   });
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
@@ -324,12 +345,7 @@ const BaseMaster = ({
         hooks: workflowHooks,
         showWhen: workflowShowWhen,
         onAmend: openRecord,
-<<<<<<< startup (this repo)
-        onChanged: refresh,
-||||||| base (common ancestor)
-=======
         ...modalProps,
->>>>>>> erp (incoming)
       }
     // A form names its record itself; a details modal is a plain BaseModal, so
     // it is told here what it is showing.
@@ -466,9 +482,6 @@ const BaseMaster = ({
   );
 };
 
-<<<<<<< startup (this repo)
-BaseMaster.propTypes = baseMasterPropTypes;
-||||||| base (common ancestor)
 BaseMaster.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string,
@@ -493,98 +506,7 @@ BaseMaster.propTypes = {
   workflow: PropTypes.object,
   masterName: PropTypes.string.isRequired,
   workflowHooks: PropTypes.objectOf(PropTypes.func),
-  loadRows: PropTypes.func.isRequired,
-  deleteRow: PropTypes.func,
-  canDeleteRow: PropTypes.func,
-  deleteConfirmText: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  rowsKey: PropTypes.string,
-  extractResponse: PropTypes.func,
-  onRowClickOverride: PropTypes.func,
-  unauthorizedToast: PropTypes.string,
-  unauthorizedDeleteToast: PropTypes.string,
-  fetchSuccessToast: PropTypes.string,
-  fetchFailureToast: PropTypes.string,
-  showExport: PropTypes.bool,
-  showImport: PropTypes.bool,
-  exportFileName: PropTypes.string,
-  showGridExport: PropTypes.bool,
-  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
-  showInsightsAsHeader: PropTypes.bool,
-  showEmptyColumns: PropTypes.bool,
-  hideConstantColumns: PropTypes.bool,
-  importApi: PropTypes.func,
-  buildExportColumns: PropTypes.func,
-  // Omit for a read-only master — no Add button.
-  FormComponent: PropTypes.elementType,
-  // Receives the same props as FormComponent, plus `columns`.
-  DetailComponent: PropTypes.elementType,
-  formProps: PropTypes.func,
-  formSuccessProp: PropTypes.string,
-  createLabel: PropTypes.string,
-  updateLabel: PropTypes.string,
-  savingLabel: PropTypes.string,
-  filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
-  initialFilters: PropTypes.object,
-  mapFiltersForApi: PropTypes.func,
-  mapRows: PropTypes.func,
-  subscribeToRefresh: PropTypes.func,
-  headerContent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  headerRef: PropTypes.object,
-  showRefreshButton: PropTypes.bool,
-  backUrl: PropTypes.string,
-  showBack: PropTypes.bool,
-  onDownloadTemplate: PropTypes.func,
-  templateButtonText: PropTypes.string,
-  onExport: PropTypes.func,
-  onImport: PropTypes.func,
-  approval: PropTypes.shape({
-    updateStatus: PropTypes.func.isRequired,
-    permissionKeys: PropTypes.shape({
-      approve: PropTypes.string,
-      reject: PropTypes.string,
-    }).isRequired,
-    noun: PropTypes.string,
-    isPending: PropTypes.func,
-  }),
-  extraActions: PropTypes.func,
-  getRowClassName: PropTypes.func,
-  isAlertRow: PropTypes.func,
-  initialSortKey: PropTypes.string,
-  // Node, or a function given { refresh, rows, columns } so a bulk header action can
-  // reload the grid when it finishes.
-  extraHeaderActions: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  defaultGroupByField: PropTypes.string,
-  initialSortDirection: PropTypes.string,
-  infiniteScroll: PropTypes.bool,
-  pageSize: PropTypes.number,
-  showAdd: PropTypes.bool,
-};
-=======
-BaseMaster.propTypes = {
-  title: PropTypes.string.isRequired,
-  description: PropTypes.string,
-  // Add-button and modal props apply only when a FormComponent is supplied.
-  // A read-only master (no form) renders neither, so none of them are required.
-  addButtonText: PropTypes.string,
-  searchPlaceholder: PropTypes.string,
-  searchKeys: PropTypes.arrayOf(PropTypes.string),
-  /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
-  modalAddTitle: PropTypes.string,
-  modalEditTitle: PropTypes.string,
-  modalMaxWidth: PropTypes.string,
-  baseMasterContainerWidth: PropTypes.string,
-  auditHead: PropTypes.string,
-  permissionKeys: PropTypes.shape({
-    // Any one of a list is enough.
-    read: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
-    create: PropTypes.string,
-    update: PropTypes.string,
-    delete: PropTypes.string,
-  }).isRequired,
-  workflow: PropTypes.object,
-  masterName: PropTypes.string.isRequired,
-  workflowHooks: PropTypes.objectOf(PropTypes.func),
+  rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
   loadRows: PropTypes.func.isRequired,
   deleteRow: PropTypes.func,
   canDeleteRow: PropTypes.func,
@@ -653,6 +575,5 @@ BaseMaster.propTypes = {
   pageSize: PropTypes.number,
   showAdd: PropTypes.bool,
 };
->>>>>>> erp (incoming)
 
 export { BaseMaster };
