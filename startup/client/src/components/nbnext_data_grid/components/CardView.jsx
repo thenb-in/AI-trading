@@ -30,7 +30,7 @@ function CardView({
         const isClickable = typeof handleRowClick === "function";
 
         const onCardClick = isClickable
-          ? () => handleRowClick(rowId, row)
+          ? (e) => handleRowClick(rowId, row, e)
           : undefined;
 
         const onCardKeyDown = !isClickable
@@ -38,7 +38,7 @@ function CardView({
           : (e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                handleRowClick(rowId, row);
+                handleRowClick(rowId, row, e);
               }
             };
 

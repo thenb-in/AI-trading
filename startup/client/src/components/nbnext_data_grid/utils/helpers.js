@@ -514,6 +514,13 @@ const unwrapGridRow = (wrapped) => wrapped?._row || wrapped;
 /** Unwrapped rows, group-total lines still included (what export payloads carry). */
 const unwrapGridRows = (rows) => (rows || []).map(unwrapGridRow).filter(Boolean);
 
+/**
+ * Option/Alt + click is the user's "just let me interact with this row's content"
+ * gesture (select text, drag, use a link) — it must never trigger the row's own
+ * action, so every row surface checks it before calling back.
+ */
+const isAltClick = (event) => Boolean(event?.altKey);
+
 /** Only the real data rows: unwrapped, group totals dropped. Safe to re-apply. */
 const getGridDataRows = (rows) => unwrapGridRows(rows).filter((row) => !row._isGroupTotal);
 
@@ -535,4 +542,5 @@ export {
   unwrapGridRow,
   unwrapGridRows,
   getGridDataRows,
+  isAltClick,
 };
