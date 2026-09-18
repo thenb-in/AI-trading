@@ -108,7 +108,7 @@ jobs:
             HOSTED=ubuntu-latest; OS=Linux
           fi
           # client_runner / server_runner are JSON label arrays for fromJSON() in runs-on.
-          # client_runner (client, ios) is plain JS, so it never follows the platform:
+          # client_runner (client) is plain JS, so it never follows the platform:
           # any self-hosted runner, or linux on github-hosted.
           # server_runner is bytecode, so it follows the platform.
           if [ "${{ runner.environment }}" = "self-hosted" ]; then
@@ -231,65 +231,9 @@ jobs:
           include-hidden-files: true
 
   # ────────────────────────────────────────────────────────────────────
-  # SALARYMITRA PORTAL (ios/) — standalone Vite SPA served at /salarymitra.
-  # Self-contained: its own package-lock + node_modules (NOT part of the
-  # root `npm run i` workspaces), so it installs and builds independently of
-  # client_build. The dist is consumed by server_build, which drops it
-  # under app/client/salarymitra/ so it deploys at $app/<app>/salarymitra/.
-  # ────────────────────────────────────────────────────────────────────
-  ios_build:
-    needs: setup
-    runs-on: ${{ fromJSON(needs.setup.outputs.client_runner) }}
-
-    defaults:
-      run:
-        shell: bash
-
-    permissions:
-      contents: write
-      actions: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache SalaryMitra dependencies (github-hosted only)
-        if: runner.environment == 'github-hosted'
-        uses: actions/cache@v5
-        id: cache-ios-deps
-        with:
-          path: ios/node_modules
-          key: build-ios-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('ios/package-lock.json') }}
-
-      - name: Install dependencies
-        if: steps.cache-ios-deps.outputs.cache-hit != 'true'
-        run: cd ios && npm ci
-        env:
-          CI: true
-          HUSKY: 0
-
-      - name: Set environment variables
-        run: cp ios/.env.example ios/.env
-
-      - name: Run build
-        run: cd ios && npm run build
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ios-build-artifact
-          path: ios/dist/
-          include-hidden-files: true
-
-  # ────────────────────────────────────────────────────────────────────
   # SERVER BUILD + SITE BUNDLE — compiles the framework + app boot wrapper to
   # bytecode AND assembles the full deployable bundle (client + server bytecode
-  # + portal + deploy scripts + docker kit) in one job.
+  # + deploy scripts + docker kit) in one job.
   #
   # Runs on whichever runner `setup` resolved from the `platform` and
   # `runner` inputs (github-hosted or self-hosted, same OS + arch):
@@ -297,14 +241,14 @@ jobs:
   # compiled with, so the runner IS the target. The guard below refuses to
   # bundle if the runner disagrees with that target.
   #
-  # It needs client_build + ios_build so it can pull their artifacts into the
-  # bundle; the trade-off is the bytecode compile no longer overlaps those two
-  # (the job waits for them to finish before it starts). Because the compile and
+  # It needs client_build so it can pull its artifact into the
+  # bundle; the trade-off is the bytecode compile no longer overlaps it
+  # (the job waits for it to finish before it starts). Because the compile and
   # the bundling happen on the same runner, there is no intermediate
   # server-build artifact — the bytecode is staged straight into _bundle/.
   # ────────────────────────────────────────────────────────────────────
   server_build:
-    needs: [setup, client_build, ios_build]
+    needs: [setup, client_build]
     # Bundles are cut on demand only; push/PR/release stop at the client build.
     if: needs.setup.outputs.server_build == 'true'
     runs-on: ${{ fromJSON(needs.setup.outputs.server_runner) }}
@@ -415,15 +359,6 @@ jobs:
         with:
           name: client-build-artifact
           path: _bundle/app/client
-
-      - name: Download SalaryMitra portal build
-        # Nest the portal inside the client tree so update.sh's existing
-        # `cp -a app/client/. /app/<app>/` lands it at /app/<app>/salarymitra/
-        # with no deploy-script changes. nginx serves it at /salarymitra/.
-        uses: actions/download-artifact@v8
-        with:
-          name: ios-build-artifact
-          path: _bundle/app/client/salarymitra
 
       - name: Stage server bytecode into bundle (mirrors install layout)
         run: |
