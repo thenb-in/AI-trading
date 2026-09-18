@@ -33,6 +33,9 @@ const numberOrNull = (rawValue) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+/** A number, or 0 when the input is empty or not a number: for sums and quantities, where nothing entered counts as none. */
+const numberOrZero = (rawValue) => numberOrNull(rawValue) ?? 0;
+
 /** A whole number of 1 or more, or null when the input is empty or anything else. */
 const positiveIntegerOrNull = (rawValue) => {
   const parsed = numberOrNull(rawValue);
@@ -135,6 +138,7 @@ module.exports = {
   normalizeOptionalId,
   isEmptyValue,
   numberOrNull,
+  numberOrZero,
   positiveIntegerOrNull,
   percentOf,
   applyRounding,
