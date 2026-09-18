@@ -6,11 +6,7 @@ import { nbnextDriveService } from '@/services/nbnextDriveService';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import { FilesSection } from './FilesSection';
 import { useExistingAttachments } from './useExistingAttachments';
-import { formatDateTime } from '@utils/formattingUtils';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-import { recordPermissionName } from '@utils/recordPermission';
-import { hasPermission } from '@startup/hooks/hasPermission';
-import { useDataContext } from '@context/useDataContext';
 
 /** Same normalize as NBnextDriveForm: FilesSection can pass array or single File or null. */
 function toFiles(v) {
