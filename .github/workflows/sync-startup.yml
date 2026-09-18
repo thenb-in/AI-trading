@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read       # only reads this repo; the push goes to the target
+      issues: write        # the sync-failure tracking issue below
       id-token: write      # federate an Octo STS token for thenb-in/startup
 
     env:
@@ -66,16 +67,6 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0  # need full history to walk arbitrary ranges
-
-      - name: Mint a write token for THIS repo (Octo STS)
-        uses: octo-sts/action@main
-        id: octo-sts-self
-        with:
-          scope: ${{ github.repository }}
-          identity: app-token
-        # The cross-repo token below is scoped to the framework repo, so it
-        # cannot file an issue here. A broken sync is this repo's problem to
-        # see, so it gets its own self-scoped token.
 
       - name: Mint a token for thenb-in/startup (Octo STS)
         uses: octo-sts/action@main
@@ -277,9 +268,12 @@ jobs:
         # per direction rather than filing a fresh one every night. On the
         # next green run the same issue is closed, so an open one always means
         # "the sync is broken right now".
-        if: always() && steps.octo-sts-self.outcome == 'success'
+        #
+        # This issue lives in THIS repo, so it runs on GITHUB_TOKEN — the STS
+        # token above is scoped to the framework repo and cannot file it.
+        if: always()
         env:
-          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           FAILED: ${{ (job.status == 'failure' || steps.sync.outcome == 'failure') && 'true' || 'false' }}
           ISSUE_TITLE: 'Nightly sync is failing: ${{ github.repository }} → ${{ env.TARGET_REPO }}'
         run: |

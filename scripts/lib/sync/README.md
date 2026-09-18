@@ -173,12 +173,26 @@ round-trips. Merge commits are skipped; their content came from their parents.
 * **Exempt `sync/*` from any squash-merge requirement** (see the hard rule
   above).
 * **The Octo STS trust policy** at `.github/chainguard/app-token.sts.yaml`
-  must be present. It is a synced framework file, so it arrives on its own —
-  but the very first sync into a brand-new app repo needs it there already.
-  Both directions authenticate every write with a short-lived token minted
-  from it; the built-in `GITHUB_TOKEN` is never used for writes, partly
-  because GitHub suppresses workflow runs for anything it does, which would
-  leave sync PRs with no CI results.
+  must be present in `thenb-in/startup`. It is a synced framework file, so
+  every app repo carries a copy too, but only the framework repo's copy is
+  read: the short-lived STS token is minted **only to reach the framework
+  repo** — `contents:write` + `pull_requests:write` outbound, `contents:read`
+  inbound. Everything an app repo does to *itself* — checkout, the sync branch
+  push, the PR, its comments, labels, the `sync-failure` issue — runs on the
+  built-in `GITHUB_TOKEN`.
+* **Enable "Allow GitHub Actions to create and approve pull requests"**
+  (Settings → Actions → General). `sync-framework.yml` opens its PR with
+  `GITHUB_TOKEN`; with that setting off, `gh pr create` is refused.
+* **Re-run checks on an inbound sync PR by hand.** GitHub suppresses workflow
+  runs for anything `GITHUB_TOKEN` pushes, so the `sync: startup → app` PR
+  arrives with no CI — the `sync-conflicts` gate included. Close and reopen
+  the PR (or push an empty commit) to make the checks run before merging.
+* **`GITHUB_TOKEN` cannot write `.github/workflows/`.** It has no `workflows`
+  permission, so an inbound batch that changes a workflow file is rejected at
+  the push with *"refusing to allow a GitHub App to create or update
+  workflow"*. `.github/` is a synced framework path, so this will happen.
+  Land those commits by pulling the sync branch locally and pushing it
+  yourself, or give that one push step an STS token.
 
 ---
 

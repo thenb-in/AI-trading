@@ -55,14 +55,14 @@ jobs:
     if: github.repository != 'thenb-in/startup'
     runs-on: ubuntu-latest
     permissions:
-      # GITHUB_TOKEN stays read-only. Every write — the branch push, the PR,
-      # labels — uses a short-lived Octo STS token instead. That matches how
-      # sync-startup.yml already works, and it has a second benefit: GitHub's
-      # recursion guard suppresses workflow runs for anything GITHUB_TOKEN
-      # does, so a PR opened with it would never get its checks run. An app
-      # installation token triggers them normally.
-      contents: read
-      id-token: write        # federate the Octo STS tokens below
+      # Everything this job touches in THIS repo — checkout, the branch push,
+      # the PR, its comments, labels, the failure issue — runs on
+      # GITHUB_TOKEN. The Octo STS token is minted only to READ the framework
+      # repo, which GITHUB_TOKEN cannot reach.
+      contents: write        # push the sync branch
+      pull-requests: write   # open / update the sync PR
+      issues: write          # PR comments, labels and the sync-failure issue
+      id-token: write        # federate the framework-repo read token below
 
     env:
       SOURCE_REPO: thenb-in/startup
@@ -71,21 +71,12 @@ jobs:
       SYNC_BRANCH: sync/from-startup
 
     steps:
-      - name: Mint a write token for THIS repo (Octo STS)
-        uses: octo-sts/action@main
-        id: octo-sts-self
-        with:
-          scope: ${{ github.repository }}
-          identity: app-token
-        # Resolves against this repo's own
-        # .github/chainguard/app-token.sts.yaml — which is itself a synced
-        # framework file, so every app repo has it.
-
       - name: Checkout this app repo (the sync target)
         uses: actions/checkout@v5
         with:
           fetch-depth: 0  # need full history to read provenance trailers
-          token: ${{ steps.octo-sts-self.outputs.token }}  # so the push below is authorised
+          # No `token:` — checkout persists GITHUB_TOKEN, and that is what
+          # authorises the branch push below.
 
       - name: Mint a read token for the framework repo (Octo STS)
         uses: octo-sts/action@main
@@ -155,6 +146,10 @@ jobs:
 
       - name: Push sync branch
         id: push
+        # Pushed with GITHUB_TOKEN. It has no `workflows` permission, so a
+        # batch that changes a file under `.github/workflows/` is rejected
+        # here — `.github/` is a synced path, so expect it. See
+        # scripts/lib/sync/README.md for how to land those commits.
         if: >-
           success() &&
           inputs.dry_run != true &&
@@ -176,7 +171,7 @@ jobs:
       - name: Open or update the PR
         if: steps.push.outputs.pushed == 'true'
         env:
-          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           CONFLICTS: ${{ steps.sync.outputs.conflicts }}
           APPLIED: ${{ steps.sync.outputs.commits_applied }}
           SKIPPED: ${{ steps.sync.outputs.commits_skipped }}
@@ -261,17 +256,6 @@ jobs:
               --head "${SYNC_BRANCH}" \
               --title "${TITLE}" \
               --body-file "${RUNNER_TEMP}/pr-body.md"
-            # Source repo first, matching sync-startup.yml, so both directions
-          # read the same way wherever you see them.
-          # See sync-startup.yml: the date says how current this brings the
-          # repo, the count is everything pending on the standing branch.
-          TITLE="sync: $(basename "${SOURCE_REPO}") → $(basename "${GITHUB_REPOSITORY}")"
-          if [ -n "${TO_DATE}" ]; then
-            [ "${PENDING}" = "1" ] && NOUN=commit || NOUN=commits
-            TITLE="${TITLE} (${PENDING} ${NOUN}, through ${TO_DATE})"
-          fi
-
-          EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
           else
             # Standing branch: the PR already exists, so refresh its body and
             # leave a note rather than opening a second one.
@@ -279,13 +263,15 @@ jobs:
             gh pr comment "${EXISTING}" --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
           fi
 
-          if [ "${CONFLICTS}" != "0" ]; then
+          # Re-read: on the create path EXISTING was empty.
+          PR=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
+          if [ -n "${PR}" ] && [ "${CONFLICTS}" != "0" ]; then
             gh label create sync-conflict --color B60205 \
               --description "Sync PR with unresolved conflicts needing manual reconciliation" \
               --force > /dev/null 2>&1 || true
-            gh pr edit "${EXISTING}" --add-label sync-conflict || true
-          else
-            gh pr edit "${EXISTING}" --remove-label sync-conflict > /dev/null 2>&1 || true
+            gh pr edit "${PR}" --add-label sync-conflict || true
+          elif [ -n "${PR}" ]; then
+            gh pr edit "${PR}" --remove-label sync-conflict > /dev/null 2>&1 || true
           fi
 
       - name: Re-ping stale conflict PRs
@@ -294,7 +280,7 @@ jobs:
         # age of any still-open conflicted sync PR on the PR itself.
         if: always() && steps.sync.outputs.skipped_same_repo != 'true'
         env:
-          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           STALE_AFTER_DAYS: '3'
         run: |
           set -euo pipefail
@@ -315,9 +301,9 @@ jobs:
         # per direction rather than filing a fresh one every night. On the
         # next green run the same issue is closed, so an open one always means
         # "the sync is broken right now".
-        if: always() && steps.octo-sts-self.outcome == 'success'
+        if: always()
         env:
-          GH_TOKEN: ${{ steps.octo-sts-self.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           FAILED: ${{ (job.status == 'failure' || steps.sync.outcome == 'failure') && 'true' || 'false' }}
           ISSUE_TITLE: 'Nightly sync is failing: ${{ env.SOURCE_REPO }} → ${{ github.repository }}'
         run: |
