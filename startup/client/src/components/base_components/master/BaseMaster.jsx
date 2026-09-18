@@ -285,10 +285,11 @@ const BaseMaster = ({
   const handleAdd = () => openRecord(null);
 
   // Every row opens: its details, its edit form, or wherever the master sends it.
-  // An override that only sometimes differs can still open the row: `openRecord(row)`.
+  // An override that only sometimes differs can still open the row: `openRecord(row)`;
+  // one that opens a modal of its own reloads the list with `refresh` once that saves.
   const handleRowClick = (row) => {
     if (onRowClickOverride) {
-      onRowClickOverride(row, { openRecord });
+      onRowClickOverride(row, { openRecord, refresh: fetchRows });
       return;
     }
     openRecord(row);
