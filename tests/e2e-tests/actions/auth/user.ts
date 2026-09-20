@@ -40,8 +40,11 @@ export async function loginWithCredentials(page: Page, logger: TestLogger, usern
         return { needsPasswordReset: false, username: username, password: password } as LoginResult;
     }
 
-    // Navigate to login page
-    await navigateTo(page, logger, '/');
+    // Navigate to login page. `/` is the entry gateway (LoginRedirectionPage) — in
+    // non-SSO mode (VITE_SSO_ENABLED=false, the default) it immediately
+    // redirects to `/login`, which is where the username/password form
+    // (Home.jsx -> Login) actually lives. See startup/client/src/App.jsx.
+    await navigateTo(page, logger, '/login');
     // Fill login credentials
     await page.fill('input[name="username"], input[id="username"]', username);
     await page.fill('input[name="password"], input[id="password"]', password);
