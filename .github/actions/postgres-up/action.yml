@@ -35,6 +35,19 @@ runs:
             echo "[pre-flight] container '$c' not present"
           fi
         done
+        # Belt and braces: a container under some OTHER name (a renamed or
+        # differently-named leftover from an older run) can still be holding
+        # $BUILT_HOST_PORT even though $DEPLOY_CONTAINER itself is gone —
+        # `docker run -p` then fails with "port is already allocated".
+        if [ "${{ inputs.built_mode }}" = "true" ]; then
+          STALE_PORT_HOLDERS=$(docker ps -aq --filter "publish=$BUILT_HOST_PORT")
+          if [ -n "$STALE_PORT_HOLDERS" ]; then
+            echo "[pre-flight] removing container(s) still holding port $BUILT_HOST_PORT: $STALE_PORT_HOLDERS"
+            docker rm -f $STALE_PORT_HOLDERS
+          else
+            echo "[pre-flight] port $BUILT_HOST_PORT free of docker containers"
+          fi
+        fi
         if docker network ls --format '{{.Name}}' | grep -qx "$TEST_NETWORK"; then
           echo "[pre-flight] network '$TEST_NETWORK' already present — disconnecting endpoints and removing"
           for ep in $(docker network inspect "$TEST_NETWORK" --format '{{range $k,$v := .Containers}}{{println $k}}{{end}}'); do
