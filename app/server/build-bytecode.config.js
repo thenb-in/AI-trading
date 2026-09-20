@@ -32,7 +32,8 @@ module.exports = {
 
   // Entries walked for .js → V8 bytecode (.jsc + thin loader stub). Paths may
   // be nested, not just top-level. src/, scheduler/ and interfaces/ contain the
-  // runtime modules; index.js is the boot entry the systemd unit invokes.
+  // runtime modules; index.js is the boot entry the systemd unit invokes, and
+  // bootstrapAliases.js is the module-alias setup index.js requires first.
   //
   // scripts/ is listed per-entry rather than wholesale: only the seeding flow
   // ships (create_new_company.js — the `npm run create-new-company` entry — plus
@@ -42,6 +43,7 @@ module.exports = {
   // silently at build time and only surfaces as MODULE_NOT_FOUND in production.
   encrypt: [
     'index.js',
+    'bootstrapAliases.js',
     'scripts/create_new_company.js',
     'scripts/default_data',
     'scheduler',

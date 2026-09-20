@@ -376,9 +376,12 @@ jobs:
           # source-relative path its alias resolves to or the server will not boot.
           cp -a nucleus/dist/.       _bundle/nucleus/
           # @custom/server ships as plain JS (no bytecode config yet); exclude any
-          # local node_modules/logs.
-          cp -a custom _bundle/
-          find _bundle/custom \( -name node_modules -o -name logs \) -prune -exec rm -rf {} +
+          # local node_modules/logs. Only apps built on this framework carry a
+          # custom/ package — the framework repo itself doesn't have one.
+          if [ -d custom ]; then
+            cp -a custom _bundle/
+            find _bundle/custom \( -name node_modules -o -name logs \) -prune -exec rm -rf {} +
+          fi
 
       - name: Stage deploy files + entry scripts
         run: |
@@ -402,7 +405,10 @@ jobs:
           # the bundle at /srv/app. The image has no COPY, so the .dockerignore
           # keeps the on-target `docker compose build` from taring the whole
           # bundle (app/client, node_modules, docker_data …).
-          if [ "$PLATFORM_ID" = "linux_x64" ]; then
+          # No root Dockerfile yet in this repo (an app built on this framework
+          # may add its own) — skip the docker-deployable kit rather than
+          # failing the whole bundle over an optional deploy path.
+          if [ "$PLATFORM_ID" = "linux_x64" ] && [ -f Dockerfile ]; then
             cp Dockerfile _bundle/
             printf '%s\n' 'node_modules' '**/node_modules' 'app/client' 'docker_data' 'deploy' 'scripts' '.env' '*.md' > _bundle/.dockerignore
             cp -r deploy/docker _bundle/deploy/docker
