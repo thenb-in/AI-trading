@@ -17,8 +17,11 @@ on:
     types: [published]
 
   # Input-driven build: pick the runner, what to build and the target.
-  # push/PR/release build the client only, on self-hosted linux (see the
-  # setup job).
+  # push/PR/release build client + server, on self-hosted linux; a manual
+  # dispatch defaults to the client only, for a quick check. See the
+  # DEFAULT_PLATFORM / DEFAULT_BUILD controls and setup job's env:
+  # below — that's the one place these inputs (or their absence) turn
+  # into decisions.
   workflow_dispatch:
     inputs:
       runner:
@@ -54,20 +57,17 @@ env:
   # The env var applies to every npm invocation at any cwd.
   NPM_CONFIG_SCRIPT_SHELL: bash
 
-  # The one place the build target is declared. Non-dispatch triggers build
-  # linux. The `env` context is not available in `runs-on` or in a called
-  # workflow's `with:`, so setup republishes this (and the matching runners) as
-  # job outputs and every other job reads it from there.
-  PLATFORM: ${{ inputs.platform || 'linux_x64' }}
-
-  # The one place the server build is decided. Non-dispatch triggers stop at
-  # the client build.
-  SERVER_BUILD: ${{ inputs.build == 'client + server' }}
-
   # The one place the Node version is declared. bytenode locks each .jsc to this
   # exact V8 build; it is captured into the bundle's VERSION and read back at
   # deploy time — nothing downstream hardcodes it.
   NODE_VERSION: "22.22.2"
+
+  # ── Controlling defaults — the only two lines to touch to change what an
+  # ordinary push/PR/release build does. setup's own env: below turns these
+  # (plus the workflow_dispatch inputs, when present) into the actual
+  # PLATFORM / SERVER_BUILD decision; nothing else should hardcode either.
+  DEFAULT_PLATFORM: linux_x64
+  DEFAULT_BUILD: 'client + server'   # push/PR/release also cut the server bundle
 
 jobs:
   setup:
@@ -82,9 +82,15 @@ jobs:
       run:
         shell: bash
 
-    # The `env` context is not available in `jobs.<id>.with`, so the Node pin
-    # is republished here for the jobs below to consume via `needs`. NODE_VERSION
-    # above stays the single declaration.
+    # The one place PLATFORM / SERVER_BUILD are decided, reading the
+    # DEFAULT_PLATFORM / DEFAULT_BUILD controls above plus whatever a
+    # workflow_dispatch explicitly chose. The `env` context is not available
+    # in `jobs.<id>.with` or `runs-on`, so these are republished as job
+    # outputs below for the jobs that need them.
+    env:
+      PLATFORM: ${{ inputs.platform || env.DEFAULT_PLATFORM }}
+      SERVER_BUILD: ${{ (inputs.build || env.DEFAULT_BUILD) == 'client + server' }}
+
     outputs:
       node_version: ${{ steps.pin.outputs.node_version }}
       platform: ${{ steps.pin.outputs.platform }}
@@ -249,7 +255,8 @@ jobs:
   # ────────────────────────────────────────────────────────────────────
   server_build:
     needs: [setup, client_build]
-    # Bundles are cut on demand only; push/PR/release stop at the client build.
+    # Runs on push/PR/release too (see setup job's env: block above) —
+    # only an explicit client-only manual dispatch skips it.
     if: needs.setup.outputs.server_build == 'true'
     runs-on: ${{ fromJSON(needs.setup.outputs.server_runner) }}
 
