@@ -68,6 +68,7 @@ function getMasterTitleByKey() {
 
 const GENERIC_STATIC_TITLES = {
   '/': 'Sign in',
+  '/wallet': 'Sign in',
   '/signup': 'Sign up',
   '/forgot-password': 'Forgot password',
   '/admin': 'Navigator',

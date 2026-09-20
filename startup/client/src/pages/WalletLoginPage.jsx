@@ -1,46 +1,28 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useSso } from '@startup/hooks/useSso';
-import { useDataContext } from '@context/useDataContext';
-import { isSsoEnabled } from '@startup/sso/ssoMode';
 
-
-function SsoLoginPage() {
+/**
+ * The Wallet SSO screen, at its own path so /google, /linkedin, /apple can
+ * sit alongside it later. LoginRedirectionPage sends visitors here to start
+ * the round trip, or back here with ?sso=1 when the round trip came back
+ * without a session (Wallet-side cancel/failure) — that case shows retry
+ * instead of auto-starting again.
+ */
+function WalletLoginPage() {
   const { startSso } = useSso();
-  const { userData, loading } = useDataContext();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const hasStarted = useRef(false);
 
-  const isSsoReturn = searchParams.get('sso') === '1';
+  const signInDidNotComplete = searchParams.get('sso') === '1';
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
-    if (userData) {
-      const returnTo = searchParams.get('returnTo');
-      navigate(returnTo && returnTo.startsWith('/') ? returnTo : '/admin', { replace: true });
-      return;
-    }
-    // SSO (consumer) mode off → don't kick off an SSO redirect; use the local
-    // login page instead.
-    if (!isSsoEnabled()) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    if (isSsoReturn) {
-      return;
-    }
-
-    if (hasStarted.current) {
+    if (signInDidNotComplete || hasStarted.current) {
       return;
     }
     hasStarted.current = true;
     startSso();
-  }, [loading, userData, isSsoReturn, searchParams, navigate, startSso]);
-
-  const signInDidNotComplete = !loading && !userData && isSsoReturn;
+  }, [signInDidNotComplete, startSso]);
 
   return (
     <div className="min-h-screen flex items-center justify-center auth-background">
@@ -67,4 +49,4 @@ function SsoLoginPage() {
   );
 }
 
-export { SsoLoginPage };
+export { WalletLoginPage };

@@ -8,7 +8,8 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { NotFound } from './pages/NotFound';
 import { SignupPage } from './pages/SignupPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { SsoLoginPage } from './pages/SsoLoginPage';
+import { LoginRedirectionPage } from './pages/LoginRedirectionPage';
+import { WalletLoginPage } from './pages/WalletLoginPage';
 import PropTypes from 'prop-types';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { UserManagement } from './components/admin/user_management/UserManagement';
@@ -44,7 +45,8 @@ export function App({ extraRoutes = [] }) {
      <PWAInstallPrompt />
       <GlobalSearchPalette />
       <Routes>
-        <Route path="/" element={<SsoLoginPage />} />
+        <Route path="/" element={<LoginRedirectionPage />} />
+        <Route path="/wallet" element={<WalletLoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         {/* Straight to Wallet — signing up and resetting happen on its screens. */}
