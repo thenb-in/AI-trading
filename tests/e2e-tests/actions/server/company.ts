@@ -38,10 +38,23 @@ export async function createCompanyWithAdmin(logger: TestLogger): Promise<User> 
         fs.appendFileSync(logger.getLogFilePath(), `Phone Number: (empty - will skip)\n`);
         fs.appendFileSync(logger.getLogFilePath(), `\n--- Process Output ---\n`);
 
+        // In CI, the actual server under test may be running against a
+        // per-run database (postgres-up exports DB_HOST/DB_NAME to
+        // $GITHUB_ENV, e.g. linux_built_tests's deploy container gets a
+        // DATABASE_URL built from these) while this CLI runs directly on
+        // the runner against app/server/.env's static default DATABASE_URL.
+        // Without this override the company gets created in the wrong
+        // database — invisible to the server the e2e suite actually talks
+        // to, so the next test's login fails as if the admin never existed.
+        const dbOverrideEnv = (process.env.DB_HOST && process.env.DB_NAME)
+            ? { DATABASE_URL: `postgresql://postgres:postgres@${process.env.DB_HOST}:5432/${process.env.DB_NAME}` }
+            : {};
+
         const child = spawn(npmCommand, ['run', 'create-new-company'], {
             cwd: serverDir,
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: false,
+            env: { ...process.env, ...dbOverrideEnv },
         });
 
         let stdout = '';
