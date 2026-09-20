@@ -4,7 +4,9 @@ import { setupTest } from '../../helpers/setup';
 import { resetPassword } from '../../actions/auth/reset-password';
 
 
-const NEW_USER_PASSWORD = '123123';
+// Must satisfy assertPasswordPolicy (startup/server/src/services/auth/passwordPolicy.js):
+// 8+ chars, one uppercase letter, one number.
+const NEW_USER_PASSWORD = 'Reset@123';
 
 test.describe('Auth - Password Reset', () => {
   test('reset the new user password via first-login flow', async ({ page }) => {

@@ -284,61 +284,50 @@ async function handleApprovalModal(
     }
   }
   
-  // Step 5.1: Click on "Select a role" dropdown and select "sadmin" (second to last option)
+  // Step 5.1: Open the role picker and select "sadmin".
+  // Not a native <select> — RoleSelector renders MasterSelector's
+  // SearchableDropdown (startup/client/src/components/base_components/fields/
+  // SearchableDropdown.jsx): a combobox <input> (role="combobox") that opens a
+  // menu of role="option" rows on click. The trigger lives inside the open
+  // dialog (a MUI Dialog, role="dialog"), so it's scoped there to rule out an
+  // unrelated combobox (e.g. a per-row role picker) sitting behind the modal —
+  // but the menu itself is portalled straight onto <body> (DropdownMenu.jsx),
+  // landing as a sibling of the dialog rather than inside it, so its options
+  // have to be queried at the page level instead.
   try {
-    // Find the select dropdown for role
-    const roleSelect = page.locator('select').filter({ hasText: /Select a role/i }).or(page.locator('select')).first();
-    
-    // Wait for select to be visible
-    await roleSelect.waitFor({ state: 'visible', timeout: 5000 });
-    
-    // Click on the select dropdown to open it
-    await roleSelect.click();
+    const dialog = page.locator('[role="dialog"]').filter({ hasText: /Approve User/i }).first();
+    const roleCombobox = dialog.getByRole('combobox').first();
+
+    // Wait for the combobox to be visible
+    await roleCombobox.waitFor({ state: 'visible', timeout: 5000 });
+
+    // Open the menu and filter it down to "sadmin"
+    await roleCombobox.click();
+    await roleCombobox.fill('sadmin');
     await page.waitForTimeout(500);
-    
-    // Get all options in the select dropdown
-    const options = await roleSelect.locator('option').all();
-    
-    if (options.length === 0) {
-      throw new Error('No options found in role dropdown');
-    }
-    
-    // Find "sadmin" option by text first, otherwise select second to last option
-    let sadminOptionIndex = -1;
-    let sadminFound = false;
-    
-    for (let i = 0; i < options.length; i++) {
-      const optionText = await options[i].textContent();
-      if (optionText && optionText.toLowerCase().includes('sadmin')) {
-        sadminOptionIndex = i;
-        sadminFound = true;
-        break;
+
+    const options = page.getByRole('option');
+    const sadminOption = options.filter({ hasText: /sadmin/i }).first();
+
+    if (await sadminOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await sadminOption.click();
+    } else {
+      // "sadmin" isn't in the list — clear the filter and fall back to the
+      // second-to-last option, mirroring the previous native-<select> fallback.
+      await roleCombobox.fill('');
+      await page.waitForTimeout(500);
+      const allOptions = await options.all();
+
+      if (allOptions.length === 0) {
+        throw new Error('No options found in role dropdown');
       }
+
+      const fallbackIndex = allOptions.length >= 2 ? allOptions.length - 2 : allOptions.length - 1;
+      await allOptions[fallbackIndex].click();
     }
-    
-    // If sadmin not found by text, select second to last option (skip first option which is "-- Select a role --")
-    if (!sadminFound) {
-      if (options.length >= 2) {
-        // Second to last option (options.length - 2)
-        sadminOptionIndex = options.length - 2;
-      } else {
-        throw new Error('Not enough options in role dropdown to select second to last');
-      }
-    }
-    
-    // Get the value of the selected option
-    const selectedOption = options[sadminOptionIndex];
-    const optionValue = await selectedOption.getAttribute('value');
-    
-    if (!optionValue) {
-      throw new Error('Selected option does not have a value');
-    }
-    
-    // Select the option by value
-    await roleSelect.selectOption({ value: optionValue });
     await page.waitForTimeout(500);
-    
-    logger.logStep('Select "sadmin" from role dropdown (second to last option)', 'completed');
+
+    logger.logStep('Select "sadmin" from role dropdown', 'completed');
   } catch (error: any) {
     const errorDetails = `Error: ${error.message}`;
     logger.logStep('Select "sadmin" from role dropdown', 'error', errorDetails);

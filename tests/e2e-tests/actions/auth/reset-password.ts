@@ -26,7 +26,9 @@ export async function resetPassword(
     logger: TestLogger,
     username: string,
     oldPassword: string,
-    newPassword: string = '123123'
+    // Must satisfy assertPasswordPolicy (startup/server/src/services/auth/passwordPolicy.js):
+    // 8+ chars, one uppercase letter, one number.
+    newPassword: string = 'Reset@123'
 ): Promise<void> {
     if (!username) {
         throw new Error('resetPassword requires a username');
