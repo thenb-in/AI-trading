@@ -171,9 +171,14 @@ jobs:
           # 4. Install runtime deps for the bytecoded server.
           # bytenode stays in devDependencies (it's a build tool) but the
           # bytecode loader stubs `require('bytenode')` at runtime, so we
-          # install it ad-hoc with --no-save in both server trees. Module
-          # resolution from startup/server/*.js stubs and app/server/*.js
-          # stubs walks up from each, so each needs its own copy.
+          # install it ad-hoc with --no-save in all three bytecoded trees.
+          # Module resolution from each package's own *.jsc stubs walks up
+          # from that package's own directory, so each needs its own copy —
+          # nucleus included: it ships its own package.json (winston,
+          # winston-daily-rotate-file for nucleus/logger.js) and is loaded
+          # at runtime via the @nucleus alias, so it needs a real
+          # `npm install` here too, same as startup/server and app/server.
+          (cd nucleus        && npm install --omit=dev 2>&1 | tail -5 && npm install --no-save bytenode 2>&1 | tail -3)
           (cd startup/server && npm install --omit=dev 2>&1 | tail -5 && npm install --no-save bytenode 2>&1 | tail -3)
           (cd app/server     && npm install --omit=dev 2>&1 | tail -5 && npm install --no-save bytenode 2>&1 | tail -3)
 
