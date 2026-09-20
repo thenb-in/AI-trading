@@ -132,15 +132,32 @@ jobs:
             "$DEPLOY_CONTAINER" bash <<'INNER_EOF'
           set -euo pipefail
 
-          # Runtime deps: nginx + node 22 + curl/jq/git/sudo/unzip.
-          # NodeSource for node 22 — the apt nodejs is older.
+          # Runtime deps: nginx + curl/jq/git/sudo/unzip.
           export DEBIAN_FRONTEND=noninteractive
           apt-get update -qq
           apt-get install -y -qq curl ca-certificates gnupg unzip git sudo nginx
-          curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null
-          apt-get install -y -qq nodejs
 
           cd /install
+
+          # Node itself: install the EXACT version this bundle's bytecode was
+          # built with (VERSION's node_version), via nvm — matching
+          # deploy/README.md's documented prerequisite step. bytenode's .jsc
+          # files are locked to the exact V8 build, so NodeSource's "latest
+          # 22.x" can silently drift to an incompatible patch (this is what
+          # broke here first: server_build pinned 22.22.2, NodeSource's
+          # setup_22.x installed 22.23.2, and the service crash-looped with
+          # "Invalid or incompatible cached data (cachedDataRejected)").
+          # 1build_deploy_files.sh below bakes `which npm`'s path into the
+          # systemd unit, so nvm's active version at that point is what the
+          # deployed service actually runs.
+          NODE_VERSION=$(grep '^node_version=' VERSION | cut -d= -f2)
+          export NVM_DIR="$HOME/.nvm"
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash >/dev/null
+          # shellcheck disable=SC1091
+          . "$NVM_DIR/nvm.sh"
+          nvm install "$NODE_VERSION"
+          nvm alias default "$NODE_VERSION"
+          nvm use "$NODE_VERSION"
 
           # 1. Generate templated nginx + systemd unit files.
           bash deploy/1build_deploy_files.sh
