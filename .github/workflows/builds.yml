@@ -17,11 +17,9 @@ on:
     types: [published]
 
   # Input-driven build: pick the runner, what to build and the target.
-  # push/PR/release build client + server, on self-hosted linux; a manual
-  # dispatch defaults to the client only, for a quick check. See the
-  # DEFAULT_PLATFORM / DEFAULT_BUILD controls and setup job's env:
-  # below — that's the one place these inputs (or their absence) turn
-  # into decisions.
+  # push/PR/release build client + server, on self-hosted linux (see the
+  # PLATFORM / SERVER_BUILD env: below); a manual dispatch defaults to the
+  # client only, for a quick check.
   workflow_dispatch:
     inputs:
       runner:
@@ -62,12 +60,19 @@ env:
   # deploy time — nothing downstream hardcodes it.
   NODE_VERSION: "22.22.2"
 
-  # ── Controlling defaults — the only two lines to touch to change what an
-  # ordinary push/PR/release build does. setup's own env: below turns these
-  # (plus the workflow_dispatch inputs, when present) into the actual
-  # PLATFORM / SERVER_BUILD decision; nothing else should hardcode either.
-  DEFAULT_PLATFORM: linux_x64
-  DEFAULT_BUILD: 'client + server'   # push/PR/release also cut the server bundle
+  # The one place the build target is declared. Non-dispatch triggers build
+  # linux. The `env` context is not available in `runs-on` or in a called
+  # workflow's `with:` (or in another env: entry — env can never reference
+  # env), so setup republishes this (and the matching runners) as job
+  # outputs and every other job reads it from there.
+  PLATFORM: ${{ inputs.platform || 'linux_x64' }}
+
+  # The one place the server build is decided. push/PR/release always cut
+  # the server bundle too — they already run on self-hosted (see setup's
+  # runs-on below), so the extra build + bytenode compile + linux_built_tests
+  # run costs runner time, not a github-hosted bill. A manual dispatch keeps
+  # its own explicit choice, defaulting to 'client' only for a quick check.
+  SERVER_BUILD: ${{ github.event_name != 'workflow_dispatch' || inputs.build == 'client + server' }}
 
 jobs:
   setup:
@@ -82,15 +87,9 @@ jobs:
       run:
         shell: bash
 
-    # The one place PLATFORM / SERVER_BUILD are decided, reading the
-    # DEFAULT_PLATFORM / DEFAULT_BUILD controls above plus whatever a
-    # workflow_dispatch explicitly chose. The `env` context is not available
-    # in `jobs.<id>.with` or `runs-on`, so these are republished as job
-    # outputs below for the jobs that need them.
-    env:
-      PLATFORM: ${{ inputs.platform || env.DEFAULT_PLATFORM }}
-      SERVER_BUILD: ${{ (inputs.build || env.DEFAULT_BUILD) == 'client + server' }}
-
+    # The `env` context is not available in `jobs.<id>.with`, so the Node pin
+    # is republished here for the jobs below to consume via `needs`. NODE_VERSION
+    # above stays the single declaration.
     outputs:
       node_version: ${{ steps.pin.outputs.node_version }}
       platform: ${{ steps.pin.outputs.platform }}
