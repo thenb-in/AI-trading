@@ -9,14 +9,19 @@
 //
 // Caveats:
 //   - GET-only. POST/PUT routes are not exposed via the socket transport.
-//   - Per-route middleware (e.g. requirePermission) is NOT executed on the
-//     socket path. Authorization is governed by the socket auth middleware
-//     and trust of the originating app server. Don't expose a report via
-//     this transport if you rely on Express middleware for authz.
+//   - The whole route stack runs, so per-route middleware such as
+//     requirePermission gates the socket path exactly as it gates REST.
 
 const { invokeExpressHandler } = require('./expressShim');
 const genericReportRoutes = require('../../../routes/reportRoutes');
 
+
+// Runs a route's handlers in order, each one's next() starting the following one,
+// the way Express walks a route stack.
+const chainHandlers = (handles) => (req, res, done) => {
+  const step = (index, err) => (err || index === handles.length ? done(err) : handles[index](req, res, (next) => step(index + 1, next)));
+  return step(0);
+};
 
 function buildRegistryFromRouter(router, prefix = '') {
   const registry = {};
@@ -25,13 +30,12 @@ function buildRegistryFromRouter(router, prefix = '') {
       continue;
     }
     const slug = prefix + String(layer.route.path).replace(/^\//, '');
-    const stack = layer.route.stack || [];
-    const last = stack[stack.length - 1];
-    const handler = last?.handle;
-    if (typeof handler !== 'function') {
-      throw new Error(`registry: route "${slug}" resolved a non-function handler (type=${typeof handler})`);
+    const handles = (layer.route.stack || []).map((routeLayer) => routeLayer.handle);
+    const notFunction = handles.find((handle) => typeof handle !== 'function');
+    if (notFunction !== undefined || handles.length === 0) {
+      throw new Error(`registry: route "${slug}" has a non-function handler (type=${typeof notFunction})`);
     }
-    registry[slug] = handler;
+    registry[slug] = chainHandlers(handles);
   }
   return registry;
 }
