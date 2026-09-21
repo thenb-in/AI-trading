@@ -21,14 +21,15 @@ import { useDataGridReport } from './useDataGridReport';
  *     The child reads state via `useBaseReportState()` and renders whatever
  *     grid / layout / sibling overlays it needs.
  *
- * State / lifecycle delegated to `useDataGridReport`; the caller still owns
- * the filtersConfig (so different filter sets per report stay caller-driven).
+ * State / lifecycle delegated to `useDataGridReport`. Pass the filter
+ * definition as `filters` and the hook builds the config (dynamic options
+ * included).
  */
 const BaseReport = ({
   report,
   locationState,
   documentName,
-  filtersConfig,
+  filters,
   applyDefaultFilters = false,
   frozenColumns = [],
   initialSortFallbackColumns,
@@ -48,9 +49,11 @@ const BaseReport = ({
     onFiltersApply,
     dataGridRef,
     isLoadingData,
+    filtersConfig,
   } = useDataGridReport({
     report,
     locationState,
+    filters,
     applyDefaultFilters,
   });
 
@@ -111,7 +114,8 @@ BaseReport.propTypes = {
   report: PropTypes.object.isRequired,
   locationState: PropTypes.object,
   documentName: PropTypes.string,
-  filtersConfig: PropTypes.array,
+  /** Filter definition; BaseReport builds the filtersConfig from it. */
+  filters: PropTypes.array,
   applyDefaultFilters: PropTypes.bool,
   frozenColumns: PropTypes.arrayOf(PropTypes.string),
   initialSortFallbackColumns: PropTypes.arrayOf(PropTypes.string),
