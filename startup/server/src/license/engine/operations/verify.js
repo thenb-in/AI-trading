@@ -20,14 +20,11 @@ const { runRejectionChecks } = require('../core/licenseHelper');
  *
  * Consequence for local dev: with SECURE_COOKIE off the gate is live, so the
  * server boots LOCKED (`no_pinned_keys`) and every non-recovery endpoint returns
- * 503 until you supply LICENSE_WALLET_PUBLIC_KEYS (or a licence), set
- * SECURE_COOKIE=true, or set LICENSE_ENFORCEMENT_DISABLED=true — the escape
- * hatch for setups that need SECURE_COOKIE=false for unrelated cookie
- * reasons (e.g. serving plain HTTP on a non-loopback host) without wanting
- * license enforcement to follow.
+ * 503 until you supply LICENSE_WALLET_PUBLIC_KEYS (or a licence), or set
+ * SECURE_COOKIE=true.
  */
 async function loadAndVerify() {
-  if (!env.isOnPremDeployment || env.licenseEnforcementDisabled) {
+  if (!env.isOnPremDeployment) {
     return { ok: true, bypass: true, reason: VERIFY_REASONS.ENFORCEMENT_DISABLED, verifiedAt: nowMs() };
   }
 

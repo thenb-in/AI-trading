@@ -203,14 +203,6 @@ jobs:
             echo ""
             echo "# CI overrides"
             echo "SECURE_COOKIE=false"
-            # SECURE_COOKIE=false above is needed so the auth cookie survives
-            # over plain HTTP on this non-loopback host, but the license gate
-            # reads that same flag as "self-hosted install, enforce the
-            # license" (see src/license/engine/operations/verify.js) — and no
-            # license is installed in this container. Without this, every
-            # route past login 503s and every test after the first login
-            # fails as if the session never happened.
-            echo "LICENSE_ENFORCEMENT_DISABLED=true"
             echo "DATABASE_URL=postgresql://postgres:postgres@${PG_HOST}:5432/${DB_NAME}"
           } >> app/server/.env
           # Belt and braces: print the effective SECURE_COOKIE so the log
