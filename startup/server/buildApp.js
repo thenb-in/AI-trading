@@ -30,6 +30,7 @@ const notificationRoutes = require('./src/notifications/notificationRoutes');
 const recordCommentRoutes = require('./src/routes/recordCommentRoutes');
 const reportRunRoutes = require('./src/routes/reportRunRoutes');
 const notificationRuleRoutes = require('./src/notifications/rules/notificationRuleRoutes');
+const namingSeriesRoutes = require('./src/routes/namingSeriesRoutes');
 const geographyRoutes = require('./src/routes/geographyRoutes');
 const genericReportRoutes = require('./src/routes/reportRoutes');
 const userRoutes = require('./src/routes/userRoutes');
@@ -124,6 +125,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
   app.use(`${API_PREFIX}/announcements`, announcementRoutes);
+  app.use(`${API_PREFIX}/naming-series`, namingSeriesRoutes);
   app.use(`${API_PREFIX}/geography`, geographyRoutes);
   // Framework-shipped reports share the app's /reports namespace, so one the
   // framework provides is fetched exactly like one the app added. The app mounts

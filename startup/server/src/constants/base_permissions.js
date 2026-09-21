@@ -194,6 +194,8 @@ const MASTER_PERMISSION_CONSTANTS = {
 
   NOTIFICATION_RULE: create_master_permission(MASTERS.NOTIFICATION_RULE),
 
+  NAMING_SERIES: create_master_permission(MASTERS.NAMING_SERIES),
+
   // The banner everyone reads is the master's; being SHOWN one is not, so
   // /announcements/active asks for none of these.
   ANNOUNCEMENT: create_master_permission(MASTERS.ANNOUNCEMENT),

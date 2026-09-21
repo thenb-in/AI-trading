@@ -12,6 +12,7 @@ import { ActivityMaster } from "../components/masters/activity_master/ActivityMa
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
 import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
 import { NotificationRuleMaster } from "../components/masters/notification_rule_master/NotificationRuleMaster";
+import { NamingSeriesMaster } from "../components/masters/naming_series_master/NamingSeriesMaster";
 import { ReportRunMaster } from "../components/masters/report_run_master/ReportRunMaster";
 import { GeographyMaster } from "../components/masters/geography_master/GeographyMaster";
 import { AnnouncementMaster } from "../components/masters/announcement_master/AnnouncementMaster";
@@ -68,6 +69,7 @@ const AdminDashboard = () => {
         <Route path="master/nbnext-drive" element={<NBnextDriveMaster />} />
         <Route path="master/cache" element={<CacheMaster />} />
         <Route path="master/notification-rule" element={<NotificationRuleMaster />} />
+        <Route path="master/naming-series" element={<NamingSeriesMaster />} />
         <Route path="master/report-run" element={<ReportRunMaster />} />
         <Route path="master/geography" element={<GeographyMaster />} />
         <Route path="master/announcement" element={<AnnouncementMaster />} />

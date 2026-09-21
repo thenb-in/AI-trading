@@ -4,6 +4,7 @@ import {
   Category as CategoryIcon,
   History as HistoryIcon,
   NotificationsActive as NotificationsActiveIcon,
+  FormatListNumbered as FormatListNumberedIcon,
   Memory as MemoryIcon,
   Assessment as AssessmentIcon,
   Campaign as CampaignIcon,
@@ -17,6 +18,7 @@ const GENERIC_MASTER_CATEGORIES = {
   FILE_MANAGEMENT: "File Management",
   REPORTING: "Reporting",
   SYSTEM_LOGS: "System Logs",
+  CONFIGURATION: "Configuration",
 };
 
 
@@ -26,6 +28,7 @@ const genericMasterCategoryOrder = [
   { name: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT, order: 7, icon: CloudUploadIcon },
   { name: GENERIC_MASTER_CATEGORIES.REPORTING, order: 8, icon: AssessmentIcon },
   { name: GENERIC_MASTER_CATEGORIES.SYSTEM_LOGS, order: 9, icon: HistoryIcon },
+  { name: GENERIC_MASTER_CATEGORIES.CONFIGURATION, order: 10, icon: FormatListNumberedIcon },
 ];
 
 const defaultMasterCategoryIcon = CategoryIcon;
@@ -138,6 +141,20 @@ const getGenericMasterModules = (handleOpenMaster) => [
     keywords: "file storage upload download drive documents files management",
     category: GENERIC_MASTER_CATEGORIES.FILE_MANAGEMENT,
     permissionName: "read_personal_nbnext_drive",
+  },
+  {
+    id: "naming-series",
+    title: "Naming Series",
+    description:
+      "Decide how new records are coded when nobody types a code — e.g. EMP-0001, EMP-0002 for employees.",
+    icon: FormatListNumberedIcon,
+    color: "info",
+    onClick: () => handleOpenMaster("naming-series"),
+    buttonText: "Manage Series",
+    tags: ["Naming Series", "Code", "Auto Number", "Sequence"],
+    keywords: "naming series code auto number sequence prefix counter employee code generate",
+    category: GENERIC_MASTER_CATEGORIES.CONFIGURATION,
+    permissionName: "read_naming_series",
   },
 ];
 
