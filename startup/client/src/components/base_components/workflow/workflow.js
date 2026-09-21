@@ -137,8 +137,14 @@ const extendWorkflow = (base, { initial = base.initial, statuses = {}, actions =
 // the record names its own permission for that verb.
 const permissionFor = (verb, masterName, permissions) => permissions[verb] ?? `${verb}_${masterKeyOf(masterName)}`;
 
-// The status a record is in: its own, where the workflow keeps one, else the starting one.
-const statusOf = (workflow, status) => (workflow.statusKey && status ? String(status).trim().toLowerCase() : workflow.initial);
+// The status a record is in: its own, where the workflow keeps one, else the
+// starting one. A status is matched exactly as the record stores it, so a
+// workflow's keys are the app's own values ('APPR'), and a stored 0 is a status
+// like any other rather than a missing one.
+const statusOf = (workflow, status) => {
+  const stored = status === null || status === undefined || status === '' ? null : String(status).trim();
+  return (workflow.statusKey && stored) || workflow.initial;
+};
 
 const actionsOf = (workflow) => Object.entries(workflow.actions).map(([key, action]) => ({ ...action, key }));
 

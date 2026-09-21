@@ -6,23 +6,22 @@ import { getApiErrorMessage } from '@utils/apiErrorMessage';
 import { useBulkActions } from './useBulkActions';
 import { DecisionRemarksModal } from './DecisionRemarksModal';
 
-// A record waiting for somebody: 0 pending, 1 approved, 2 rejected — the codes every
-// approving master in this app stores.
-const isPendingByStatus = (row) => Number(row?.status) === 0;
-
-const DECISIONS = {
-  approve: { status: 1, label: 'Approve', past: 'approved' },
-  reject: { status: 2, label: 'Reject', past: 'rejected' },
+const DECIDED = {
+  approve: { label: 'Approve', past: 'approved' },
+  reject: { label: 'Reject', past: 'rejected' },
 };
 
 /**
  * Approve / reject for a master grid: the two row actions, the bulk toolbar and the
  * grid's selection, from one `approval` declaration:
  *
- *   updateStatus(id, status, { remarks, row }) — status 1 approve, 2 reject
- *   permissionKeys { approve, reject }
+ *   updateStatus(id, status, { remarks, row }) — the status is the master's own,
+ *                   taken from `decisions` below, so the framework knows none of
+ *                   an app's status values
+ *   decisions       { approve, reject } — the status each decision moves a record to
+ *   permissionKeys  { approve, reject }
  *   noun            what a record is called in questions and toasts ('gate pass')
- *   isPending(row)  which rows can still be decided (default: status 0)
+ *   isPending(row)  which rows can still be decided
  *   remarks         true: every decision, single or bulk, asks for a required
  *                   comment (DecisionRemarksModal) instead of a yes/no confirm,
  *                   and hands it to updateStatus as `remarks`
@@ -40,16 +39,16 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   const [isDeciding, setIsDeciding] = useState(false);
 
   const noun = approval?.noun || 'record';
-  const isPending = approval?.isPending || isPendingByStatus;
+  const isPending = approval?.isPending;
   const canApprove = Boolean(approval) && hasPermission(approval.permissionKeys?.approve, userData);
   const canReject = Boolean(approval) && hasPermission(approval.permissionKeys?.reject, userData);
 
   const decide = useCallback(
-    (verb, row, remarks) => approval.updateStatus(row.id, DECISIONS[verb].status, { remarks, row }),
+    (verb, row, remarks) => approval.updateStatus(row.id, approval.decisions[verb], { remarks, row }),
     [approval]
   );
 
-  const modes = useMemo(() => Object.fromEntries(Object.entries(DECISIONS).map(([verb, { past }]) => [verb, {
+  const modes = useMemo(() => Object.fromEntries(Object.entries(DECIDED).map(([verb, { past }]) => [verb, {
     run: async (row, ctx) => {
       await decide(verb, row, ctx?.remarks);
       return true;
@@ -73,7 +72,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   const decideOne = useCallback(async (verb, row, remarks) => {
     try {
       await decide(verb, row, remarks);
-      toast.success(`${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${row.id} ${DECISIONS[verb].past}`);
+      toast.success(`${noun.charAt(0).toUpperCase()}${noun.slice(1)} ${row.id} ${DECIDED[verb].past}`);
       await reload();
       return true;
     } catch (error) {
@@ -87,7 +86,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       setAsking({ verb, row });
       return;
     }
-    if (window.confirm(`${DECISIONS[verb].label} ${noun} ${id}?`)) decideOne(verb, row);
+    if (window.confirm(`${DECIDED[verb].label} ${noun} ${id}?`)) decideOne(verb, row);
   }, [approval, noun, decideOne]);
 
   const runBulk = useCallback((verb) => {
@@ -102,7 +101,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       setAsking({ verb, count: eligible.length });
       return;
     }
-    if (window.confirm(`${DECISIONS[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
+    if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
   }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
 
   const confirmRemarks = useCallback(async (remarks) => {
