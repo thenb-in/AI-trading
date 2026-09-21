@@ -54,6 +54,7 @@ const FormModal = ({
   hooks = {},
   showWhen = {},
   onAmend,
+  onChanged = () => {},
   onClose,
   children,
   ...modalProps
@@ -147,6 +148,7 @@ const FormModal = ({
           hooks={hooks}
           showWhen={showWhen}
           onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+          onChanged={onChanged}
           run={save}
           isSaving={isSaving}
           hasForm={hasForm}
@@ -201,6 +203,8 @@ FormModal.propTypes = {
   showWhen: PropTypes.objectOf(PropTypes.func),
   /** Opens the copy an amend makes; without it (and without an amend hook) Amend is not offered. */
   onAmend: PropTypes.func,
+  /** Told `{ record, to, saved }` after a hooked workflow action changes the record's status. */
+  onChanged: PropTypes.func,
   onClose: PropTypes.func.isRequired,
   /** The fields; a function of the record where they start from it. */
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),

@@ -1,0 +1,115 @@
+import PropTypes from 'prop-types';
+
+// BaseMaster's props, kept apart so the component stays readable.
+
+// A permission name, or { all: [...] } when every listed permission is needed.
+const permissionKeyType = PropTypes.oneOfType([
+  PropTypes.string,
+  PropTypes.shape({ all: PropTypes.arrayOf(PropTypes.string) }),
+]);
+
+const baseMasterPropTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string,
+  // Add-button and modal props apply only when a FormComponent is supplied.
+  // A read-only master (no form) renders neither, so none of them are required.
+  addButtonText: PropTypes.string,
+  searchPlaceholder: PropTypes.string,
+  searchKeys: PropTypes.arrayOf(PropTypes.string),
+  /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
+  modalAddTitle: PropTypes.string,
+  modalEditTitle: PropTypes.string,
+  modalMaxWidth: PropTypes.string,
+  baseMasterContainerWidth: PropTypes.string,
+  auditHead: PropTypes.string,
+  permissionKeys: PropTypes.shape({
+    read: permissionKeyType,
+    create: permissionKeyType,
+    update: permissionKeyType,
+    delete: permissionKeyType,
+  }).isRequired,
+  workflow: PropTypes.object,
+  masterName: PropTypes.string.isRequired,
+  workflowHooks: PropTypes.objectOf(PropTypes.func),
+  workflowShowWhen: PropTypes.objectOf(PropTypes.func),
+  loadRows: PropTypes.func.isRequired,
+  deleteRow: PropTypes.func,
+  canDeleteRow: PropTypes.func,
+  deleteConfirmText: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+  rowsKey: PropTypes.string,
+  extractResponse: PropTypes.func,
+  // (row, { openEdit }) => void — decides what a row click does; `openEdit(row)`
+  // opens the row the default way (e.g. only while it is still pending).
+  onRowClickOverride: PropTypes.func,
+  unauthorizedToast: PropTypes.string,
+  unauthorizedDeleteToast: PropTypes.string,
+  fetchSuccessToast: PropTypes.string,
+  fetchFailureToast: PropTypes.string,
+  showExport: PropTypes.bool,
+  showImport: PropTypes.bool,
+  exportFileName: PropTypes.string,
+  showGridExport: PropTypes.bool,
+  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
+  showInsightsAsHeader: PropTypes.bool,
+  showEmptyColumns: PropTypes.bool,
+  hideConstantColumns: PropTypes.bool,
+  importApi: PropTypes.func,
+  buildExportColumns: PropTypes.func,
+  // Omit for a read-only master — no Add button.
+  FormComponent: PropTypes.elementType,
+  // Receives the same props as FormComponent, plus `columns`.
+  DetailComponent: PropTypes.elementType,
+  formProps: PropTypes.func,
+  formSuccessProp: PropTypes.string,
+  createLabel: PropTypes.string,
+  updateLabel: PropTypes.string,
+  savingLabel: PropTypes.string,
+  filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
+  initialFilters: PropTypes.object,
+  mapFiltersForApi: PropTypes.func,
+  mapRows: PropTypes.func,
+  subscribeToRefresh: PropTypes.func,
+  headerContent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  headerRef: PropTypes.object,
+  showRefreshButton: PropTypes.bool,
+  backUrl: PropTypes.string,
+  showBack: PropTypes.bool,
+  onDownloadTemplate: PropTypes.func,
+  templateButtonText: PropTypes.string,
+  onExport: PropTypes.func,
+  onImport: PropTypes.func,
+  // Approve / reject row actions, bulk bar and selection — see useMasterApproval.
+  approval: PropTypes.shape({
+    /** (id, status, { remarks, row }) => Promise; status 1 approve, 2 reject. */
+    updateStatus: PropTypes.func.isRequired,
+    permissionKeys: PropTypes.shape({
+      approve: PropTypes.string,
+      reject: PropTypes.string,
+    }).isRequired,
+    noun: PropTypes.string,
+    isPending: PropTypes.func,
+    /** Every decision asks for a required comment, handed to updateStatus. */
+    remarks: PropTypes.bool,
+    /** Component given { row }, shown above the comment for a single decision. */
+    RemarksContext: PropTypes.elementType,
+    /** A bulk run can be stopped part-way. */
+    cancellable: PropTypes.bool,
+  }),
+  extraActions: PropTypes.func,
+  getRowClassName: PropTypes.func,
+  density: PropTypes.oneOf(['compact', 'standard', 'comfortable']),
+  documentName: PropTypes.string,
+  isAlertRow: PropTypes.func,
+  initialSortKey: PropTypes.string,
+  // Node, or a function given { refresh, rows, columns } so a bulk header action can
+  // reload the grid when it finishes.
+  extraHeaderActions: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
+  defaultGroupByField: PropTypes.string,
+  initialSortDirection: PropTypes.string,
+  infiniteScroll: PropTypes.bool,
+  pageSize: PropTypes.number,
+  showAdd: PropTypes.bool,
+};
+
+export { baseMasterPropTypes };

@@ -20,9 +20,10 @@ import { WorkflowButtons } from '../workflow/WorkflowButtons';
  *
  * An action runs the screen's hook of its key when there is one. Otherwise
  * amend opens the copy (offered only with `onAmend`), and a status change
- * validates the form and submits it with the new status. A hook that throws
- * is reported here, so hooks only do their work, toast and close. `showWhen`
- * narrows an action to the records it suits.
+ * validates the form and submits it with the new status. A hooked status
+ * change is toasted, reported through `onChanged` and closes the form, just as
+ * the row action does, and a hook that throws is reported here, so hooks only
+ * do their work. `showWhen` narrows an action to the records it suits.
  *
  * While the form has a `blockedReason` (useFormModal's validate), Save is
  * disabled and the reason is written out beside it, and a status change that
@@ -33,7 +34,7 @@ import { WorkflowButtons } from '../workflow/WorkflowButtons';
  * far left of the modal's footer), away from the other actions; Close takes its
  * place on the right and only closes the form.
  */
-const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, run, isSaving, hasForm, blockedReason, blockedField, onShowBlockedField, onClose, leftSlot, actionsRef, submitLabel, savingLabel }) => {
+const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, onChanged, run, isSaving, hasForm, blockedReason, blockedField, onShowBlockedField, onClose, leftSlot, actionsRef, submitLabel, savingLabel }) => {
   const submitRef = useRef(null);
   const canSubmit = hasForm && workflow.isEditable;
 
@@ -45,11 +46,16 @@ const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, 
     }
     return form.validate() && form.submit({ to: action.to, done: action.done });
   };
+  const runHook = async (action) => {
+    const saved = await hooks[action.key]({ record, formData: form.formData(), to: action.to });
+    if (!action.to) return;
+    toast.success(`${workflow.label} ${action.done}`);
+    onChanged({ record, to: action.to, saved });
+    onClose();
+  };
   const runAction = (action) => run(async () => {
     try {
-      await (hooks[action.key]
-        ? hooks[action.key]({ record, formData: form.formData(), to: action.to })
-        : runDefault(action));
+      await (hooks[action.key] ? runHook(action) : runDefault(action));
     } catch (error) {
       toast.error(getApiErrorMessage(error, `Could not ${action.label.toLowerCase()} ${workflow.label}`));
     }
@@ -132,6 +138,8 @@ FormFooter.propTypes = {
   /** { [action key]: (record) => boolean } */
   showWhen: PropTypes.objectOf(PropTypes.func).isRequired,
   onAmend: PropTypes.func,
+  /** Told `{ record, to, saved }` after a hooked status change, so the list can reload. */
+  onChanged: PropTypes.func.isRequired,
   run: PropTypes.func.isRequired,
   isSaving: PropTypes.bool.isRequired,
   hasForm: PropTypes.bool.isRequired,
