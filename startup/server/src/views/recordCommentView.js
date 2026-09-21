@@ -27,8 +27,11 @@ async function getComments(req, res) {
     return missingTarget(res, target);
   }
   try {
-    const comments = await recordCommentController.listComments(req.user.company_id, target.objectName, target.objectId);
-    return sendSuccess(res, { data: comments });
+    const result = await recordCommentController.listComments(req.user.company_id, target.objectName, target.objectId, req.user.id);
+    if (!result.ok) {
+      return sendError(res, { statusCode: HTTP_STATUS_FORBIDDEN, message: result.reason });
+    }
+    return sendSuccess(res, { data: result.comments });
   } catch (error) {
     logger.error(`Get comments on ${target.objectName} ${target.objectId} failed: ${error.message}`, error);
     return sendError(res, { error });
@@ -49,7 +52,10 @@ async function createComment(req, res) {
       createdBy: req.user.id
     });
     if (!result.ok) {
-      return sendError(res, { statusCode: HTTP_STATUS_BAD_REQUEST, message: result.reason });
+      return sendError(res, {
+        statusCode: result.forbidden ? HTTP_STATUS_FORBIDDEN : HTTP_STATUS_BAD_REQUEST,
+        message: result.reason
+      });
     }
     return sendSuccess(res, { statusCode: HTTP_STATUS_CREATED, data: result.comment });
   } catch (error) {

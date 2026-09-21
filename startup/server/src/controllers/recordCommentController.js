@@ -1,21 +1,40 @@
 const logger = require('../../logger');
 const recordCommentService = require('../services/recordCommentService');
 const { MAX_COMMENT_LENGTH } = require('../constants/recordComments');
+const allowedPermissions = require('../utils/allowedPermissions');
+const { masterKeyOf } = require('../utils/masterKey');
+
+/**
+ * A comment is reached through its record, so it needs the same read
+ * permission as opening that record would — not just being signed in.
+ * `objectName` is whatever master the client passed, so the permission name
+ * is built the same way `assertWorkflowMove` builds one for a dynamic master.
+ */
+const canReadObject = async (userId, objectName) => allowedPermissions(userId, [`read_${masterKeyOf(objectName)}`]);
 
 /**
  * What the panel shows: every comment on this record, with its author's name
  * flattened onto the row so the client reads one shape rather than a nested
  * include.
  */
-const listComments = async (companyId, objectName, objectId) => {
+const listComments = async (companyId, objectName, objectId, userId) => {
+  if (!(await canReadObject(userId, objectName))) {
+    return { ok: false, forbidden: true, reason: `You need the read_${masterKeyOf(objectName)} permission to see comments on ${objectName} ${objectId}` };
+  }
   const comments = await recordCommentService.getComments(companyId, objectName, objectId);
-  return comments.map((comment) => {
-    const { createdByUser, ...rest } = comment.toJSON();
-    return { ...rest, authorName: createdByUser?.name || createdByUser?.username || null };
-  });
+  return {
+    ok: true,
+    comments: comments.map((comment) => {
+      const { createdByUser, ...rest } = comment.toJSON();
+      return { ...rest, authorName: createdByUser?.name || createdByUser?.username || null };
+    })
+  };
 };
 
 const addComment = async ({ companyId, objectName, objectId, body, createdBy }) => {
+  if (!(await canReadObject(createdBy, objectName))) {
+    return { ok: false, forbidden: true, reason: `You need the read_${masterKeyOf(objectName)} permission to comment on ${objectName} ${objectId}` };
+  }
   const text = String(body || '').trim();
   if (!text) {
     return { ok: false, reason: `A comment on ${objectName} ${objectId} cannot be empty` };
