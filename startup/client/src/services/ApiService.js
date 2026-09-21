@@ -1,6 +1,6 @@
 import { api } from './axiosConfig';
 import { cacheExpireNamespace, cacheRead, cacheReady, cacheSet } from './cacheManager';
-import { CACHE_STORE_SESSION, CACHE_TTL_DEFAULT_MS } from '@startup/constants/cache';
+import { CACHE_STORE_MEMORY, CACHE_TTL_DEFAULT_MS } from '@startup/constants/cache';
 
 // Write failures that mean "your copy is out of date" rather than "your
 // request was bad": the record is already gone, or another user changed it
@@ -36,10 +36,10 @@ const ApiService = {
    *   cache: 'users'                  cache this GET under the `users`
    *                                   namespace (optionally
    *                                   { namespace, ttlMs, store }: a shorter
-   *                                   life, or where it is kept — 'session'
-   *                                   by default, 'local' or 'db' to outlive
-   *                                   the tab, 'db' for large lists, 'memory'
-   *                                   to not outlive the page)
+   *                                   life, or where it is kept — 'memory' by
+   *                                   default, 'session' to survive a reload,
+   *                                   'local' to outlive the tab, 'db' for
+   *                                   large lists)
    *   invalidates: ['users', 'roles'] on success, mark those namespaces
    *                                   expired
    *   force: true                     fetch even when the cached copy is fresh
@@ -78,10 +78,11 @@ const ApiService = {
    * and only with nothing to fall back on does the error reach the caller.
    */
   async cachedGet(url, cache, force, axiosConfig) {
-    // Reference lists are the largest payloads the client routinely fetches, so
-    // by default a cached read goes to sessionStorage: surviving a reload costs
-    // one JSON.parse instead of a round trip.
-    const { namespace, ttlMs = CACHE_TTL_DEFAULT_MS, store = CACHE_STORE_SESSION } =
+    // Memory by default, so reloading the page is how anyone gets a fresh
+    // copy — the browser's own refresh button, which is where a user reaches
+    // when a list looks stale. A list that is expensive enough to want across
+    // reloads asks for 'session' or 'db' itself.
+    const { namespace, ttlMs = CACHE_TTL_DEFAULT_MS, store = CACHE_STORE_MEMORY } =
       typeof cache === 'string' ? { namespace: cache } : cache;
     const key = `${namespace}:${String(url).split('?')[0]}${queryOf(axiosConfig.params)}`;
     await cacheReady(key);
