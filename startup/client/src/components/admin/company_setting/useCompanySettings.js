@@ -3,6 +3,7 @@ import { useDataContext } from "@context/useDataContext";
 import { ApiService } from "@services/ApiService";
 import { toast } from "react-toastify";
 import { EMPTY_COMPANY_DETAILS_FORM } from "./companySettingsConstants";
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 
 function useCompanySettings() {
@@ -53,7 +54,7 @@ function useCompanySettings() {
 
         setIsFetching(false);
       } catch (err) {
-        toast.error(err.error || "Failed to load company settings");
+        toast.error(getApiErrorMessage(err, "Failed to load company settings"));
         setIsFetching(false);
       }
     };
@@ -170,7 +171,7 @@ function useCompanySettings() {
       // 400 validation errors (err.errors[]) are already toasted by the axios
       // interceptor — don't add a second generic toast on top of them.
       if (!Array.isArray(err?.errors)) {
-        toast.error(err.error || err.message || "Failed to update settings");
+        toast.error(getApiErrorMessage(err, "Failed to update settings"));
       }
     } finally {
       setIsLoading(false);

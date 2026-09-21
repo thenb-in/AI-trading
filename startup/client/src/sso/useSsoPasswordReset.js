@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ssoApi } from './ssoApi';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 // Returns a password-reset submit handler for the OIDC interaction flow.
 function useSsoPasswordReset(uid) {
@@ -8,7 +9,7 @@ function useSsoPasswordReset(uid) {
       const response = await ssoApi.resetPassword(uid, { username, password, otp });
       return { pendingApproval: Boolean(response.data.pendingApproval) };
     } catch (err) {
-      throw new Error(err.error || 'Unable to reset password');
+      throw new Error(getApiErrorMessage(err, 'Unable to reset password'));
     }
   }, [uid]);
 }

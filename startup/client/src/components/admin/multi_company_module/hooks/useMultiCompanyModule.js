@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
 import { useDataContext } from '@context/useDataContext';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const useMultiCompanyModule = () => {
   const { userData, setUserData } = useDataContext();
@@ -53,7 +54,7 @@ const useMultiCompanyModule = () => {
       }
       await fetchCompanies();
     } catch (e) {
-      const errorMessage = e?.error || 'Failed to create company';
+      const errorMessage = getApiErrorMessage(e, 'Failed to create company');
       setCreateError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -75,7 +76,7 @@ const useMultiCompanyModule = () => {
       }
       window.location.reload();
     } catch (e) {
-      setError(e?.error || 'Failed to switch company');
+      setError(getApiErrorMessage(e, 'Failed to switch company'));
       setLoading(false);
     }
   }, [setUserData]);

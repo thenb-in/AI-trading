@@ -5,6 +5,7 @@ import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
 import { BaseModal } from '../base_components/master/master_modal/BaseModal';
 import { OtpTypeField } from '@startup/components/base_components/fields/OtpTypeField';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
   const [totpData, setTotpData] = useState(null);
@@ -25,8 +26,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
       setStep('scan');
       toast.success('TOTP secret generated successfully!');
     } catch (err) {
-      const errorData = err || {};
-      const message = errorData.error || err.error || 'Failed to generate TOTP secret.';
+      const message = getApiErrorMessage(err, 'Failed to generate TOTP secret.');
       setError(message);
       toast.error(message);
     }
@@ -52,8 +52,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
       toast.success('TOTP setup completed successfully!');
       onSuccess(); // Call success callback to close popup and continue login flow
     } catch (err) {
-      const errorData = err || {};
-      const message = errorData.error || err.error || 'Failed to verify TOTP code.';
+      const message = getApiErrorMessage(err, 'Failed to verify TOTP code.');
       setError(message);
       toast.error(message);
     } finally {

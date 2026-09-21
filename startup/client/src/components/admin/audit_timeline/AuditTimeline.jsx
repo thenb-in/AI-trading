@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { activityService } from '@services/activityService';
 import { ActivityChangesTable } from './ActivityChangesTable';
 import {formatDateTime} from '@utils/dateTimeUtils'
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const parseLog = (log) => {
   if (!log) return null;
@@ -50,7 +51,7 @@ const AuditTimeline = ({ head, objectId, pageSize = 25 }) => {
       setActivities(rows);
       setHasMore(rows.length === pageSize);
     } catch (error) {
-      toast.error(error?.error || error?.message || 'Failed to load audit history');
+      toast.error(getApiErrorMessage(error, 'Failed to load audit history'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ const AuditTimeline = ({ head, objectId, pageSize = 25 }) => {
       setActivities((prev) => [...prev, ...rows]);
       setHasMore(rows.length === pageSize);
     } catch (error) {
-      toast.error(error?.error || error?.message || 'Failed to load more audit history');
+      toast.error(getApiErrorMessage(error, 'Failed to load more audit history'));
     } finally {
       setLoadingMore(false);
     }

@@ -5,6 +5,7 @@ import { HelpSupportTicketForm } from './HelpSupportTicketForm';
 import { helpSupportDraftService } from '@utils/helpSupportDraftService';
 import { HELP_SUPPORT_INITIAL_FORM } from './helpSupportConstants';
 import { ApiService } from '@services/ApiService';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 function HelpSupportPage() {
   const [formData, setFormData] = useState(HELP_SUPPORT_INITIAL_FORM);
@@ -70,7 +71,7 @@ function HelpSupportPage() {
       const response = await ApiService.openHelpSupportTicket(payload);
       toast.success(response?.data?.message || 'Support ticket submitted successfully.');
     } catch (error) {
-      const errorMessage = error?.message || error?.error || 'Failed to submit support ticket.';
+      const errorMessage = getApiErrorMessage(error, 'Failed to submit support ticket.');
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

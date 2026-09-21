@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ssoApi } from './ssoApi';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 function useSsoLogin(uid) {
   return useCallback(async ({ username, password }) => {
@@ -11,7 +12,7 @@ function useSsoLogin(uid) {
         window.location.assign(err.redirectTo);
         return;
       }
-      const failure = new Error(err.error || 'Sign-in failed.');
+      const failure = new Error(getApiErrorMessage(err, 'Sign-in failed.'));
       failure.requiresPasswordChange = Boolean(err.requiresPasswordChange);
       throw failure;
     }

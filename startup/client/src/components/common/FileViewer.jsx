@@ -11,6 +11,7 @@ import {
   AudioViewer,
   UnsupportedViewer,
 } from './file_viewer';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 /**
  * A file shown with the viewer its type needs, under a title bar with zoom
@@ -54,7 +55,7 @@ const FileViewer = ({ fileUrl, mimeType, title = 'View File', onLoadError, onDow
           revokedUrl = loadedBlobUrl;
         }
       } catch (err) {
-        const msg = err?.error || err?.message || 'Something went wrong. File may have been deleted or is unavailable.';
+        const msg = getApiErrorMessage(err, 'Something went wrong. File may have been deleted or is unavailable.');
         setLoadError(msg);
         setBlobUrl('');
         if (onLoadError) onLoadError(msg);

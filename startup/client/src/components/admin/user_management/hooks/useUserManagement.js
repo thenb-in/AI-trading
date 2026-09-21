@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@services/ApiService";
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const INITIAL_CONFIRM_DIALOG = { show: false, userId: null, action: null, username: "", userRole: null };
 
@@ -97,7 +98,7 @@ const useUserManagement = () => {
       );
       setError("");
     } catch (err) {
-      setError(err?.error || "Failed to deactivate user");
+      setError(getApiErrorMessage(err, "Failed to deactivate user"));
     } finally {
       setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
@@ -130,7 +131,7 @@ const useUserManagement = () => {
       setUsers(users.filter((user) => user.id !== userId));
       setError("");
     } catch (err) {
-      setError(err.error || "Failed to delete user");
+      setError(getApiErrorMessage(err, "Failed to delete user"));
     } finally {
       setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
@@ -153,7 +154,7 @@ const useUserManagement = () => {
       setSelectedUsers([]);
     } catch (err) {
       console.log(err);
-      setError(err.error || "Failed to delete some users");
+      setError(getApiErrorMessage(err, "Failed to delete some users"));
     } finally {
       setBulkDeleteDialog({ show: false, selectedUsers: [] });
     }

@@ -6,6 +6,7 @@ import { TextareaTypeField } from '@startup/components/base_components/fields/Te
 import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
 import { useFormModal } from '@startup/components/base_components/master/master_modal/FormModal';
 import { activityService } from '@services/activityService';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const EMPTY_ACTIVITY = {
   head: '',
@@ -39,7 +40,7 @@ const ActivityForm = ({ onClose, onSuccess }) => {
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error(error?.error || `Failed to create activity log for ${formData.head}`);
+      toast.error(getApiErrorMessage(error, `Failed to create activity log for ${formData.head}`));
     }
   }, formData, validate);
 

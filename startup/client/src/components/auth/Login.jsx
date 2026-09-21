@@ -9,6 +9,7 @@ import { cleanFormData } from '@utils/authformvalidation';
 import { SetupTotpPopup } from './SetupTotpPopup';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { PasswordTypeField } from '@startup/components/base_components/fields/PasswordTypeField';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -48,7 +49,7 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
           }
           return;
         }
-        const message = err?.error || err?.message || 'Login failed. Please check your credentials.';
+        const message = getApiErrorMessage(err, 'Login failed. Please check your credentials.');
         setError(message);
         toast.error(message);
       } finally {
@@ -85,11 +86,10 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
       const redirectTo = location.state?.from || (user?.isSupportUser ? '/admin/multi-company-setup' : '/admin');
       navigate(redirectTo, { replace: true });
     } catch (err) {
-      const errorData = err || {};
-      const message = errorData.error || err.error || 'Login failed. Please check your credentials.';
+      const message = getApiErrorMessage(err, 'Login failed. Please check your credentials.');
       
       // If password change is required, redirect to forgot password page
-      if (errorData.requiresPasswordChange) {
+      if (err?.requiresPasswordChange) {
         toast.warning('Please change your password on first login');
         navigate('/forgot-password', {
           state: {

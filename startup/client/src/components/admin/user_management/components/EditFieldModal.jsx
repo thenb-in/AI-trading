@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import { BaseModal } from '@startup/components/base_components/master';
 import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 
 const FIELD_CONFIG = {
@@ -42,7 +43,7 @@ function EditFieldModal({ field, initialValue, onSave, onClose, label, placehold
       await onSave(isUsername ? trimmed.toLowerCase() : trimmed);
       onClose();
     } catch (err) {
-      setSaveError(err?.error || err?.message || 'Could not save. Please try again.');
+      setSaveError(getApiErrorMessage(err, 'Could not save. Please try again.'));
     } finally {
       setSaving(false);
     }

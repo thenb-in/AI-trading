@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ApiService } from '@services/ApiService';
 import { cleanFormData } from '@utils/authformvalidation';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 
 const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '', onSubmit } = {}) => {
@@ -39,7 +40,7 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '', onSubmi
         isTotpEnabled: Boolean(response.data.isTotpEnabled)
       });
     } catch (err) {
-      const message = err.error || 'Unable to look up this username';
+      const message = getApiErrorMessage(err, 'Unable to look up this username');
       setError(message);
       toast.error(message);
     } finally {
@@ -75,7 +76,7 @@ const useForgotPassword = ({ isFirstLogin = false, prefillUsername = '', onSubmi
       toast.success('Password reset successful! Please log in.');
       return true;
     } catch (err) {
-      const message = err?.error || err?.message || 'Unable to reset password';
+      const message = getApiErrorMessage(err, 'Unable to reset password');
       setError(message);
       toast.error(message);
       return false;

@@ -5,6 +5,7 @@ import { FaBuilding, FaArrowLeft, FaArrowRight, FaInfoCircle } from 'react-icons
 import PropTypes from 'prop-types';
 import { ApiService } from '@services/ApiService';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 function CompanyIdGate({
   initialCompanyId = '',
@@ -39,7 +40,7 @@ function CompanyIdGate({
       }
       navigate(getStartedPath, { state: { companyId: trimmed } });
     } catch (err) {
-      const message = err?.error || 'Could not check that company ID. Please try again.';
+      const message = getApiErrorMessage(err, 'Could not check that company ID. Please try again.');
       setError(message);
       if (fromLink) {
         toast.error(message);

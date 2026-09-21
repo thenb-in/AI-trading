@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { nbnextDriveService } from '@/services/nbnextDriveService';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 /**
  * Fetches and refetches existing attachments for an object.
@@ -30,7 +31,7 @@ function useExistingAttachments(objectName, objectId, startDate, endDate, enable
       setExistingFiles(Array.isArray(result?.data) ? result.data : []);
     } catch (err) {
       console.error('Error fetching attachments:', err);
-      toast.error(err?.error || 'Failed to load attachments');
+      toast.error(getApiErrorMessage(err, 'Failed to load attachments'));
       setExistingFiles([]);
     } finally {
       setLoadingFiles(false);

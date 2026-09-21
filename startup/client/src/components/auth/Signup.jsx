@@ -12,6 +12,7 @@ import { useAvailabilityCheck } from '@startup/hooks/useAvailabilityCheck';
 import { AvailabilityHint } from '@startup/components/common/AvailabilityHint';
 import { MasterSelector } from '@startup/components/base_components/fields/MasterSelector';
 import { MASTERS } from '@startup/constants/masters';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 const roleNameOption = (role) => ({ label: role.name });
 
@@ -109,7 +110,7 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
       try {
         await onSubmit(cleanedData);
       } catch (err) {
-        const message = err?.error || err?.message || 'Signup failed. Please try again.';
+        const message = getApiErrorMessage(err, 'Signup failed. Please try again.');
         setError(message);
         toast.error(message);
       }
@@ -131,24 +132,7 @@ function Signup({ showRoleDropdown, onSubmit, onBackToLogin, companyId }) {
       toast.success('Signup successful! Awaiting admin approval.');
       navigate('/');
     } catch (err) {
-      // Handle different error formats from backend
-      let message = 'Signup failed. Please try again.';
-      
-      if (err.errors && Array.isArray(err.errors)) {
-        // Validation errors from express-validator (array format)
-        const errorMessages = err.errors.map(e => e.msg || e.message || e).join('. ');
-        message = errorMessages || message;
-      } else if (err.error) {
-        // Single error message
-        message = err.error;
-      } else if (typeof err === 'string') {
-        // Error is a string
-        message = err;
-      } else if (err.message) {
-        // Error object with message property
-        message = err.message;
-      }
-      
+      const message = getApiErrorMessage(err, 'Signup failed. Please try again.');
       setError(message);
       toast.error(message);
     }

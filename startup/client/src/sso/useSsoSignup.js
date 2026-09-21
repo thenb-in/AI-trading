@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ssoApi } from './ssoApi';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 function useSsoSignup(uid) {
   return useCallback(async ({ name, username, phone, password, companyId }) => {
@@ -7,7 +8,7 @@ function useSsoSignup(uid) {
       const response = await ssoApi.signup(uid, { name, username, phone, password, companyId });
       return { pendingApproval: Boolean(response.data?.pendingApproval) };
     } catch (err) {
-      throw new Error(err.error || 'Signup failed. Please try again.');
+      throw new Error(getApiErrorMessage(err, 'Signup failed. Please try again.'));
     }
   }, [uid]);
 }

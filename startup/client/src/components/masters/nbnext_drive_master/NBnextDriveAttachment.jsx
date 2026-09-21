@@ -6,6 +6,7 @@ import { nbnextDriveService } from '@/services/nbnextDriveService';
 import { FileViewerModal } from '@/components/common/FileViewerModal';
 import { FilesSection } from './FilesSection';
 import { useExistingAttachments } from './useExistingAttachments';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 /** Same normalize as NBnextDriveForm: FilesSection can pass array or single File or null. */
 function toFiles(v) {
@@ -67,7 +68,7 @@ const NBnextDriveAttachment = ({
             refetch();
           } catch (err) {
             console.error('Upload error:', err);
-            toast.error(err?.error || 'Failed to upload file(s)');
+            toast.error(getApiErrorMessage(err, 'Failed to upload file(s)'));
           } finally {
             setUploading(false);
             setLocalFiles([]);
@@ -120,7 +121,7 @@ const NBnextDriveAttachment = ({
         a.click();
         URL.revokeObjectURL(url);
       } catch (err) {
-        toast.error(err?.error || 'Failed to download file');
+        toast.error(getApiErrorMessage(err, 'Failed to download file'));
       }
     },
     [existingFiles]
@@ -140,7 +141,7 @@ const NBnextDriveAttachment = ({
         toast.success('Attachment removed.');
         refetch();
       } catch (err) {
-        toast.error(err?.error || 'Failed to remove attachment');
+        toast.error(getApiErrorMessage(err, 'Failed to remove attachment'));
       }
     },
     [refetch]
