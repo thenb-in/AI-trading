@@ -120,6 +120,9 @@ const FormModal = ({
     // A form can open another FormModal (an inline creator); React carries the inner
     // submit up through the portal, and it must not save the outer form too.
     event.stopPropagation();
+    // A plain sub-form inside this one (not a FormModal) bubbles here too; only
+    // this form's own submit is a save of this record.
+    if (event.target !== event.currentTarget) return undefined;
     // Enter in a field submits too, past the disabled Save.
     if (blockedReason) return undefined;
     return save(() => form.submit({}));
