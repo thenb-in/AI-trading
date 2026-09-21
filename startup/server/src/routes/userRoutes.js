@@ -22,5 +22,8 @@ router.delete('/:userId', authMiddleware.protect, requirePermission(USER.delete.
 router.put('/:userId/role', authMiddleware.protect, requirePermission(USER.update.name), userController.updateUserRole);
 router.put('/:userId/deviceAccess', authMiddleware.protect, requirePermission(USER.update.name), userController.updateUserDeviceAccess);
 router.put('/:userId', authMiddleware.protect, requirePermission(USER.update.name), userController.updateUser);
-router.post('/userProfile', authMiddleware.protect, userController.updateUserProfile);
+// The user whose profile is written comes from the body, not the session, so
+// this edits whoever it is pointed at — the same reach as PUT /:userId, and it
+// takes the same permission.
+router.post('/userProfile', authMiddleware.protect, requirePermission(USER.update.name), userController.updateUserProfile);
 module.exports = router;
