@@ -50,11 +50,20 @@ export async function createCompanyWithAdmin(logger: TestLogger): Promise<User> 
             ? { DATABASE_URL: `postgresql://postgres:postgres@${process.env.DB_HOST}:5432/${process.env.DB_NAME}` }
             : {};
 
+        // create_company_with_role_and_perms.js only ever prompts over stdin
+        // when process.stdin.isTTY is true — never the case for a spawned
+        // piped child — so it always takes its non-interactive branch, which
+        // creates the user from SADMIN_USERNAME/SADMIN_PASSWORD env vars (and
+        // silently skips user creation if they're unset). The stdin answers
+        // fed below are for whatever other prompts the script does ask in
+        // that branch (company name, phone, etc.).
+        const sadminEnv = { SADMIN_USERNAME: adminName, SADMIN_PASSWORD: adminPassword };
+
         const child = spawn(npmCommand, ['run', 'create-new-company'], {
             cwd: serverDir,
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: false,
-            env: { ...process.env, ...dbOverrideEnv },
+            env: { ...process.env, ...dbOverrideEnv, ...sadminEnv },
         });
 
         let stdout = '';
