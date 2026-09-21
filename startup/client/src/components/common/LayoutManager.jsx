@@ -365,7 +365,7 @@ const LayoutManager = ({
             </Typography>
             <SearchableDropdown
               options={LAYOUT_TYPE_OPTIONS}
-              selectedValues={newLayoutType}
+              value={newLayoutType}
               onChange={setNewLayoutType}
               placeholder="Select layout type"
               multiple={false}

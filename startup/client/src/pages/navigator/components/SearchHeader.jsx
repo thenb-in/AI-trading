@@ -54,7 +54,7 @@ const SearchHeader = ({
             <div className="min-w-[200px]">
               <SearchableDropdown
                 options={categoryOptions}
-                selectedValues={categoryFilter}
+                value={categoryFilter}
                 onChange={onCategoryFilterChange}
                 placeholder="All categories"
                 multiple={false}

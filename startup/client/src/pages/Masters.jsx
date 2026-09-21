@@ -169,7 +169,7 @@ const MasterContent = () => {
               </label>
               <SearchableDropdown
                 options={categoryOptions}
-                selectedValues={selectedCategory}
+                value={selectedCategory}
                 onChange={handleCategoryChange}
                 placeholder="All Categories"
                 multiple={false}

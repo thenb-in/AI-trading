@@ -44,7 +44,7 @@ const UserPickerField = ({
       </label>
       <SearchableDropdown
         options={options}
-        selectedValues={value}
+        value={value}
         onChange={onChange}
         multiple={false}
         searchable
