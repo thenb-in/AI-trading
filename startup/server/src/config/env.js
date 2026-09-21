@@ -43,6 +43,14 @@ const isProduction = process.env.NODE_ENV === PRODUCTION_ENV;
 const isSecureCookie = process.env.SECURE_COOKIE ? process.env.SECURE_COOKIE === 'True' || process.env.SECURE_COOKIE === 'true' : isProduction;
 const isOnPremDeployment = !isSecureCookie;
 
+// Explicit escape hatch, independent of SECURE_COOKIE: some deployments need
+// SECURE_COOKIE=false purely so the auth cookie survives over plain HTTP on a
+// non-loopback hostname (browsers drop Secure cookies there) without that
+// also switching on on-prem license enforcement — see
+// license/engine/operations/verify.js. Unset/anything but 'true' changes
+// nothing; enforcement still follows isOnPremDeployment as before.
+const licenseEnforcementDisabled = process.env.LICENSE_ENFORCEMENT_DISABLED === 'true';
+
 
 const isDevelopment = !isProduction;
 // OIDC provider cookies go secure in production, or when explicitly forced for a
@@ -174,6 +182,7 @@ module.exports = {
   isProduction,
   isSecureCookie,
   isOnPremDeployment,
+  licenseEnforcementDisabled,
   isOidcSecureCookie,
   isDevelopment,
 
