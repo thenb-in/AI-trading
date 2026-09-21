@@ -51,14 +51,6 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
     }
   }, [handleSubmit]);
 
-  if (isSaved && loading) {
-    return (
-      <p className="flex items-center justify-center gap-2 py-4 text-sm text-slate-500">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-      </p>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-5">
       {attachments?.isDrawnByForm ? null : (
@@ -96,7 +88,11 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
             </button>
           </form>
 
-          {comments.length === 0 ? (
+          {loading ? (
+            <p className="flex items-center justify-center gap-2 py-4 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </p>
+          ) : comments.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-sm text-slate-500">
               No comments yet. The first one is yours.
             </p>
