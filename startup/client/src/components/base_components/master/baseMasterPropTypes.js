@@ -65,6 +65,7 @@ const baseMasterPropTypes = {
   updateLabel: PropTypes.string,
   savingLabel: PropTypes.string,
   filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,
   mapFiltersForApi: PropTypes.func,
   mapRows: PropTypes.func,
@@ -80,14 +81,20 @@ const baseMasterPropTypes = {
   onImport: PropTypes.func,
   // Approve / reject row actions, bulk bar and selection — see useMasterApproval.
   approval: PropTypes.shape({
-    /** (id, status, { remarks, row }) => Promise; status 1 approve, 2 reject. */
+    /** (id, status, { remarks, row }) => Promise; the status comes from `decisions`. */
     updateStatus: PropTypes.func.isRequired,
+    /** { approve, reject } — the status each decision moves a record to, in the master's own values. */
+    decisions: PropTypes.shape({
+      approve: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      reject: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    }).isRequired,
     permissionKeys: PropTypes.shape({
       approve: PropTypes.string,
       reject: PropTypes.string,
     }).isRequired,
     noun: PropTypes.string,
-    isPending: PropTypes.func,
+    /** Which rows can still be decided. */
+    isPending: PropTypes.func.isRequired,
     /** Every decision asks for a required comment, handed to updateStatus. */
     remarks: PropTypes.bool,
     /** Component given { row }, shown above the comment for a single decision. */
