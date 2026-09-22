@@ -8,10 +8,10 @@ import { RecordCommentItem } from './RecordCommentItem';
 import { RecordAttachmentsContext } from './recordAttachments';
 
 /**
- * What is attached to one record, and what people have said about it. It sits
- * at the foot of the record's own modal, under the form and its buttons, so
- * the discussion is part of looking at the record rather than a trip away
- * from it.
+ * What people have said about one record, and what is attached to it. It sits
+ * at the foot of the record's own modal, running on from the form in the same
+ * scroll, so the discussion is part of looking at the record rather than a trip
+ * away from it — and scrolling to the end of the record lands on its files.
  *
  * It needs nothing from the master it sits in beyond the record's identity —
  * which master, and which row — so every form modal already has what it asks
@@ -53,16 +53,6 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
 
   return (
     <div className="flex flex-col gap-5">
-      {attachments?.isDrawnByForm ? null : (
-        <NBnextDriveAttachment
-          objectName={objectName}
-          objectId={objectId}
-          multipleSelect
-          pendingFiles={attachments?.pendingFiles}
-          onPendingFilesChange={attachments?.setPendingFiles}
-        />
-      )}
-
       {isSaved ? (
         <section>
           <h3 className="mb-2 text-sm font-semibold text-slate-800">
@@ -110,6 +100,16 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
           )}
         </section>
       ) : null}
+
+      {attachments?.isDrawnByForm ? null : (
+        <NBnextDriveAttachment
+          objectName={objectName}
+          objectId={objectId}
+          multipleSelect
+          pendingFiles={attachments?.pendingFiles}
+          onPendingFilesChange={attachments?.setPendingFiles}
+        />
+      )}
     </div>
   );
 };

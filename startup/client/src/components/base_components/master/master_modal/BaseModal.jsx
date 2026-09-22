@@ -203,6 +203,25 @@ const BaseModal = ({
           }}
         >
           <ModalTitleContext.Provider value={setFormTitle}>{children}</ModalTitleContext.Provider>
+
+          {/* Part of the record rather than a panel beside it: what people have
+              said about it, and its files at the very end, so one scroll runs
+              from the first field to the last attachment. */}
+          {shouldShowComments && (
+            <Box sx={{
+              flexShrink: 0,
+              mt: 3,
+              mx: fullScreen ? -2 : -3,
+              mb: fullScreen ? -2 : '-20px',
+              px: fullScreen ? 2 : 3,
+              py: 2,
+              borderTop: 1,
+              borderColor: 'divider',
+              bgcolor: 'grey.50',
+            }}>
+              <RecordCommentsPanel objectName={recordName} objectId={recordId} />
+            </Box>
+          )}
         </DialogContent>
 
         {hasFooter && (
@@ -220,24 +239,6 @@ const BaseModal = ({
             {actionsLeft && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>{actionsLeft}</Box>}
             {actions && <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>{actions}</Box>}
           </DialogActions>
-        )}
-
-        {/* Below the record and what is being done to it: its files, then what
-            people have said about it. It scrolls on its own so a long
-            conversation never pushes the form out of reach. */}
-        {shouldShowComments && (
-          <Box sx={{
-            flexShrink: 0,
-            maxHeight: '40vh',
-            overflowY: 'auto',
-            borderTop: 1,
-            borderColor: 'divider',
-            bgcolor: 'grey.50',
-            px: 3,
-            py: 2,
-          }}>
-            <RecordCommentsPanel objectName={recordName} objectId={recordId} />
-          </Box>
         )}
       </Dialog>
 

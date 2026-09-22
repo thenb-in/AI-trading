@@ -45,7 +45,8 @@ const NOT_BLOCKED = { message: '', field: '', fields: {} };
  * `form` attribute, so Save stays in view on a long form and the browser still
  * checks required fields first.
  *
- * A saved record's files and comments sit under the form. With
+ * A saved record's comments and then its files run on under the form, in the
+ * same scroll. With
  * `attachBeforeSave`, a record being created takes files too: they wait, and go
  * up under the record once the form's submit hands the saved record back (see
  * recordAttachments.js for a form that draws or saves them itself).
