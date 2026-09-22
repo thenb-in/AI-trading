@@ -9,7 +9,7 @@ import { useSearchParams } from 'react-router-dom';
  * modal closes, so a refresh does not reopen it. The record is opened by id
  * alone; a master given `loadRecord` loads it, one without finds its row.
  */
-const useMasterModal = ({ openParam, onClose }) => {
+const useRecordModal = ({ openParam, onClose }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -40,4 +40,4 @@ const useMasterModal = ({ openParam, onClose }) => {
   return { isOpen, selectedRow, setSelectedRow, open, close };
 };
 
-export { useMasterModal };
+export { useRecordModal };

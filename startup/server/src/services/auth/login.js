@@ -10,6 +10,7 @@ const { findModelById, getUserWithRoleInclude } = require('../../utils/modelHelp
 const { verifyValidSubscribedPermission } = require('../../utils/subscriptionPermissionUtils');
 const { notifyCompanyAdminsOfLogin } = require('../../notifications/dispatchers');
 const companyService = require('../companyService');
+const { withExtendedCompany } = require('../companyPayloadRegistry');
 const userService = require('../userService');
 const { isSsoManagedAccount } = require('../../config/ssoUserAccess');
 const env = require('../../config/env');
@@ -134,7 +135,8 @@ const loginUser = async (credentials, isSsoFlow = false) => {
   // Filter permissions based on subscription status
   const userWithFilteredPermissions = await verifyValidSubscribedPermission(user, activeCompany.id);
   const profile = await UserProfile.findOne({ where: { userId: user.id } });
-  return buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken, profile);
+  const payload = buildLoginPayload(userWithFilteredPermissions, activeCompany, accessToken, refreshToken, profile);
+  return { ...payload, user: await withExtendedCompany(payload.user) };
 };
 
 module.exports = {

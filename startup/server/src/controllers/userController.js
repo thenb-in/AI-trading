@@ -7,6 +7,7 @@ const authController = require('./authController');
 const { connectionsByUser } = require('../socket/utils/presence');
 const { sendSuccess, sendError } = require('../utils/response');
 const allowedPermissions = require('../utils/allowedPermissions');
+const { withExtendedCompany } = require('../services/companyPayloadRegistry');
 
 const getAllUsers = async (req, res) => {
   const companyId = req.user.company_id;
@@ -98,7 +99,7 @@ const signOutUser = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const userData=req.user;
-    const user = await authService.getCurrentUser(userData.id);
+    const user = await withExtendedCompany(await authService.getCurrentUser(userData.id));
     res.status(200).json(user);
   } catch (error) {
     logger.error('Error in getMe', error);

@@ -116,6 +116,25 @@ const baseMasterPropTypes = {
   infiniteScroll: PropTypes.bool,
   pageSize: PropTypes.number,
   showAdd: PropTypes.bool,
+  // Grid view: which view the grid opens in, and the kanban lanes when it is a board.
+  viewMode: PropTypes.string,
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
+  // Workflow hooks that only decorate the row buttons, leaving the header actions alone.
+  rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
+  // Extra props handed straight to the FormModal this master opens.
+  modalProps: PropTypes.object,
+  // The search box asks the server instead of filtering the rows already loaded.
+  serverSearch: PropTypes.bool,
+  // Replaces the standard filter bar with the master's own.
+  renderFilters: PropTypes.func,
+  // (id) => Promise<record>; loads the whole record when a row opens, so a grid
+  // row that carries only summary columns still edits against the full record.
+  loadRecord: PropTypes.func,
+  // Query parameter that opens a record straight from a link, and the callback
+  // fired when that modal closes.
+  openParam: PropTypes.string,
+  onModalClose: PropTypes.func,
 };
 
 export { baseMasterPropTypes };

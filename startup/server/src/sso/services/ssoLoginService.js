@@ -9,6 +9,7 @@ const {
   buildLoginPayload
 } = require('../../services/auth');
 const { getProfileByUserId } = require('../../services/userProfileService');
+const { withExtendedCompany } = require('../../services/companyPayloadRegistry');
 const { verifyValidSubscribedPermission } = require('../../utils/subscriptionPermissionUtils');
 const { notifyCompanyAdminsOfLogin } = require('../../notifications/dispatchers');
 const { resolveCompany, provisionUser } = require('./ssoProvisionService');
@@ -53,13 +54,14 @@ const completeSsoLogin = async (user) => {
     activeCompany.id
   );
   const profile = await getProfileByUserId(user.id);
-  return buildLoginPayload(
+  const payload = buildLoginPayload(
     userWithFilteredPermissions,
     activeCompany,
     accessToken,
     refreshToken,
     profile
   );
+  return { ...payload, user: await withExtendedCompany(payload.user) };
 };
 
 /** Wallet has vouched for them — find or make the local account, then sign in. */

@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
@@ -11,7 +10,7 @@ import { MasterSearch } from './MasterSearch';
 import { MasterRecordDetails } from './MasterRecordDetails';
 import { useRecordNav } from './useRecordNav';
 import { useMasterRows } from './useMasterRows';
-import { useMasterModal } from './useMasterModal';
+import { useRecordModal } from './useRecordModal';
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
@@ -21,6 +20,7 @@ import { DEFAULT_WORKFLOW, amendCopy, statusOf } from '../workflow/workflow';
 import { useWorkflowRowActions } from '../workflow/useWorkflowRowActions';
 import { BulkActionBar } from './bulk_actions/BulkActionBar';
 import { useMasterApproval } from './bulk_actions/useMasterApproval';
+import { baseMasterPropTypes } from './baseMasterPropTypes';
 
 const BaseMaster = ({
   title,
@@ -172,7 +172,7 @@ const BaseMaster = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [historyRowId, setHistoryRowId] = useState(null);
   const { userData } = useDataContext();
-  const modal = useMasterModal({ openParam, onClose: onModalClose });
+  const modal = useRecordModal({ openParam, onClose: onModalClose });
   const { selectedRow, setSelectedRow } = modal;
   const { handleVisibleRowsChange, recordNav } = useRecordNav(selectedRow, setSelectedRow);
 
@@ -234,7 +234,7 @@ const BaseMaster = ({
   // master with a bulk header button has no way to reload after it runs, and the only way
   // out is remounting the whole subtree — which throws away filters, search and sort.
   const resolvedHeaderActions = typeof extraHeaderActions === 'function'
-    ? extraHeaderActions({ refresh, rows, columns })
+    ? extraHeaderActions({ refresh: fetchRows, rows, columns })
     : extraHeaderActions;
   const resolvedHeaderContent = typeof headerContent === 'function'
     ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open, summary })
@@ -259,6 +259,12 @@ const BaseMaster = ({
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
     && (!canDeleteRow || canDeleteRow(row));
+
+  const { actions: approvalActions, selectionProps, bulkProps, dialog: approvalDialog } = useMasterApproval({
+    approval,
+    rows: filteredData,
+    refresh: fetchRows,
+  });
 
   const actions = [
     ...approvalActions,
@@ -305,7 +311,7 @@ const BaseMaster = ({
 
   const handleCloseHistory = () => setHistoryRowId(null);
   // A form may hand back what it saved; the grid only needs to reload, not read that as filters.
-  const handleFormSuccess = () => refresh();
+  const handleFormSuccess = () => fetchRows();
 
   // A record opened by id alone (a link) is its row, once the rows have it — unless the form loads it.
   const openRow = loadRecord || !selectedRow?.id
@@ -341,14 +347,14 @@ const BaseMaster = ({
   // "no inline arrow in JSX" lint and avoid re-rendering with new identity
   // when those captured values are unchanged.
   const boundImportApi = importApi
-    ? (formData) => importApi(formData, { rows, columns, refresh })
+    ? (formData) => importApi(formData, { rows, columns, refresh: fetchRows })
     : undefined;
   const boundOnDownloadTemplate = onDownloadTemplate
     ? () => onDownloadTemplate({ columns: exportColumns, rows })
     : undefined;
   const boundOnExport = onExport ? () => onExport({ columns, rows }) : undefined;
   const boundOnImport = onImport
-    ? () => onImport({ columns, rows, refresh })
+    ? () => onImport({ columns, rows, refresh: fetchRows })
     : undefined;
 
   // A new record's title can depend on what it is — an amend's copy.
@@ -436,6 +442,8 @@ const BaseMaster = ({
               showInsightsAsHeader={showInsightsAsHeader}
               showEmptyColumns={showEmptyColumns}
               hideConstantColumns={hideConstantColumns}
+              density={density}
+              documentName={documentName}
               viewMode={viewMode}
               kanbanField={kanbanField}
               kanbanLaneValues={kanbanLaneValues}
@@ -471,108 +479,6 @@ const BaseMaster = ({
   );
 };
 
-BaseMaster.propTypes = {
-  title: PropTypes.string.isRequired,
-  description: PropTypes.string,
-  // Add-button and modal props apply only when a FormComponent is supplied.
-  // A read-only master (no form) renders neither, so none of them are required.
-  addButtonText: PropTypes.string,
-  searchPlaceholder: PropTypes.string,
-  searchKeys: PropTypes.arrayOf(PropTypes.string),
-  /** Only where the modal is not "Add/Edit <masterName>" (Upload File); left out, the form titles itself. */
-  /** A string, or (record) => string for a new record that says what it is (an amend's copy). */
-  modalAddTitle: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  modalEditTitle: PropTypes.string,
-  modalMaxWidth: PropTypes.string,
-  baseMasterContainerWidth: PropTypes.string,
-  auditHead: PropTypes.string,
-  permissionKeys: PropTypes.shape({
-    // Any one of a list is enough.
-    read: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
-    create: PropTypes.string,
-    update: PropTypes.string,
-    delete: PropTypes.string,
-  }).isRequired,
-  workflow: PropTypes.object,
-  masterName: PropTypes.string.isRequired,
-  workflowHooks: PropTypes.objectOf(PropTypes.func),
-  rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
-  workflowShowWhen: PropTypes.objectOf(PropTypes.func),
-  loadRows: PropTypes.func.isRequired,
-  deleteRow: PropTypes.func,
-  canDeleteRow: PropTypes.func,
-  deleteConfirmText: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
-  rowsKey: PropTypes.string,
-  extractResponse: PropTypes.func,
-  onRowClickOverride: PropTypes.func,
-  unauthorizedToast: PropTypes.string,
-  unauthorizedDeleteToast: PropTypes.string,
-  fetchSuccessToast: PropTypes.string,
-  fetchFailureToast: PropTypes.string,
-  showExport: PropTypes.bool,
-  showImport: PropTypes.bool,
-  exportFileName: PropTypes.string,
-  showGridExport: PropTypes.bool,
-  exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
-  showInsightsAsHeader: PropTypes.bool,
-  showEmptyColumns: PropTypes.bool,
-  hideConstantColumns: PropTypes.bool,
-  viewMode: PropTypes.string,
-  kanbanField: PropTypes.string,
-  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
-  importApi: PropTypes.func,
-  buildExportColumns: PropTypes.func,
-  // Omit for a read-only master — no Add button.
-  FormComponent: PropTypes.elementType,
-  // Receives the same props as FormComponent, plus `columns`.
-  DetailComponent: PropTypes.elementType,
-  formProps: PropTypes.func,
-  formSuccessProp: PropTypes.string,
-  createLabel: PropTypes.string,
-  updateLabel: PropTypes.string,
-  savingLabel: PropTypes.string,
-  modalProps: PropTypes.object,
-  filtersConfig: PropTypes.array,
-  isFilterLoading: PropTypes.bool,
-  initialFilters: PropTypes.object,
-  mapFiltersForApi: PropTypes.func,
-  mapRows: PropTypes.func,
-  subscribeToRefresh: PropTypes.func,
-  headerContent: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  headerRef: PropTypes.object,
-  showRefreshButton: PropTypes.bool,
-  backUrl: PropTypes.string,
-  showBack: PropTypes.bool,
-  onDownloadTemplate: PropTypes.func,
-  templateButtonText: PropTypes.string,
-  onExport: PropTypes.func,
-  onImport: PropTypes.func,
-  approval: PropTypes.shape({
-    updateStatus: PropTypes.func.isRequired,
-    permissionKeys: PropTypes.shape({
-      approve: PropTypes.string,
-      reject: PropTypes.string,
-    }).isRequired,
-    noun: PropTypes.string,
-    isPending: PropTypes.func,
-  }),
-  extraActions: PropTypes.func,
-  getRowClassName: PropTypes.func,
-  isAlertRow: PropTypes.func,
-  initialSortKey: PropTypes.string,
-  // Node, or a function given { refresh, rows, columns } so a bulk header action can
-  // reload the grid when it finishes.
-  extraHeaderActions: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
-  defaultGroupByField: PropTypes.string,
-  initialSortDirection: PropTypes.string,
-  infiniteScroll: PropTypes.bool,
-  serverSearch: PropTypes.bool,
-  renderFilters: PropTypes.func,
-  loadRecord: PropTypes.func,
-  openParam: PropTypes.string,
-  onModalClose: PropTypes.func,
-  pageSize: PropTypes.number,
-  showAdd: PropTypes.bool,
-};
+BaseMaster.propTypes = baseMasterPropTypes;
 
 export { BaseMaster };

@@ -17,6 +17,7 @@ import { ReportRunMaster } from "../components/masters/report_run_master/ReportR
 import { ActivityMaster } from "../components/masters/activity_master/ActivityMaster";
 import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
+import { NamingSeriesMaster } from "../components/masters/naming_series_master/NamingSeriesMaster";
 
 
 const GENERIC_MASTER_CATEGORIES = {
@@ -151,12 +152,12 @@ const getGenericMasterModules = () => [
   },
   {
     id: "naming-series",
+    component: NamingSeriesMaster,
     title: "Naming Series",
     description:
       "Decide how new records are coded when nobody types a code — e.g. EMP-0001, EMP-0002 for employees.",
     icon: FormatListNumberedIcon,
     color: "info",
-    onClick: () => handleOpenMaster("naming-series"),
     buttonText: "Manage Series",
     tags: ["Naming Series", "Code", "Auto Number", "Sequence"],
     keywords: "naming series code auto number sequence prefix counter employee code generate",

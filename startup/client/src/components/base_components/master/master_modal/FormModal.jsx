@@ -171,6 +171,7 @@ const FormModal = ({
             hooks={hooks}
             showWhen={showWhen}
             onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+            onChanged={onChanged}
             run={save}
             isSaving={isSaving}
             hasForm={hasForm}
