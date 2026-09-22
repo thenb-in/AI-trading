@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
 import { X } from 'lucide-react';
-import { BaseModal } from '@startup/components/base_components/master';
+// Straight to the module, not the master barrel: the barrel re-exports BaseMaster,
+// and BaseMaster reaches back here through the audit modal and the comments panel.
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 import { FileViewer } from './FileViewer';
 
 /**

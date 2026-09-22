@@ -1,6 +1,8 @@
 import PropTypes from 'prop-types';
 import { Bug, RefreshCw } from 'lucide-react';
-import { BaseModal } from '@startup/components/base_components/master';
+// Straight to the module, not the master barrel: BaseFilter sits under BaseMaster,
+// so going through the barrel closes a loop back onto BaseMaster.
+import { BaseModal } from '@startup/components/base_components/master/master_modal/BaseModal';
 import { MasterModalActions } from '@startup/components/base_components/master/MasterModalActions';
 
 const DebugReloadDialog = ({ show, debugEnabled, onConfirm, onCancel }) => (
