@@ -195,7 +195,7 @@ const BaseMaster = ({
     fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
   } = useMasterRows({
     title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
-    infiniteScroll, pageSize, serverSearch, searchQuery, fetchSuccessToast, fetchFailureToast,
+    infiniteScroll, pageSize, serverSearch, searchQuery, unauthorizedToast, fetchSuccessToast, fetchFailureToast,
   });
 
   useEffect(() => subscribeToRefresh?.(reloadQuietly), [subscribeToRefresh, reloadQuietly]);
