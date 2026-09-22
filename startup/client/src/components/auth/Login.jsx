@@ -255,7 +255,6 @@ function Login({ onSubmit, onForgotPassword, onSignup } = {}) {
           isOpen={showTotpPopup}
           onClose={handleTotpPopupClose}
           onSuccess={handleTotpSetupSuccess}
-          username={loginSuccessData?.cleanedData?.username}
         />
       )}
     </div>

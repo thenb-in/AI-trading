@@ -1,11 +1,9 @@
-import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useForgotPassword } from './useForgotPassword';
 import { UsernameStep } from './UsernameStep';
 import { LocalResetStep } from './LocalResetStep';
-import { SetupTotpPopup } from '../SetupTotpPopup';
 
 
 const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
@@ -23,13 +21,9 @@ const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
     restart
   } = useForgotPassword({ isFirstLogin, prefillUsername, onSubmit });
 
-  const [totpJustEnabled, setTotpJustEnabled] = useState(false);
-  const [isTotpSetupOpen, setIsTotpSetupOpen] = useState(false);
-
   const isUsernameStep = !account;
   const canPickAnotherUsername = !isUsernameStep && !isFirstLogin;
-  const hasTotp = Boolean(account?.isTotpEnabled) || totpJustEnabled;
-  const canSetupTotp = !isUsernameStep && !isFirstLogin && !hasTotp;
+  const hasTotp = Boolean(account?.isTotpEnabled);
 
   const handleLocalReset = async (formData) => {
     const didReset = await resetLocalPassword(formData);
@@ -40,12 +34,6 @@ const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
   };
 
   const handleBackToLogin = onBackToLogin || (() => navigate('/login'));
-  const handleOpenTotpSetup = () => setIsTotpSetupOpen(true);
-  const handleCloseTotpSetup = () => setIsTotpSetupOpen(false);
-  const handleTotpSetupSuccess = () => {
-    setIsTotpSetupOpen(false);
-    setTotpJustEnabled(true);
-  };
 
   const resolveHeading = () => {
     if (isUsernameStep) {
@@ -84,19 +72,13 @@ const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
 
           {!isUsernameStep && (
             <>
-              {canSetupTotp && (
-                <div className="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                  <p className="text-sm text-blue-800 mb-2">
-                    Enable two-factor authentication with Google Authenticator to verify your identity and reset your password instantly.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleOpenTotpSetup}
-                    className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline transition"
-                  >
-                    Set up two-factor authentication
-                  </button>
-                </div>
+              {!isFirstLogin && (
+                <p className="mb-4 rounded-md border-l-4 border-amber-400 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <span className="font-semibold">Note: </span>
+                  {hasTotp
+                    ? 'Lost the phone with your authenticator? Log in with your password and use Authenticator in the sidebar to set it up again on your new phone.'
+                    : 'With Google Authenticator set up, you reset your password instantly, without waiting for approval.'}
+                </p>
               )}
               <LocalResetStep
                 isFirstLogin={isFirstLogin}
@@ -139,14 +121,6 @@ const ForgotPassword = ({ onSubmit, onBackToLogin } = {}) => {
         </div>
       </div>
 
-      {isTotpSetupOpen && account && (
-        <SetupTotpPopup
-          isOpen={isTotpSetupOpen}
-          onClose={handleCloseTotpSetup}
-          onSuccess={handleTotpSetupSuccess}
-          username={account.username}
-        />
-      )}
     </div>
   );
 };

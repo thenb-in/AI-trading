@@ -141,12 +141,11 @@ async function resetPassword(req, res) {
   }
 }
 /**
- * Generate TOTP secret view — POST /auth/generate-totp-secret
+ * Generate TOTP secret view — POST /auth/generate-totp-secret (signed-in user)
  */
 async function generateTotpSecret(req, res) {
   try {
-    const { username } = req.body;
-    const totpData = await authController.generateTotpSecret(username);
+    const totpData = await authController.generateTotpSecret(req.user.id);
     res.status(200).json(totpData);
   } catch (error) {
     if (error.message.includes('User not found')) {
@@ -164,15 +163,18 @@ async function generateTotpSecret(req, res) {
  * Verify and enable TOTP view — POST /auth/verify-totp
  */
 async function verifyAndEnableTotp(req, res) {
-  const { username, totpCode } = req.body;
+  const { totpCode } = req.body;
   try {
-    const result = await authController.verifyAndEnableTotp(username, totpCode);
+    const result = await authController.verifyAndEnableTotp(req.user.id, totpCode);
     res.status(200).json(result);
   } catch (error) {
     if (error.message.includes('User not found')) {
       return res.status(404).json({ error: error.message });
     }
-    if (error.message === `Invalid TOTP code: ${totpCode}` || error.message === `TOTP is already enabled for this user:${username}`) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({ error: error.message });
+    }
+    if (error.message === `Invalid TOTP code: ${totpCode}`) {
       return res.status(400).json({ error: error.message });
     }
     logger.error('Verify and enable TOTP error', error);

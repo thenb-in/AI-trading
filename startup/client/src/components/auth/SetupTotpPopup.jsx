@@ -7,7 +7,7 @@ import { BaseModal } from '../base_components/master/master_modal/BaseModal';
 import { OtpTypeField } from '@startup/components/base_components/fields/OtpTypeField';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
-const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
+const SetupTotpPopup = ({ isOpen, onClose, onSuccess, replace = false }) => {
   const [totpData, setTotpData] = useState(null);
   const [totpCode, setTotpCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,9 +18,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
     setError(null);
 
     try {
-      const response = await ApiService.generateTotpSecret({
-        username: username
-      });
+      const response = await ApiService.generateTotpSecret();
 
       setTotpData(response.data);
       setStep('scan');
@@ -30,13 +28,13 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
       setError(message);
       toast.error(message);
     }
-  }, [username]);
+  }, []);
 
   useEffect(() => {
-    if (isOpen && username) {
+    if (isOpen) {
       generateTotpSecret();
     }
-  }, [isOpen, username, generateTotpSecret]);
+  }, [isOpen, generateTotpSecret]);
 
   const verifyTotpCode = async (e) => {
     e.preventDefault();
@@ -44,10 +42,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
     setError(null);
 
     try {
-      await ApiService.verifyAndEnableTotp({
-        username: username,
-        totpCode: totpCode
-      });
+      await ApiService.verifyAndEnableTotp({ totpCode });
 
       toast.success('TOTP setup completed successfully!');
       onSuccess(); // Call success callback to close popup and continue login flow
@@ -72,7 +67,7 @@ const SetupTotpPopup = ({ isOpen, onClose, onSuccess, username }) => {
     <BaseModal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Setup Google Authenticator"
+      title={replace ? 'Set up Google Authenticator again' : 'Setup Google Authenticator'}
       maxWidth="sm"
     >
       <div className="p-4">
@@ -172,7 +167,7 @@ SetupTotpPopup.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSuccess: PropTypes.func.isRequired,
-  username: PropTypes.string.isRequired
+  replace: PropTypes.bool
 };
 
 export { SetupTotpPopup };

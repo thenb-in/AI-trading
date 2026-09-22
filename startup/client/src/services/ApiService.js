@@ -118,9 +118,9 @@ const ApiService = {
     return this.request('GET', '/auth/availability', null, { params: { type, value } });
   },
 
-  // TOTP (Google Authenticator 2FA) enrolment
-  generateTotpSecret(data) {
-    return this.request('POST', '/auth/generate-totp-secret', data);
+  // TOTP (Google Authenticator 2FA) enrolment — signed-in only;
+  generateTotpSecret() {
+    return this.request('POST', '/auth/generate-totp-secret');
   },
 
   verifyAndEnableTotp(data) {

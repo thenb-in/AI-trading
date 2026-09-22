@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useDataContext } from "@context/useDataContext";
 import { LogoutButton } from "../LogoutButton";
 import { HelpSupportButton } from "../HelpSupportButton";
+import { AuthenticatorButton } from "../AuthenticatorButton";
 import { ClearCacheButton } from "../ClearCacheButton";
 import { SearchButton } from "../SearchButton";
 import { NotificationButton } from "../NotificationButton";
@@ -211,6 +212,7 @@ function AdminSidebar({
           <NotificationButton collapsed={collapsed} />
           <SearchButton collapsed={collapsed} />
           <HelpSupportButton collapsed={collapsed} />
+          <AuthenticatorButton collapsed={collapsed} />
           {!collapsed && <ClearCacheButton />}
           {collapsed ? (
             <>

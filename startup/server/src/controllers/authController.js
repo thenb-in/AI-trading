@@ -43,22 +43,22 @@ const authController = {
   },
 
   /**
-   * Generate a TOTP secret (+ QR) for a user
-   * @param {string} username - Username
+   * Generate a TOTP secret (+ QR) for the signed-in user
+   * @param {string} userId - The signed-in user's id
    * @returns {Promise<object>} TOTP data (secret, qrCodeUrl, otpauthUrl)
    */
-  async generateTotpSecret(username) {
-    return await totpService.generateTotpSecret(username);
+  async generateTotpSecret(userId) {
+    return await totpService.generateTotpSecret(userId);
   },
 
   /**
-   * Verify a TOTP code and enable 2FA for the user
-   * @param {string} username - Username
+   * Verify a TOTP code and enable 2FA for the signed-in user
+   * @param {string} userId - The signed-in user's id
    * @param {string} totpCode - Code from the authenticator app
    * @returns {Promise<object>} Verification result
    */
-  async verifyAndEnableTotp(username, totpCode) {
-    return await totpService.verifyAndEnableTotp(username, totpCode);
+  async verifyAndEnableTotp(userId, totpCode) {
+    return await totpService.verifyAndEnableTotp(userId, totpCode);
   },
 
   /**

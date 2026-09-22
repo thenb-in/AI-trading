@@ -97,9 +97,9 @@ router.post('/reset-password', limitReset, authValidator.resetPasswordValidation
 // The username response also carries isTotpEnabled, which drives the reset flow.
 router.get('/availability', limitAvailability, checkAvailability);
 
-// TOTP (Google Authenticator 2FA) enrolment
-router.post('/generate-totp-secret', limitTotp, authValidator.generateTotpSecretValidation, generateTotpSecret);
-router.post('/verify-totp', limitTotp, authValidator.verifyTotpValidation, verifyAndEnableTotp);
+// TOTP (Google Authenticator 2FA) enrolment — signed-in only, for the user of the session.
+router.post('/generate-totp-secret', authMiddleware.protect, limitTotp, generateTotpSecret);
+router.post('/verify-totp', authMiddleware.protect, limitTotp, authValidator.verifyTotpValidation, verifyAndEnableTotp);
 
 
 // OIDC RP (Wallet IdP)

@@ -26,45 +26,33 @@ function verifyTotpCode(secret, totpCode, username) {
 }
 
 /**
- * Generates a new TOTP secret for a user, stores it in the database, and returns a QR code.
- * A secret only replaces one that was never confirmed: once 2FA is enabled the user's
- * authenticator app holds that secret, and replacing it would stop every code it shows.
- * @param {string} username - Username to generate the secret for
+ * Gives the signed-in user a new TOTP secret and the QR code their authenticator app scans.
+ * Only reached signed in (the password has proved who is asking), so it may replace an
+ * authenticator that is already set up — a lost or new phone. 2FA is off until the new
+ * app's code is verified (verifyAndEnableTotp); the old app's codes stop working at once.
+ * @param {string} userId - The signed-in user's id
  * @returns {Promise<{ secret: string, qrCodeUrl: string, otpauthUrl: string, message: string }>}
- * @throws {Error} If user not found (404), or 2FA is already enabled (409)
- * @side_effects Stores totp_secret on the User record
+ * @throws {Error} If the user is not found (404)
+ * @side_effects Stores totp_secret and sets is_totp_enabled=false on the User record
  */
-const generateTotpSecret = async (username) => {
-  username = username?.trim();
-  logger.info(`Generating TOTP secret for user: ${username}`);
-
-  const user = await User.findOne({ where: { username } });
+const generateTotpSecret = async (userId) => {
+  const user = await User.findByPk(userId);
   if (!user) {
-    logger.warn(`User not found for TOTP setup: ${username}`);
-    throw new Error(`User not found: ${username}`);
+    logger.warn(`User not found for TOTP setup: ${userId}`);
+    throw new Error(`User not found: ${userId}`);
   }
+  logger.info(`Generating TOTP secret for user: ${user.username} (2FA was ${user.is_totp_enabled ? 'on' : 'off'})`);
 
-  if (user.is_totp_enabled) {
-    logger.warn(`TOTP secret not replaced, 2FA already enabled for user: ${username}`);
-    const error = new Error(`Two-factor authentication is already set up for ${username}; its authenticator app keeps working`);
-    error.statusCode = 409;
-    throw error;
-  }
-
-  // Generate TOTP secret
   const secret = speakeasy.generateSecret({
-    name: `${env.TOTP_ISSUER} (${username})`,
+    name: `${env.TOTP_ISSUER} (${user.username})`,
     issuer: env.TOTP_ISSUER
   });
-
-  // Store the secret in the database
   user.totp_secret = secret.base32;
+  user.is_totp_enabled = false;
   await user.save();
 
-  // Generate QR code URL
   const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
-
-  logger.info(`TOTP secret generated and stored for user: ${username}`);
+  logger.info(`TOTP secret generated and stored for user: ${user.username}`);
   return {
     secret: secret.base32,
     qrCodeUrl,
@@ -74,27 +62,28 @@ const generateTotpSecret = async (username) => {
 };
 
 /**
- * Verifies a TOTP code and enables 2FA for the user. Must be called after generateTotpSecret.
- * @param {string} username - Username
+ * Verifies a TOTP code and enables 2FA for the signed-in user. Must be called after generateTotpSecret.
+ * @param {string} userId - The signed-in user's id
  * @param {string} totpCode - TOTP code from authenticator app
  * @returns {Promise<{ success: boolean, message: string }>}
  * @throws {Error} If user not found, TOTP already enabled, no secret exists, or code is invalid
  * @side_effects Sets is_totp_enabled=true on the User record
  */
-const verifyAndEnableTotp = async (username, totpCode) => {
-  username = username?.trim();
-  logger.info(`Verifying TOTP code for user: ${username}`);
-
-  const user = await User.findOne({ where: { username } });
+const verifyAndEnableTotp = async (userId, totpCode) => {
+  const user = await User.findByPk(userId);
   if (!user) {
-    logger.warn(`User not found for TOTP verification: ${username}`);
-    throw new Error(`User not found: ${username}`);
+    logger.warn(`User not found for TOTP verification: ${userId}`);
+    throw new Error(`User not found: ${userId}`);
   }
+  const { username } = user;
+  logger.info(`Verifying TOTP code for user: ${username}`);
 
   // First, check if user already has TOTP enabled
   if (user.is_totp_enabled) {
     logger.warn(`TOTP already enabled for user: ${username}`);
-    throw new Error(`TOTP is already enabled for this user:${username}`);
+    const error = new Error(`TOTP is already enabled for this user:${username}`);
+    error.statusCode = 400;
+    throw error;
   }
 
   // Check if user has a TOTP secret
