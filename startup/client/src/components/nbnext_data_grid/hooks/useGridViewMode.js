@@ -57,7 +57,14 @@ const useGridViewMode = (initialMode = "auto") => {
     });
   }, []);
 
-  return { viewMode: mode, cycleViewMode, isMobile };
+  // Picked outright rather than stepped to, for a grid with enough views that
+  // stepping through them to reach one is the long way round.
+  const selectViewMode = useCallback((next) => {
+    userOverrodeRef.current = true;
+    setMode(next);
+  }, []);
+
+  return { viewMode: mode, cycleViewMode, selectViewMode, isMobile };
 };
 
 export { useGridViewMode };

@@ -46,6 +46,7 @@ function Toolbar({
   onCycleTheme = null,
   viewMode = null,
   onCycleViewMode = null,
+  onSelectViewMode = null,
   availableViewModes = undefined,
 }) {
   const isTop = position === "top";
@@ -195,7 +196,12 @@ function Toolbar({
             <div className={TOOLBAR_DIVIDER_CLASS} aria-hidden />
             <div className="flex items-center gap-1.5">
               {showViewModeToggle && (
-                <ViewModeToggle viewMode={viewMode} onCycle={onCycleViewMode} availableModes={availableViewModes} />
+                <ViewModeToggle
+                  viewMode={viewMode}
+                  onCycle={onCycleViewMode}
+                  onSelect={onSelectViewMode}
+                  availableModes={availableViewModes}
+                />
               )}
               {showThemeToggle && (
                 <ThemeToggle themeLabel={themeLabel} onCycle={onCycleTheme} />
@@ -239,6 +245,7 @@ Toolbar.propTypes = {
   onCycleTheme: PropTypes.func,
   viewMode: PropTypes.oneOf(["table", "cards", "kanban"]),
   onCycleViewMode: PropTypes.func,
+  onSelectViewMode: PropTypes.func,
   availableViewModes: PropTypes.arrayOf(PropTypes.string),
 };
 

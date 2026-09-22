@@ -203,7 +203,7 @@ const NbNextDataGrid = forwardRef(({
   const { theme: activeTheme, cycleTheme } = useGridTheme(theme);
 
   // View mode: table vs cards (auto-switches on mobile, user can override).
-  const { viewMode, cycleViewMode } = useGridViewMode(viewModeProp);
+  const { viewMode, cycleViewMode, selectViewMode } = useGridViewMode(viewModeProp);
   // The board is only on offer where the screen said what lays it out.
   const availableViewModes = kanbanField ? ["table", "cards", "kanban"] : ["table", "cards"];
 
@@ -772,6 +772,7 @@ const NbNextDataGrid = forwardRef(({
           onCycleTheme={cycleTheme}
           viewMode={viewMode}
           onCycleViewMode={cycleViewMode}
+          onSelectViewMode={selectViewMode}
           availableViewModes={availableViewModes}
         />
       )}
