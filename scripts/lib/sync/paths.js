@@ -56,13 +56,19 @@ const NEVER_PICK = [
   // scaffold or the template fails to build, and the app must keep its real
   // one. Neither side may overwrite the other.
   /^startup\/client\/src\/pages\/AppDashboard\.jsx$/,
+  // The app's own master list, for the same reason: the framework template
+  // keeps a small generic one, an app keeps its real one, and whichever side
+  // syncs last would replace the other's. It carries the getMasterModules the
+  // app's registerAppData imports, so overwriting it breaks the app's build.
+  /^app\/client\/src\/data\/getMasterModules\.js$/,
   // Parked conflicts and their report are per-repo review state, not content.
   /^sync-conflicts\//,
 ];
 
 const NEVER_PICK_REASON =
   '`tests/`, all `package.json`, all `package-lock.json`, ' +
-  '`startup/client/src/pages/AppDashboard.jsx`, `sync-conflicts/`';
+  '`startup/client/src/pages/AppDashboard.jsx`, ' +
+  '`app/client/src/data/getMasterModules.js`, `sync-conflicts/`';
 
 const BOT_NAME = process.env.GIT_SYNC_USER_NAME || 'startup-sync-bot';
 const BOT_EMAIL =

@@ -32,6 +32,7 @@ function ViewModeToggle({ viewMode, onCycle, onSelect = null, availableModes = O
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
           style={viewModeToggleStyle}
         />
+        {/* eslint-disable-next-line custom/use-searchable-dropdown -- a three-view toolbar picker, not a field: SearchableDropdown is a full-width form control. */}
         <select
           value={viewMode}
           onChange={(event) => onSelect(event.target.value)}
