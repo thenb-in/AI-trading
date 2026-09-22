@@ -57,9 +57,12 @@ const useRecordAttachmentsState = (objectName, objectId, attachBeforeSave) => {
  */
 const useModalAttachments = ({ drawsList = false } = {}) => {
   const attachments = useContext(RecordAttachmentsContext);
-  const { setIsDrawnByForm } = attachments;
+  // A form is not always opened on a record of its own: the same document form
+  // is also opened from a work order, an indent and a report, where there is no
+  // record for files to belong to. It simply has none there.
+  const setIsDrawnByForm = attachments?.setIsDrawnByForm;
   useLayoutEffect(() => {
-    if (!drawsList) return undefined;
+    if (!drawsList || !setIsDrawnByForm) return undefined;
     setIsDrawnByForm(true);
     return () => setIsDrawnByForm(false);
   }, [drawsList, setIsDrawnByForm]);
