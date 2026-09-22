@@ -55,6 +55,9 @@ const MasterTable = ({
    * ten runs of the same report still need their "Report" column.
    */
   hideConstantColumns = true,
+  viewMode,
+  kanbanField,
+  kanbanLaneValues,
 }) => {
   const [viewerState, setViewerState] = useState({ open: false, url: '', mime: '', title: '' });
 
@@ -403,6 +406,9 @@ const MasterTable = ({
         showInsightsAsHeader={showInsightsAsHeader}
         showEmptyColumns={showEmptyColumns}
         hideConstantColumns={hideConstantColumns}
+        viewMode={viewMode}
+        kanbanField={kanbanField}
+        kanbanLaneValues={kanbanLaneValues}
       />
       <FileViewerModal
         isOpen={viewerState.open}
@@ -478,6 +484,10 @@ MasterTable.propTypes = {
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,
   hideConstantColumns: PropTypes.bool,
+  /** Opening view — 'kanban' lays the rows out in lanes of `kanbanField`. */
+  viewMode: PropTypes.string,
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
 };
 
 export { MasterTable };

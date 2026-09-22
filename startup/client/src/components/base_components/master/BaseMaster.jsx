@@ -143,6 +143,10 @@ const BaseMaster = ({
   showInsightsAsHeader = true,
   showEmptyColumns = true,
   hideConstantColumns = true,
+  // The opening view and, for a board, the column whose value makes the lanes.
+  viewMode,
+  kanbanField,
+  kanbanLaneValues,
 
   // Server-paged loading. `loadRows` additionally receives { page, pageSize };
   // there is more while the page is under the response's pagination.totalPages
@@ -432,8 +436,9 @@ const BaseMaster = ({
               showInsightsAsHeader={showInsightsAsHeader}
               showEmptyColumns={showEmptyColumns}
               hideConstantColumns={hideConstantColumns}
-              density={density}
-              documentName={documentName}
+              viewMode={viewMode}
+              kanbanField={kanbanField}
+              kanbanLaneValues={kanbanLaneValues}
             />
           </div>
         ) : (
@@ -512,6 +517,9 @@ BaseMaster.propTypes = {
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,
   hideConstantColumns: PropTypes.bool,
+  viewMode: PropTypes.string,
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
   importApi: PropTypes.func,
   buildExportColumns: PropTypes.func,
   // Omit for a read-only master — no Add button.

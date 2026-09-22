@@ -32,6 +32,7 @@ import { LayoutMenu } from "./components/layout/LayoutMenu.jsx";
 import { DataGridHeader } from "./components/DataGridHeader.jsx";
 import { DataGridBody } from "./components/DataGridBody.jsx";
 import { CardView } from "./components/CardView.jsx";
+import { KanbanView } from "./components/KanbanView.jsx";
 import { InsightsPanel } from "./components/InsightsPanel.jsx";
 import { GridTabs } from "./components/GridTabs.jsx";
 import { GridScrollToTopButton } from "./components/GridScrollToTopButton.jsx";
@@ -103,10 +104,15 @@ const NbNextDataGrid = forwardRef(({
   /** Theme id from utils/themes.js — "report" (default) or "master". */
   theme = "report",
   /**
-   * Layout mode — "auto" (default: cards on <640px, table otherwise), "table", or "cards".
-   * Users can flip between table and cards via the bottom toolbar regardless of this default.
+   * Layout mode — "auto" (default: cards on <640px, table otherwise), "table",
+   * "cards", or "kanban". Users can flip between them from the bottom toolbar
+   * regardless of this default; "kanban" needs `kanbanField`.
    */
   viewMode: viewModeProp = "auto",
+  /** The column whose value lays the rows out in lanes; without it there is no board to show. */
+  kanbanField = null,
+  /** The board's lanes in the order the screen thinks in; others follow as they appear. */
+  kanbanLaneValues = null,
   showExcelExport = false,
   /** { title, slug } for default Excel export. When provided (and onExcelExport not set), grid uses built-in handleExport. */
   exportReport = null,
@@ -198,6 +204,8 @@ const NbNextDataGrid = forwardRef(({
 
   // View mode: table vs cards (auto-switches on mobile, user can override).
   const { viewMode, cycleViewMode } = useGridViewMode(viewModeProp);
+  // The board is only on offer where the screen said what lays it out.
+  const availableViewModes = kanbanField ? ["table", "cards", "kanban"] : ["table", "cards"];
 
   // Fullscreen state + Alt+F shortcut (external prop wins if provided)
   const { fullScreen, handleToggleFullScreen } = useFullScreenToggle(externalFullScreen);
@@ -668,7 +676,18 @@ const NbNextDataGrid = forwardRef(({
         />
       )}
       <div ref={scrollAreaRef} style={bodyScrollAreaStyle}>
-        {viewMode === "cards" ? (
+        {viewMode === "kanban" && kanbanField ? (
+          <KanbanView
+            rows={displayRows}
+            columns={[...frozenColumnsRender, ...nonFrozenColumnsRender]}
+            field={kanbanField}
+            laneValues={kanbanLaneValues}
+            selectedRowId={selectedRowId}
+            handleRowClick={handleRowClick}
+            getRowIdFunc={getRowId}
+            isAlertRow={isAlertRow}
+          />
+        ) : viewMode === "cards" ? (
           <CardView
             rows={displayRows}
             columns={[...frozenColumnsRender, ...nonFrozenColumnsRender]}
@@ -753,6 +772,7 @@ const NbNextDataGrid = forwardRef(({
           onCycleTheme={cycleTheme}
           viewMode={viewMode}
           onCycleViewMode={cycleViewMode}
+          availableViewModes={availableViewModes}
         />
       )}
       {showScrollToTop && <GridScrollToTopButton onClick={handleScrollToTop} />}
@@ -805,7 +825,9 @@ NbNextDataGrid.propTypes = {
   showEmptyColumns: PropTypes.bool,
   summary: PropTypes.object,
   theme: PropTypes.string,
-  viewMode: PropTypes.oneOf(["auto", "table", "cards"]),
+  viewMode: PropTypes.oneOf(["auto", "table", "cards", "kanban"]),
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
   showExcelExport: PropTypes.bool,
   exportReport: PropTypes.shape({ title: PropTypes.string, slug: PropTypes.string }),
   onExcelExport: PropTypes.func,

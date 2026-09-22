@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: e0de81e5373cf4b158e5a40c6d200a07deb674bf
+# Source commit: c0298df516077bf2b689b3b290a467144957129a
 # startup/client/src/components/base_components/master/BaseMaster.jsx in the tree now holds the erp version.
 # Below is the full three-way merge, markers and all.
 #
@@ -87,6 +87,8 @@ const BaseMaster = ({
   // What a row click opens. Omit it and a row opens FormComponent to edit, or,
   // on a master with no form, every column of the row read-only.
   DetailComponent,
+  // `(record, { rows }) => props` for the form or details — the loaded rows too,
+  // for a form that checks against its siblings (the next free code, say).
   formProps,
   formSuccessProp = 'onSuccess',
   createLabel, updateLabel, savingLabel, // Save button wording; FormModal defaults to Create / Update / Saving...
@@ -103,8 +105,10 @@ const BaseMaster = ({
   // Optional `(refresh) => unsubscribe`, for rows that change outside this page
   // (a cache bust elsewhere). They reload in place, keeping the grid's sort and filters.
   subscribeToRefresh,
-  // Shown between the header and the grid — a node, or a function given { rows, columns, refresh, openRecord }
-  // (openRecord(record) opens the modal on it — a new record seeded from a link, say).
+  // Shown between the header and the grid — a node, or a function given
+  // { rows, columns, refresh, openRecord, summary } (openRecord(record) opens the
+  // modal on it — a new record seeded from a link, say; summary is what
+  // extractResponse read about the whole set, e.g. a total over every page).
   headerContent,
   headerRef,
   showRefreshButton = true,
@@ -148,6 +152,10 @@ const BaseMaster = ({
   showInsightsAsHeader = true,
   showEmptyColumns = true,
   hideConstantColumns = true,
+  // The opening view and, for a board, the column whose value makes the lanes.
+  viewMode,
+  kanbanField,
+  kanbanLaneValues,
 
   // Server-paged loading. `loadRows` additionally receives { page, pageSize };
   // there is more while the page is under the response's pagination.totalPages
@@ -193,7 +201,7 @@ const BaseMaster = ({
   const resolvedShowImport = (showImport ?? Boolean(importApi)) && canImport;
 
   const {
-    rows, setRows, columns, loading, isLoadingMore, hasMore, filters,
+    rows, setRows, columns, summary, loading, isLoadingMore, hasMore, filters,
     fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
   } = useMasterRows({
     title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
@@ -238,13 +246,7 @@ const BaseMaster = ({
     ? extraHeaderActions({ refresh, rows, columns })
     : extraHeaderActions;
   const resolvedHeaderContent = typeof headerContent === 'function'
-<<<<<<< startup (this repo)
-    ? headerContent({ refresh, rows, columns })
-||||||| base (common ancestor)
-    ? headerContent({ refresh: fetchRows, rows, columns })
-=======
-    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open })
->>>>>>> erp (incoming)
+    ? headerContent({ refresh: fetchRows, rows, columns, openRecord: modal.open, summary })
     : headerContent;
 
   // An amend opens the copy as a new record in the form.
@@ -269,13 +271,7 @@ const BaseMaster = ({
 
   const actions = [
     ...approvalActions,
-<<<<<<< startup (this repo)
-    ...(extraActions ? extraActions({ refresh, rows, setRows, openEdit: openRecord }) : []),
-||||||| base (common ancestor)
-    ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row) }) : []),
-=======
     ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row), openRecord }) : []),
->>>>>>> erp (incoming)
     ...workflowRowActions,
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
@@ -304,10 +300,11 @@ const BaseMaster = ({
   const handleAdd = () => openRecord(null);
 
   // Every row opens: its details, its edit form, or wherever the master sends it.
-  // An override that only sometimes differs can still open the row: `openRecord(row)`.
+  // An override that only sometimes differs can still open the row: `openRecord(row)`;
+  // one that opens a modal of its own reloads the list with `refresh` once that saves.
   const handleRowClick = (row) => {
     if (onRowClickOverride) {
-      onRowClickOverride(row, { openRecord });
+      onRowClickOverride(row, { openRecord, refresh: fetchRows });
       return;
     }
     openRecord(row);
@@ -375,7 +372,7 @@ const BaseMaster = ({
       initialData={record}
       columns={columns}
       {...{ [formSuccessProp]: handleFormSuccess }}
-      {...(formProps ? formProps(record) : {})}
+      {...(formProps ? formProps(record, { rows }) : {})}
     />
   );
 
@@ -448,8 +445,15 @@ const BaseMaster = ({
               showInsightsAsHeader={showInsightsAsHeader}
               showEmptyColumns={showEmptyColumns}
               hideConstantColumns={hideConstantColumns}
+<<<<<<< startup (this repo)
               density={density}
               documentName={documentName}
+||||||| base (common ancestor)
+=======
+              viewMode={viewMode}
+              kanbanField={kanbanField}
+              kanbanLaneValues={kanbanLaneValues}
+>>>>>>> erp (incoming)
             />
           </div>
         ) : (
@@ -528,6 +532,9 @@ BaseMaster.propTypes = {
   showInsightsAsHeader: PropTypes.bool,
   showEmptyColumns: PropTypes.bool,
   hideConstantColumns: PropTypes.bool,
+  viewMode: PropTypes.string,
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
   importApi: PropTypes.func,
   buildExportColumns: PropTypes.func,
   // Omit for a read-only master — no Add button.

@@ -7,8 +7,13 @@ const checkIsMobile = () =>
 
 const getAutoMode = () => (checkIsMobile() ? "cards" : "table");
 
+// Table, cards, board, and round again. A grid with no kanban field of its own
+// leaves the board out of the round (NbNextDataGrid drops it from the toggle).
+const NEXT_MODE = { table: "cards", cards: "kanban", kanban: "table" };
+
 /**
- * View mode: "table" (default DataGrid render) vs "cards" (CardView render).
+ * View mode: "table" (default DataGrid render), "cards" (CardView render) or
+ * "kanban" (KanbanView render — a lane per value of the grid's kanban field).
  *
  * `initialMode = "auto"` defaults to cards on mobile (<640px) and table otherwise,
  * and follows viewport changes until the user manually toggles. Explicit
@@ -43,9 +48,13 @@ const useGridViewMode = (initialMode = "auto") => {
     return () => window.removeEventListener("resize", handleResize);
   }, [initialMode]);
 
-  const cycleViewMode = useCallback(() => {
+  // `modes` is what this grid can show, so a grid without a board skips it.
+  const cycleViewMode = useCallback((modes) => {
     userOverrodeRef.current = true;
-    setMode((prev) => (prev === "table" ? "cards" : "table"));
+    setMode((prev) => {
+      const next = NEXT_MODE[prev] ?? "table";
+      return modes?.includes(next) === false ? NEXT_MODE[next] ?? "table" : next;
+    });
   }, []);
 
   return { viewMode: mode, cycleViewMode, isMobile };
