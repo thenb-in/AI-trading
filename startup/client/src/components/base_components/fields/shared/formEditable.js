@@ -11,16 +11,20 @@ const useFieldDisabled = (disabled) => {
   return Boolean(disabled) || !isEditable;
 };
 
-// The reason a form can't be saved, when its validate names a field: { field, message }.
-// FormModal provides it; null when the reason names no field.
+// Why a form can't be saved: `{ field, message }` for the reason the footer
+// shows, and `fields` — every field that is wrong, so the whole form is marked
+// up at once rather than one field at a time. FormModal provides it; null when
+// the reason names no field.
 const FormBlockedFieldContext = createContext(null);
 
-// A field shows the error it was given, or the form's reason when that reason
-// names this field. Read on every render so the hook order holds.
+// A field shows the error it was given, then whatever the form found wrong with
+// this field, and finally the form's own reason when it names this field. Read
+// on every render so the hook order holds.
 const useFieldError = (name, error) => {
   const blocked = useContext(FormBlockedFieldContext);
   if (error) return error;
-  return name && blocked?.field === name ? blocked.message : '';
+  if (!name) return '';
+  return blocked?.fields?.[name] || (blocked?.field === name ? blocked.message : '');
 };
 
 export { FormEditableContext, FormBlockedFieldContext, useFieldDisabled, useFieldError };

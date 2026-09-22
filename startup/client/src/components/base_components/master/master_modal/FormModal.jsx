@@ -14,7 +14,7 @@ import { RecordAttachmentsContext, useRecordAttachmentsState } from '../../recor
 const FormModalContext = createContext(null);
 // A label given as text, or worked out from the record it is shown on.
 const labelFor = (label, record) => (typeof label === 'function' ? label(record) : label);
-const NOT_BLOCKED = { message: '', field: '' };
+const NOT_BLOCKED = { message: '', field: '', fields: {} };
 
 /**
  * A BaseModal that is a form: header from BaseModal, the caller's fields in
@@ -185,7 +185,7 @@ const FormModal = ({
         }
       >
         <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
-          <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
+          <FormBlockedFieldContext.Provider value={blocked.field || Object.keys(blocked.fields).length ? blocked : null}>
           {/* While Save or a workflow action waits on the server, nothing in the form can
               change under it: base fields read the lock, and the fieldset holds plain inputs. */}
           <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
@@ -264,10 +264,14 @@ const useFormModal = (onSubmit, formData, validate) => {
   const reason = validate() || '';
   const message = typeof reason === 'string' ? reason : reason.message;
   const field = typeof reason === 'string' ? '' : reason.field || '';
+  const fields = typeof reason === 'string' ? NOT_BLOCKED.fields : reason.fields || NOT_BLOCKED.fields;
+  // `fields` is rebuilt every render, so the effect keys off what it says rather
+  // than which object it is.
+  const fieldsKey = JSON.stringify(fields);
   useLayoutEffect(() => {
-    setBlocked({ message, field });
+    setBlocked({ message, field, fields: JSON.parse(fieldsKey) });
     return () => setBlocked(NOT_BLOCKED);
-  }, [setBlocked, message, field]);
+  }, [setBlocked, message, field, fieldsKey]);
   return { save, isSaving, workflow };
 };
 
