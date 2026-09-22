@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useDebouncedValue } from '@startup/hooks/useDebouncedValue';
+import { getApiErrorMessage } from '@utils/apiErrorMessage';
 
 // Long enough that a word typed at speed is one request, short enough to feel live.
 const SERVER_SEARCH_DEBOUNCE_MS = 400;
@@ -79,7 +80,12 @@ const useMasterRows = ({
       }
     } catch (error) {
       console.error(`${title}: Error fetching rows`, { error });
-      if (fetchFailureToast) toast.error(fetchFailureToast);
+      // What failed and why, together: the screen's own wording says which list
+      // would not load, and the server says what stopped it — a missing
+      // permission names itself, so nobody has to open a console to find out.
+      if (fetchFailureToast) {
+        toast.error(`${fetchFailureToast}: ${getApiErrorMessage(error, 'the server gave no reason')}`);
+      }
     } finally {
       if (append) setIsLoadingMore(false); else setLoading(false);
     }

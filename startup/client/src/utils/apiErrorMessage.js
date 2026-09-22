@@ -4,7 +4,7 @@
  * The axios interceptor rejects with the response body, so a rejection is one of:
  *  - { errors: [...] }   express-validator (400) - entries are strings or { msg }/{ message }
  *  - { message }         sendError responses
- *  - { error }           controllers that reply with a bare error string
+ *  - { error }           routes that answer with their own wording
  *  - Error               network / thrown client-side
  *  - string              a plain-text response body
  */
@@ -20,7 +20,7 @@ const getApiErrorMessage = (error, fallback = 'Request failed') => {
     return `Validation error: ${details.join('; ')}`;
   }
 
-  return body?.error || body?.message || error?.message || fallback;
+  return body?.message || body?.error || error?.message || fallback;
 };
 
 export { getApiErrorMessage };
