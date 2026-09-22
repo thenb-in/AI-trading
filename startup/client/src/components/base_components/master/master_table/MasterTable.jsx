@@ -111,6 +111,26 @@ const MasterTable = ({
             const v = column.getExportValue({ row });
             return v == null || v === '' ? '-' : v;
           };
+        } else {
+          // A column holding a linked record or a list of them — an item's group,
+          // its UOMs — is sorted, grouped, filtered and exported by what it draws
+          // rather than by the record behind it, which every row would otherwise
+          // read as the same "[object Object]" and land in one group.
+          //
+          // Only records and lists are read this way. A column whose value is
+          // already a number, a date or a word keeps that value, so a formatted
+          // "1,234.00" still sorts as the number it is, and a column drawing a
+          // badge or a bar falls back to its value the same way.
+          gridCol.valueGetter = ({ row }) => {
+            const raw = row[fieldKey];
+            if (raw === null || typeof raw !== 'object') return raw;
+            try {
+              const rendered = column.render(row);
+              return typeof rendered === 'string' || typeof rendered === 'number' ? rendered : raw;
+            } catch {
+              return raw;
+            }
+          };
         }
         return gridCol;
       }
