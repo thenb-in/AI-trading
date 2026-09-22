@@ -89,7 +89,7 @@ const buildSheetFromRaw = (
     showTotalRow,
     showInsightsAsHeader,
     showEmptyColumns,
-    groupByField,
+    groupByFields,
   }
 ) => {
   const normalized = normalizeColumns(rawColumns || []);
@@ -106,7 +106,7 @@ const buildSheetFromRaw = (
   const indexed = indexRows(rawRows || []);
   const filtered = filterRows(indexed, filterModel || {}, colsToUse);
   const sorted = sortRows(filtered, sortModel || { field: null, sort: null }, colsToUse);
-  const grouped = groupRows(colsToUse, sorted, groupByField);
+  const grouped = groupRows(colsToUse, sorted, groupByFields);
   const unwrapped = unwrapGridRows(grouped);
 
   // Respect the user's column visibility toggles. Unknown fields (not in the
@@ -158,7 +158,7 @@ const useGridExport = ({
   sortModel,
   columnVisibility,
   hideConstantColumns,
-  groupByField,
+  groupByFields,
 }) => {
   const exportColumns = resolveExportVisibleColumns(
     showInsightsAsHeader,
@@ -244,7 +244,7 @@ const useGridExport = ({
       showTotalRow,
       showInsightsAsHeader,
       showEmptyColumns,
-      groupByField,
+      groupByFields,
     };
 
     return tabs.map((tab) => {
@@ -278,7 +278,7 @@ const useGridExport = ({
     showTotalRow,
     showInsightsAsHeader,
     showEmptyColumns,
-    groupByField,
+    groupByFields,
   ]);
 
   const [isExcelExporting, setIsExcelExporting] = useState(false);

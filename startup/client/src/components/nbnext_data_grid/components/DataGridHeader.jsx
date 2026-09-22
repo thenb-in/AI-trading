@@ -25,7 +25,7 @@ function DataGridHeader({
   filterModel = {},
   columnFilterTypes = {},
   handleFilterChange,
-  groupByField = null,
+  groupByFields = [],
   toggleGroupBy = null,
   onColumnReorder = null,
   selection = null,
@@ -56,10 +56,12 @@ function DataGridHeader({
     toggleFrozen(field);
   };
 
+  // Read like sorting: pressing groups by this column alone, Shift adds it
+  // under what is already grouped.
   const handleToggleGroupBy = (field) => (e) => {
     e.stopPropagation();
     if (typeof toggleGroupBy === "function") {
-      toggleGroupBy(field);
+      toggleGroupBy(field, { chain: Boolean(e.shiftKey) });
     }
   };
 
@@ -140,7 +142,10 @@ function DataGridHeader({
     const left = isFrozen
       ? (cumulativeFrozenLeftOffsets[col.field] || 0) + selectionWidth
       : undefined;
-    const isGrouped = groupByField === col.field;
+    const groupLevel = groupByFields.indexOf(col.field);
+    const isGrouped = groupLevel !== -1;
+    // Which level this column sits at, shown only once a chain exists.
+    const showGroupLevel = isGrouped && groupByFields.length > 1;
     const isDragging = dragField === col.field;
     const isDragOver = dragOverField === col.field && dragField !== col.field;
 
@@ -278,10 +283,15 @@ function DataGridHeader({
                 ? "bg-green-100 border-green-600"
                 : "bg-transparent border-white/20"
             }`}
-            title={isGrouped ? "Ungroup column" : "Group by this column"}
+            title={isGrouped
+              ? `Ungroup ${col.headerName}${showGroupLevel ? ` (group ${groupLevel + 1})` : ""}`
+              : "Group by this column. Shift to group within what is already grouped."}
             aria-label={isGrouped ? `Ungroup ${col.headerName}` : `Group by ${col.headerName}`}
           >
             <Layers size={14} color={isGrouped ? "#16a34a" : "var(--grid-header-icon)"} strokeWidth={2} />
+            {showGroupLevel && (
+              <span className="ml-0.5 text-[10px] font-semibold leading-none text-green-700">{groupLevel + 1}</span>
+            )}
           </button>
           <div
             className="absolute right-0 top-0 h-full w-2 cursor-col-resize z-10 column-resizer"
@@ -441,7 +451,7 @@ DataGridHeader.propTypes = {
   filterModel: PropTypes.object,
   columnFilterTypes: PropTypes.object,
   handleFilterChange: PropTypes.func,
-  groupByField: PropTypes.string,
+  groupByFields: PropTypes.arrayOf(PropTypes.string),
   toggleGroupBy: PropTypes.func,
   onColumnReorder: PropTypes.func,
   selection: PropTypes.shape({

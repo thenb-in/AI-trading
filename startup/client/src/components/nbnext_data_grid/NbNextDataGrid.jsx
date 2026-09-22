@@ -387,7 +387,7 @@ const NbNextDataGrid = forwardRef(({
   }, [sortedRows, onVisibleRowsChange]);
 
   // Grouping injects synthetic total rows between groups
-  const { groupByField, toggleGroupBy, groupedRows } = useGrouping(
+  const { groupByFields, toggleGroupBy, groupedRows } = useGrouping(
     l1,
     sortedRows,
     promoteToPrimarySort,
@@ -540,7 +540,7 @@ const NbNextDataGrid = forwardRef(({
     sortModel: merged.sortModel,
     columnVisibility: merged.columnVisibility,
     hideConstantColumns,
-    groupByField,
+    groupByFields,
   });
 
   // ── Menus ──────────────────────────────────────────────────────────────
@@ -713,7 +713,7 @@ const NbNextDataGrid = forwardRef(({
               filterModel={merged.filterModel}
               columnFilterTypes={columnFilterTypes}
               handleFilterChange={setFilterValue}
-              groupByField={groupByField}
+              groupByFields={groupByFields}
               toggleGroupBy={toggleGroupBy}
               onColumnReorder={reorderColumns}
               selection={headerSelectionProp}
@@ -845,7 +845,7 @@ NbNextDataGrid.propTypes = {
     })
   ),
   defaultActiveTabId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  defaultGroupByField: PropTypes.string,
+  defaultGroupByField: PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)]),
   infiniteScroll: PropTypes.bool,
   hasMore: PropTypes.bool,
   onLoadMore: PropTypes.func,
