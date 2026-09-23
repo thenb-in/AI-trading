@@ -1,7 +1,8 @@
 import { useDataContext } from '@context/useDataContext';
 
 /**
- * Whether the user holds any of `permissionNames`.
+ * Whether the user holds any of `permissionNames`, or — given `{ all: [...] }` —
+ * every one of them.
  *
  * Pass `userData` and this is an ordinary function, usable anywhere — inside a
  * `.filter()`, in a plain module like canSeeModule, or behind a `&&`.
@@ -29,8 +30,17 @@ const hasPermission = (permissionNames, ...given) => {
 
   const userPermissions = userData.role.permissions || [];
 
+  const holds = (name) => userPermissions.some((permission) => permission.name === name);
+
+  // { all: [...] } — every one of them, for a master that spans two others: a
+  // department position is an assignment linking a department to a position, so
+  // acting on one needs the right on both, not either.
+  if (permissionNames?.all) {
+    return permissionNames.all.every(holds);
+  }
+
   const names = Array.isArray(permissionNames) ? permissionNames : [permissionNames];
-  return names.some((name) => userPermissions.some((permission) => permission.name === name));
+  return names.some(holds);
 };
 
 export { hasPermission };
