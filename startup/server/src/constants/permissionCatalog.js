@@ -88,7 +88,7 @@ const registerPermissionSets = ({
 // a build that has since dropped it — still follows that shape, so the name
 // itself is enough to file it under the right master or report instead of
 // dumping it in a heap called "other".
-const NAMED_OPERATION = /^(create|read|update|delete|approve|reject|import|deactivate|download|export|view)_(.+)$/;
+const NAMED_OPERATION = /^(create|read|update|delete|approve|reject|import|deactivate|download|export|view|comment|attachment)_(.+)$/;
 
 const derive = (name) => {
   const match = name.match(NAMED_OPERATION);

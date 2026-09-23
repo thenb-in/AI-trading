@@ -10,8 +10,10 @@
  * "other" and is listed on its own.
  */
 
-// Which column of the master table an operation belongs under. Reading only
-// your own Drive files is still reading, so it shares the Read column.
+// Which operations SHARE a column. Reading only your own Drive files is still
+// reading, so it shares the Read column. An operation named here is merged into
+// another's column; anything not named gets a column of its own, so a master
+// that declares a new operation needs no entry.
 const MASTER_COLUMNS = {
   create: 'create',
   read: 'read',
@@ -117,7 +119,7 @@ function organizePermissions(permissions, companySubscriptions = null, userData 
 const groupPermissionsByOperation = (permissions, columns) => {
   const grouped = {};
   permissions.forEach((permission) => {
-    const column = columns[permission.operation] || 'other';
+    const column = columns[permission.operation] || permission.operation || 'other';
     if (!grouped[column]) {
       grouped[column] = [];
     }
@@ -129,7 +131,11 @@ const groupPermissionsByOperation = (permissions, columns) => {
 const groupMasterPermissionsByOperation = (permissions) => groupPermissionsByOperation(permissions, MASTER_COLUMNS);
 const groupReportPermissionsByOperation = (permissions) => groupPermissionsByOperation(permissions, REPORT_COLUMNS);
 
-const getOperationDisplayName = (operation) => OPERATION_LABELS[operation] || operation;
+// An operation nothing spells out is titled from its own name — "comment"
+// heads the Comment column — so the labels only exist for the ones whose words
+// differ from their key.
+const getOperationDisplayName = (operation) => OPERATION_LABELS[operation]
+  || (operation || '').replace(/(^|_)([a-z])/g, (whole, boundary, letter) => `${boundary ? ' ' : ''}${letter.toUpperCase()}`);
 
 /** What to call a permission on screen — the server sends the words. */
 const getPermissionLabel = (permission) => permission?.display_name || permission?.name || '';

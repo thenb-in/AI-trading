@@ -32,8 +32,12 @@ const listComments = async (companyId, objectName, objectId, userId) => {
 };
 
 const addComment = async ({ companyId, objectName, objectId, body, createdBy }) => {
-  if (!(await canReadObject(createdBy, objectName))) {
-    return { ok: false, forbidden: true, reason: `You need the read_${masterKeyOf(objectName)} permission to comment on ${objectName} ${objectId}` };
+  // Saying something on a record is the master's own right, separate from
+  // opening the record: plenty of people should read a discussion without
+  // joining it.
+  const permission = `comment_${masterKeyOf(objectName)}`;
+  if (!(await allowedPermissions(createdBy, [permission]))) {
+    return { ok: false, forbidden: true, reason: `You need the ${permission} permission to comment on ${objectName} ${objectId}` };
   }
   const text = String(body || '').trim();
   if (!text) {
@@ -50,25 +54,27 @@ const addComment = async ({ companyId, objectName, objectId, body, createdBy }) 
 };
 
 /**
- * A comment is someone's own words, so only they take them back. Removing what
- * someone else said is not an editing right — it is a different thing, and
- * nothing in the product asks for it yet.
+ * A comment is someone's own words, so its author always takes it back. Taking
+ * down what someone else said is a different thing — delete_comment grants it,
+ * on any record of any master, because moderating a discussion is one job
+ * rather than one per master.
  */
 const removeComment = async (id, companyId, userId) => {
   const comment = await recordCommentService.getCommentById(id, companyId);
   if (!comment) {
     return { ok: false, notFound: true, reason: `No comment ${id} in this company` };
   }
-  if (comment.createdBy !== userId) {
+  const isAuthor = comment.createdBy === userId;
+  if (!isAuthor && !(await allowedPermissions(userId, ['delete_comment']))) {
     return {
       ok: false,
       forbidden: true,
-      reason: `Comment ${id} was written by someone else, and a comment can only be deleted by its author`
+      reason: `Comment ${id} was written by someone else — taking it down needs the delete_comment permission`
     };
   }
 
   await recordCommentService.deleteComment(id, companyId);
-  logger.info(`Comment ${id} deleted by its author ${userId}`);
+  logger.info(`Comment ${id} on ${comment.objectName} ${comment.objectId} deleted by ${isAuthor ? `its author ${userId}` : `${userId}, who holds delete_comment`}`);
   return { ok: true };
 };
 

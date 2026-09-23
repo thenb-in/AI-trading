@@ -8,6 +8,9 @@ import { FilesSection } from './FilesSection';
 import { useExistingAttachments } from './useExistingAttachments';
 import { formatDateTime } from '@utils/formattingUtils';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
+import { recordPermissionName } from '@utils/recordPermission';
+import { hasPermission } from '@startup/hooks/hasPermission';
+import { useDataContext } from '@context/useDataContext';
 
 /** Same normalize as NBnextDriveForm: FilesSection can pass array or single File or null. */
 function toFiles(v) {
@@ -18,6 +21,11 @@ function toFiles(v) {
 /**
  * Attachment uses FilesSection the same way NBnextDriveForm does (files in box, view/remove inside).
  * Only extra: existing files from API listed above, with view/download/delete and a modal for server URLs.
+ *
+ * A record's files are the record's, so each master governs its own:
+ * attachment_<master> is the right to work with them — see the list, add to it,
+ * remove from it. Without it the panel is not drawn at all, since there is
+ * nothing to show and nothing to do.
  */
 const NBnextDriveAttachment = ({
   objectName,
@@ -35,12 +43,15 @@ const NBnextDriveAttachment = ({
   endDate,
   attachmentsState
 }) => {
+  const { userData } = useDataContext();
+  const canManageFiles = hasPermission(recordPermissionName(objectName, 'attachment'), userData);
+
   const internal = useExistingAttachments(
     objectName,
     objectId,
     startDate,
     endDate,
-    !attachmentsState
+    canManageFiles && !attachmentsState
   );
   const { existingFiles, loadingFiles, refetch } = attachmentsState ?? internal;
   const [uploading, setUploading] = useState(false);
@@ -147,6 +158,10 @@ const NBnextDriveAttachment = ({
     },
     [refetch]
   );
+
+  if (!canManageFiles) {
+    return null;
+  }
 
   const displayFiles = uploadOnSubmitOnly || !hasObjectId ? (pendingFiles || []) : localFiles;
   const hasExisting = existingFiles.length > 0;

@@ -4,6 +4,7 @@ const logger = require('../../logger');
 const env = require('../config/env');
 const { MASTER_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const allowedPermissions = require('../utils/allowedPermissions');
+const { masterKeyOf } = require('../utils/masterKey');
 const nbnextDriveController = require('../controllers/nbnextDriveController');
 
 const { NBNEXT_DRIVE } = MASTER_PERMISSION_CONSTANTS;
@@ -20,6 +21,29 @@ async function userHasDrivePermission(userId, permissionNames) {
     return false;
   }
   return allowedPermissions(userId, permissionNames);
+}
+
+/**
+ * Whether this user may act on this file, and over whose files.
+ *
+ * A file filed against a record is that record's attachment, so the master's
+ * own attachment right decides — and it decides for every attachment on that
+ * master, whoever uploaded it. A file with no record behind it is a plain Drive
+ * file and keeps the Drive's own scope: your own files, or everyone's with
+ * read_nbnext_drive.
+ */
+async function fileAccess(userId, companyId, fileId) {
+  const showAll = await userHasDrivePermission(userId, [NBNEXT_DRIVE.read.name]);
+  const file = await nbnextDriveController.getFileById(fileId, companyId, userId, true);
+  if (!file.objectName) {
+    return { allowed: true, showAll };
+  }
+  const permission = `attachment_${masterKeyOf(file.objectName)}`;
+  return {
+    allowed: await userHasDrivePermission(userId, [permission]),
+    showAll: true,
+    reason: `You need the ${permission} permission to work with the files on ${file.objectName} ${file.objectId}`
+  };
 }
 
 // A tagged status means the service already described the problem in terms the
@@ -52,9 +76,12 @@ async function getFileById(req, res) {
     const { id } = req.params;
     const companyId = req.user?.company_id || null;
     const userId = req.user?.id || null;
-    const showAll = await userHasDrivePermission(userId, [NBNEXT_DRIVE.read.name]);
+    const access = await fileAccess(userId, companyId, parseInt(id, 10));
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason });
+    }
 
-    const result = await nbnextDriveController.getFileById(parseInt(id, 10), companyId, userId, showAll);
+    const result = await nbnextDriveController.getFileById(parseInt(id, 10), companyId, userId, access.showAll);
 
     res.status(200).json(result);
   } catch (error) {
@@ -69,6 +96,10 @@ async function getFilesByObject(req, res) {
     const { objectName, objectId, startDate, endDate } = req.query;
     if (!objectName || objectId === undefined || objectId === null || objectId === '') {
       return res.status(400).json({ error: `objectName and objectId query parameters are required get objectName: ${objectName} , objectId: ${objectId}` });
+    }
+    const permission = `attachment_${masterKeyOf(objectName)}`;
+    if (!await userHasDrivePermission(req.user?.id || null, [permission])) {
+      return res.status(403).json({ error: `You need the ${permission} permission to see the files on ${objectName} ${objectId}` });
     }
     const result = await nbnextDriveController.getFilesByObject(
       companyId,
@@ -94,6 +125,18 @@ async function createFile(req, res) {
     const createdBy = req.user?.id || null;
     const companyId = req.user?.company_id || null;
 
+    // Filing a file against a record is the record's master's business; an
+    // upload to the Drive itself is filed against nothing and stays the
+    // Drive's. The file is already on disk by now, so a refusal takes it back
+    // off rather than leaving it orphaned there.
+    if (objectName) {
+      const permission = `attachment_${masterKeyOf(objectName)}`;
+      if (!await userHasDrivePermission(createdBy, [permission])) {
+        fs.unlinkSync(req.file.path);
+        return res.status(403).json({ error: `You need the ${permission} permission to attach files to ${objectName} ${objectId}` });
+      }
+    }
+
     const fileData = {
       fileName: req.file.originalname,
       filePath: path.relative(env.UPLOADS_DIR, req.file.path).replace(/\\/g, '/'),
@@ -118,9 +161,12 @@ async function deleteFile(req, res) {
     const { id } = req.params;
     const companyId = req.user?.company_id || null;
     const userId = req.user?.id || null;
-    const showAll = await userHasDrivePermission(userId, [NBNEXT_DRIVE.read.name]);
+    const access = await fileAccess(userId, companyId, parseInt(id, 10));
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason });
+    }
 
-    const result = await nbnextDriveController.deleteFile(parseInt(id, 10), companyId, userId, showAll);
+    const result = await nbnextDriveController.deleteFile(parseInt(id, 10), companyId, userId, access.showAll);
 
     res.status(200).json(result);
   } catch (error) {
@@ -134,9 +180,12 @@ async function downloadFile(req, res) {
     const { id } = req.params;
     const companyId = req.user?.company_id || null;
     const userId = req.user?.id || null;
-    const showAll = await userHasDrivePermission(userId, [NBNEXT_DRIVE.read.name]);
+    const access = await fileAccess(userId, companyId, parseInt(id, 10));
+    if (!access.allowed) {
+      return res.status(403).json({ error: access.reason });
+    }
 
-    const fileInfo = await nbnextDriveController.getFileStream(parseInt(id, 10), companyId, userId, showAll);
+    const fileInfo = await nbnextDriveController.getFileStream(parseInt(id, 10), companyId, userId, access.showAll);
 
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileInfo.fileName)}"`);
     res.setHeader('Content-Type', fileInfo.mimeType || 'application/octet-stream');

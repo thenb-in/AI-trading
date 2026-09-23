@@ -2,6 +2,8 @@ import PropTypes from 'prop-types';
 import { useCallback, useContext, useState } from 'react';
 import { Loader2, Send } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
+import { hasPermission } from '@startup/hooks/hasPermission';
+import { recordPermissionName } from '@utils/recordPermission';
 import { NBnextDriveAttachment } from '@startup/components/masters/nbnext_drive_master/NBnextDriveAttachment';
 import { useRecordComments } from './useRecordComments';
 import { RecordCommentItem } from './RecordCommentItem';
@@ -17,8 +19,10 @@ import { RecordAttachmentsContext } from './recordAttachments';
  * which master, and which row — so every form modal already has what it asks
  * for, and no master has to opt in.
  *
- * Anyone who can open the record can read and add to it, as with the record's
- * history; a comment can be deleted by whoever wrote it.
+ * Anyone who can open the record reads its discussion, as with the record's
+ * history; saying something needs the master's own comment_<master>.
+ * A comment is deleted by whoever wrote it, or by whoever holds delete_comment
+ * — the right to take down what someone else said, on any record of any master.
  *
  * Inside a form modal, files can be picked before the record is saved — they
  * wait for the save — and a form that draws its files itself leaves the list
@@ -30,6 +34,8 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
   const attachments = useContext(RecordAttachmentsContext);
   const isSaved = objectId != null;
   const { comments, loading, saving, addComment, deleteComment } = useRecordComments(objectName, objectId);
+  const canComment = hasPermission(recordPermissionName(objectName, 'comment'), userData);
+  const canDeleteAnyComment = hasPermission('delete_comment', userData);
 
   const handleDraftChange = useCallback((event) => setDraft(event.target.value), []);
 
@@ -59,6 +65,7 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
             Comments <span className="font-normal text-slate-500">({comments.length})</span>
           </h3>
 
+          {canComment && (
           <form onSubmit={handleSubmit} className="mb-3 flex items-end gap-2">
             <textarea
               value={draft}
@@ -77,6 +84,7 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
               Post
             </button>
           </form>
+          )}
 
           {loading ? (
             <p className="flex items-center justify-center gap-2 py-4 text-sm text-slate-500">
@@ -84,7 +92,7 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
             </p>
           ) : comments.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-200 px-3 py-4 text-center text-sm text-slate-500">
-              No comments yet. The first one is yours.
+              {canComment ? 'No comments yet. The first one is yours.' : 'No comments yet.'}
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
@@ -92,7 +100,7 @@ const RecordCommentsPanel = ({ objectName, objectId }) => {
                 <RecordCommentItem
                   key={comment.id}
                   comment={comment}
-                  canDelete={comment.createdBy === userData?.id}
+                  canDelete={comment.createdBy === userData?.id || canDeleteAnyComment}
                   onDelete={deleteComment}
                 />
               ))}

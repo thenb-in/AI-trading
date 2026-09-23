@@ -43,6 +43,14 @@ const MODULE_PERMISSION_CONSTANTS = {
     name: 'view_notification',
     display_name: 'View Notifications',
     description: 'Permission to view in-app notifications'
+  },
+  // A comment is someone's own words, and its author always takes it back. This
+  // overrides that on any record of any master — moderating a discussion is one
+  // job across the product, not one per master, so it is not a master's right.
+  DELETE_COMMENT: {
+    name: 'delete_comment',
+    display_name: 'Delete Comment',
+    description: 'Permission to delete a comment written by someone else, on any record'
   }
   // IS_ADMIN: {
   //   name: 'is_admin',
@@ -105,6 +113,16 @@ const create_master_permission = (master, approval_required = false) => {
       name: `delete_${master}`,
       display_name: `Delete ${formattedMaster}`,
       description: `Permission to delete ${formattedMaster}`
+    },
+    comment: {
+      name: `comment_${master}`,
+      display_name: `Comment ${formattedMaster}`,
+      description: `Permission to comment on ${formattedMaster}`
+    },
+    attachment: {
+      name: `attachment_${master}`,
+      display_name: `Attachment ${formattedMaster}`,
+      description: `Permission to manage attachments on ${formattedMaster}`
     }
   };
   if (approval_required) {
@@ -121,6 +139,7 @@ const create_master_permission = (master, approval_required = false) => {
   }
   return permissions;
 };
+
 
 
 const MASTER_PERMISSION_CONSTANTS = {
