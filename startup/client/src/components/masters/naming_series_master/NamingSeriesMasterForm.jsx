@@ -20,7 +20,7 @@ const previewNextCode = (template, count) => {
 const toMasterLabel = (master) =>
   master.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
-const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
+const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, onSaved }) => {
   const [series, setSeries] = useState(EMPTY_SERIES);
   const [masterOptions, setMasterOptions] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -36,7 +36,7 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
         count: initialData.count,
         is_default: initialData.is_default
       }
-      : EMPTY_SERIES);
+      : { ...EMPTY_SERIES, ...defaults });
     namingSeriesService.masters()
       .then((response) => setMasterOptions(
         (response.data?.data?.masters ?? []).map(({ master }) => ({ value: master, label: toMasterLabel(master) }))
@@ -44,7 +44,7 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
       .catch((error) => setErrorMessage(
         getApiErrorMessage(error, 'Could not load the masters that use a naming series')
       ));
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, defaults.master]);
 
   const patchSeries = (changes) => setSeries((prev) => ({ ...prev, ...changes }));
   const handleInputChange = (e) => patchSeries({ [e.target.name]: e.target.value });
@@ -90,8 +90,8 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
         <SearchableDropdown
           options={masterOptions}
           value={series.master}
-          disabled={isEditMode}
-          optionName="Master"
+          multiple={false}
+          disabled={isEditMode || Boolean(defaults.master)}
           placeholder="Select the master to number…"
           onChange={(master) => patchSeries({ master: master ?? '' })}
         />
@@ -142,7 +142,9 @@ NamingSeriesMasterForm.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSaved: PropTypes.func.isRequired,
-  initialData: PropTypes.object
+  initialData: PropTypes.object,
+  // Fields the caller fixes up front, e.g. { master: 'bom' } when adding a series from a BOM form.
+  defaults: PropTypes.object
 };
 
 export { NamingSeriesMasterForm };
