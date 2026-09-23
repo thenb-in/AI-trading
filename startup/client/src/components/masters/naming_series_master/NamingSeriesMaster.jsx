@@ -27,7 +27,6 @@ const NamingSeriesMaster = () => (
     loadRows={loadSeries}
     deleteRow={deleteSeries}
     deleteConfirmText="Delete this series? If it is the default, new records of its master go back to needing a typed code."
-    unauthorizedToast="You are not authorized to view naming series"
     unauthorizedDeleteToast="You are not authorized to delete a naming series"
     fetchFailureToast="Failed to load naming series"
     FormComponent={NamingSeriesMasterForm}

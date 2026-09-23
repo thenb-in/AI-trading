@@ -14,7 +14,7 @@ import { useRecordModal } from './useRecordModal';
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
-import { UnauthorisedTable } from '@startup/components/common/UnauthorisedTable';
+import { AccessDenied } from '@startup/components/AccessDenied';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
 import { DEFAULT_WORKFLOW, amendCopy, statusOf } from '../workflow/workflow';
 import { useWorkflowRowActions } from '../workflow/useWorkflowRowActions';
@@ -65,7 +65,6 @@ const BaseMaster = ({
   rowsKey,
   extractResponse,
   onRowClickOverride,
-  unauthorizedToast = 'You are not authorized to view this table',
   unauthorizedDeleteToast = 'You are not authorized to delete this table',
   fetchSuccessToast,
   fetchFailureToast,
@@ -196,7 +195,7 @@ const BaseMaster = ({
     fetchRows, loadMore, applyFilters, reloadQuietly, patchRow,
   } = useMasterRows({
     title, canRead, loadRows, rowsKey, extractResponse, initialFilters, mapFiltersForApi,
-    infiniteScroll, pageSize, serverSearch, searchQuery, unauthorizedToast, fetchSuccessToast, fetchFailureToast,
+    infiniteScroll, pageSize, serverSearch, searchQuery, fetchSuccessToast, fetchFailureToast,
   });
 
   useEffect(() => subscribeToRefresh?.(reloadQuietly), [subscribeToRefresh, reloadQuietly]);
@@ -373,6 +372,13 @@ const BaseMaster = ({
     />
   );
 
+  // A master this user may not read refuses outright, on the same screen every
+  // other gated page uses. A header with its Add and Export buttons sitting over
+  // an empty grid reads as a broken page, and a broken page is a support call.
+  if (!canRead) {
+    return <AccessDenied requiredPermission={permissionKeys.read} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className={`${baseMasterContainerWidth} mx-auto`}>
@@ -416,42 +422,38 @@ const BaseMaster = ({
             placeholder={searchPlaceholder}
           />
         </div>
-        {canRead && bulkProps ? <BulkActionBar {...bulkProps} /> : null}
-        {canRead ? (
-          <div data-tour="master-grid">
-            <MasterTable
-              {...selectionProps}
-              columns={columns}
-              data={filteredData}
-              loading={loading}
-              actions={actions}
-              onRowClick={handleRowClick}
-              rowClickEnabled
-              infiniteScroll={infiniteScroll}
-              hasMore={infiniteScroll && hasMore}
-              onLoadMore={loadMore}
-              isLoadingMore={isLoadingMore}
-              onVisibleRowsChange={handleVisibleRowsChange}
-              getRowClassName={getRowClassName}
-              isAlertRow={isAlertRow}
-              initialSortKey={initialSortKey}
-              initialSortDirection={initialSortDirection}
-              defaultGroupByField={defaultGroupByField}
-              showGridExport={showGridExport}
-              exportReport={exportReport}
-              showInsightsAsHeader={showInsightsAsHeader}
-              showEmptyColumns={showEmptyColumns}
-              hideConstantColumns={hideConstantColumns}
-              density={density}
-              documentName={documentName}
-              viewMode={viewMode}
-              kanbanField={kanbanField}
-              kanbanLaneValues={kanbanLaneValues}
-            />
-          </div>
-        ) : (
-          <UnauthorisedTable />
-        )}
+        {bulkProps ? <BulkActionBar {...bulkProps} /> : null}
+        <div data-tour="master-grid">
+          <MasterTable
+            {...selectionProps}
+            columns={columns}
+            data={filteredData}
+            loading={loading}
+            actions={actions}
+            onRowClick={handleRowClick}
+            rowClickEnabled
+            infiniteScroll={infiniteScroll}
+            hasMore={infiniteScroll && hasMore}
+            onLoadMore={loadMore}
+            isLoadingMore={isLoadingMore}
+            onVisibleRowsChange={handleVisibleRowsChange}
+            getRowClassName={getRowClassName}
+            isAlertRow={isAlertRow}
+            initialSortKey={initialSortKey}
+            initialSortDirection={initialSortDirection}
+            defaultGroupByField={defaultGroupByField}
+            showGridExport={showGridExport}
+            exportReport={exportReport}
+            showInsightsAsHeader={showInsightsAsHeader}
+            showEmptyColumns={showEmptyColumns}
+            hideConstantColumns={hideConstantColumns}
+            density={density}
+            documentName={documentName}
+            viewMode={viewMode}
+            kanbanField={kanbanField}
+            kanbanLaneValues={kanbanLaneValues}
+          />
+        </div>
         <Modal
           {...formModalProps}
           isOpen={modal.isOpen && Boolean(ModalBody)}

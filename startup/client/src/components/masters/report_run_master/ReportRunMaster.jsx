@@ -121,7 +121,6 @@ const ReportRunMaster = () => {
       extractResponse={extractResponse}
       onRowClickOverride={openRun}
       extraActions={extraActions}
-      unauthorizedToast="You are not authorized to view report runs"
       fetchFailureToast="Failed to load report runs"
       initialSortKey="createdAt"
       initialSortDirection="desc"

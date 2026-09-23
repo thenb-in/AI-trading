@@ -80,7 +80,6 @@ const NotificationRuleMaster = () => {
       loadRows={loadRules}
       deleteRow={deleteRule}
       deleteConfirmText="Delete this rule? Nothing will be sent for it again."
-      unauthorizedToast="You are not authorized to view notification rules"
       unauthorizedDeleteToast="You are not authorized to delete a notification rule"
       fetchFailureToast="Failed to load notification rules"
       extraActions={extraActions}

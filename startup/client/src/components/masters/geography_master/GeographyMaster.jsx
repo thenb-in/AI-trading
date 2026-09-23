@@ -118,7 +118,6 @@ const GeographyMaster = () => {
         loadRows={loadRows}
         deleteRow={deletePlace}
         deleteConfirmText="Delete this place? A place with anything under it cannot be deleted."
-        unauthorizedToast="You are not authorized to view geography"
         unauthorizedDeleteToast="You are not authorized to delete a place"
         fetchFailureToast="Failed to load places"
         FormComponent={GeographyMasterForm}

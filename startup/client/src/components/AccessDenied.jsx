@@ -1,9 +1,25 @@
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 
+/**
+ * The permission a screen wanted, spelled the way hasPermission reads it: one
+ * name, any of several, or — given { all: [...] } — every one of them. Naming
+ * it turns "why can't I see this?" into something a support engineer can act on.
+ */
+const requiredPermissionText = (requiredPermission) => {
+  if (!requiredPermission) return "";
+  if (requiredPermission.all) return requiredPermission.all.join(" and ");
+  return [].concat(requiredPermission).join(" or ");
+};
+
+/**
+ * The one refusal screen in the app. Every gated page — a route, a master, a
+ * report — lands here rather than rendering itself empty, so a missing
+ * permission always reads as a refusal instead of a broken page.
+ */
 const AccessDenied = ({ requiredPermission }) => {
-  console.log(requiredPermission,'3223232323')
   const navigate = useNavigate();
+  const permissionText = requiredPermissionText(requiredPermission);
 
   const handleGoHome = () => {
     navigate("/");
@@ -16,9 +32,9 @@ const AccessDenied = ({ requiredPermission }) => {
         <p className="text-gray-700">
           You don&apos;t have permission to access this page.
         </p>
-        {requiredPermission && (
+        {permissionText && (
           <p className="text-gray-500 mt-2 text-sm">
-            Required permission: <b>{requiredPermission}</b>
+            Required permission: <b>{permissionText}</b>
           </p>
         )}
         <button
@@ -33,7 +49,12 @@ const AccessDenied = ({ requiredPermission }) => {
 };
 
 AccessDenied.propTypes = {
-  requiredPermission: PropTypes.string,
+  // A permission name, any of several, or { all: [...] } — what hasPermission takes.
+  requiredPermission: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.arrayOf(PropTypes.string),
+    PropTypes.shape({ all: PropTypes.arrayOf(PropTypes.string) }),
+  ]),
 };
 
 export { AccessDenied };

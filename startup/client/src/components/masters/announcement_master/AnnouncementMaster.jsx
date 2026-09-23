@@ -26,7 +26,6 @@ const AnnouncementMaster = () => (
     loadRows={loadAnnouncements}
     deleteRow={deleteAnnouncement}
     deleteConfirmText="Delete this announcement? It stops being shown to everyone at once."
-    unauthorizedToast="You are not authorized to view announcements"
     unauthorizedDeleteToast="You are not authorized to delete an announcement"
     fetchFailureToast="Failed to load announcements"
     FormComponent={AnnouncementMasterForm}

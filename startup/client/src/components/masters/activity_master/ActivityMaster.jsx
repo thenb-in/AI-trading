@@ -57,7 +57,6 @@ const ActivityMaster = () => (
     mapRows={tintSharedRecords}
     FormComponent={ActivityForm}
     DetailComponent={ActivityLogDetails}
-    unauthorizedToast="You are not authorized to view activity logs"
     fetchFailureToast="Failed to fetch activity logs"
     exportReport={{ title: 'Activity Logs', slug: 'activity-logs' }}
   />

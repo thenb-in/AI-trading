@@ -2,9 +2,10 @@ import PropTypes from 'prop-types';
 
 // BaseMaster's props, kept apart so the component stays readable.
 
-// A permission name, or { all: [...] } when every listed permission is needed.
+// A permission name, any of several, or { all: [...] } when every one is needed.
 const permissionKeyType = PropTypes.oneOfType([
   PropTypes.string,
+  PropTypes.arrayOf(PropTypes.string),
   PropTypes.shape({ all: PropTypes.arrayOf(PropTypes.string) }),
 ]);
 
@@ -41,7 +42,6 @@ const baseMasterPropTypes = {
   // (row, { openEdit }) => void — decides what a row click does; `openEdit(row)`
   // opens the row the default way (e.g. only while it is still pending).
   onRowClickOverride: PropTypes.func,
-  unauthorizedToast: PropTypes.string,
   unauthorizedDeleteToast: PropTypes.string,
   fetchSuccessToast: PropTypes.string,
   fetchFailureToast: PropTypes.string,

@@ -66,7 +66,6 @@ const NBnextDriveMaster = () => {
       FormComponent={NBnextDriveForm}
       DetailComponent={NBnextDriveDetails}
       extraActions={extraActions}
-      unauthorizedToast="You are not authorized to view files"
       fetchFailureToast="Failed to fetch files"
       exportReport={{ title: 'NBnext Drive', slug: 'nbnext-drive' }}
     />

@@ -33,7 +33,6 @@ const useMasterRows = ({
   pageSize,
   serverSearch,
   searchQuery,
-  unauthorizedToast,
   fetchSuccessToast,
   fetchFailureToast,
 }) => {
@@ -48,10 +47,8 @@ const useMasterRows = ({
   const search = useDebouncedValue(serverSearch ? searchQuery : '', SERVER_SEARCH_DEBOUNCE_MS);
 
   const fetchRows = useCallback(async (filterOverride, { pageToLoad = 1, append = false, silent = false } = {}) => {
-    if (!canRead) {
-      toast.error(unauthorizedToast);
-      return;
-    }
+    // BaseMaster has already refused the screen; there is nothing to ask the server for.
+    if (!canRead) return;
     try {
       if (append) setIsLoadingMore(true); else if (!silent) setLoading(true);
       const apiFilters = filterOverride ?? filters;
@@ -89,7 +86,7 @@ const useMasterRows = ({
     } finally {
       if (append) setIsLoadingMore(false); else setLoading(false);
     }
-  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, unauthorizedToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize, search]);
+  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize, search]);
 
   const latestRef = useRef({});
   latestRef.current = { loading, isLoadingMore, hasMore, page, fetchRows };
