@@ -1,14 +1,3 @@
-/* Material Design Icons -- the same icon set the mobile app renders, addressed by name. */
-@import "@mdi/font/css/materialdesignicons.css";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Ensure filter/Choices.js dropdowns appear above tables and other content */
-.choices__list--dropdown {
-  z-index: 9999 !important;
-}
-.choices.is-open .choices__inner {
-  z-index: 9998;
-}
+/* The framework owns the Tailwind entry and the generic base styles. App-only
+   CSS goes below this import. */
+@import "@startup/index.css";
