@@ -1,4 +1,3 @@
-// How a master numbers the rows it creates without a code. See models/mixins/namingSeries.js.
 module.exports = (sequelize, DataTypes) => {
   const NamingSeries = sequelize.define('NamingSeries', {
     id: {
