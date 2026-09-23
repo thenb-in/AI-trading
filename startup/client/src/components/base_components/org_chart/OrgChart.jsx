@@ -39,6 +39,7 @@ const searchNodes = (node, term, trail = [], found = []) => {
 };
 
 const MAX_RESULTS = 8;
+const CANVAS_PADDING = 64;
 
 const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder = 'Search...', emptyText = 'Nothing to show yet.' }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,6 +49,7 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
   const viewportRef = useRef(null);
   const overlayRef = useRef(null);
   const [overlayHeight, setOverlayHeight] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const offsetRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef(null);
 
@@ -65,6 +67,16 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
   }, [zoom]);
 
   useEffect(applyTransform, [applyTransform]);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+    const observer = new ResizeObserver(([entry]) => setViewportWidth(entry.contentRect.width));
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
 
   const path = useMemo(() => findPath(root, focusId) || [root], [root, focusId]);
   const focused = path[path.length - 1];
@@ -213,7 +225,6 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
     return (
       <OrgChartLevel
         key={node.id}
-        nested
         parent={card}
         childrenNodes={childrenNodes}
         childrenLabel={node.childrenLabel}
@@ -275,13 +286,14 @@ const OrgChart = ({ root, onOpen, onSelect, overlay, toolbar, searchPlaceholder 
           onMouseUp={endDrag}
           onMouseLeave={endDrag}
         >
-          <div ref={canvasRef} className="flex min-h-full w-full origin-top items-start justify-center px-8 pt-4 pb-8">
-            <div className="w-full">
+          <div ref={canvasRef} className="flex min-h-full w-max min-w-full origin-top items-start justify-center px-8 pt-4 pb-8">
+            <div>
               <OrgChartLevel
                 parent={<OrgChartCard node={focused} expanded />}
                 childrenNodes={children}
                 childrenLabel={focused.childrenLabel}
                 renderChild={renderChild}
+                availableWidth={Math.max(0, viewportWidth - CANVAS_PADDING)}
               />
               {children.length === 0 && (
                 <p className="mt-4 text-center text-sm text-slate-500">Nothing under this yet.</p>
