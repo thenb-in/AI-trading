@@ -101,7 +101,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       return;
     }
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
-  }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
+  }, [approval, selectedRows, isPending, noun, setSelectedIds, process]);
 
   const confirmRemarks = useCallback(async (remarks) => {
     setIsDeciding(true);
