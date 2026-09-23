@@ -38,6 +38,9 @@ const BaseReport = ({
   decorateColumns,
   showTotalRow = false,
   defaultGroupByField = null,
+  hideConstantColumns = true,
+  showInsightsAsHeader = false,
+  renderToolbarExtras,
   children,
 }) => {
   const {
@@ -101,8 +104,11 @@ const BaseReport = ({
             showTotalRow={showTotalRow}
             defaultGroupByField={defaultGroupByField}
             frozenColumns={frozenColumns}
+            hideConstantColumns={hideConstantColumns}
+            showInsightsAsHeader={showInsightsAsHeader}
             showExcelExport
             exportReport={{ title: report?.title, slug: report?.slug }}
+            renderToolbarExtras={renderToolbarExtras}
           />
         )}
       </BaseReportContext.Provider>
@@ -125,6 +131,12 @@ BaseReport.propTypes = {
   showTotalRow: PropTypes.bool,
   /** Field to group rows by on open — each group gets a subtotal row. User-toggleable from the header. */
   defaultGroupByField: PropTypes.string,
+  /** false keeps same-value columns in the table instead of promoting them to the insights panel. */
+  hideConstantColumns: PropTypes.bool,
+  /** Excel export: write insights as a header block above the table. */
+  showInsightsAsHeader: PropTypes.bool,
+  /** Extra controls beside Export, e.g. a report's Print button — passed straight to NbNextDataGrid. */
+  renderToolbarExtras: PropTypes.func,
   children: PropTypes.node,
 };
 
