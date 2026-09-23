@@ -57,7 +57,9 @@ function PermissionCategorySection({
     }
   }, [onDeletePermission]);
 
-  const canDeletePermission = hasPermission('delete_permission', userData);
+  // Clearing up permission rows is support staff's job — the permission alone
+  // does not open it to a company's own admins.
+  const canDeletePermission = Boolean(userData?.isSupportUser) && hasPermission('delete_permission', userData);
 
   // Validate permissions based on category type
   let hasPermissions = false;

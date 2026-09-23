@@ -37,7 +37,9 @@ router.post('/roles', requirePermission(MASTER_PERMISSION_CONSTANTS.ROLE.create.
 
 router.get('/permissions', requirePermission(CAN_SEE_PERMISSIONS), adminController.getPermissions);
 router.post('/permissions', requirePermission(MASTER_PERMISSION_CONSTANTS.PERMISSION.create.name), adminController.createPermission);
-router.delete('/permissions/:permission_id', requirePermission(MASTER_PERMISSION_CONSTANTS.PERMISSION.delete.name), adminController.deletePermission);
+// Clearing up the permission rows a build left behind is support staff's job,
+// so the permission alone is not enough.
+router.delete('/permissions/:permission_id', requireSupportUser, requirePermission(MASTER_PERMISSION_CONSTANTS.PERMISSION.delete.name), adminController.deletePermission);
 
 router.post('/role-permissions/add', requirePermission(CAN_EDIT_ROLE_PERMISSIONS), adminController.addPermissionToRole);
 router.post('/role-permissions/remove', requirePermission(CAN_EDIT_ROLE_PERMISSIONS), adminController.removePermissionFromRole);

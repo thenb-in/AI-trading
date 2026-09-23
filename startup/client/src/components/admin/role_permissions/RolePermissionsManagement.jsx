@@ -41,7 +41,8 @@ function RolePermissionsManagement() {
   const organizedPermissions = organizePermissions(permissions, companySubscriptions, userData);
   // The trash icon only exists where there is something to clear up, so the
   // legend only explains it then.
-  const canDeleteUndeclared = hasPermission('delete_permission', userData)
+  const canDeleteUndeclared = Boolean(userData?.isSupportUser)
+    && hasPermission('delete_permission', userData)
     && permissions.some(isUndeclaredPermission);
 
   if (loading) {
