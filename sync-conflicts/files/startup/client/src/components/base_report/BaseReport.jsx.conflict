@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 4afd36771a6a2da972a4eb0c616ba82a57d08c47
+# Source commit: 81af0586d6cb0bf6a6f28b025d5719225e9d1533
 # startup/client/src/components/base_report/BaseReport.jsx in the tree now holds the erp version.
 # Below is the full three-way merge, markers and all.
 #
@@ -47,15 +47,9 @@ const BaseReport = ({
   decorateColumns,
   showTotalRow = false,
   defaultGroupByField = null,
-<<<<<<< startup (this repo)
   hideConstantColumns = true,
   showInsightsAsHeader = false,
-  renderToolbarExtras,
-||||||| base (common ancestor)
-=======
-  hideConstantColumns = true,
-  showInsightsAsHeader = false,
->>>>>>> erp (incoming)
+  toolbar,
   children,
 }) => {
   const {
@@ -123,7 +117,12 @@ const BaseReport = ({
             showInsightsAsHeader={showInsightsAsHeader}
             showExcelExport
             exportReport={{ title: report?.title, slug: report?.slug }}
+<<<<<<< startup (this repo)
             renderToolbarExtras={renderToolbarExtras}
+||||||| base (common ancestor)
+=======
+            renderToolbarExtras={toolbar ? ({ position }) => (position === 'top' ? toolbar : null) : null}
+>>>>>>> erp (incoming)
           />
         )}
       </BaseReportContext.Provider>
@@ -146,20 +145,12 @@ BaseReport.propTypes = {
   showTotalRow: PropTypes.bool,
   /** Field to group rows by on open — each group gets a subtotal row. User-toggleable from the header. */
   defaultGroupByField: PropTypes.string,
-<<<<<<< startup (this repo)
   /** false keeps same-value columns in the table instead of promoting them to the insights panel. */
   hideConstantColumns: PropTypes.bool,
   /** Excel export: write insights as a header block above the table. */
   showInsightsAsHeader: PropTypes.bool,
-  /** Extra controls beside Export, e.g. a report's Print button — passed straight to NbNextDataGrid. */
-  renderToolbarExtras: PropTypes.func,
-||||||| base (common ancestor)
-=======
-  /** false keeps same-value columns in the table instead of promoting them to the insights panel. */
-  hideConstantColumns: PropTypes.bool,
-  /** Excel export: write insights as a header block above the table. */
-  showInsightsAsHeader: PropTypes.bool,
->>>>>>> erp (incoming)
+  /** Controls in the grid's top toolbar beside Export, e.g. a report's Print button. */
+  toolbar: PropTypes.node,
   children: PropTypes.node,
 };
 
