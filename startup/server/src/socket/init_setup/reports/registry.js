@@ -10,12 +10,27 @@
 // Caveats:
 //   - GET-only. POST/PUT routes are not exposed via the socket transport.
 //   - The whole route stack runs, so per-route middleware such as
-//     requirePermission gates the socket path exactly as it gates REST.
+//     requirePermission gates the socket path exactly as it gates REST — except
+//     for `protect`, which is dropped (see below).
 
 const { invokeExpressHandler } = require('./expressShim');
 const { protect } = require('../../../middleware/authMiddleware');
 const genericReportRoutes = require('../../../routes/reportRoutes');
 
+
+/**
+ * `protect` reads an access token off the request's headers or cookies. A socket
+ * run has neither: the connection was authenticated at the handshake and the
+ * runner hands the registry the user it belongs to, so there is no token left to
+ * present and nothing to present it on. Running it here asks an already-known
+ * caller to prove itself with something that was never part of this transport,
+ * and it answers "No token found" for every report on a route that carries it.
+ *
+ * So identification is dropped and authorization is kept: requirePermission and
+ * every other per-route guard still run, against the user the socket
+ * authenticated, and the shim attaches the same data scope `protect` would have.
+ */
+const isAuthentication = (handle) => handle === protect;
 
 // Runs a route's handlers in order, each one's next() starting the following one,
 // the way Express walks a route stack.
@@ -31,7 +46,9 @@ function buildRegistryFromRouter(router, prefix = '') {
       continue;
     }
     const slug = prefix + String(layer.route.path).replace(/^\//, '');
-    const handles = (layer.route.stack || []).map((routeLayer) => routeLayer.handle);
+    const handles = (layer.route.stack || [])
+      .map((routeLayer) => routeLayer.handle)
+      .filter((handle) => !isAuthentication(handle));
     const notFunction = handles.find((handle) => typeof handle !== 'function');
     if (notFunction !== undefined || handles.length === 0) {
       throw new Error(`registry: route "${slug}" has a non-function handler (type=${typeof notFunction})`);

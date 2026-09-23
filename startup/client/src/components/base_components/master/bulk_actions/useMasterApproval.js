@@ -90,9 +90,14 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   }, [approval, noun, decideOne]);
 
   const runBulk = useCallback((verb) => {
-    const eligible = selectedRows.filter(isPending);
+    // Nothing ticked means the whole list — the same rule useBulkActions applies
+    // when it runs, so the count in the question below is the count it acts on.
+    const scope = selectedRows.length > 0 ? selectedRows : rows;
+    const eligible = scope.filter(isPending);
     if (eligible.length === 0) {
-      toast.info(`No pending ${noun}(s) to ${verb}`);
+      toast.info(selectedRows.length > 0
+        ? `No pending ${noun}(s) in the selection to ${verb}`
+        : `No pending ${noun}(s) to ${verb}`);
       setSelectedIds([]);
       return;
     }
@@ -101,7 +106,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       return;
     }
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
-  }, [approval, selectedRows, isPending, noun, setSelectedIds, process]);
+  }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
 
   const confirmRemarks = useCallback(async (remarks) => {
     setIsDeciding(true);
@@ -135,8 +140,10 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     },
     bulkProps: (canApprove || canReject)
       ? {
+        // Nothing ticked is not nothing to do: it means the whole list, which is
+        // how a month-end queue is cleared. The button says which it will be, and
+        // the confirm names the count before anything is decided.
         visible: rows.length > 0,
-        disabled: selectedRows.length === 0,
         selectedCount: selectedRows.length,
         processingMode,
         onApprove: canApprove ? bulkApprove : null,

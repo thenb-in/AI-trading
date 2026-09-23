@@ -5,7 +5,7 @@ import { CheckCheck, X } from 'lucide-react';
 // list, which is how a queue is cleared at month end; tick some rows and it
 // narrows to those, and says how many, so nobody decides more than they meant.
 const defaultLabel = (verb, count) =>
-  count > 0 ? `${verb} Selected (${count})` : `${verb} Selected`;
+  count > 0 ? `${verb} Selected (${count})` : `${verb} All`;
 
 /**
  * Standard bulk-action toolbar for master tables: Approve / Reject buttons
