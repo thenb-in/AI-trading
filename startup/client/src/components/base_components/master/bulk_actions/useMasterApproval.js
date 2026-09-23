@@ -90,8 +90,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   }, [approval, noun, decideOne]);
 
   const runBulk = useCallback((verb) => {
-    const scope = selectedRows.length > 0 ? selectedRows : rows;
-    const eligible = scope.filter(isPending);
+    const eligible = selectedRows.filter(isPending);
     if (eligible.length === 0) {
       toast.info(`No pending ${noun}(s) to ${verb}`);
       setSelectedIds([]);
@@ -102,7 +101,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       return;
     }
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
-  }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
+  }, [approval, selectedRows, isPending, noun, setSelectedIds, process]);
 
   const confirmRemarks = useCallback(async (remarks) => {
     setIsDeciding(true);
@@ -136,6 +135,8 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     },
     bulkProps: (canApprove || canReject)
       ? {
+        visible: rows.length > 0,
+        disabled: selectedRows.length === 0,
         selectedCount: selectedRows.length,
         processingMode,
         onApprove: canApprove ? bulkApprove : null,

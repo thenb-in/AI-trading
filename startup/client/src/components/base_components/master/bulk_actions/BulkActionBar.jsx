@@ -2,7 +2,7 @@ import PropTypes from 'prop-types';
 import { CheckCheck, X } from 'lucide-react';
 
 const defaultLabel = (verb, count) =>
-  count > 0 ? `${verb} Selected (${count})` : `${verb} All`;
+  count > 0 ? `${verb} Selected (${count})` : `${verb} Selected`;
 
 /**
  * Standard bulk-action toolbar for master tables: Approve / Reject buttons
