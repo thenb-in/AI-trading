@@ -19,6 +19,7 @@ function DropdownField({
   onSearchChange,
   onRemove,
   onClearAll,
+  selectedAddon,
   ...state
 }) {
   const { multiple, searchable, disabled, isOpen, searchTerm } = state;
@@ -43,6 +44,7 @@ function DropdownField({
     <>
       <div
         ref={triggerRef}
+        data-disabled={disabled}
         {...(searchable ? {} : { ...comboboxProps, onKeyDown: onTriggerKeyDown })}
         onClick={onFieldClick}
         title={title}
@@ -65,6 +67,7 @@ function DropdownField({
               {singleLabel}
             </span>
           )}
+          {showSingleLabel && selectedAddon}
           {multiple && <SelectionChips chips={fieldChips} disabled={disabled} onRemove={onRemove} />}
           {/* The search box lives in the field rather than as a row inside the
               menu: same typing, one row less of vertical chrome. */}
@@ -123,6 +126,8 @@ const refPropType = PropTypes.shape({ current: PropTypes.any });
 DropdownField.propTypes = {
   isMuted: PropTypes.bool.isRequired,
   wrapLabel: PropTypes.bool,
+  /** Drawn beside the picked value (single-select), e.g. an item's image icon. */
+  selectedAddon: PropTypes.node,
   triggerRef: refPropType.isRequired,
   inputRef: refPropType.isRequired,
   onFieldClick: PropTypes.func.isRequired,

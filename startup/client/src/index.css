@@ -9,3 +9,13 @@
 .choices.is-open .choices__inner {
   z-index: 9998;
 }
+
+/* Disabled fields read bold, so a locked document's values stay legible. */
+@layer base {
+  input:disabled,
+  textarea:disabled,
+  select:disabled,
+  [data-disabled='true'] {
+    font-weight: 600;
+  }
+}

@@ -52,6 +52,9 @@ function SearchableDropdown({
   // (option) => node for a menu row, where a label alone says too little (an
   // item's name over its code). The field still shows the label once picked.
   renderOption,
+  // (option) => node drawn beside the picked value on the field, single-select
+  // only — an item's image icon.
+  renderSelectedAddon,
   // (option) => bool: options it rejects are left out of the menu, not out of
   // the dropdown — a picked value keeps its label.
   filter = null,
@@ -273,6 +276,9 @@ function SearchableDropdown({
         searchTerm={searchTerm}
         unknownSelections={unknownSelections}
         allowOptionsOutsideSelectBox={allowOptionsOutsideSelectBox}
+        selectedAddon={renderSelectedAddon && navigateValue !== null && optionByValue.has(navigateValue)
+          ? renderSelectedAddon(optionByValue.get(navigateValue))
+          : null}
       />
 
       {isOpen && !disabled && menuSx && (
@@ -373,6 +379,8 @@ SearchableDropdown.propTypes = {
   allowOptionsOutsideSelectBox: PropTypes.bool,
   /** (option) => node drawn for the option's menu row; the field still shows its label. */
   renderOption: PropTypes.func,
+  /** (option) => node drawn beside the picked value on the field; single-select only. */
+  renderSelectedAddon: PropTypes.func,
   /** (option) => bool — leaves options out of the menu; a picked one still shows its label. Flat lists only. */
   filter: PropTypes.func,
 };
