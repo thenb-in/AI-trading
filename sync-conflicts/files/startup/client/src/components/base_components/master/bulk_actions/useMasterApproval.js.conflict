@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 04fef93ab93ac30c6107737666d46ef5576c4047
-# startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 04fef93ab93ac30c6107737666d46ef5576c4047
+# startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -99,9 +99,21 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   }, [approval, noun, decideOne]);
 
   const runBulk = useCallback((verb) => {
+<<<<<<< startup (this repo)
     const eligible = selectedRows.filter(isPending);
+||||||| base (common ancestor)
+    const scope = selectedRows.length > 0 ? selectedRows : rows;
+    const eligible = scope.filter(isPending);
+=======
+    // Nothing ticked means the whole list — the same rule useBulkActions applies
+    // when it runs, so the count in the question below is the count it acts on.
+    const scope = selectedRows.length > 0 ? selectedRows : rows;
+    const eligible = scope.filter(isPending);
+>>>>>>> etime-payroll (incoming, at tip)
     if (eligible.length === 0) {
-      toast.info(`No pending ${noun}(s) to ${verb}`);
+      toast.info(selectedRows.length > 0
+        ? `No pending ${noun}(s) in the selection to ${verb}`
+        : `No pending ${noun}(s) to ${verb}`);
       setSelectedIds([]);
       return;
     }
@@ -118,7 +130,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
 =======
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
   }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 
   const confirmRemarks = useCallback(async (remarks) => {
     setIsDeciding(true);
@@ -152,8 +164,16 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     },
     bulkProps: (canApprove || canReject)
       ? {
+<<<<<<< startup (this repo)
         visible: rows.length > 0,
         disabled: selectedRows.length === 0,
+||||||| base (common ancestor)
+=======
+        // Nothing ticked is not nothing to do: it means the whole list, which is
+        // how a month-end queue is cleared. The button says which it will be, and
+        // the confirm names the count before anything is decided.
+        visible: rows.length > 0,
+>>>>>>> etime-payroll (incoming, at tip)
         selectedCount: selectedRows.length,
         processingMode,
         onApprove: canApprove ? bulkApprove : null,
