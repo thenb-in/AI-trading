@@ -40,7 +40,6 @@ const BaseReport = ({
   defaultGroupByField = null,
   hideConstantColumns = true,
   showInsightsAsHeader = false,
-  renderToolbarExtras,
   children,
 }) => {
   const {
@@ -135,8 +134,6 @@ BaseReport.propTypes = {
   hideConstantColumns: PropTypes.bool,
   /** Excel export: write insights as a header block above the table. */
   showInsightsAsHeader: PropTypes.bool,
-  /** Extra controls beside Export, e.g. a report's Print button — passed straight to NbNextDataGrid. */
-  renderToolbarExtras: PropTypes.func,
   children: PropTypes.node,
 };
 
