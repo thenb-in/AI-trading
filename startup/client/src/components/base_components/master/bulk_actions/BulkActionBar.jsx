@@ -1,14 +1,22 @@
 import PropTypes from 'prop-types';
 import { CheckCheck, X } from 'lucide-react';
 
+// The button says what pressing it will do. Nothing ticked means the whole
+// list, which is how a queue is cleared at month end; tick some rows and it
+// narrows to those, and says how many, so nobody decides more than they meant.
 const defaultLabel = (verb, count) =>
-  count > 0 ? `${verb} Selected (${count})` : `${verb} Selected`;
+  count > 0 ? `${verb} Selected (${count})` : `${verb} All`;
 
 /**
  * Standard bulk-action toolbar for master tables: Approve / Reject buttons
  * with selection-count labels, plus a Cancel button when a bulk run is in
  * flight. Pure presentational — pair with `useBulkActions` (or any state
  * source) to wire it up.
+ *
+ * A button is offered only where its handler is, so whoever wires this up
+ * decides by permission which decisions are on the bar: `useMasterApproval`
+ * passes `onApprove` only to someone who may approve, and `onReject` only to
+ * someone who may reject, so a user who holds one of the two sees one button.
  */
 const BulkActionBar = ({
   visible = true,
