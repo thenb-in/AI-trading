@@ -1,0 +1,33 @@
+# Overlapping edits could not be merged automatically (modified on both sides).
+# Source commit: dfcaafc4e2b037f8fa2e54b2b92f4d82a302ab12
+# app/client/src/index.css in the tree now holds the erp version.
+# Below is the full three-way merge, markers and all.
+#
+# Resolve by editing the real file, then deleting this .conflict file.
+# The PR cannot merge while sync-conflicts/ still has entries.
+# ---------------------------------------------------------------
+
+<<<<<<< startup (this repo)
+/* Material Design Icons -- the same icon set the mobile app renders, addressed by name. */
+@import "@mdi/font/css/materialdesignicons.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure filter/Choices.js dropdowns appear above tables and other content */
+.choices__list--dropdown {
+  z-index: 9999 !important;
+}
+.choices.is-open .choices__inner {
+  z-index: 9998;
+}
+||||||| base (common ancestor)
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+=======
+/* The framework owns the Tailwind entry and the generic base styles. App-only
+   CSS goes below this import. */
+@import "@startup/index.css";
+>>>>>>> erp (incoming)
