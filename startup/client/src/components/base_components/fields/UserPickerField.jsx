@@ -13,6 +13,7 @@ const UserPickerField = ({
   label = 'User',
   placeholder = 'Select user',
   emptyLabel,
+  note,
   required = false,
   disabled = false,
 }) => {
@@ -42,6 +43,7 @@ const UserPickerField = ({
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {required && '*'}
       </label>
+      {note && <div className="mb-2">{note}</div>}
       <SearchableDropdown
         options={options}
         value={value}
@@ -67,6 +69,7 @@ UserPickerField.propTypes = {
   label: PropTypes.string,
   placeholder: PropTypes.string,
   emptyLabel: PropTypes.string,
+  note: PropTypes.node,
   required: PropTypes.bool,
   disabled: PropTypes.bool,
 };
