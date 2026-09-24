@@ -1,8 +1,9 @@
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
-import { History, X } from 'lucide-react';
+import { History, Lock, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AuditHistoryModal } from '@startup/components/admin/audit_timeline/AuditHistoryModal';
+import { Badge } from '@startup/components/base_components/Badge';
 import { RecordCommentsPanel } from '@startup/components/base_components/record_comments';
 import { RecordAttachmentsContext } from '@startup/components/base_components/record_comments/recordAttachments';
 import { getDialogSidebarSx } from '@startup/components/base_components/utils/dialogSx';
@@ -26,8 +27,10 @@ const recordTitle = ({ masterName, record, isNew, isEditable }) => {
   return isEditable ? `Edit ${name}` : name;
 };
 
-// Lets a form rendered inside a modal title it (useModalTitle).
+// Lets a form rendered inside a modal title it (useModalTitle) and say that its
+// record is locked (useModalReadOnly).
 const ModalTitleContext = createContext(null);
+const ModalReadOnlyContext = createContext(null);
 
 /** Titles the modal this form sits in, unless that modal was given a `title` of its own. */
 const useModalTitle = (title) => {
@@ -36,6 +39,19 @@ const useModalTitle = (title) => {
     setTitle(title);
     return () => setTitle('');
   }, [setTitle, title]);
+};
+
+/**
+ * Tells the modal this form sits in that its record cannot be changed — the
+ * same as the `isReadOnly` prop, for a form that works that out itself (a
+ * document's workflow, an unlock permission) rather than the screen opening it.
+ */
+const useModalReadOnly = (isReadOnly) => {
+  const setReadOnly = useContext(ModalReadOnlyContext);
+  useLayoutEffect(() => {
+    setReadOnly(isReadOnly);
+    return () => setReadOnly(false);
+  }, [setReadOnly, isReadOnly]);
 };
 
 const BaseModal = ({
@@ -63,6 +79,10 @@ const BaseModal = ({
   // neighbouring records of the list this one was opened from.
   recordNav,
   autoFocusFirstField = true,
+  // The record is open but cannot be changed (its workflow status, or this
+  // user's permissions) — said in the header so nobody hunts for a field that
+  // will never take their typing.
+  isReadOnly = false,
   // A modal opened from inside another one (the audit history, the comments)
   // has to sit above it. 50 is a modal over the page; 60 is a modal over a modal.
   zIndex = 50,
@@ -74,6 +94,10 @@ const BaseModal = ({
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const hasFooter = actions || actionsLeft;
   const [formTitle, setFormTitle] = useState('');
+  // Read-only either because the screen opening the modal said so, or because
+  // the form inside it did (useModalReadOnly).
+  const [formReadOnly, setFormReadOnly] = useState(false);
+  const readOnly = isReadOnly || formReadOnly;
   const title = titleProp ?? formTitle;
   const isTitleString = typeof title === 'string';
   const isTitleNode = title != null && typeof title === 'object' && title.$$typeof != null;
@@ -96,7 +120,7 @@ const BaseModal = ({
 
   // Opening a modal puts the caret in its first field, ready for entry — holding
   // what a picker's "Create …" row had typed, when this is that creator.
-  useAutoFocusFirstField(paperRef, { enabled: isOpen && autoFocusFirstField, fillValue: initialName });
+  useAutoFocusFirstField(paperRef, { enabled: isOpen && autoFocusFirstField && !readOnly, fillValue: initialName });
 
   const ownsScroll = disableContentScroll || fullScreen;
   const mergedPaperProps = {
@@ -140,8 +164,14 @@ const BaseModal = ({
             flexShrink: 0,
             gap: 2,
           }}>
-            <Box sx={{ minWidth: 0 }}>
+            <Box sx={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
               {isTitleNode || isTitleString ? title : String(title || '')}
+              {readOnly && (
+                <Badge tone="gray">
+                  <Lock size={12} />
+                  Read only
+                </Badge>
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
@@ -202,7 +232,9 @@ const BaseModal = ({
             }),
           }}
         >
-          <ModalTitleContext.Provider value={setFormTitle}>{children}</ModalTitleContext.Provider>
+          <ModalTitleContext.Provider value={setFormTitle}>
+            <ModalReadOnlyContext.Provider value={setFormReadOnly}>{children}</ModalReadOnlyContext.Provider>
+          </ModalTitleContext.Provider>
 
           {/* Part of the record rather than a panel beside it: what people have
               said about it, and its files at the very end, so one scroll runs
@@ -277,11 +309,12 @@ BaseModal.propTypes = {
     onNext: PropTypes.func,
   }),
   autoFocusFirstField: PropTypes.bool,
+  isReadOnly: PropTypes.bool,
   /** 50 for a modal over the page, 60 for one opened from inside another modal. */
   zIndex: PropTypes.number,
   PaperProps: PropTypes.object,
   sx: PropTypes.oneOfType([PropTypes.object, PropTypes.array, PropTypes.func]),
 };
 
-export { BaseModal, recordTitle, useModalTitle };
+export { BaseModal, recordTitle, useModalTitle, useModalReadOnly };
 
