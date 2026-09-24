@@ -103,6 +103,10 @@ const FormModal = ({
     hooks,
     isNew: !isEditMode,
   });
+  // Until the record is here nothing is known about it: neither the field to
+  // start in nor whether it can be changed at all.
+  const isFormEditable = !isLoading && recordWorkflow.isEditable;
+  const isReadOnly = !isLoading && !recordWorkflow.isEditable;
 
   const save = async (run) => {
     setIsSaving(true);
@@ -156,6 +160,11 @@ const FormModal = ({
       <BaseModal
         {...modalProps}
         title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+        // A record that cannot be edited has nothing to type into, so the caret
+        // stays out of the form — otherwise it lands in the comment box, the one
+        // field still open on a read-only record, and the header says as much.
+        autoFocusFirstField={isFormEditable}
+        isReadOnly={isReadOnly}
         // What the modal is open on. Comments and attachments file themselves
         // against it; files picked before the first save wait for the save.
         recordName={masterName}
