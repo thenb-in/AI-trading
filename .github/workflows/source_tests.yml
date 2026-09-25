@@ -149,6 +149,16 @@ jobs:
           BACKEND_URL: http://localhost:8944
           DATABASE_URL: postgresql://postgres:postgres@${{ env.DB_HOST }}:5432/${{ env.DB_NAME }}
 
+      - name: Store e2e reports on runner
+        if: always()
+        run: |
+          DEST="$HOME/e2e-reports/$(date +%Y-%m-%d)_${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-source"
+          mkdir -p "$DEST"
+          for p in playwright-report test-results reports; do
+            [ -e "tests/e2e-tests/$p" ] && cp -r "tests/e2e-tests/$p" "$DEST/"
+          done
+          echo "e2e reports stored at $DEST"
+
       # ─── Teardown (always) ──────────────────────────────────────────────
       - name: Stop backend + frontend
         if: always()
