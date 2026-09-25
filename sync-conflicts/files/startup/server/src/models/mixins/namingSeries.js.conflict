@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: eef46550c82525753c5f21d2df352380469199dc
+# Source commit: 9e5187b4cc2c414ec01c67c4b6466f82849be59b
 # startup/server/src/models/mixins/namingSeries.js in the tree now holds the erp version.
 # Below is the full three-way merge, markers and all.
 #
@@ -23,12 +23,6 @@ const positiveId = (value) => {
  *
  *   attachNamingSeries(Employee, { master: 'employee', field: 'emp_code' });
  *
-<<<<<<< startup (this repo)
- * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it,
- *   and only for inserts (create/bulkCreate), never for Model.update.
-||||||| base (common ancestor)
- * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it.
-=======
  * A model whose rows belong to more than one master names them all and says which one a
  * row uses — the naming series screen then offers each of them separately:
  *
@@ -40,7 +34,6 @@ const positiveId = (value) => {
  *   });
  *
  * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it.
->>>>>>> erp (incoming)
  * - The counter moves inside the caller's transaction (options.transaction): the row stays
  *   locked until that transaction ends, and a rolled-back insert gives its number back.
  * - A company with no default series for the master is left alone when the code column is
@@ -58,12 +51,20 @@ function attachNamingSeries(Model, { master, field, seriesField, pickMaster }) {
   masters.forEach((name) => registerNamingSeriesMaster(name, field));
 
   Model.addHook('beforeValidate', async (instance, options) => {
+<<<<<<< startup (this repo)
     if (!instance.isNewRecord || options.where) {
+||||||| base (common ancestor)
+    if (!instance.isNewRecord) {
+=======
+    // A static Model.update validates a throwaway build of the changed fields, which also
+    // reads as a new record — its `where` is what tells it apart from a real insert.
+    if (!instance.isNewRecord || options.where) {
+>>>>>>> erp (incoming)
       return;
     }
     const { transaction } = options;
     const { NamingSeries } = Model.sequelize.models;
-    const companyId = instance.get('company_id') ?? instance.get('companyId');
+    const companyId = instance.get('companyId');
     const masterName = chooseMaster(instance);
     // A series named on the row wins over the master's default, as long as it is one of
     // this company's series for this master.
