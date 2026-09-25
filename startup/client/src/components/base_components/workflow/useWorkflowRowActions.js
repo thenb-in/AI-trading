@@ -45,6 +45,7 @@ const useWorkflowRowActions = ({
   return actionsOf(workflow)
     .filter((action) => hooks[action.key] && hasPermission(permissionFor(action.permission, masterName, permissions), userData))
     .map((action) => ({
+      key: action.key,
       label: action.label,
       icon: createElement(action.icon, { className: 'w-4 h-4' }),
       type: ROW_TYPES[action.tone] ?? 'default',
