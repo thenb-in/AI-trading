@@ -17,5 +17,5 @@ The real file currently holds the `etime-payroll` version — the source wins in
 
 | File | Kind | Source commit | Parked as |
 |---|---|---|---|
-| `startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js` | modified on both sides | `04fef93ab93a` | `sync-conflicts/files/startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js.conflict` |
-| `startup/client/src/hooks/hasPermission.js` | modified on both sides | `04fef93ab93a` | `sync-conflicts/files/startup/client/src/hooks/hasPermission.js.conflict` |
+| `startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js` | parked by an earlier run | `` | `sync-conflicts/files/startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js.conflict` |
+| `startup/client/src/hooks/hasPermission.js` | parked by an earlier run | `` | `sync-conflicts/files/startup/client/src/hooks/hasPermission.js.conflict` |
