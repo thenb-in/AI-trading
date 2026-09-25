@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
 import { useFormModal } from '@startup/components/base_components/master';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
@@ -7,8 +8,6 @@ import { CheckboxTypeField } from '@startup/components/base_components/fields/Ch
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 import { namingSeriesService } from '@services/namingSeriesService';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-
-const EMPTY_SERIES = { master: '', template: '', count: 0, is_default: false };
 
 // The code the next record gets, by the same rule the server formats with: the # run is
 // replaced by the number, padded to the run's width.
@@ -20,37 +19,32 @@ const previewNextCode = (template, count) => {
 const toMasterLabel = (master) =>
   master.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const startingSeries = (initialData, defaults) => ({
+  master: initialData?.master ?? defaults?.master ?? '',
+  template: initialData?.template ?? '',
+  count: initialData?.count ?? 0,
+  is_default: initialData?.is_default ?? false
+});
+
 const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, onSaved }) => {
-  const [series, setSeries] = useState(EMPTY_SERIES);
+  const [series, setSeries] = useState(() => startingSeries(initialData, defaults));
   const [masterOptions, setMasterOptions] = useState([]);
-  const [errorMessage, setErrorMessage] = useState(null);
   const isEditMode = Boolean(initialData?.id);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setErrorMessage(null);
-    setSeries(initialData
-      ? {
-        master: initialData.master,
-        template: initialData.template,
-        count: initialData.count,
-        is_default: initialData.is_default
-      }
-      : { ...EMPTY_SERIES, ...defaults });
     namingSeriesService.masters()
       .then((response) => setMasterOptions(
         (response.data?.data?.masters ?? []).map(({ master }) => ({ value: master, label: toMasterLabel(master) }))
       ))
-      .catch((error) => setErrorMessage(
+      .catch((error) => toast.error(
         getApiErrorMessage(error, 'Could not load the masters that use a naming series')
       ));
-  }, [isOpen, initialData, defaults.master]);
+  }, []);
 
   const patchSeries = (changes) => setSeries((prev) => ({ ...prev, ...changes }));
   const handleInputChange = (e) => patchSeries({ [e.target.name]: e.target.value });
 
   const submit = async () => {
-    setErrorMessage(null);
     const payload = { template: series.template, count: Number(series.count || 0), is_default: series.is_default };
     try {
       if (isEditMode) {
@@ -61,15 +55,16 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, o
       onSaved();
       onClose();
     } catch (error) {
-      setErrorMessage(
+      toast.error(
         getApiErrorMessage(error, `Failed to ${isEditMode ? 'update' : 'create'} naming series ${series.template}`)
       );
     }
   };
 
-  const validate = () => (
-    !isEditMode && !series.master ? { message: 'Pick the master this series numbers.', field: 'master' } : ''
-  );
+  const validate = () => {
+    if (!isEditMode && !series.master) return { message: 'Pick the master this series numbers', field: 'master' };
+    return '';
+  };
 
   useFormModal(submit, series, validate);
 
@@ -79,12 +74,6 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, o
 
   return (
     <div className="space-y-4">
-      {errorMessage && (
-        <div className="p-3 rounded text-sm bg-red-50 border border-red-200 text-red-700">
-          {errorMessage}
-        </div>
-      )}
-
       <div data-field="master">
         <label className="block text-sm font-medium text-gray-700 mb-1">Master *</label>
         <SearchableDropdown

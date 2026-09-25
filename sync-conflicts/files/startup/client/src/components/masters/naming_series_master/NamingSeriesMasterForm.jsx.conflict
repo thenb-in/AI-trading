@@ -1,5 +1,5 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: eef46550c82525753c5f21d2df352380469199dc
+# Source commit: b05febd186750b029b43545e5eb3330124bc85d2
 # startup/client/src/components/masters/naming_series_master/NamingSeriesMasterForm.jsx in the tree now holds the erp version.
 # Below is the full three-way merge, markers and all.
 #
@@ -9,15 +9,20 @@
 
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
+<<<<<<< startup (this repo)
 import { useFormModal } from '@startup/components/base_components/master';
+||||||| base (common ancestor)
+import { FormFooter } from '@startup/components/base_components/master';
+=======
+import { toast } from 'react-toastify';
+import { useFormModal } from '@startup/components/base_components/master';
+>>>>>>> erp (incoming)
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
 import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 import { namingSeriesService } from '@services/namingSeriesService';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-
-const EMPTY_SERIES = { master: '', template: '', count: 0, is_default: false };
 
 // The code the next record gets, by the same rule the server formats with: the # run is
 // replaced by the number, padded to the run's width.
@@ -29,37 +34,53 @@ const previewNextCode = (template, count) => {
 const toMasterLabel = (master) =>
   master.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 
+const startingSeries = (initialData, defaults) => ({
+  master: initialData?.master ?? defaults?.master ?? '',
+  template: initialData?.template ?? '',
+  count: initialData?.count ?? 0,
+  is_default: initialData?.is_default ?? false
+});
+
 const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, onSaved }) => {
-  const [series, setSeries] = useState(EMPTY_SERIES);
+  const [series, setSeries] = useState(() => startingSeries(initialData, defaults));
   const [masterOptions, setMasterOptions] = useState([]);
+<<<<<<< startup (this repo)
   const [errorMessage, setErrorMessage] = useState(null);
+||||||| base (common ancestor)
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
+=======
+>>>>>>> erp (incoming)
   const isEditMode = Boolean(initialData?.id);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setErrorMessage(null);
-    setSeries(initialData
-      ? {
-        master: initialData.master,
-        template: initialData.template,
-        count: initialData.count,
-        is_default: initialData.is_default
-      }
-      : { ...EMPTY_SERIES, ...defaults });
     namingSeriesService.masters()
       .then((response) => setMasterOptions(
         (response.data?.data?.masters ?? []).map(({ master }) => ({ value: master, label: toMasterLabel(master) }))
       ))
-      .catch((error) => setErrorMessage(
+      .catch((error) => toast.error(
         getApiErrorMessage(error, 'Could not load the masters that use a naming series')
       ));
-  }, [isOpen, initialData, defaults.master]);
+  }, []);
 
   const patchSeries = (changes) => setSeries((prev) => ({ ...prev, ...changes }));
   const handleInputChange = (e) => patchSeries({ [e.target.name]: e.target.value });
 
+<<<<<<< startup (this repo)
   const submit = async () => {
     setErrorMessage(null);
+||||||| base (common ancestor)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    if (!isEditMode && !series.master) {
+      setErrorMessage('Pick the master this series numbers.');
+      return;
+    }
+    setIsLoading(true);
+=======
+  const submit = async () => {
+>>>>>>> erp (incoming)
     const payload = { template: series.template, count: Number(series.count || 0), is_default: series.is_default };
     try {
       if (isEditMode) {
@@ -70,23 +91,35 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, o
       onSaved();
       onClose();
     } catch (error) {
-      setErrorMessage(
+      toast.error(
         getApiErrorMessage(error, `Failed to ${isEditMode ? 'update' : 'create'} naming series ${series.template}`)
       );
     }
   };
 
+<<<<<<< startup (this repo)
   const validate = () => (
     !isEditMode && !series.master ? { message: 'Pick the master this series numbers.', field: 'master' } : ''
   );
 
   useFormModal(submit, series, validate);
 
+||||||| base (common ancestor)
+=======
+  const validate = () => {
+    if (!isEditMode && !series.master) return { message: 'Pick the master this series numbers', field: 'master' };
+    return '';
+  };
+
+  useFormModal(submit, series, validate);
+
+>>>>>>> erp (incoming)
   if (!isOpen) return null;
 
   const nextCode = previewNextCode(series.template, series.count);
 
   return (
+<<<<<<< startup (this repo)
     <div className="space-y-4">
       {errorMessage && (
         <div className="p-3 rounded text-sm bg-red-50 border border-red-200 text-red-700">
@@ -95,20 +128,25 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, o
       )}
 
       <div data-field="master">
+||||||| base (common ancestor)
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {errorMessage && (
+        <div className="p-3 rounded text-sm bg-red-50 border border-red-200 text-red-700">
+          {errorMessage}
+        </div>
+      )}
+
+      <div>
+=======
+    <div className="space-y-4">
+      <div data-field="master">
+>>>>>>> erp (incoming)
         <label className="block text-sm font-medium text-gray-700 mb-1">Master *</label>
         <SearchableDropdown
           options={masterOptions}
           value={series.master}
-<<<<<<< startup (this repo)
-          disabled={isEditMode}
-          optionName="Master"
-||||||| base (common ancestor)
-          multiple={false}
-          disabled={isEditMode}
-=======
           multiple={false}
           disabled={isEditMode || Boolean(defaults.master)}
->>>>>>> erp (incoming)
           placeholder="Select the master to number…"
           onChange={(master) => patchSeries({ master: master ?? '' })}
         />
