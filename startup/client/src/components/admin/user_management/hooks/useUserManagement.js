@@ -255,15 +255,13 @@ const useUserManagement = () => {
     setBulkDeleteDialog({ show: true, selectedUsers });
   };
 
-  const filteredUsers = useMemo(
-    () =>
-      users.filter(
-        (user) =>
-          user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.phone.includes(searchQuery)
-      ),
-    [users, searchQuery]
-  );
+  // name and phone are optional on a user (SSO / admin-made logins can lack them).
+  const filteredUsers = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return users.filter((user) =>
+      [user.username, user.name, user.phone].some((field) => (field || '').toLowerCase().includes(q))
+    );
+  }, [users, searchQuery]);
 
   const activeUsers = useMemo(
     () => filteredUsers.filter((user) => user.is_approved),
