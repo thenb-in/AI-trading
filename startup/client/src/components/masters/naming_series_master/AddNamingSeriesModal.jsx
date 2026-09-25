@@ -21,6 +21,8 @@ const AddNamingSeriesModal = ({ isOpen, modalData, recordId, defaults, onClose, 
     recordId={recordId}
     loadRecord={loadSeriesRecord}
     maxWidth="sm"
+    createLabel="Create Series"
+    updateLabel="Update Series"
   >
     {(record) => (
       <NamingSeriesMasterForm
