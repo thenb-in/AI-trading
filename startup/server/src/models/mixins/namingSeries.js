@@ -42,12 +42,14 @@ function attachNamingSeries(Model, { master, field, seriesField, pickMaster }) {
   masters.forEach((name) => registerNamingSeriesMaster(name, field));
 
   Model.addHook('beforeValidate', async (instance, options) => {
+    // A static Model.update validates a throwaway build of the changed fields, which also
+    // reads as a new record — its `where` is what tells it apart from a real insert.
     if (!instance.isNewRecord || options.where) {
       return;
     }
     const { transaction } = options;
     const { NamingSeries } = Model.sequelize.models;
-    const companyId = instance.get('company_id') ?? instance.get('companyId');
+    const companyId = instance.get('companyId');
     const masterName = chooseMaster(instance);
     // A series named on the row wins over the master's default, as long as it is one of
     // this company's series for this master.
