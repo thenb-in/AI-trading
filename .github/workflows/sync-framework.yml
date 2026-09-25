@@ -55,10 +55,10 @@ jobs:
     if: github.repository != 'thenb-in/startup'
     runs-on: ubuntu-latest
     permissions:
-      # Everything this job touches in THIS repo — checkout, the branch push,
-      # the PR, its comments, labels, the failure issue — runs on
-      # GITHUB_TOKEN. The Octo STS token is minted only to READ the framework
-      # repo, which GITHUB_TOKEN cannot reach.
+      # The branch push runs on an Octo STS token for THIS repo, because
+      # `.github/` is a synced path and GITHUB_TOKEN has no `workflows`
+      # permission. The PR, its comments, labels and the failure issue run on
+      # GITHUB_TOKEN. A second Octo STS token READS the framework repo.
       contents: write        # push the sync branch
       pull-requests: write   # open / update the sync PR
       issues: write          # PR comments, labels and the sync-failure issue
@@ -71,12 +71,23 @@ jobs:
       SYNC_BRANCH: sync/from-startup
 
     steps:
+      - name: Mint a push token for this app repo (Octo STS)
+        uses: octo-sts/action@main
+        id: octo-sts-target
+        with:
+          scope: ${{ github.repository }}
+          identity: app-token
+        # Federates against this repo's own
+        # .github/chainguard/app-token.sts.yaml, which grants `workflows: write`
+        # so a synced change under `.github/workflows/` can be pushed.
+
       - name: Checkout this app repo (the sync target)
         uses: actions/checkout@v5
         with:
           fetch-depth: 0  # need full history to read provenance trailers
-          # No `token:` — checkout persists GITHUB_TOKEN, and that is what
-          # authorises the branch push below.
+          # Checkout persists this token, and that is what authorises the
+          # branch push below.
+          token: ${{ steps.octo-sts-target.outputs.token }}
 
       - name: Mint a read token for the framework repo (Octo STS)
         uses: octo-sts/action@main
@@ -146,10 +157,8 @@ jobs:
 
       - name: Push sync branch
         id: push
-        # Pushed with GITHUB_TOKEN. It has no `workflows` permission, so a
-        # batch that changes a file under `.github/workflows/` is rejected
-        # here — `.github/` is a synced path, so expect it. See
-        # scripts/lib/sync/README.md for how to land those commits.
+        # Pushed with the Octo STS token persisted by checkout, which carries
+        # `workflows: write` — `.github/` is a synced path.
         if: >-
           success() &&
           inputs.dry_run != true &&

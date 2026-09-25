@@ -123,7 +123,13 @@ function parkConflict(targetRepo, { filePath, header, content }) {
 function reconcileParkedConflicts(targetRepo, conflicts, blobs, direction, stage) {
   const remaining = [];
   const resolved = [];
+  // A path that conflicted in several commits is listed once per commit, all
+  // sharing one parked file. Reconcile it once, from its first conflict —
+  // a second pass would stage a parked file the first pass already removed.
+  const seen = new Set();
   for (const c of conflicts) {
+    if (seen.has(c.path)) continue;
+    seen.add(c.path);
     const rec = blobs.get(c.path);
     const abs = path.join(targetRepo, c.path);
     // Deletion conflicts have no merge to redo, and a file that is gone from
