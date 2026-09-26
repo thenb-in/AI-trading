@@ -6,7 +6,9 @@ const { masterKeyOf } = require('./masterKey');
  * permission the client's workflow offers that move under. Approving needs
  * approve_<master>; every other move (send for approval, cancel, complete...)
  * update_<master>, `masterName` being the master in words ("Sales Order" is
- * sales_order). `permissions` names one outright where that rule doesn't fit
+ * sales_order). `verbs` names the verb a status needs where it is neither
+ * ({ send: 'approve', received: 'receive' } for a material issue), and
+ * `permissions` names one outright where that rule doesn't fit
  * ({ approve: 'update_work_order' }).
  *
  * One move is refused for every kind of record: a draft is never cancelled, it
@@ -17,7 +19,7 @@ const { masterKeyOf } = require('./masterKey');
  * only refuses a user who could not have pressed the button. A save that keeps
  * the status is not a move. Throws a 403 naming the permission.
  */
-const assertWorkflowMove = async ({ masterName, from, to, userId, permissions = {}, draftStatuses = ['draft'] }) => {
+const assertWorkflowMove = async ({ masterName, from, to, userId, verbs = {}, permissions = {}, draftStatuses = ['draft'] }) => {
   const current = String(from || '').trim().toLowerCase();
   const next = String(to || '').trim().toLowerCase();
   if (!next || next === current) {
@@ -28,7 +30,7 @@ const assertWorkflowMove = async ({ masterName, from, to, userId, permissions = 
     error.statusCode = 400;
     throw error;
   }
-  const verb = next === 'approved' ? 'approve' : 'update';
+  const verb = verbs[next] ?? (next === 'approved' ? 'approve' : 'update');
   const permission = permissions[verb] ?? `${verb}_${masterKeyOf(masterName)}`;
   if (await allowedPermissions(userId, [permission])) {
     return;

@@ -97,10 +97,10 @@ const reports = [
       // Sits next to the standard Item select: narrows the report to the items
       // belonging to one group (and to everything under it, if it has children).
       itemGroupReportFilter({ order: 5 }),
-      // The server falls back to approved when no status reaches it, so picking
+      // The server falls back to send when no status reaches it, so picking
       // "All Statuses" has to travel as 'all' rather than being dropped as the
       // filter's own default — otherwise the pick silently changes nothing.
-      workflowStatusFilter({ workflow: MATERIAL_ISSUE_WORKFLOW, default: 'approved', alwaysInclude: true, order: 6 }),
+      workflowStatusFilter({ workflow: MATERIAL_ISSUE_WORKFLOW, default: 'send', alwaysInclude: true, order: 6 }),
       personReportFilter({ order: 7 }),
       costCenterReportFilter({ order: 8 }),
       // Collapses the line rows into one row per cost centre. Every other filter

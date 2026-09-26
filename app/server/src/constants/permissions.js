@@ -57,10 +57,15 @@ const masters = {
   REQUIREMENT: create_master_permission(MASTERS.REQUIREMENT, true),
   MATERIAL_ISSUE: {
     ...create_master_permission(MASTERS.MATERIAL_ISSUE, true),
+    receive: {
+      name: 'receive_material_issue',
+      display_name: 'Receive Material Issue',
+      description: 'Permission to enter what arrived on a sent material issue and mark it received'
+    },
     viewRate: {
       name: 'view_material_issue_rate',
       display_name: 'View Material Issue Rate',
-      description: 'Permission to view the FIFO rate and amount stamped on material issue lines at approval'
+      description: 'Permission to view the FIFO rate and amount stamped on material issue lines when their stock goes out'
     }
   },
   MATERIAL_RETURN: create_master_permission(MASTERS.MATERIAL_RETURN, true),
