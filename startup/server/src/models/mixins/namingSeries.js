@@ -9,7 +9,8 @@ const isBlank = (value) => value === undefined || value === null || String(value
  *
  *   attachNamingSeries(Employee, { master: 'employee', field: 'emp_code' });
  *
- * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it.
+ * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it,
+ *   and only for inserts (create/bulkCreate), never for Model.update.
  * - The counter moves inside the caller's transaction (options.transaction): the row stays
  *   locked until that transaction ends, and a rolled-back insert gives its number back.
  * - A company with no default series for the master is left alone — the row keeps whatever
@@ -21,7 +22,7 @@ function attachNamingSeries(Model, { master, field }) {
   registerNamingSeriesMaster(master, field);
 
   Model.addHook('beforeValidate', async (instance, options) => {
-    if (!instance.isNewRecord) {
+    if (!instance.isNewRecord || options.where) {
       return;
     }
     const { transaction } = options;
