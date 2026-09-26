@@ -10,6 +10,7 @@
 
 const { getAppServerIo } = require('../client_appserver');
 const { userRoom } = require('./rooms');
+const { onUserDeactivate } = require('../../hooks/onUserDeactivate');
 
 /** "Chrome on Windows" / "Safari on iPhone" — enough to recognise a device by. */
 function describeDevice(userAgent) {
@@ -56,5 +57,8 @@ function disconnectUser(userId) {
   }
   io.in(userRoom(userId)).disconnectSockets(true);
 }
+
+// A deactivated user is signed out everywhere at once, like an administrator's sign-out.
+onUserDeactivate(disconnectUser);
 
 module.exports = { connectionsByUser, disconnectUser };
