@@ -32,8 +32,6 @@ const hasPermission = (permissionNames, ...given) => {
 
   const holds = (name) => userPermissions.some((permission) => permission.name === name);
 
-  const holds = (name) => userPermissions.some((permission) => permission.name === name);
-
   // { all: [...] } — every one of them, for a master that spans two others: a
   // department position is an assignment linking a department to a position, so
   // acting on one needs the right on both, not either.

@@ -1,4 +1,5 @@
 import { BaseMaster } from '@startup/components/base_components/master';
+import { MASTERS } from '@startup/constants/masters';
 import { namingSeriesService } from '@services/namingSeriesService';
 import { NamingSeriesMasterForm } from './NamingSeriesMasterForm';
 
@@ -14,12 +15,11 @@ const deleteSeries = (id) => namingSeriesService.remove(id);
 
 const NamingSeriesMaster = () => (
   <BaseMaster
+    masterName={MASTERS.NAMING_SERIES}
     title="Naming Series"
     description="Decide how new records are coded when nobody types a code — e.g. EMP-0001, EMP-0002."
     addButtonText="Add Series"
     searchPlaceholder="Search by master or template..."
-    modalAddTitle="New Naming Series"
-    modalEditTitle="Edit Naming Series"
     modalMaxWidth="sm"
     auditHead="NamingSeries"
     permissionKeys={PERMISSION_KEYS}
@@ -31,6 +31,8 @@ const NamingSeriesMaster = () => (
     fetchFailureToast="Failed to load naming series"
     FormComponent={NamingSeriesMasterForm}
     formSuccessProp="onSaved"
+    createLabel="Create Series"
+    updateLabel="Update Series"
     exportReport={{ title: 'Naming Series', slug: 'naming-series' }}
   />
 );

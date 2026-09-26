@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { FormFooter } from '@startup/components/base_components/master';
+import { useFormModal } from '@startup/components/base_components/master';
 import { TextTypeField } from '@startup/components/base_components/fields/TextTypeField';
 import { NumberTypeField } from '@startup/components/base_components/fields/NumberTypeField';
+import { CheckboxTypeField } from '@startup/components/base_components/fields/CheckboxTypeField';
 import { SearchableDropdown } from '@startup/components/base_components/fields/SearchableDropdown';
 import { namingSeriesService } from '@services/namingSeriesService';
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
@@ -22,7 +23,6 @@ const toMasterLabel = (master) =>
 const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
   const [series, setSeries] = useState(EMPTY_SERIES);
   const [masterOptions, setMasterOptions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const isEditMode = Boolean(initialData?.id);
 
@@ -49,14 +49,8 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
   const patchSeries = (changes) => setSeries((prev) => ({ ...prev, ...changes }));
   const handleInputChange = (e) => patchSeries({ [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submit = async () => {
     setErrorMessage(null);
-    if (!isEditMode && !series.master) {
-      setErrorMessage('Pick the master this series numbers.');
-      return;
-    }
-    setIsLoading(true);
     const payload = { template: series.template, count: Number(series.count || 0), is_default: series.is_default };
     try {
       if (isEditMode) {
@@ -70,32 +64,36 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
       setErrorMessage(
         getApiErrorMessage(error, `Failed to ${isEditMode ? 'update' : 'create'} naming series ${series.template}`)
       );
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  const validate = () => (
+    !isEditMode && !series.master ? { message: 'Pick the master this series numbers.', field: 'master' } : ''
+  );
+
+  useFormModal(submit, series, validate);
 
   if (!isOpen) return null;
 
   const nextCode = previewNextCode(series.template, series.count);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
       {errorMessage && (
         <div className="p-3 rounded text-sm bg-red-50 border border-red-200 text-red-700">
           {errorMessage}
         </div>
       )}
 
-      <div>
+      <div data-field="master">
         <label className="block text-sm font-medium text-gray-700 mb-1">Master *</label>
         <SearchableDropdown
           options={masterOptions}
           value={series.master}
-          multiple={false}
           disabled={isEditMode}
+          optionName="Master"
           placeholder="Select the master to number…"
-          onChange={(master) => patchSeries({ master })}
+          onChange={(master) => patchSeries({ master: master ?? '' })}
         />
       </div>
 
@@ -120,16 +118,12 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
       />
 
       <div>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            name="is_default"
-            checked={series.is_default}
-            onChange={(e) => patchSeries({ is_default: e.target.checked })}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-          />
-          <span className="ml-2 text-sm font-medium text-gray-700">Default for this master</span>
-        </label>
+        <CheckboxTypeField
+          name="is_default"
+          label="Default for this master"
+          checked={series.is_default}
+          onChange={(e) => patchSeries({ is_default: e.target.checked })}
+        />
         <p className="mt-1 text-xs text-gray-500">
           New records are numbered from the default series. A master&apos;s first series becomes its default.
         </p>
@@ -140,16 +134,7 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
           Next code: <span className="font-mono font-semibold">{nextCode}</span>
         </div>
       )}
-
-      <FormFooter
-        onClose={onClose}
-        isLoading={isLoading}
-        isEditMode={isEditMode}
-        createLabel="Create Series"
-        updateLabel="Update Series"
-        iconVariant="checkmark"
-      />
-    </form>
+    </div>
   );
 };
 

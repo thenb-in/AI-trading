@@ -11,6 +11,7 @@ const MASTERS = {
   NOTIFICATION_RULE: 'Notification Rule',
   ANNOUNCEMENT: 'Announcement',
   GEOGRAPHY: 'Geography',
+  NAMING_SERIES: 'Naming Series',
   NBNEXT_DRIVE: 'NBnext Drive',
   ACTIVITY: 'Activity',
   REPORT_RUN: 'Report Run',

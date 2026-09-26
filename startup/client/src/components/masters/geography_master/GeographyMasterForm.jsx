@@ -76,14 +76,17 @@ const GeographyMasterForm = ({ isOpen, onClose, initialData, onSaved, rows = [],
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SearchableDropdown
-          options={LEVEL_OPTIONS}
-          value={place.level}
-          onChange={(value) => patch({ level: value })}
-          optionName="Level"
-          allowOptionsOutsideSelectBox
-          placeholder="Level"
-        />
+        <div>
+          <p className="mb-1 text-sm font-medium text-gray-700">Level</p>
+          <SearchableDropdown
+            options={LEVEL_OPTIONS}
+            value={place.level}
+            onChange={(value) => patch({ level: value })}
+            optionName="Level"
+            allowOptionsOutsideSelectBox
+            placeholder="Level"
+          />
+        </div>
         <TextTypeField
           name="code"
           label="Code"

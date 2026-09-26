@@ -86,35 +86,37 @@ const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, 
       {canSubmit && blockedReason && !blockedField ? (
         <p className="mr-auto self-center text-sm font-medium text-amber-700">{blockedReason}</p>
       ) : null}
-      <div ref={actionsRef} className="contents" />
-      <WorkflowButtons workflow={workflow} record={record} isOffered={isOfferedOnRight} onRun={runAction} busy={isSaving} />
       {leftSlot ? createPortal(
         <WorkflowButtons workflow={workflow} record={record} isOffered={isCancelOffered} onRun={runAction} busy={isSaving} />,
         leftSlot
       ) : null}
-      <FormCloseButton onClose={onClose} isSaving={isSaving} />
-      {canSubmit && <button
-        ref={submitRef}
-        type="submit"
-        data-tour="form-save"
-        form={formId}
-        disabled={isSaving || Boolean(blockedReason)}
-        title={shortcutTitle(submitLabel, SHORTCUTS.SAVE)}
-        className="flex items-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {isSaving ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            {savingLabel}
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4 mr-2" />
-            {submitLabel}
-            <ShortcutHint shortcut={SHORTCUTS.SAVE} />
-          </>
-        )}
-      </button>}
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <div ref={actionsRef} className="contents" />
+        <WorkflowButtons workflow={workflow} record={record} isOffered={isOfferedOnRight} onRun={runAction} busy={isSaving} />
+        <FormCloseButton onClose={onClose} isSaving={isSaving} />
+        {canSubmit && <button
+          ref={submitRef}
+          type="submit"
+          data-tour="form-save"
+          form={formId}
+          disabled={isSaving || Boolean(blockedReason)}
+          title={shortcutTitle(submitLabel, SHORTCUTS.SAVE)}
+          className="flex items-center px-4 py-2 text-sm font-medium text-white border border-transparent rounded-md bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isSaving ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              {savingLabel}
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              {submitLabel}
+              <ShortcutHint shortcut={SHORTCUTS.SAVE} />
+            </>
+          )}
+        </button>}
+      </div>
     </div>
   );
 };
