@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
-# startup/client/src/components/base_components/master/master_modal/FormModal.jsx in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: ef1d3bd62bf84d16f009ab2588af40d1a13fa4e8
+# startup/client/src/components/base_components/master/master_modal/FormModal.jsx in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -113,12 +113,19 @@ const FormModal = ({
     isNew: !isEditMode,
   });
 
+<<<<<<< startup (this repo)
+  const save = async (run) => {
+||||||| base (common ancestor)
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+=======
   const handleSubmit = async (event) => {
     // A form rendered inside this one (a nested FormModal, or an inline
     // sub-form) still bubbles its submit up here through React. Only this
     // form's own submit is a save of this record.
     if (event.target !== event.currentTarget) return;
     event.preventDefault();
+>>>>>>> etime-payroll (incoming, at tip)
     setIsSaving(true);
     try {
       await run();
@@ -127,6 +134,30 @@ const FormModal = ({
     }
   };
 
+<<<<<<< startup (this repo)
+  const form = {
+    // The browser's own check of required and constrained fields, then the form's own.
+    validate: () => formRef.current.reportValidity() && !blockedReason,
+    // The submit hands back the saved record; files picked before it existed follow it up.
+    submit: async (args) => {
+      const saved = await registrationRef.current.onSubmit(args);
+      const savedId = saved?.id ?? record?.id;
+      if (attachments.pendingFiles.length && savedId == null) {
+        toast.error(`${masterName} was saved, but its ${plural(attachments.pendingFiles.length, 'file')} could not follow it: the form did not hand back the saved record`);
+||||||| base (common ancestor)
+  return (
+    <MasterModal
+      {...modalProps}
+      onClose={onClose}
+      actions={
+        <FormFooter
+          formId={formId}
+          onClose={onClose}
+          isSaving={isSaving}
+          submitLabel={isEditMode ? updateLabel : createLabel}
+          savingLabel={savingLabel}
+        />
+=======
   const form = {
     // The browser's own check of required and constrained fields, then the form's own.
     validate: () => formRef.current.reportValidity() && !blockedReason,
@@ -166,7 +197,69 @@ const FormModal = ({
   };
 
   return (
+    <BaseModal
+      {...modalProps}
+      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+      // What the modal is open on. Comments and attachments file themselves
+      // against it, so every form gets them the moment its record is saved.
+      recordName={masterName}
+      recordId={record?.id}
+      onClose={onClose}
+      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
+      actions={
+        <FormFooter
+          formId={formId}
+          form={form}
+          workflow={recordWorkflow}
+          record={record}
+          hooks={hooks}
+          showWhen={showWhen}
+          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+          onChanged={onChanged}
+          run={save}
+          isSaving={isSaving}
+          hasForm={hasForm}
+          blockedReason={blockedReason}
+          blockedField={blocked.field}
+          onShowBlockedField={showBlockedField}
+          onClose={onClose}
+          leftSlot={cancelSlot}
+          actionsRef={setActionsSlot}
+          submitLabel={isEditMode ? updateLabel : createLabel}
+          savingLabel={savingLabel}
+        />
+>>>>>>> etime-payroll (incoming, at tip)
+      }
 <<<<<<< startup (this repo)
+      if (savedId != null) await attachments.uploadPending(savedId);
+      return saved;
+    },
+    formData: () => registrationRef.current.formData,
+  };
+
+  // Takes the user to the field the reason names: scrolled into view and focused.
+  const showBlockedField = () => {
+    const target = formRef.current.querySelector(`[name="${blocked.field}"], [data-field="${blocked.field}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusable = target.matches('input, textarea, select') ? target : target.querySelector('input, textarea, select, [tabindex]');
+    focusable?.focus({ preventScroll: true });
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    // A form can open another FormModal (an inline creator); React carries the inner
+    // submit up through the portal, and it must not save the outer form too.
+    event.stopPropagation();
+    // A plain sub-form inside this one (not a FormModal) bubbles here too; only
+    // this form's own submit is a save of this record.
+    if (event.target !== event.currentTarget) return undefined;
+    // Enter in a field submits too, past the disabled Save.
+    if (blockedReason) return undefined;
+    return save(() => form.submit({}));
+  };
+
+  return (
     <RecordAttachmentsContext.Provider value={attachments}>
       <BaseModal
         {...modalProps}
@@ -219,87 +312,14 @@ const FormModal = ({
       </BaseModal>
     </RecordAttachmentsContext.Provider>
 ||||||| base (common ancestor)
-    <BaseModal
-      {...modalProps}
-      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
-      // What the modal is open on. Comments and attachments file themselves
-      // against it, so every form gets them the moment its record is saved.
-      recordName={masterName}
-      recordId={record?.id}
-      onClose={onClose}
-      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
-      actions={
-        <FormFooter
-          formId={formId}
-          form={form}
-          workflow={recordWorkflow}
-          record={record}
-          hooks={hooks}
-          showWhen={showWhen}
-          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
-          run={save}
-          isSaving={isSaving}
-          hasForm={hasForm}
-          blockedReason={blockedReason}
-          blockedField={blocked.field}
-          onShowBlockedField={showBlockedField}
-          onClose={onClose}
-          leftSlot={cancelSlot}
-          actionsRef={setActionsSlot}
-          submitLabel={isEditMode ? updateLabel : createLabel}
-          savingLabel={savingLabel}
-        />
-      }
     >
-      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
-        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
-        {/* While Save or a workflow action waits on the server, nothing in the form can
-            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
-        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
-          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
-            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
-              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
-              {!isLoading && typeof children === 'function' ? children(record) : null}
-              {!isLoading && typeof children !== 'function' ? children : null}
-            </fieldset>
-          </form>
-        </FormEditableContext.Provider>
-        </FormBlockedFieldContext.Provider>
+      <FormModalContext.Provider value={submitRef}>
+        <form id={formId} onSubmit={handleSubmit} className="space-y-4">
+          {children}
+        </form>
       </FormModalContext.Provider>
-    </BaseModal>
+    </MasterModal>
 =======
-    <BaseModal
-      {...modalProps}
-      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
-      // What the modal is open on. Comments and attachments file themselves
-      // against it, so every form gets them the moment its record is saved.
-      recordName={masterName}
-      recordId={record?.id}
-      onClose={onClose}
-      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
-      actions={
-        <FormFooter
-          formId={formId}
-          form={form}
-          workflow={recordWorkflow}
-          record={record}
-          hooks={hooks}
-          showWhen={showWhen}
-          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
-          onChanged={onChanged}
-          run={save}
-          isSaving={isSaving}
-          hasForm={hasForm}
-          blockedReason={blockedReason}
-          blockedField={blocked.field}
-          onShowBlockedField={showBlockedField}
-          onClose={onClose}
-          leftSlot={cancelSlot}
-          actionsRef={setActionsSlot}
-          submitLabel={isEditMode ? updateLabel : createLabel}
-          savingLabel={savingLabel}
-        />
-      }
     >
       <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
         <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
@@ -317,7 +337,7 @@ const FormModal = ({
         </FormBlockedFieldContext.Provider>
       </FormModalContext.Provider>
     </BaseModal>
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   );
 };
 

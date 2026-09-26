@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 4ec1b6d9d7e1e89c00a0f8173100f7ce3b75511f
-# startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
+# startup/client/src/components/base_components/master/bulk_actions/useMasterApproval.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -15,28 +15,9 @@ import { getApiErrorMessage } from '@utils/apiErrorMessage';
 import { useBulkActions } from './useBulkActions';
 import { DecisionRemarksModal } from './DecisionRemarksModal';
 
-<<<<<<< startup (this repo)
 const DECIDED = {
   approve: { label: 'Approve', past: 'approved' },
   reject: { label: 'Reject', past: 'rejected' },
-};
-
-const DECISIONS = {
-  approve: { status: 1, label: 'Approve', past: 'approved' },
-  reject: { status: 2, label: 'Reject', past: 'rejected' },
-||||||| base (common ancestor)
-// A record waiting for somebody: 0 pending, 1 approved, 2 rejected — the codes every
-// approving master in this app stores.
-const isPendingByStatus = (row) => Number(row?.status) === 0;
-
-const DECISIONS = {
-  approve: { status: 1, label: 'Approve', past: 'approved' },
-  reject: { status: 2, label: 'Reject', past: 'rejected' },
-=======
-const DECIDED = {
-  approve: { label: 'Approve', past: 'approved' },
-  reject: { label: 'Reject', past: 'rejected' },
->>>>>>> etime-payroll (incoming)
 };
 
 /**
@@ -117,11 +98,30 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     if (window.confirm(`${DECIDED[verb].label} ${noun} ${id}?`)) decideOne(verb, row);
   }, [approval, noun, decideOne]);
 
+<<<<<<< startup (this repo)
   const runBulk = useCallback((verb) => {
+    const eligible = selectedRows.filter(isPending);
+||||||| base (common ancestor)
+  const runBulk = useCallback((mode) => {
     const scope = selectedRows.length > 0 ? selectedRows : rows;
     const eligible = scope.filter(isPending);
+=======
+  const runBulk = useCallback((verb) => {
+    // Nothing ticked means the whole list — the same rule useBulkActions applies
+    // when it runs, so the count in the question below is the count it acts on.
+    const scope = selectedRows.length > 0 ? selectedRows : rows;
+    const eligible = scope.filter(isPending);
+>>>>>>> etime-payroll (incoming, at tip)
     if (eligible.length === 0) {
+<<<<<<< startup (this repo)
       toast.info(`No pending ${noun}(s) to ${verb}`);
+||||||| base (common ancestor)
+      toast.info(`No pending ${noun}(s) to ${mode}`);
+=======
+      toast.info(selectedRows.length > 0
+        ? `No pending ${noun}(s) in the selection to ${verb}`
+        : `No pending ${noun}(s) to ${verb}`);
+>>>>>>> etime-payroll (incoming, at tip)
       setSelectedIds([]);
       return;
     }
@@ -129,6 +129,28 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       setAsking({ verb, count: eligible.length });
       return;
     }
+<<<<<<< startup (this repo)
+    if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
+  }, [approval, selectedRows, isPending, noun, setSelectedIds, process]);
+
+  const confirmRemarks = useCallback(async (remarks) => {
+    setIsDeciding(true);
+    const decided = asking.row
+      ? await decideOne(asking.verb, asking.row, remarks)
+      : await process(asking.verb, { remarks });
+    setIsDeciding(false);
+    if (decided !== false) setAsking(null);
+  }, [asking, decideOne, process]);
+
+  const closeRemarks = useCallback(() => setAsking(null), []);
+
+  const approveOne = useMemo(() => askOne('approve'), [askOne]);
+  const rejectOne = useMemo(() => askOne('reject'), [askOne]);
+||||||| base (common ancestor)
+    process(mode);
+  }, [selectedRows, rows, isPending, noun, setSelectedIds, process]);
+
+=======
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
   }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
 
@@ -145,6 +167,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
 
   const approveOne = useMemo(() => askOne('approve'), [askOne]);
   const rejectOne = useMemo(() => askOne('reject'), [askOne]);
+>>>>>>> etime-payroll (incoming, at tip)
   const bulkApprove = useCallback(() => runBulk('approve'), [runBulk]);
   const bulkReject = useCallback(() => runBulk('reject'), [runBulk]);
 
@@ -164,8 +187,16 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     },
     bulkProps: (canApprove || canReject)
       ? {
+<<<<<<< startup (this repo)
         visible: rows.length > 0,
         disabled: selectedRows.length === 0,
+||||||| base (common ancestor)
+=======
+        // Nothing ticked is not nothing to do: it means the whole list, which is
+        // how a month-end queue is cleared. The button says which it will be, and
+        // the confirm names the count before anything is decided.
+        visible: rows.length > 0,
+>>>>>>> etime-payroll (incoming, at tip)
         selectedCount: selectedRows.length,
         processingMode,
         onApprove: canApprove ? bulkApprove : null,

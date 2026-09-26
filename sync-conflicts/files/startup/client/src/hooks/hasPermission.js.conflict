@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 04fef93ab93ac30c6107737666d46ef5576c4047
-# startup/client/src/hooks/hasPermission.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 04fef93ab93ac30c6107737666d46ef5576c4047
+# startup/client/src/hooks/hasPermission.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -38,19 +38,24 @@ const hasPermission = (permissionNames, ...given) => {
   }
 
   const userPermissions = userData.role.permissions || [];
-<<<<<<< startup (this repo)
-||||||| base (common ancestor)
-  const holds = (perm) => userPermissions.some((userPerm) => userPerm.name === perm);
-=======
 
+<<<<<<< startup (this repo)
   const holds = (name) => userPermissions.some((permission) => permission.name === name);
->>>>>>> etime-payroll (incoming)
+
+  // { all: [...] } — every one of them, for a master that spans two others: a
+  // department position is an assignment linking a department to a position, so
+  // acting on one needs the right on both, not either.
+||||||| base (common ancestor)
+  // { all: [...] } — every one of them, for an action that spans two masters.
+=======
+  const holds = (name) => userPermissions.some((permission) => permission.name === name);
 
   const holds = (name) => userPermissions.some((permission) => permission.name === name);
 
   // { all: [...] } — every one of them, for a master that spans two others: a
   // department position is an assignment linking a department to a position, so
   // acting on one needs the right on both, not either.
+>>>>>>> etime-payroll (incoming, at tip)
   if (permissionNames?.all) {
     return permissionNames.all.every(holds);
   }

@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 288520e9d87cc23b1c202d8aaba8a1d8ec180852
-# startup/server/src/models/NamingSeries.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 288520e9d87cc23b1c202d8aaba8a1d8ec180852
+# startup/server/src/models/NamingSeries.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -13,7 +13,7 @@
 // How a master numbers the rows it creates without a code. See
 // db-scripts/20260914_01_create_naming_series.sql and models/mixins/namingSeries.js.
 =======
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 module.exports = (sequelize, DataTypes) => {
   const NamingSeries = sequelize.define('NamingSeries', {
     id: {

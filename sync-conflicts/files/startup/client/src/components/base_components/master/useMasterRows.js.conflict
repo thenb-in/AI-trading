@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (added on both sides).
-# Source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
-# startup/client/src/components/base_components/master/useMasterRows.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
+# startup/client/src/components/base_components/master/useMasterRows.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -233,4 +233,4 @@ const useMasterRows = ({
 };
 
 export { useMasterRows };
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)

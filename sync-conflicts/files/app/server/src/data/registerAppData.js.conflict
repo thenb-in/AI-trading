@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 92a0b0ea76dfe24935fdcc5ece0fea2717aca5be
-# app/server/src/data/registerAppData.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 92a0b0ea76dfe24935fdcc5ece0fea2717aca5be
+# app/server/src/data/registerAppData.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -38,7 +38,7 @@ registerApprovalWorkflows();
 // --- What the app does when a login is deactivated ---
 onUserDeactivate(onDeactivateUser);
 
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 // --- App report routers (socket report runner) ---
 // Extra routers mount under a prefix, e.g.
 //   reportRegistry.registerReportRouter(dashboardRoutes, 'dashboard/');

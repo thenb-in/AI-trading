@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (added on both sides).
-# Source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
-# startup/client/src/components/base_components/master/baseMasterPropTypes.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
+# startup/client/src/components/base_components/master/baseMasterPropTypes.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -217,6 +217,7 @@ const baseMasterPropTypes = {
   updateLabel: PropTypes.string,
   savingLabel: PropTypes.string,
   filtersConfig: PropTypes.array,
+  isFilterLoading: PropTypes.bool,
   initialFilters: PropTypes.object,
   mapFiltersForApi: PropTypes.func,
   mapRows: PropTypes.func,
@@ -232,14 +233,20 @@ const baseMasterPropTypes = {
   onImport: PropTypes.func,
   // Approve / reject row actions, bulk bar and selection — see useMasterApproval.
   approval: PropTypes.shape({
-    /** (id, status, { remarks, row }) => Promise; status 1 approve, 2 reject. */
+    /** (id, status, { remarks, row }) => Promise; the status comes from `decisions`. */
     updateStatus: PropTypes.func.isRequired,
+    /** { approve, reject } — the status each decision moves a record to, in the master's own values. */
+    decisions: PropTypes.shape({
+      approve: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      reject: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    }).isRequired,
     permissionKeys: PropTypes.shape({
       approve: PropTypes.string,
       reject: PropTypes.string,
     }).isRequired,
     noun: PropTypes.string,
-    isPending: PropTypes.func,
+    /** Which rows can still be decided. */
+    isPending: PropTypes.func.isRequired,
     /** Every decision asks for a required comment, handed to updateStatus. */
     remarks: PropTypes.bool,
     /** Component given { row }, shown above the comment for a single decision. */
@@ -264,4 +271,4 @@ const baseMasterPropTypes = {
 };
 
 export { baseMasterPropTypes };
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)

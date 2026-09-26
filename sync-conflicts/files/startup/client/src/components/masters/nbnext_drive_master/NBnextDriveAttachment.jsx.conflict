@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: ae82b019928b4409f52ac44af80704dd26b3db01
-# startup/client/src/components/masters/nbnext_drive_master/NBnextDriveAttachment.jsx in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: ae82b019928b4409f52ac44af80704dd26b3db01
+# startup/client/src/components/masters/nbnext_drive_master/NBnextDriveAttachment.jsx in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -24,7 +24,7 @@ import { useDataContext } from '@context/useDataContext';
 ||||||| base (common ancestor)
 =======
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 
 /** Same normalize as NBnextDriveForm: FilesSection can pass array or single File or null. */
 function toFiles(v) {

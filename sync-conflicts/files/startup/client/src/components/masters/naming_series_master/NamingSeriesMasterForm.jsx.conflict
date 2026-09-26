@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: e21b3cb822fc253ad3c95cfa99b3af7355670f6c
-# startup/client/src/components/masters/naming_series_master/NamingSeriesMasterForm.jsx in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: e21b3cb822fc253ad3c95cfa99b3af7355670f6c
+# startup/client/src/components/masters/naming_series_master/NamingSeriesMasterForm.jsx in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -106,7 +106,7 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
 =======
           value={series.master}
           multiple={false}
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
           disabled={isEditMode}
           optionName="Master"
           placeholder="Select the master to number…"

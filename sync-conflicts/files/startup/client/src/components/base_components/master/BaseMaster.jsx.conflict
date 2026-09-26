@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
-# startup/client/src/components/base_components/master/BaseMaster.jsx in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 23830825217da1d7e72f25c468c64dfd92633cc0
+# startup/client/src/components/base_components/master/BaseMaster.jsx in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -14,7 +14,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 =======
 import { useState, useMemo } from 'react';
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
@@ -32,7 +32,7 @@ import { useRecordModal } from './useRecordModal';
 =======
 import { useMasterRows } from './useMasterRows';
 import { baseMasterPropTypes } from './baseMasterPropTypes';
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 import { useRowSearch } from '@startup/hooks/useRowSearch';
 import { BaseFilter } from '../../base_filter/BaseFilter';
 import { hasPermission } from '@startup/hooks/hasPermission';
@@ -77,7 +77,7 @@ const BaseMaster = ({
   // Amend opens the copy in the form unless hooked. `workflowShowWhen`
   // ({ [action key]: (record) => boolean }) narrows an action to the records it
   // suits, on the row buttons and in the form's footer alike.
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   workflow = DEFAULT_WORKFLOW,
   masterName,
   workflowHooks = {},
@@ -89,7 +89,7 @@ const BaseMaster = ({
 ||||||| base (common ancestor)
 =======
   workflowShowWhen = {},
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   loadRows,
   deleteRow,
   // Optional `(row) => boolean` for masters whose grid holds rows that are not
@@ -216,7 +216,7 @@ const BaseMaster = ({
 =======
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   const [searchQuery, setSearchQuery] = useState('');
   const [historyRowId, setHistoryRowId] = useState(null);
   const { userData } = useDataContext();
@@ -325,7 +325,7 @@ const BaseMaster = ({
     fetchSuccessToast,
     fetchFailureToast,
   });
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 
   const matchedRows = useRowSearch(rows, serverSearch ? '' : searchQuery, { columns, searchKeys });
   const filteredData = useMemo(() => (mapRows ? mapRows(matchedRows) : matchedRows), [matchedRows, mapRows]);
@@ -369,7 +369,7 @@ const BaseMaster = ({
     ? headerContent({ refresh: fetchRows, rows, columns })
 =======
     ? headerContent({ refresh, rows, columns })
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
     : headerContent;
 
 <<<<<<< startup (this repo)
@@ -397,7 +397,7 @@ const BaseMaster = ({
     setSelectedRow(record);
     setIsModalOpen(true);
   };
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   const handleAmend = ({ record }) => openRecord(amendCopy(workflow, record));
 
   const workflowRowActions = useWorkflowRowActions({
@@ -419,7 +419,7 @@ const BaseMaster = ({
     hooks: { amend: handleAmend, ...workflowHooks },
     showWhen: workflowShowWhen,
     onChanged: refresh,
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
   });
   // Delete only where the record's status still allows it, and the master's own canDeleteRow agrees.
   const showDelete = (row) => Boolean(workflow.statuses[statusOf(workflow, row[workflow.statusKey])]?.deletable)
@@ -439,7 +439,7 @@ const BaseMaster = ({
     ...(extraActions ? extraActions({ refresh: fetchRows, rows, setRows, openEdit: (row) => handleRowClick(row) }) : []),
 =======
     ...(extraActions ? extraActions({ refresh, rows, setRows, openEdit: openRecord }) : []),
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
     ...workflowRowActions,
     // Who changed this row, and when. The same timeline the edit modal shows,
     // but reachable straight from the grid — rows that can't be opened for
@@ -478,7 +478,7 @@ const BaseMaster = ({
       onRowClickOverride(row);
 =======
       onRowClickOverride(row, { openEdit: openRecord });
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
       return;
     }
     openRecord(row);
@@ -518,7 +518,7 @@ const BaseMaster = ({
 ||||||| base (common ancestor)
 =======
         onChanged: refresh,
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
       }
     // A form names its record itself; a details modal is a plain BaseModal, so
     // it is told here what it is showing.
@@ -704,7 +704,7 @@ const BaseMaster = ({
         ) : (
           <UnauthorisedTable />
         )}
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
         <Modal
           {...formModalProps}
           isOpen={modal.isOpen && Boolean(ModalBody)}
