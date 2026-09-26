@@ -6,6 +6,7 @@ const db = require('../models');
 const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
+const { runOnUserDeactivate } = require('../hooks/onUserDeactivate');
 const { normalizeEmail } = require('../utils/normalizeUtils');
 
 async function deleteUser(userId) {
@@ -352,6 +353,7 @@ const setUserApproved = async (userId, approved) => {
   await user.update({ is_approved: approved });
   if (!approved) {
     await invalidateSessions(userId);
+    await runOnUserDeactivate(userId);
   }
   logger.info(`User ${user.username} is now ${approved ? 'approved' : 'not approved'}`);
   return true;

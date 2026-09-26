@@ -43,11 +43,8 @@ const deactivateUser = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Deactivate user
-    user.is_approved = false;
-
-    user.refresh_token=null;
-    await user.save();
+    // One way to deactivate: ends the user's sessions and runs what apps hooked onto deactivation.
+    await userService.setUserApproved(userId, false);
 
     res.status(200).json({ message: `User deactivated successfully ${user.username}` });  // todo: show username instead of userId
   } catch (error) {
