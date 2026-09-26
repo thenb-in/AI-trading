@@ -80,6 +80,7 @@ const getCurrentUser = async (userId) => {
       // to the /usermanagement screen (see ProtectedRoute). RP SSO users are
       // linked but not managed, so they are NOT confined.
       ssoManaged: isSsoManagedAccount(user),
+      is_totp_enabled: user.is_totp_enabled,
       enableReportRunner: env.ENABLE_REPORT_RUNNER,
       // Deployment mode flag: true on self-hosted/on-prem installs (secure
       // cookies off), false on the hosted cloud deployment. Lets the client

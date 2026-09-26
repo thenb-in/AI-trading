@@ -112,6 +112,7 @@ const GeographyMaster = () => {
         addButtonText="Add Place"
         searchPlaceholder="Search by place, code or where it sits..."
         searchKeys={['path']}
+        baseMasterContainerWidth = 'max-w-8xl'
         auditHead="Geography"
         permissionKeys={PERMISSION_KEYS}
         rowsKey="places"

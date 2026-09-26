@@ -167,7 +167,7 @@ function UserManagement() {
     <div className="relative w-full sm:w-[20rem] md:w-[24rem]" data-tour="users-search">
       <SearchTypeField
         icon={<Search className="w-4 h-4 text-gray-400" />}
-        placeholder="Search users Name or Phone Number.."
+        placeholder="Search by username, name or phone..."
         value={searchQuery}
         onChange={handleSearchChange}
         className="w-full"
