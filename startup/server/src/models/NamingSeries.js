@@ -1,5 +1,4 @@
-// How a master numbers the rows it creates without a code. See
-// db-scripts/20260914_01_create_naming_series.sql and models/mixins/namingSeries.js.
+// How a master numbers the rows it creates without a code. See models/mixins/namingSeries.js.
 module.exports = (sequelize, DataTypes) => {
   const NamingSeries = sequelize.define('NamingSeries', {
     id: {
