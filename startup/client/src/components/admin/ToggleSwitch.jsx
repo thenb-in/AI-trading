@@ -41,7 +41,7 @@ function ToggleSwitch({ label, checked, onChange, description }) {
   );
 }
 ToggleSwitch.propTypes = {
-  label: PropTypes.string.isRequired,
+  label: PropTypes.node.isRequired,
   checked: PropTypes.bool.isRequired,
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string,
