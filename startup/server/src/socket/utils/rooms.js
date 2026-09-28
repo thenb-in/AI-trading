@@ -15,4 +15,9 @@ function userRoom(userId) {
   return `user:${userId}`;
 }
 
-module.exports = { companyRoom, userRoom };
+/** Per-login-session room, so one signed-in device can be reached (or cut off) on its own. */
+function sessionRoom(sessionId) {
+  return `session:${sessionId}`;
+}
+
+module.exports = { companyRoom, userRoom, sessionRoom };

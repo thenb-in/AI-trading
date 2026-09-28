@@ -15,6 +15,8 @@ const userService = require('../userService');
 const { isSsoManagedAccount } = require('../../config/ssoUserAccess');
 const env = require('../../config/env');
 const { normalizeUsername } = require('../../utils/normalizeUtils');
+const crypto = require('crypto');
+const sessionService = require('./sessionService');
 
 const findUserWithRole = async (username) => {
   const normalizedUsername = normalizeUsername(username);
@@ -64,10 +66,18 @@ const validateUserStatusAndPassword = async (user, password, username) => {
   }
 };
 
-const issueTokensAndPersist = async (user) => {
-  const accessToken = await generateAccessToken(user);
-  const refreshToken = await generateRefreshToken(user);
-  await userService.updateUserRefreshTokenAndLastActive(user.id, refreshToken);
+const issueTokensAndPersist = async (user, context = {}) => {
+  const sid = crypto.randomUUID();
+  const accessToken = await generateAccessToken(user, sid);
+  const refreshToken = await generateRefreshToken(user, sid);
+  await sessionService.createSession({
+    id: sid,
+    userId: user.id,
+    refreshToken,
+    ip: context.ip,
+    userAgent: context.userAgent
+  });
+  await userService.recordLogin(user.id);
   return { accessToken, refreshToken };
 };
 
@@ -120,12 +130,12 @@ const verifyCredentials = async (username, password) => {
   return user;
 };
 
-const loginUser = async (credentials, isSsoFlow = false) => {
+const loginUser = async (credentials, context = {}) => {
   const { username, password } = credentials;
-  logger.info(`User login attempt: ${normalizeUsername(username)} - SSO: ${isSsoFlow}`);
+  logger.info(`User login attempt: ${normalizeUsername(username)}`);
   const user = await verifyCredentials(username, password);
   logger.info(`User login successful: ${user.id}`);
-  const { accessToken, refreshToken } = await issueTokensAndPersist(user);
+  const { accessToken, refreshToken } = await issueTokensAndPersist(user, context);
   const activeCompany = await companyService.getActiveCompanyForUser(user);
 
   await notifyCompanyAdminsOfLogin({

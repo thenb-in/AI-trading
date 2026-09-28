@@ -1,6 +1,7 @@
+const crypto = require('crypto');
 const env = require('../config/env');
 const companyService = require('../services/companyService');
-const userService = require('../services/userService');
+const sessionService = require('../services/auth/sessionService');
 const { generateAccessToken, generateRefreshToken } = require('../utils/authUtils');
 const { normalizeCoordinate, normalizeRadiusMeters } = require('../utils/locationUtils');
 
@@ -115,13 +116,16 @@ const companyController = {
       }
 
       const updatedUser = await companyService.switchUserCompany(req.user.id, companyId);
-
-      // Issue new tokens tied to new companyId
-      const accessToken = await generateAccessToken(updatedUser);
-      const refreshToken = await generateRefreshToken(updatedUser);
-
-      // Persist refresh token and activity
-      await userService.updateUserRefreshTokenAndLastActive(updatedUser.id, refreshToken);
+      const sid = req.user?.sid || crypto.randomUUID();
+      const accessToken = await generateAccessToken(updatedUser, sid);
+      const refreshToken = await generateRefreshToken(updatedUser, sid);
+      await sessionService.reissueSessionToken({
+        id: sid,
+        userId: updatedUser.id,
+        refreshToken,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
 
       res.cookie('accessToken', accessToken, {
         httpOnly: true,

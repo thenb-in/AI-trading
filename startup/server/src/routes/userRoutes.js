@@ -15,6 +15,8 @@ router.post('/:userId/deactivate', authMiddleware.protect, requirePermission(USE
 // Cutting someone's sessions is cutting their access, so it takes the same
 // permission as deactivating them.
 router.post('/:userId/sign-out', authMiddleware.protect, requirePermission(USER.deactivate.name), userController.signOutUser);
+// Sign a user out of a single device (one login session), same permission.
+router.post('/:userId/sessions/:sessionId/sign-out', authMiddleware.protect, requirePermission(USER.deactivate.name), userController.signOutDevice);
 router.get('/:userId', authMiddleware.protect, userController.getMe);
 router.delete('/:userId', authMiddleware.protect, requirePermission(USER.delete.name), userController.deleteUser);
 // Which role someone holds is what they can do, so changing it is editing the

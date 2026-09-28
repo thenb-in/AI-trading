@@ -3,7 +3,7 @@
 const { Server } = require('socket.io');
 const logger = require('../../../logger');
 const { buildSocketAuthMiddleware } = require('../../middleware/socketAuthMiddleware');
-const { companyRoom, userRoom } = require('./rooms');
+const { companyRoom, userRoom, sessionRoom } = require('./rooms');
 
 
 function createSocketServer({ httpServer, corsOrigin = '*', onReady, label = 'socket', allowAnonymous = false }) {
@@ -22,6 +22,10 @@ function createSocketServer({ httpServer, corsOrigin = '*', onReady, label = 'so
     // Join a per-user room so we can target a single user (e.g. notifications).
     if (socket.user?.id) {
       socket.join(userRoom(socket.user.id));
+    }
+    // And a per-session room, so signing one device out cuts only that device's tabs.
+    if (socket.user?.sid) {
+      socket.join(sessionRoom(socket.user.sid));
     }
     logger.info(`[${label}] socket connected id=${socket.id} ${who}`);
     socket.on('disconnect', (reason) => {

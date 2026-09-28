@@ -3,25 +3,26 @@ const companyService = require('../services/companyService');
 const env = require('../config/env');
 const logger = require('../../logger');
 
-const generateAccessToken = async (user) => {
+
+const generateAccessToken = async (user, sid) => {
   const currentCompany = await companyService.getActiveCompanyForUser(user);
-  const token = jwt.sign(
-    { id: user.id, company_id: currentCompany.id },
-    env.JWT_SECRET,
-    { expiresIn: env.JWT_ACCESS_EXPIRATION }
-  );
+  const payload = { id: user.id, company_id: currentCompany.id };
+  if (sid) {
+    payload.sid = sid;
+  }
+  const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_ACCESS_EXPIRATION });
   const decoded = jwt.decode(token);
   logger.debug(`Access token generated for user ${user.id}, expires at ${new Date(decoded.exp * 1000).toISOString()} (in ${env.JWT_ACCESS_EXPIRATION})`);
   return token;
 };
 
-const generateRefreshToken = async (user) => {
+const generateRefreshToken = async (user, sid) => {
   const currentCompany = await companyService.getActiveCompanyForUser(user);
-  const token = jwt.sign(
-    { id: user.id, company_id: currentCompany.id },
-    env.REFRESH_TOKEN_SECRET,
-    { expiresIn: env.JWT_REFRESH_EXPIRATION }
-  );
+  const payload = { id: user.id, company_id: currentCompany.id };
+  if (sid) {
+    payload.sid = sid;
+  }
+  const token = jwt.sign(payload, env.REFRESH_TOKEN_SECRET, { expiresIn: env.JWT_REFRESH_EXPIRATION });
   const decoded = jwt.decode(token);
   logger.debug(`Refresh token generated for user ${user.id}, expires at ${new Date(decoded.exp * 1000).toISOString()} (in ${env.JWT_REFRESH_EXPIRATION})`);
   return token;
