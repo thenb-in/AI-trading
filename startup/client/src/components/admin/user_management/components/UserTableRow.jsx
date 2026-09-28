@@ -26,6 +26,7 @@ const UserTableRow = ({
   formatLastActive,
   handleRoleChange,
   handleDeviceOptionUpdate,
+  handleSignOutDevice,
   updateUser,
   walletUserManagementUrl,
   session,
@@ -335,7 +336,13 @@ const UserTableRow = ({
       </td>
       
       <td className="px-6 py-4 whitespace-nowrap">
-        <UserSessionCell session={session} canSignOut={canSignOut} onSignOut={handleSignOutClick} />
+        <UserSessionCell
+          session={session}
+          userName={user.name || user.username}
+          canSignOut={canSignOut}
+          onSignOut={handleSignOutClick}
+          onSignOutDevice={(sessionId) => handleSignOutDevice(user.id, sessionId)}
+        />
       </td>
 
       <td className="px-6 py-4 whitespace-nowrap">
@@ -420,6 +427,7 @@ UserTableRow.propTypes = {
   formatLastActive: PropTypes.func.isRequired,
   handleRoleChange: PropTypes.func.isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
+  handleSignOutDevice: PropTypes.func,
   updateUser: PropTypes.func.isRequired,
   walletUserManagementUrl: PropTypes.string,
   session: PropTypes.object,

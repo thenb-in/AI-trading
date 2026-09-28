@@ -16,6 +16,7 @@ const UserTable = ({
   handleRoleChange,
   // deviceAccessOptions,
   handleDeviceOptionUpdate,
+  handleSignOutDevice,
   updateUser,
   walletUserManagementUrl,
   sessions = {},
@@ -91,6 +92,7 @@ const UserTable = ({
                   handleRoleChange={handleRoleChange}
                   // deviceAccessOptions={deviceAccessOptions}
                   handleDeviceOptionUpdate={handleDeviceOptionUpdate}
+                  handleSignOutDevice={handleSignOutDevice}
                   updateUser={updateUser}
                   walletUserManagementUrl={walletUserManagementUrl}
                   session={sessions[user.id]}
@@ -131,6 +133,7 @@ UserTable.propTypes = {
   handleRoleChange: PropTypes.func.isRequired,
   // deviceAccessOptions: PropTypes.arrayOf(PropTypes.string).isRequired,
   handleDeviceOptionUpdate: PropTypes.func.isRequired,
+  handleSignOutDevice: PropTypes.func,
   updateUser: PropTypes.func.isRequired,
   walletUserManagementUrl: PropTypes.string,
   /** { [userId]: { online, signedIn, devices } } — who is connected right now. */
