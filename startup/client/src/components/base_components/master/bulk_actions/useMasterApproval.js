@@ -28,6 +28,10 @@ const DECIDED = {
  *   RemarksContext  a component, given { row }, the comment dialog shows above
  *                   the comment for a single decision (who asked, their reason)
  *   cancellable     true: a bulk run can be stopped part-way from the toolbar
+ *   emptyMeansAll   true: a bulk run with nothing ticked acts on the whole list
+ *                   (a month-end queue cleared in one click) and the toolbar
+ *                   buttons stay enabled. Default requires an explicit
+ *                   selection, disabling the buttons until rows are ticked.
  *
  * `refresh` reloads the grid after each decision (BaseMaster's is silent).
  * `dialog` is the comment dialog while one is open; render it next to the grid.
@@ -90,7 +94,12 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
   }, [approval, noun, decideOne]);
 
   const runBulk = useCallback((verb) => {
-    const eligible = selectedRows.filter(isPending);
+    // With `emptyMeansAll`, nothing ticked is the whole list — the same rule
+    // useBulkActions.process applies when it runs, so the count in the question
+    // below is the count it acts on. Otherwise a bulk run is scoped to the
+    // selection only.
+    const scope = (approval.emptyMeansAll && selectedRows.length === 0) ? rows : selectedRows;
+    const eligible = scope.filter(isPending);
     if (eligible.length === 0) {
       toast.info(`No pending ${noun}(s) to ${verb}`);
       setSelectedIds([]);
@@ -101,7 +110,7 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
       return;
     }
     if (window.confirm(`${DECIDED[verb].label} ${eligible.length} ${noun}(s)?`)) process(verb);
-  }, [approval, selectedRows, isPending, noun, setSelectedIds, process]);
+  }, [approval, selectedRows, rows, isPending, noun, setSelectedIds, process]);
 
   const confirmRemarks = useCallback(async (remarks) => {
     setIsDeciding(true);
@@ -136,7 +145,8 @@ const useMasterApproval = ({ approval, rows = [], refresh }) => {
     bulkProps: (canApprove || canReject)
       ? {
         visible: rows.length > 0,
-        disabled: selectedRows.length === 0,
+        // Require a selection unless the master clears the whole list on empty.
+        disabled: approval.emptyMeansAll ? false : selectedRows.length === 0,
         selectedCount: selectedRows.length,
         processingMode,
         onApprove: canApprove ? bulkApprove : null,
