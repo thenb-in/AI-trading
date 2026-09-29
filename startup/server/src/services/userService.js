@@ -8,6 +8,7 @@ const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
 const { runOnUserDeactivate } = require('../hooks/onUserDeactivate');
 const { normalizeEmail } = require('../utils/normalizeUtils');
+const sessionService = require('./auth/sessionService');
 
 async function deleteUser(userId) {
   // Delete user profile
@@ -89,16 +90,6 @@ const getAllUsers = async (companyId) => {
 
   return { users, roles };
 };
-
-/**
- * The session half of the roster: whether each account still holds a token it
- * can come back on, and when it was last seen. Who is connected right this
- * second is the socket server's to answer, not the database's.
- */
-const getSessionState = async (companyId) => User.findAll({
-  where: { isActive: true, company_id: companyId },
-  attributes: ['id', 'last_active', 'refresh_token']
-});
 
 /**
  * Just enough to put a name on a user id — what every picker and report filter
@@ -230,19 +221,6 @@ const updateUserProfile = async (userId, userProfile) => {
   }
 };
 
-const updateUserRefreshTokenAndLastActive = async (userId, refreshToken) => {
-  const [updated] = await User.update(
-    {
-      refresh_token: refreshToken,
-      last_active: new Date(),
-      tokens_valid_after: null
-    },
-    { where: { id: userId }, returning: true }
-  );
-
-  return updated > 0;
-};
-
 
 const ALLOWED_BASIC_FIELDS = ['name', 'phone', 'username', 'email'];
 
@@ -332,11 +310,19 @@ const createSsoUser = async ({ username, name, phone = null, companyId, walletUs
 };
 
 /**
- * End every session this user currently holds.
+ * End every session this user currently holds, on every device.
  */
 const invalidateSessions = async (userId) => {
   await User.update(
     { tokens_valid_after: new Date(), refresh_token: null },
+    { where: { id: userId } }
+  );
+  await sessionService.revokeSessions({ userId });
+};
+
+const recordLogin = async (userId) => {
+  await User.update(
+    { last_active: new Date() },
     { where: { id: userId } }
   );
 };
@@ -368,33 +354,12 @@ const getTokensValidAfter = async (userId) => {
   return user?.tokens_valid_after || null;
 };
 
-const getUserByPkWithLock = async (userId, options = {}) => {
-  const { attributes, lock, transaction } = options;
-  const queryOptions = {
-    attributes: attributes || ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
-    ...(lock && { lock }),
-    ...(transaction && { transaction })
-  };
-
-  return await User.findByPk(userId, queryOptions);
-};
-
-const updateUserRefreshToken = async (userId, refreshToken, transaction) => {
-  const user = await findModelByIdOrThrow(User, userId, { transaction }, 'User');
-
-  user.refresh_token = refreshToken;
-  user.last_active = new Date();
-  await user.save({ transaction });
-  return user;
-};
-
 module.exports = {
   getUserNamesByIds,
   setUserApproved,
   getAllUsers,
   getSupportUsers,
   getUserRoster,
-  getSessionState,
   getUserById,
   isSupportUser,
   getActiveUserIdsByPermissionName,
@@ -405,11 +370,9 @@ module.exports = {
   updateUserDeviceAccess,
   updateUserProfile,
   updateUserBasic,
-  updateUserRefreshTokenAndLastActive,
   checkUserActive,
   createSsoUser,
   invalidateSessions,
-  getTokensValidAfter,
-  getUserByPkWithLock,
-  updateUserRefreshToken
+  recordLogin,
+  getTokensValidAfter
 };

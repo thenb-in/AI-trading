@@ -22,8 +22,8 @@ const authController = {
    * @param {object} credentials - Login credentials (username, password)
    * @returns {Promise<object>} User data with tokens
    */
-  async loginUser(credentials) {
-    return await auth.loginUser(credentials);
+  async loginUser(credentials, context) {
+    return await auth.loginUser(credentials, context);
   },
 
   /**

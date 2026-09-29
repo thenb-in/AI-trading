@@ -208,6 +208,11 @@ const ApiService = {
     return this.request('POST', `/users/${userId}/sign-out`, null, { invalidates: ['users'] });
   },
 
+  // Ends one device's session, leaving the user signed in on their other devices.
+  signOutDevice(userId, sessionId) {
+    return this.request('POST', `/users/${userId}/sessions/${sessionId}/sign-out`, null, { invalidates: ['users'] });
+  },
+
   deleteUser(userId) {
     return this.request('DELETE', `/users/${userId}`, null, { invalidates: ['users'] });
   },

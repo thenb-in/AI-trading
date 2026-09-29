@@ -1,13 +1,14 @@
+import { useCallback, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Circle } from 'lucide-react';
-import { parseDateValue } from '@utils/dateTimeUtils';
+import { UserSessionsModal } from './UserSessionsModal';
 
 // Three things can be true of an account, and an administrator needs them apart:
 // connected right now, holding a session it can wake up with, or neither.
 const state = (session) => {
   if (session?.online) {
     return {
-      label: session.devices.length > 1 ? `Online · ${session.devices.length} devices` : 'Online',
+      label: session.devices?.length > 1 ? `Online · ${session.devices.length} devices` : 'Online',
       dot: 'fill-green-500 text-green-500',
       text: 'text-green-700'
     };
@@ -18,18 +19,18 @@ const state = (session) => {
   return { label: 'Offline', dot: 'fill-gray-300 text-gray-300', text: 'text-gray-500' };
 };
 
-// "Chrome on macOS · 10.1.2.3 · since 09:41" per live connection, so support can
-// tell a forgotten tab from someone actually working.
-const deviceLines = (devices = []) =>
-  devices
-    .map((device) => [device.label, device.ip, device.since && `since ${parseDateValue(device.since).toLocaleTimeString()}`]
-      .filter(Boolean)
-      .join(' · '))
-    .join('\n');
-
-const UserSessionCell = ({ session, canSignOut = false, onSignOut }) => {
+const UserSessionCell = ({ session, userName, canSignOut = false, onSignOut, onSignOutDevice }) => {
+  const [open, setOpen] = useState(false);
+  const openDevices = useCallback(() => setOpen(true), []);
+  const closeDevices = useCallback(() => setOpen(false), []);
+  const signOutAll = useCallback(() => {
+    setOpen(false);
+    onSignOut?.();
+  }, [onSignOut]);
+  const signOutDevice = useCallback((sessionId) => onSignOutDevice?.(sessionId), [onSignOutDevice]);
   const { label, dot, text } = state(session);
-  const devices = deviceLines(session?.devices);
+  const devices = session?.devices || [];
+  const hasSession = Boolean(session?.online || session?.signedIn);
   const badge = (
     <>
       <Circle className={`h-2.5 w-2.5 ${dot}`} />
@@ -38,29 +39,39 @@ const UserSessionCell = ({ session, canSignOut = false, onSignOut }) => {
   );
 
   // Nothing to end, or not yours to end: the badge only reports.
-  if (!canSignOut || !(session?.online || session?.signedIn)) {
+  if (!canSignOut || !hasSession) {
     return (
-      <div className={`flex items-center gap-2 px-2 py-1 text-sm ${text}`} title={devices}>
+      <div className={`flex items-center gap-2 px-2 py-1 text-sm ${text}`}>
         {badge}
       </div>
     );
   }
 
-  const signOut = (event) => {
-    // The row itself is a click target while bulk delete is on.
-    event.stopPropagation();
-    onSignOut();
-  };
+  // The row is a click target while bulk delete is on, and clicks inside the popup still bubble
+  // to it through React, so nothing here lets a click reach the row.
+  const stop = (event) => event.stopPropagation();
 
   return (
-    <button
-      type="button"
-      onClick={signOut}
-      title={[devices, 'Click to sign this user out of every device'].filter(Boolean).join('\n')}
-      className={`flex items-center gap-2 rounded px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:underline ${text}`}
-    >
-      {badge}
-    </button>
+    <div onClick={stop} role="presentation">
+      <button
+        type="button"
+        onClick={openDevices}
+        title="Show this user's devices"
+        className={`flex items-center gap-2 rounded px-2 py-1 text-sm transition-colors hover:bg-gray-100 ${text}`}
+      >
+        {badge}
+      </button>
+
+      <UserSessionsModal
+        isOpen={open}
+        onClose={closeDevices}
+        userName={userName}
+        status={<span className={`flex items-center gap-2 ${text}`}>{badge}</span>}
+        devices={devices}
+        onSignOutAll={signOutAll}
+        onSignOutDevice={signOutDevice}
+      />
+    </div>
   );
 };
 
@@ -70,9 +81,10 @@ UserSessionCell.propTypes = {
     signedIn: PropTypes.bool,
     devices: PropTypes.array
   }),
-  /** Whether this administrator may end the session — the badge is a button only then. */
+  userName: PropTypes.string,
   canSignOut: PropTypes.bool,
-  onSignOut: PropTypes.func
+  onSignOut: PropTypes.func,
+  onSignOutDevice: PropTypes.func
 };
 
 export { UserSessionCell };

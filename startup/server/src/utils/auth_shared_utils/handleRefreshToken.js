@@ -1,136 +1,81 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../../../logger');
 const db = require('../../models');
-const userService = require('../../services/userService');
+const sessionService = require('../../services/auth/sessionService');
 const { generateAccessToken, generateRefreshToken } = require('../authUtils');
 const { validateRefreshToken } = require('./tokenUtils');
-
-const refreshTokenLocks = new Map();
-
+const { REFRESH_ROTATION_GRACE_MS } = require('../../constants/auth');
 
 
 const handleRefreshToken = async (refreshToken) => {
-  const decoded = await validateRefreshToken(refreshToken);
-
-  // Use the userId as the lock key so callers for the same user collide.
-  const tokenKey = decoded.id;
-
-  // If a refresh for THIS exact user is already running, reuse its promise.
-  if (refreshTokenLocks.has(tokenKey)) {
-    logger.debug(`Reusing in-flight refresh for tokenKey (user:${decoded.id})`);
-    return refreshTokenLocks.get(tokenKey);
+  let decoded;
+  try {
+    decoded = await validateRefreshToken(refreshToken);
+  } catch (err) {
+    const stale = jwt.decode(refreshToken);
+    if (stale?.sid && stale?.id) {
+      try {
+        await sessionService.revokeSessions({ userId: stale.id, sessionId: stale.sid });
+      } catch (revokeErr) {
+        logger.warn(`Could not retire expired session ${stale.sid}: ${revokeErr.message}`);
+      }
+    }
+    throw err;
   }
 
-  // Create a deferred placeholder and set it immediately so concurrent requests will await it.
-  let resolveDeferred, rejectDeferred;
-  const deferredPromise = new Promise((resolve, reject) => {
-    resolveDeferred = resolve; rejectDeferred = reject;
-  });
-  refreshTokenLocks.set(tokenKey, deferredPromise);
-  logger.debug(`Placed placeholder for tokenKey (user:${decoded.id})`);
+  const tx = await db.sequelize.transaction();
+  try {
+    const session = await sessionService.findSessionForRefresh({ sid: decoded.sid, refreshToken }, tx);
 
-  (async () => {
-    const tx = await db.sequelize.transaction();
-    try {
-      const user = await userService.getUserByPkWithLock(decoded.id, {
-        attributes: ['id', 'isActive', 'refresh_token', 'company_id', 'username'],
-        lock: tx.LOCK.UPDATE,
-        transaction: tx
-      });
-
-      if (!user) {
-        logger.error(`User not found ${decoded.id}`);
-        if (!tx.finished) {
-          await tx.rollback();
-        }
-        return rejectDeferred(new Error(`User not found ${decoded.id}`));
-      }
-
-      if (!user.isActive) {
-        logger.error(`User inactive ${user.username || decoded.id}`);
-        if (!tx.finished) {
-          await tx.rollback();
-        }
-        return rejectDeferred(new Error(`User inactive ${user.username || decoded.id}`));
-      }
-
-      // If stored refresh token doesn't match the presented one, it was rotated earlier.
-      if (user.refresh_token !== refreshToken) {
-        logger.info(`Refresh token mismatch for user ${user.username || decoded.id}. Possible concurrent rotation.`);
-
-        if (!tx.finished) {
-          await tx.rollback();
-        }
-
-        // Try to reuse another existing promise keyed by tokenKey (someone else might be handling it).
-        const other = refreshTokenLocks.get(tokenKey);
-        if (other && other !== deferredPromise) {
-          // another promise exists — await and propagate its result
-          try {
-            const res = await other;
-            resolveDeferred(res);
-            return;
-          } catch (err) {
-            rejectDeferred(err);
-            return;
-          }
-        }
-        // No other promise to reuse—fail
-        logger.error(`Invalid or rotated refresh token for user ${user.username || decoded.id}`);
-        return rejectDeferred(new Error(`Invalid or rotated refresh token for user ${user.username || decoded.id}`));
-      }
-
-      // Token matches and user active — rotate token
-      const oldRefreshExpiry = decoded.exp ? new Date(decoded.exp * 1000).toISOString() : 'unknown';
-      logger.debug(`Cid:${decoded.company_id} - Rotating tokens for user ${user.id}; old refresh token expired at ${oldRefreshExpiry}`);
-
-      const newAccess = await generateAccessToken({ id: user.id, company_id: decoded.company_id });
-      const newRefresh = await generateRefreshToken({ id: user.id, company_id: decoded.company_id });
-      await userService.updateUserRefreshToken(user.id, newRefresh, tx);
-      await tx.commit();
-
-      const newAccessDecoded = jwt.decode(newAccess);
-      const newRefreshDecoded = jwt.decode(newRefresh);
-      const newAccessExpiry = newAccessDecoded?.exp ? new Date(newAccessDecoded.exp * 1000).toISOString() : 'unknown';
-      const newRefreshExpiry = newRefreshDecoded?.exp ? new Date(newRefreshDecoded.exp * 1000).toISOString() : 'unknown';
-
-      logger.debug(`Cid:${decoded.company_id} - Refreshed tokens for user ${user.id}; new access expires at ${newAccessExpiry}, new refresh expires at ${newRefreshExpiry}`);
-
-      const result = {
-        user: { id: user.id, company_id: decoded.company_id || user.company_id },
-        tokens: { access: newAccess, refresh: newRefresh },
-        isRefresher: true // flag to indicate this response is from a refresh operation
-      };
-
-      // Resolve deferred so all waiters receive same result
-      resolveDeferred(result);
-      return;
-    } catch (e) {
-      try {
-        if (!tx.finished) {
-          await tx.rollback();
-        }
-      } catch (rb) {
-        logger.error(`Rollback failed: ${rb.message}`, rb);
-      }
-
-      logger.error(`Error in handling refresh token (user:${decoded.id}): ${e.message || e}`,e);
-      rejectDeferred(new Error(`Error in handling refresh token ${decoded.id}: ${e.message || e}`));
-      return;
-    } finally {
-      // keep the lock present for a short grace window to let near-simultaneous requests reuse it.
-      setTimeout(() => {
-        // Only delete if the current map entry is our deferredPromise
-        if (refreshTokenLocks.get(tokenKey) === deferredPromise) {
-          refreshTokenLocks.delete(tokenKey);
-          logger.debug(`Cleared refreshTokenLocks for tokenKey (user:${decoded.id})`);
-        }
-      }, 5000); // 5s grace period — tune as needed
+    if (!session || session.revoked_at) {
+      throw new Error(`No active session for refresh (user ${decoded.id})`);
     }
-  })();
 
-  // return the deferred promise so callers will await the resolution
-  return deferredPromise;
+    const user = await db.User.findByPk(session.user_id, {
+      attributes: ['id', 'isActive', 'company_id'],
+      transaction: tx
+    });
+    if (!user || !user.isActive) {
+      throw new Error(`User missing or inactive ${session.user_id}`);
+    }
+
+    const claims = { id: user.id, company_id: decoded.company_id || user.company_id, sid: session.id };
+
+    // Current token → rotate to a fresh pair.
+    if (session.refresh_token === refreshToken) {
+      const access = await generateAccessToken(claims, session.id);
+      const refresh = await generateRefreshToken(claims, session.id);
+      await sessionService.rotateSessionToken(session, refresh, tx);
+      await tx.commit();
+      return { user: claims, tokens: { access, refresh }, isRefresher: true };
+    }
+
+    // The just-superseded token, still inside the grace window → a parallel
+    // request that raced the winner. Converge: hand back the CURRENT tokens
+    // (fresh access, current refresh) without rotating again.
+    const withinGrace = session.previous_refresh_token === refreshToken
+      && session.rotated_at
+      && (Date.now() - new Date(session.rotated_at).getTime()) <= REFRESH_ROTATION_GRACE_MS;
+    if (withinGrace) {
+      const access = await generateAccessToken(claims, session.id);
+      await sessionService.markSessionActive(session, tx);
+      await tx.commit();
+      return { user: claims, tokens: { access, refresh: session.refresh_token }, isRefresher: true };
+    }
+    logger.warn(`Refresh token reuse detected for session ${session.id} (user ${session.user_id}) — revoking`);
+    await sessionService.revokeSessions({ userId: session.user_id, sessionId: session.id }, tx);
+    await tx.commit();
+    throw new Error(`Refresh token reuse detected for session ${session.id} of user ${session.user_id}`);
+  } catch (err) {
+    if (!tx.finished) {
+      try {
+        await tx.rollback();
+      } catch (rb) {
+        logger.error(`Rollback failed for refresh of user ${decoded.id}: ${rb.message}`, rb);
+      }
+    }
+    throw err;
+  }
 };
 
 module.exports = {

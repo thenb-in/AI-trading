@@ -37,7 +37,7 @@ const authenticate = async (req, res, next) => {
         return res.status(401)
           .json({ message: 'You have been signed out. Please sign in again to continue.', requiresLogin: true });
       }
-      req.user = { id: decoded.id, company_id: decoded.company_id, ssoManaged };
+      req.user = { id: decoded.id, company_id: decoded.company_id, ssoManaged, sid: decoded.sid };
       return denySsoUserOutsideScope(req, res, next);
     }
 
@@ -63,7 +63,7 @@ const authenticate = async (req, res, next) => {
       return denySsoUserOutsideScope(req, res, next);
     } catch (err) {
       logger.error('Refresh token failed', err);
-      return res.status(400).json({ message: 'Your session has expired. Please refresh the page or log in again to continue.', requiresLogin: false });
+      return res.status(401).json({ message: 'Your session has expired. Please sign in again to continue.', requiresLogin: true });
     }
   } catch (error) {
     logger.error('Auth middleware error', error);

@@ -19,6 +19,8 @@ const DEFAULT_DATE_LOCALE = 'nl-NL'; // locale as per DEFAULT_DATE_FORMAT
 const JWT_DEFAULT_ACCESS_EXPIRATION = '15m';
 const JWT_DEFAULT_REFRESH_EXPIRATION = '7d';
 const JWT_ALGORITHM = 'HS256';
+// How long a just-rotated refresh token is still accepted, so parallel requests converge instead of logging out.
+const REFRESH_ROTATION_GRACE_MS = 15000;
 
 // Setup script default constants
 const SETUP_DEFAULT_COMPANY_NAME = 'default';
@@ -44,6 +46,7 @@ module.exports = {
   JWT_DEFAULT_ACCESS_EXPIRATION,
   JWT_DEFAULT_REFRESH_EXPIRATION,
   JWT_ALGORITHM,
+  REFRESH_ROTATION_GRACE_MS,
   SETUP_DEFAULT_COMPANY_NAME,
   SETUP_BCRYPT_ROUNDS,
   SIGNUP_GENERIC_ERROR,

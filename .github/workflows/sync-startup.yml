@@ -149,7 +149,12 @@ jobs:
           (steps.sync.outputs.has_changes == 'true' || steps.sync.outputs.has_conflicts == 'true')
         working-directory: target-startup
         env:
-          GH_TOKEN: ${{ steps.octo-sts.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
+          # Every `gh` call in this step targets the framework repo, which
+          # GITHUB_TOKEN cannot reach, so each one runs on the STS token that
+          # is scoped to it. The `git push` uses the token persisted by the
+          # framework-repo checkout, not GH_TOKEN.
+          STS_TOKEN: ${{ steps.octo-sts.outputs.token }}
           BRANCH: ${{ steps.branch.outputs.name }}
           CONFLICTS: ${{ steps.sync.outputs.conflicts }}
           APPLIED: ${{ steps.sync.outputs.commits_applied }}
@@ -237,9 +242,9 @@ jobs:
             TITLE="${TITLE} (${PENDING} ${NOUN}, through ${TO_DATE})"
           fi
 
-          EXISTING=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
+          EXISTING=$(GH_TOKEN="$STS_TOKEN" gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -z "${EXISTING}" ]; then
-            gh pr create \
+            GH_TOKEN="$STS_TOKEN" gh pr create \
               --repo "${TARGET_REPO}" \
               --base "${TARGET_BASE_BRANCH}" \
               --head "${BRANCH}" \
@@ -247,19 +252,19 @@ jobs:
               --body-file /tmp/pr-body.md
           else
             # Standing branch: refresh the existing PR rather than opening a second.
-            gh pr edit "${EXISTING}" --repo "${TARGET_REPO}" --title "${TITLE}" --body-file /tmp/pr-body.md
-            gh pr comment "${EXISTING}" --repo "${TARGET_REPO}" \
+            GH_TOKEN="$STS_TOKEN" gh pr edit "${EXISTING}" --repo "${TARGET_REPO}" --title "${TITLE}" --body-file /tmp/pr-body.md
+            GH_TOKEN="$STS_TOKEN" gh pr comment "${EXISTING}" --repo "${TARGET_REPO}" \
               --body "Nightly sync appended ${APPLIED} commit(s). Unresolved conflicts: ${CONFLICTS}. [Run log](${RUN_URL})"
           fi
 
-          PR=$(gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
+          PR=$(GH_TOKEN="$STS_TOKEN" gh pr list --repo "${TARGET_REPO}" --head "${BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -n "${PR}" ] && [ "${CONFLICTS}" != "0" ]; then
-            gh label create sync-conflict --repo "${TARGET_REPO}" --color B60205 \
+            GH_TOKEN="$STS_TOKEN" gh label create sync-conflict --repo "${TARGET_REPO}" --color B60205 \
               --description "Sync PR with unresolved conflicts needing manual reconciliation" \
               --force > /dev/null 2>&1 || true
-            gh pr edit "${PR}" --repo "${TARGET_REPO}" --add-label sync-conflict || true
+            GH_TOKEN="$STS_TOKEN" gh pr edit "${PR}" --repo "${TARGET_REPO}" --add-label sync-conflict || true
           elif [ -n "${PR}" ]; then
-            gh pr edit "${PR}" --repo "${TARGET_REPO}" --remove-label sync-conflict > /dev/null 2>&1 || true
+            GH_TOKEN="$STS_TOKEN" gh pr edit "${PR}" --repo "${TARGET_REPO}" --remove-label sync-conflict > /dev/null 2>&1 || true
           fi
 
       - name: Open / close the sync-failure issue

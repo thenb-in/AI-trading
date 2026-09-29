@@ -128,6 +128,9 @@ module.exports = (sequelize, DataTypes) => {
     // Data access configuration per user (same company scope)
     User.hasOne(models.UserProfile, { foreignKey: 'user_id', as: 'userProfile' });
     User.hasMany(models.Layout, { foreignKey: 'user_id', as: 'layouts' });
+
+    // One row per active login (device). Replaces the single refresh_token.
+    User.hasMany(models.UserSession, { foreignKey: 'user_id', as: 'sessions' });
   };
 
   return User;

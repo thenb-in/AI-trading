@@ -85,8 +85,8 @@ async function checkAvailability(req, res) {
  */
 async function login(req, res) {
   try {
-    // Call controller
-    const { user, accessToken, refreshToken } = await authController.loginUser(req.body);
+    const context = { ip: req.ip, userAgent: req.headers['user-agent'] };
+    const { user, accessToken, refreshToken } = await authController.loginUser(req.body, context);
 
     // Set HTTP-only cookies
     setAuthCookies(res, { access: accessToken, refresh: refreshToken });

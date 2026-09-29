@@ -4,10 +4,12 @@ const authService = require('../services/authService');
 const userService = require('../services/userService');
 const { getWalletUserManagementUrl } = require('../sso/utils/walletUrl');
 const authController = require('./authController');
-const { connectionsByUser } = require('../socket/utils/presence');
+const { connectionsByUser, disconnectSession } = require('../socket/utils/presence');
 const { sendSuccess, sendError } = require('../utils/response');
 const allowedPermissions = require('../utils/allowedPermissions');
 const { withExtendedCompany } = require('../services/companyPayloadRegistry');
+const sessionService = require('../services/auth/sessionService');
+const env = require('../config/env');
 
 const getAllUsers = async (req, res) => {
   const companyId = req.user.company_id;
@@ -53,23 +55,28 @@ const deactivateUser = async (req, res) => {
   }
 };
 
-// Who is signed in and who is at the keyboard. Two different facts: a token on
-// the user row means the account can come straight back in without a password,
-// a live socket means someone has the app open right now.
+// Who is signed in and on which devices, plus who is at the keyboard right now.
+// Two facts: a live login session (a device that can refresh back in without a
+// password — the durable half) and a live socket (someone has the app open this
+// moment). Devices carry their session id so a single one can be signed out.
 const getUserSessions = async (req, res) => {
   const companyId = req.user.company_id;
   try {
-    const rows = await userService.getSessionState(companyId);
-    const connections = connectionsByUser(companyId);
-    const sessions = Object.fromEntries(rows.map((row) => {
-      const devices = connections.get(String(row.id)) || [];
-      return [row.id, {
-        online: devices.length > 0,
-        signedIn: Boolean(row.refresh_token),
-        lastActive: row.last_active,
+    const activeSince = new Date(Date.now() - env.MAX_JWT_REFRESH_EXPIRATION_MS);
+    const durableByUser = await sessionService.listActiveSessionsByCompany(companyId, activeSince);
+    const liveByUser = connectionsByUser(companyId);
+
+    const sessions = {};
+    for (const userId of new Set([...durableByUser.keys(), ...liveByUser.keys()])) {
+      const devices = durableByUser.get(userId) || [];
+      const live = liveByUser.get(userId) || [];
+      sessions[userId] = {
+        online: live.length > 0,
+        signedIn: devices.length > 0,
+        lastActive: devices[0]?.lastActive ?? null, // rows come newest-first
         devices
-      }];
-    }));
+      };
+    }
     return sendSuccess(res, { data: { sessions } });
   } catch (error) {
     logger.error(`Get user sessions error for company ${companyId}: ${error.message}`, error);
@@ -90,6 +97,22 @@ const signOutUser = async (req, res) => {
   } catch (error) {
     logger.error(`Sign out user ${userId} error: ${error.message}`, error);
     return sendError(res, { message: `Error in signing out user ${userId}: ${error.message}` });
+  }
+};
+
+const signOutDevice = async (req, res) => {
+  const { userId, sessionId } = req.params;
+  try {
+    const revoked = await sessionService.revokeSessions({ userId, sessionId });
+    if (!revoked) {
+      return sendError(res, { message: `Device session ${sessionId} of user ${userId} was not found or is already signed out` });
+    }
+    // Its open tabs go quiet now, not when their access token lapses.
+    disconnectSession(sessionId);
+    return sendSuccess(res, { message: 'Device signed out' });
+  } catch (error) {
+    logger.error(`Sign out device ${sessionId} for user ${userId} error: ${error.message}`, error);
+    return sendError(res, { message: `Error in signing out device ${sessionId}: ${error.message}` });
   }
 };
 
@@ -176,6 +199,7 @@ module.exports = {
   getAllUsers,
   getUserSessions,
   signOutUser,
+  signOutDevice,
   deactivateUser,
   getMe,
   deleteUser,

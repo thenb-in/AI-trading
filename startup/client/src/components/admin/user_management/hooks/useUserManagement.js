@@ -124,6 +124,24 @@ const useUserManagement = () => {
       setConfirmDialog(INITIAL_CONFIRM_DIALOG);
     }
   };
+  const handleSignOutDevice = async (userId, sessionId) => {
+    try {
+      await ApiService.signOutDevice(userId, sessionId);
+      setSessions((current) => {
+        const existing = current[userId];
+        if (!existing) {
+          return current;
+        }
+        const devices = (existing.devices || []).filter((device) => device.id !== sessionId);
+        return { ...current, [userId]: { ...existing, devices, signedIn: devices.length > 0 } };
+      });
+      setError("");
+      return true;
+    } catch (err) {
+      setError(err.message || "Failed to sign the device out");
+      return false;
+    }
+  };
 
   const handleDelete = async (userId) => {
     try {
@@ -299,6 +317,7 @@ const useUserManagement = () => {
     handleApprove,
     handleDeactivate,
     handleSignOut,
+    handleSignOutDevice,
     handleDelete,
     handleBulkDelete,
     handleRoleChange,

@@ -1,7 +1,7 @@
 // JWT-based handshake middleware for incoming socket.io connections.
 const cookie = require('cookie');
 const logger = require('../../logger');
-const { validateAccessToken, validateRefreshToken } = require('../utils/auth_shared_utils');
+const { validateAccessToken, validateRefreshToken, isTokenSuperseded } = require('../utils/auth_shared_utils');
 
 function extractTokens(socket) {
   const handshake = socket.handshake || {};
@@ -40,6 +40,11 @@ function buildSocketAuthMiddleware(opts = {}) {
 
     // Happy path: the access token is still valid.
     const decoded = accessToken ? validateAccessToken(accessToken) : null;
+    // A signed-out token (its device, or the whole user) must not open a socket, even before it expires.
+    if (decoded && await isTokenSuperseded(decoded)) {
+      logger.warn(`[socket-auth] reject ${socket.id}: token of user ${decoded.id} session ${decoded.sid} is signed out`);
+      return next(new Error(`SIGNED_OUT reject ${socket.id}: token of user ${decoded.id} session ${decoded.sid} is signed out`));
+    }
     if (decoded) {
       socket.user = { id: decoded.id, company_id: decoded.company_id, ...decoded };
       socket.accessToken = accessToken;
@@ -54,7 +59,7 @@ function buildSocketAuthMiddleware(opts = {}) {
     if (refreshToken) {
       try {
         const refreshDecoded = await validateRefreshToken(refreshToken);
-        if (refreshDecoded?.id) {
+        if (refreshDecoded?.id && !(await isTokenSuperseded(refreshDecoded))) {
           socket.user = {
             id: refreshDecoded.id,
             company_id: refreshDecoded.company_id,

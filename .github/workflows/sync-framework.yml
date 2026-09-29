@@ -57,8 +57,11 @@ jobs:
     permissions:
       # The branch push runs on an Octo STS token for THIS repo, because
       # `.github/` is a synced path and GITHUB_TOKEN has no `workflows`
-      # permission. The PR, its comments, labels and the failure issue run on
-      # GITHUB_TOKEN. A second Octo STS token READS the framework repo.
+      # permission. GITHUB_TOKEN also cannot open a PR unless the "Allow GitHub
+      # Actions to create and approve pull requests" repo setting is on, so
+      # `gh pr create` uses that same STS token too. Its comments, labels and
+      # the failure issue still run on GITHUB_TOKEN. A second Octo STS token
+      # READS the framework repo.
       contents: write        # push the sync branch
       pull-requests: write   # open / update the sync PR
       issues: write          # PR comments, labels and the sync-failure issue
@@ -181,6 +184,7 @@ jobs:
         if: steps.push.outputs.pushed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          STS_TOKEN: ${{ steps.octo-sts-target.outputs.token }}
           CONFLICTS: ${{ steps.sync.outputs.conflicts }}
           APPLIED: ${{ steps.sync.outputs.commits_applied }}
           SKIPPED: ${{ steps.sync.outputs.commits_skipped }}
@@ -260,7 +264,7 @@ jobs:
 
           EXISTING=$(gh pr list --head "${SYNC_BRANCH}" --state open --json number --jq '.[0].number // empty')
           if [ -z "${EXISTING}" ]; then
-            gh pr create \
+            GH_TOKEN="$STS_TOKEN" gh pr create \
               --base "${TARGET_BASE_BRANCH}" \
               --head "${SYNC_BRANCH}" \
               --title "${TITLE}" \

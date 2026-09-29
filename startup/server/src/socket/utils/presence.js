@@ -9,18 +9,9 @@
 // that can wake a signed-out tab back up) lives on the user row.
 
 const { getAppServerIo } = require('../client_appserver');
-const { userRoom } = require('./rooms');
+const { userRoom, sessionRoom } = require('./rooms');
 const { onUserDeactivate } = require('../../hooks/onUserDeactivate');
-
-/** "Chrome on Windows" / "Safari on iPhone" — enough to recognise a device by. */
-function describeDevice(userAgent) {
-  if (!userAgent) {
-    return 'Unknown device';
-  }
-  const browser = ['Edg', 'Chrome', 'Firefox', 'Safari'].find((name) => userAgent.includes(name));
-  const platform = ['iPhone', 'iPad', 'Android', 'Windows', 'Mac', 'Linux'].find((name) => userAgent.includes(name));
-  return [browser === 'Edg' ? 'Edge' : browser, platform].filter(Boolean).join(' on ') || userAgent.slice(0, 40);
-}
+const { describeDevice } = require('../../utils/describeDevice');
 
 /**
  * Live connections per user id, for one company.
@@ -58,7 +49,16 @@ function disconnectUser(userId) {
   io.in(userRoom(userId)).disconnectSockets(true);
 }
 
+/** Drops the live connections of one login session, so a device signed out on its own goes quiet too. */
+function disconnectSession(sessionId) {
+  const io = getAppServerIo();
+  if (!io) {
+    return;
+  }
+  io.in(sessionRoom(sessionId)).disconnectSockets(true);
+}
+
 // A deactivated user is signed out everywhere at once, like an administrator's sign-out.
 onUserDeactivate(disconnectUser);
 
-module.exports = { connectionsByUser, disconnectUser };
+module.exports = { connectionsByUser, disconnectUser, disconnectSession };
