@@ -12,6 +12,13 @@ const { readSourceBlob } = require('./apply');
 const { writeFileEnsuringDir, writeReport, CONFLICT_DIR } = require('./merge');
 
 function commitAsBot(targetRepo, direction, message) {
+  // A re-run of a standing branch can restage byte-identical content — the same
+  // parked conflicts and the same report as the commit already on the branch.
+  // `git commit` then exits 1 ("nothing to commit"), which would abort the run
+  // over what is really a no-op. Skip the commit and return the current tip.
+  if (gitTry(targetRepo, ['diff', '--cached', '--quiet']).ok) {
+    return git(targetRepo, ['rev-parse', 'HEAD']).trim();
+  }
   git(
     targetRepo,
     [
