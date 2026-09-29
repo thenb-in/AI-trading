@@ -6,6 +6,7 @@ const db = require('../models');
 const { sequelize, User, UserProfile, Company, Role, Permission, MultiCompanyModule } = db;
 const { findModelByIdOrThrow } = require('../utils/modelHelpers');
 const { runOnUserUpdate } = require('../hooks/onUserUpdate');
+const { runOnUserDeactivate } = require('../hooks/onUserDeactivate');
 const { normalizeEmail } = require('../utils/normalizeUtils');
 
 async function deleteUser(userId) {
@@ -351,7 +352,10 @@ const setUserApproved = async (userId, approved) => {
 
   await user.update({ is_approved: approved });
   if (!approved) {
+    // Signed out as a logout does it: sessions end here, and the socket layer cuts open tabs off
+    // from its onUserDeactivate hook.
     await invalidateSessions(userId);
+    await runOnUserDeactivate(userId);
   }
   logger.info(`User ${user.username} is now ${approved ? 'approved' : 'not approved'}`);
   return true;

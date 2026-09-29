@@ -102,6 +102,8 @@ const SearchResultItem = ({ item, idx, activeIndex, onMouseEnter, onClick, query
             ) : null}
           </Box>
         }
+        // The secondary line holds boxes and chips (divs), which a <p> may not contain.
+        secondaryTypographyProps={{ component: "div" }}
       />
     </ListItemButton>
   );
