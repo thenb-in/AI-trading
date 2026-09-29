@@ -152,8 +152,15 @@ function reconcileParkedConflicts(targetRepo, conflicts, blobs, direction, stage
       // WITH the target's non-overlapping edits kept.
       writeFileEnsuringDir(abs, merged.content);
       stage(c.path);
-      fs.rmSync(path.join(targetRepo, c.parkedAs), { force: true });
-      stage(c.parkedAs);
+      // Only a conflict parked by an earlier run has a `.conflict` file to
+      // remove. A first-time conflict that merged against an intermediate commit
+      // but is clean against the tip was never parked, so staging its "removal"
+      // would fail on a pathspec git has never seen.
+      const parkedAbs = path.join(targetRepo, c.parkedAs);
+      if (fs.existsSync(parkedAbs)) {
+        fs.rmSync(parkedAbs, { force: true });
+        stage(c.parkedAs);
+      }
       resolved.push(c.path);
       continue;
     }
