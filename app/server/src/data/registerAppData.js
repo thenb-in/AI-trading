@@ -15,10 +15,6 @@ registerActivityTypes(AUDIT_ACTIVITY_TYPES);
 // --- App permissions, so the catalog can say what each one is ---
 registerPermissionSets(permissionSets);
 
-// --- App workflows, so a status route knows which grant it needs and a
-//     service can ask whether the change it is about to make is allowed ---
-registerApprovalWorkflows();
-
 // --- What the app does when a login is deactivated ---
 onUserDeactivate(onDeactivateUser);
 

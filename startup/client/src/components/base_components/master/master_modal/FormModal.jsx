@@ -104,12 +104,7 @@ const FormModal = ({
     isNew: !isEditMode,
   });
 
-  const handleSubmit = async (event) => {
-    // A form rendered inside this one (a nested FormModal, or an inline
-    // sub-form) still bubbles its submit up here through React. Only this
-    // form's own submit is a save of this record.
-    if (event.target !== event.currentTarget) return;
-    event.preventDefault();
+  const save = async (run) => {
     setIsSaving(true);
     try {
       await run();
@@ -157,55 +152,57 @@ const FormModal = ({
   };
 
   return (
-    <BaseModal
-      {...modalProps}
-      title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
-      // What the modal is open on. Comments and attachments file themselves
-      // against it, so every form gets them the moment its record is saved.
-      recordName={masterName}
-      recordId={record?.id}
-      onClose={onClose}
-      actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
-      actions={
-        <FormFooter
-          formId={formId}
-          form={form}
-          workflow={recordWorkflow}
-          record={record}
-          hooks={hooks}
-          showWhen={showWhen}
-          onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
-          onChanged={onChanged}
-          run={save}
-          isSaving={isSaving}
-          hasForm={hasForm}
-          blockedReason={blockedReason}
-          blockedField={blocked.field}
-          onShowBlockedField={showBlockedField}
-          onClose={onClose}
-          leftSlot={cancelSlot}
-          actionsRef={setActionsSlot}
-          submitLabel={isEditMode ? updateLabel : createLabel}
-          savingLabel={savingLabel}
-        />
-      }
-    >
-      <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
-        <FormBlockedFieldContext.Provider value={blocked.field ? blocked : null}>
-        {/* While Save or a workflow action waits on the server, nothing in the form can
-            change under it: base fields read the lock, and the fieldset holds plain inputs. */}
-        <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
-          <form ref={formRef} id={formId} onSubmit={handleSubmit}>
-            <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
-              {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
-              {!isLoading && typeof children === 'function' ? children(record) : null}
-              {!isLoading && typeof children !== 'function' ? children : null}
-            </fieldset>
-          </form>
-        </FormEditableContext.Provider>
-        </FormBlockedFieldContext.Provider>
-      </FormModalContext.Provider>
-    </BaseModal>
+    <RecordAttachmentsContext.Provider value={attachments}>
+      <BaseModal
+        {...modalProps}
+        title={modalProps.title ?? recordTitle({ masterName, record, isNew: !isEditMode, isEditable: recordWorkflow.isEditable })}
+        // What the modal is open on. Comments and attachments file themselves
+        // against it; files picked before the first save wait for the save.
+        recordName={masterName}
+        recordId={record?.id}
+        onClose={onClose}
+        actionsLeft={<div ref={setCancelSlot} className="flex items-center gap-3" />}
+        actions={
+          <FormFooter
+            formId={formId}
+            form={form}
+            workflow={recordWorkflow}
+            record={record}
+            hooks={hooks}
+            showWhen={showWhen}
+            onAmend={onAmend && (() => onAmend(amendCopy(workflow, record)))}
+            onChanged={onChanged}
+            run={save}
+            isSaving={isSaving}
+            hasForm={hasForm}
+            blockedReason={blockedReason}
+            blockedField={blocked.field}
+            onShowBlockedField={showBlockedField}
+            onClose={onClose}
+            leftSlot={cancelSlot}
+            actionsRef={setActionsSlot}
+            submitLabel={isEditMode ? labelFor(updateLabel, record) : createLabel}
+            savingLabel={savingLabel}
+          />
+        }
+      >
+        <FormModalContext.Provider value={{ registrationRef, save, isSaving, setHasForm, setBlocked, actionsSlot, workflow: recordWorkflow }}>
+          <FormBlockedFieldContext.Provider value={blocked.field || Object.keys(blocked.fields).length ? blocked : null}>
+          {/* While Save or a workflow action waits on the server, nothing in the form can
+              change under it: base fields read the lock, and the fieldset holds plain inputs. */}
+          <FormEditableContext.Provider value={recordWorkflow.isEditable && !isSaving}>
+            <form ref={formRef} id={formId} onSubmit={handleSubmit}>
+              <fieldset disabled={isSaving} className="min-w-0 space-y-4 border-0 p-0 m-0">
+                {isLoading ? <p className="py-6 text-sm text-gray-500">{`Loading ${masterName}...`}</p> : null}
+                {!isLoading && typeof children === 'function' ? children(record) : null}
+                {!isLoading && typeof children !== 'function' ? children : null}
+              </fieldset>
+            </form>
+          </FormEditableContext.Provider>
+          </FormBlockedFieldContext.Provider>
+        </FormModalContext.Provider>
+      </BaseModal>
+    </RecordAttachmentsContext.Provider>
   );
 };
 

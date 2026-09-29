@@ -2,9 +2,10 @@ import PropTypes from 'prop-types';
 
 // BaseMaster's props, kept apart so the component stays readable.
 
-// A permission name, or { all: [...] } when every listed permission is needed.
+// A permission name, any of several, or { all: [...] } when every one is needed.
 const permissionKeyType = PropTypes.oneOfType([
   PropTypes.string,
+  PropTypes.arrayOf(PropTypes.string),
   PropTypes.shape({ all: PropTypes.arrayOf(PropTypes.string) }),
 ]);
 
@@ -41,7 +42,6 @@ const baseMasterPropTypes = {
   // (row, { openEdit }) => void — decides what a row click does; `openEdit(row)`
   // opens the row the default way (e.g. only while it is still pending).
   onRowClickOverride: PropTypes.func,
-  unauthorizedToast: PropTypes.string,
   unauthorizedDeleteToast: PropTypes.string,
   fetchSuccessToast: PropTypes.string,
   fetchFailureToast: PropTypes.string,
@@ -116,6 +116,25 @@ const baseMasterPropTypes = {
   infiniteScroll: PropTypes.bool,
   pageSize: PropTypes.number,
   showAdd: PropTypes.bool,
+  // Grid view: which view the grid opens in, and the kanban lanes when it is a board.
+  viewMode: PropTypes.string,
+  kanbanField: PropTypes.string,
+  kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
+  // Workflow hooks that only decorate the row buttons, leaving the header actions alone.
+  rowWorkflowHooks: PropTypes.objectOf(PropTypes.func),
+  // Extra props handed straight to the FormModal this master opens.
+  modalProps: PropTypes.object,
+  // The search box asks the server instead of filtering the rows already loaded.
+  serverSearch: PropTypes.bool,
+  // Replaces the standard filter bar with the master's own.
+  renderFilters: PropTypes.func,
+  // (id) => Promise<record>; loads the whole record when a row opens, so a grid
+  // row that carries only summary columns still edits against the full record.
+  loadRecord: PropTypes.func,
+  // Query parameter that opens a record straight from a link, and the callback
+  // fired when that modal closes.
+  openParam: PropTypes.string,
+  onModalClose: PropTypes.func,
 };
 
 export { baseMasterPropTypes };

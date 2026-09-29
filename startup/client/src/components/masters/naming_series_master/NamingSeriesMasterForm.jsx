@@ -90,7 +90,6 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, onSaved }) => {
         <SearchableDropdown
           options={masterOptions}
           value={series.master}
-          multiple={false}
           disabled={isEditMode}
           optionName="Master"
           placeholder="Select the master to number…"
