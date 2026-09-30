@@ -33,7 +33,6 @@ const useMasterRows = ({
   pageSize,
   serverSearch,
   searchQuery,
-  unauthorizedToast,
   fetchSuccessToast,
   fetchFailureToast,
 }) => {
@@ -87,7 +86,7 @@ const useMasterRows = ({
     } finally {
       if (append) setIsLoadingMore(false); else setLoading(false);
     }
-  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, unauthorizedToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize, search]);
+  }, [canRead, loadRows, rowsKey, fetchSuccessToast, fetchFailureToast, title, filters, mapFiltersForApi, extractResponse, infiniteScroll, pageSize, search]);
 
   const latestRef = useRef({});
   latestRef.current = { loading, isLoadingMore, hasMore, page, fetchRows };

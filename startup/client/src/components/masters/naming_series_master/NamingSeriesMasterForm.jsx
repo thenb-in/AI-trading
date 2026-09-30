@@ -81,6 +81,7 @@ const NamingSeriesMasterForm = ({ isOpen, onClose, initialData, defaults = {}, o
           value={series.master}
           multiple={false}
           disabled={isEditMode || Boolean(defaults.master)}
+          optionName="Master"
           placeholder="Select the master to number…"
           onChange={(master) => patchSeries({ master: master ?? '' })}
         />

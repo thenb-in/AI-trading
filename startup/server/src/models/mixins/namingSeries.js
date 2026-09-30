@@ -24,7 +24,8 @@ const positiveId = (value) => {
  *     seriesField: 'namingSeriesId'
  *   });
  *
- * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it.
+ * - Runs on beforeValidate, so a NOT NULL code column is filled before validation reads it,
+ *   and only for inserts (create/bulkCreate), never for Model.update.
  * - The counter moves inside the caller's transaction (options.transaction): the row stays
  *   locked until that transaction ends, and a rolled-back insert gives its number back.
  * - A company with no default series for the master is left alone when the code column is

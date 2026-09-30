@@ -57,7 +57,7 @@ export default ({ mode }) => {
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
 
-  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:8944');
+  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',

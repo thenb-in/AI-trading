@@ -1,6 +1,6 @@
 {
   "name": "NB Next backend",
-  "version": "1.0.61",
+  "version": "1.0.62",
   "main": "buildApp.js",
   "scripts": {
     "build": "node scripts/build-bytecode.js"
