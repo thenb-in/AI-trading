@@ -1,3 +1,6 @@
 /* The framework owns the Tailwind entry and the generic base styles. App-only
    CSS goes below this import. */
 @import "@startup/index.css";
+
+/* Material Design Icons -- the same icon set the mobile app renders, addressed by name. */
+@import "@mdi/font/css/materialdesignicons.css";

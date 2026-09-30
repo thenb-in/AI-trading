@@ -1,11 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { ApiService } from "@services/ApiService";
 import { getApiErrorMessage } from '@utils/apiErrorMessage';
-import { useRowSearch } from '@startup/hooks/useRowSearch';
 
 const INITIAL_CONFIRM_DIALOG = { show: false, userId: null, action: null, username: "", userRole: null };
-
-const USER_SEARCH_KEYS = ['name', 'phone'];
 
 const useUserManagement = () => {
   const [users, setUsers] = useState([]);
