@@ -140,7 +140,7 @@ const getSortedHeaderStyle = (isSorted) => {
     background: "var(--grid-header-bg-sorted)",
     borderBottom: "var(--grid-header-border-bottom-width) solid var(--grid-header-border-sorted)",
     boxShadow: "inset 0 -3px 0 var(--grid-header-border-sorted)",
-    color: "#ffffff",
+    color: "var(--grid-header-fg)",
   };
 };
 

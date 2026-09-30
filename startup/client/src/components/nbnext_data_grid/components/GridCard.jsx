@@ -49,7 +49,7 @@ function GridCard({
       className={`rounded-lg border shadow-sm transition-colors ${hoverClass} ${surfaceClass}`}
     >
       <div
-        className="px-4 py-3 border-b text-sm font-semibold text-white truncate bg-[var(--grid-header-bg)]"
+        className="px-4 py-3 border-b text-sm font-semibold text-[var(--grid-header-fg)] truncate bg-[var(--grid-header-bg)]"
         title={typeof titleContent === "string" ? titleContent : titleColumn.headerName}
       >
         {titleContent || titleColumn.headerName || "—"}
