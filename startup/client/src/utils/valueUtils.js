@@ -7,4 +7,10 @@ const toNumberOrDefault = (value, defaultValue) => (isEmptyValue(value) ? defaul
 /** `value` held inside `min`..`max`. */
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-export { clamp, isEmptyValue, toNumberOrDefault };
+/** `value` as a number held inside `min`..`max`; anything that is not a finite number reads as `min`. */
+const numberInRange = (value, min, max) => {
+  const number = Number(value);
+  return clamp(Number.isFinite(number) ? number : min, min, max);
+};
+
+export { clamp, isEmptyValue, toNumberOrDefault, numberInRange };
