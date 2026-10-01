@@ -34,6 +34,890 @@ const reportApi = {
       return Promise.reject(error);
     });
   },
+
+  // Standing-book snapshot for the Calling → Conversion dashboard KPIs.
+  // Returns { scope, perAgent } (not a grid), so it does not go through getReportData.
+  getLeadConversionSnapshot: (filters = {}) =>
+    api.get('/reports/lead-conversion-snapshot', { params: filters })
+      .then((res) => res?.data?.data || { scope: null, perAgent: [] }),
+
+  updateAttendanceStatus: async ({
+    employee_code,
+    attendance_date,
+    status,
+    old_status,
+    additional_statuses,
+    validate_only,
+    remarks,
+    from_accountability_modal,
+    gatepass
+  }) => {
+    if (!employee_code || !attendance_date || !status) {
+      console.error('Missing required fields:', { employee_code, attendance_date, status });
+      throw new Error('All fields are required: employee_code, attendance_date, status');
+    }
+
+    const payload = {
+      emp_code: employee_code,
+      att_date: attendance_date,
+      status: status.trim(),
+      old_status: sanitizeHTML(old_status).trim(),
+      additional_statuses: additional_statuses ? additional_statuses.map(s => sanitizeHTML(s).trim()) : [],
+      validate_only: validate_only === true,
+    };
+    if (remarks !== undefined) {
+      payload.remarks = typeof remarks === 'string' ? sanitizeHTML(remarks).trim() : '';
+    }
+    if (from_accountability_modal === true) {
+      payload.from_accountability_modal = true;
+    }
+    if (gatepass) {
+      payload.gatepass = gatepass;
+    }
+
+    const response = await api.post('/report-actions/attendance/update', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    return response.data;
+  },
+
+  lockAttendance: async ({ employee_code, attendance_date, current_status, att_data, filter }) => {
+    if (!employee_code || !attendance_date || !current_status) {
+      console.error('Missing required fields:', { employee_code, attendance_date, current_status });
+      throw new Error('All fields are required: employee_code, attendance_date, current_status');
+    }
+
+    const payload = {
+      emp_code: employee_code,
+      att_date: attendance_date,
+      current_status: current_status,
+    };
+    if (att_data != null) payload.att_data = att_data;
+    if (filter != null) payload.filter = filter;
+
+    const response = await api.post('/report-actions/attendance/lock', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    return response.data;
+  },
+
+  // Reverse of lockAttendance
+  unlockAttendance: async ({ employee_code, attendance_date }) => {
+    const response = await api.post('/report-actions/attendance/unlock', {
+      emp_code: employee_code,
+      att_date: attendance_date
+    });
+
+    return response.data;
+  }
+};
+
+// --------------------------------------------
+// Unregistered Faces Report API
+// --------------------------------------------
+const unregisteredFacesReportApi = {
+  deleteImage: (payload) => {
+    const fileName = payload?.file_name;
+    const category = payload?.category;
+    if (!fileName) throw new Error('file_name is required');
+    if (!category) throw new Error('category is required');
+    return api.post('/reports/unregistered-faces-report/delete', {
+      file_name: fileName,
+      category
+    });
+  },
+  assignImage: (payload) => {
+    const fileName = payload?.file_name;
+    const empCode = payload?.emp_code;
+    const category = payload?.category;
+    if (!fileName || !empCode) {
+      throw new Error('file_name and emp_code are required');
+    }
+    if (!category) {
+      throw new Error('category is required');
+    }
+    return api.post('/reports/unregistered-faces-report/assign', {
+      file_name: fileName,
+      emp_code: empCode,
+      category
+    });
+  },
+};
+
+// --------------------------------------------
+// Biotemplate Report API
+// --------------------------------------------
+const biotemplateReportApi = {
+  getReport: (params = {}) => {
+    return api.get('/reports/biotemplate-report', { params });
+  },
+  register: (payload) => {
+    const empCode = payload?.emp_code;
+    const bioType = payload?.bio_type;
+    const areaName = payload?.area_name;
+    const terminalId = payload?.terminal_id;
+    if (!empCode || !bioType || (!areaName && !terminalId)) {
+      throw new Error('emp_code, bio_type, and either area_name or terminal_id are required');
+    }
+    return api.post('/reports/biotemplate-report/register', {
+      emp_code: empCode,
+      bio_type: bioType,
+      area_name: areaName,
+      major_ver: payload?.major_ver,
+      terminal_id: terminalId,
+    });
+  },
+  push: (payload) => {
+    const empCode = payload?.emp_code;
+    const bioType = payload?.bio_type;
+    const terminalId = payload?.terminal_id;
+    if (!empCode || !bioType || !terminalId) {
+      throw new Error('emp_code, bio_type, and terminal_id are required');
+    }
+    return api.post('/reports/biotemplate-report/push', {
+      emp_code: empCode,
+      bio_type: bioType,
+      terminal_id: terminalId,
+    });
+  },
+  delete: (payload) => {
+    const empCode = payload?.emp_code;
+    const bioType = payload?.bio_type;
+    const terminalId = payload?.terminal_id;
+    if (!empCode || !bioType || !terminalId) {
+      throw new Error('emp_code, bio_type, and terminal_id are required');
+    }
+    return api.post('/reports/biotemplate-report/delete', {
+      emp_code: empCode,
+      bio_type: bioType,
+      terminal_id: terminalId,
+      major_ver: payload?.major_ver,
+    });
+  },
+  linkTransactions: (payload) => {
+    const empCode = payload?.emp_code;
+    if (!empCode) {
+      throw new Error('emp_code is required');
+    }
+    return api.post('/reports/biotemplate-report/link-transactions', { emp_code: empCode });
+  },
+  createEmployee: (payload) => {
+    const empCode = payload?.emp_code;
+    if (!empCode) {
+      throw new Error('emp_code is required');
+    }
+    return api.post('/reports/biotemplate-report/create-employee', { emp_code: empCode });
+  },
+};
+
+// --------------------------------------------
+// Gate Pass API
+// --------------------------------------------
+const gatePassApi = {
+  getAllGatePass: (filters = {}) => api.get(`/gatepass`, { params: filters }),
+  createGatePass: (gatePassData) => api.post(`/gatepass`, gatePassData),
+  updateGatePass: (gatePassId, gatePassData) => api.put(`/gatepass/${gatePassId}`, gatePassData),
+  updateGatePassStatus: (gatePassId, status) => api.put(`/gatepass/${gatePassId}/status`, { status }),
+  deleteGatePass: (gatePassId) => api.delete(`/gatepass/${gatePassId}`),
+};
+
+// --------------------------------------------
+// Department API
+// --------------------------------------------
+const departmentApi = {
+  getAllDepartments: (params = {}, options = {}) => cachedGet('/department', 'departments', params, options),
+  createDepartment: (departmentData) => writesTo('departments', 'deptEmp').post(`/department`, departmentData),
+  updateDepartment: (departmentId, departmentData) => writesTo('departments', 'deptEmp').put(`/department/${departmentId}`, departmentData),
+  deleteDepartment: (departmentId) => writesTo('departments', 'deptEmp').delete(`/department/${departmentId}`),
+};
+
+// --------------------------------------------
+// Position API
+// --------------------------------------------
+const positionApi = {
+  getAllPositions: (options = {}) => cachedGet('/position', 'positions', {}, options),
+  createPosition: (positionData) => writesTo('positions').post(`/position`, positionData),
+  updatePosition: (positionId, positionData) => writesTo('positions').put(`/position/${positionId}`, positionData),
+  deletePosition: (positionId) => writesTo('positions').delete(`/position/${positionId}`),
+};
+
+// --------------------------------------------
+// Organization Structure API
+// --------------------------------------------
+const organizationStructureApi = {
+  getStructure: (params = {}) => api.get(`/organization-structure`, { params }),
+  getAssignments: (params = {}) => api.get(`/organization-structure/position`, { params }),
+  getAssignmentEmployees: (assignmentId, params = {}) => api.get(`/organization-structure/position/${assignmentId}/employees`, { params }),
+  assignPositions: (payload) => api.post(`/organization-structure/position`, payload),
+  getEmployeePlacementAndAccess: (employeeId) => api.get(`/organization-structure/employee/${encodeURIComponent(employeeId)}`),
+  getEmployeeDataAccess: (employeeId) => api.get(`/organization-structure/employee/${encodeURIComponent(employeeId)}/data-access`),
+  saveEmployeePlacementAndAccess: (employeeId, payload) => api.put(`/organization-structure/employee/${encodeURIComponent(employeeId)}`, payload),
+  updateAssignment: (assignmentId, payload) => api.put(`/organization-structure/position/${assignmentId}`, payload),
+  removeAssignment: (assignmentId) => api.delete(`/organization-structure/position/${assignmentId}`),
+};
+
+// --------------------------------------------
+// Asset API
+// --------------------------------------------
+const assetApi = {
+  getAllAssets: (options = {}) => cachedGet('/asset', 'assets', {}, options),
+  getAllAllocations: (filters = {}) => api.get(`/asset/allocations`, { params: filters }),
+  getAssetCustodyHistory: (assetId) => api.get(`/asset/${assetId}/allocations`),
+  createAsset: (assetData) => writesTo('assets').post(`/asset`, assetData),
+  updateAsset: (assetId, assetData) => writesTo('assets').put(`/asset/${assetId}`, assetData),
+  deleteAsset: (assetId) => writesTo('assets').delete(`/asset/${assetId}`),
+};
+
+// --------------------------------------------
+// Leave Type API
+// --------------------------------------------
+const leaveTypeApi = {
+  getAllLeaveTypes: (options = {}) => cachedGet('/leave-type', 'leaveTypes', {}, options),
+  createLeaveType: (leaveTypeData) => writesTo('leaveTypes').post(`/leave-type`, leaveTypeData),
+  updateLeaveType: (leaveTypeId, leaveTypeData) => writesTo('leaveTypes').put(`/leave-type/${leaveTypeId}`, leaveTypeData),
+  deleteLeaveType: (leaveTypeId) => writesTo('leaveTypes').delete(`/leave-type/${leaveTypeId}`),
+};
+
+// --------------------------------------------
+// Allowance Type API
+// --------------------------------------------
+const allowanceTypeApi = {
+  getAllAllowanceTypes: (filters = {}, options = {}) => cachedGet('/allowance-type', 'allowanceTypes', filters, options),
+  createAllowanceType: (allowanceTypeData) => writesTo('allowanceTypes').post(`/allowance-type`, allowanceTypeData),
+  updateAllowanceType: (allowanceTypeId, allowanceTypeData) => writesTo('allowanceTypes').put(`/allowance-type/${allowanceTypeId}`, allowanceTypeData),
+  deleteAllowanceType: (allowanceTypeId) => writesTo('allowanceTypes').delete(`/allowance-type/${allowanceTypeId}`),
+};
+
+// --------------------------------------------
+// Job Offer Salary Structure API
+// --------------------------------------------
+const jobOfferSalaryStructureApi = {
+  getAllComponents: () => api.get(`/job-offer-salary-structure`),
+  getComponentById: (id) => api.get(`/job-offer-salary-structure/${id}`),
+  createComponent: (componentData) => api.post(`/job-offer-salary-structure`, componentData),
+  updateComponent: (id, componentData) => api.put(`/job-offer-salary-structure/${id}`, componentData),
+  deleteComponent: (id) => api.delete(`/job-offer-salary-structure/${id}`),
+  calculateBreakdown: (grossSalary) => api.post(`/job-offer-salary-structure/calculate`, { gross_salary: grossSalary }),
+  getJobOfferSettings: () => api.get(`/job-offer-salary-structure/settings`),
+  updateJobOfferSettings: (settings) => api.put(`/job-offer-salary-structure/settings`, settings),
+};
+
+// --------------------------------------------
+// Canteen Meal Type API
+// --------------------------------------------
+const canteenMealTypeApi = {
+  getAllCanteenMealTypes: (filters = {}, options = {}) => cachedGet('/canteen-meal-type', 'canteenMealTypes', filters, options),
+  createCanteenMealType: (canteenMealTypeData) => writesTo('canteenMealTypes').post(`/canteen-meal-type`, canteenMealTypeData),
+  updateCanteenMealType: (canteenMealTypeId, canteenMealTypeData) => writesTo('canteenMealTypes').put(`/canteen-meal-type/${canteenMealTypeId}`, canteenMealTypeData),
+  deleteCanteenMealType: (canteenMealTypeId) => writesTo('canteenMealTypes').delete(`/canteen-meal-type/${canteenMealTypeId}`),
+};
+
+// --------------------------------------------
+// Purpose Type API
+// --------------------------------------------
+// --------------------------------------------
+// Contact Status API - the lead statuses a contact can be in, per company.
+// Also read by the Call Buddy mobile app, which renders the same colour and icon.
+// --------------------------------------------
+const contactFollowupApi = {
+  getReport: (params = {}) => api.get('/reports/contact-followup-report', { params }),
+  updateLeadStatus: (contactId, lead_status) => api.put(`/contact/${contactId}`, { id: contactId, lead_status }),
+};
+
+const contactStatusApi = {
+  getAllContactStatuses: (filters = {}, options = {}) => cachedGet('/contact-status', 'contactStatuses', filters, options),
+  createContactStatus: (contactStatusData) => writesTo('contactStatuses').post(`/contact-status`, contactStatusData),
+  updateContactStatus: (contactStatusId, contactStatusData) => writesTo('contactStatuses').put(`/contact-status/${contactStatusId}`, contactStatusData),
+  deleteContactStatus: (contactStatusId) => writesTo('contactStatuses').delete(`/contact-status/${contactStatusId}`),
+};
+
+const purposeTypeApi = {
+  getAllPurposeTypes: (filters = {}, options = {}) => cachedGet('/purpose-type', 'purposeTypes', filters, options),
+  createPurposeType: (purposeTypeData) => writesTo('purposeTypes').post(`/purpose-type`, purposeTypeData),
+  updatePurposeType: (purposeTypeId, purposeTypeData) => writesTo('purposeTypes').put(`/purpose-type/${purposeTypeId}`, purposeTypeData),
+  deletePurposeType: (purposeTypeId) => writesTo('purposeTypes').delete(`/purpose-type/${purposeTypeId}`),
+};
+
+// --------------------------------------------
+// Performance Management API — appraisal cycles, the KRA / competency catalogue,
+// and the appraisals themselves
+// --------------------------------------------
+const performanceCycleApi = {
+  getAllPerformanceCycles: (filters = {}, options = {}) => cachedGet('/performance-cycle', 'performanceCycles', filters, options),
+  // Opens the rounds the configured cadence says are due. Re-runnable: a period that already
+  // has a cycle is counted as present rather than duplicated.
+  generatePerformanceCycles: (payload = {}) => writesTo('performanceCycles').post(`/performance-cycle/generate`, payload),
+  createPerformanceCycle: (cycleData) => writesTo('performanceCycles').post(`/performance-cycle`, cycleData),
+  updatePerformanceCycle: (cycleId, cycleData) => writesTo('performanceCycles').put(`/performance-cycle/${cycleId}`, cycleData),
+  deletePerformanceCycle: (cycleId) => writesTo('performanceCycles').delete(`/performance-cycle/${cycleId}`),
+};
+
+const performanceParameterApi = {
+  getAllPerformanceParameters: (filters = {}) => api.get(`/performance-parameter`, { params: filters }),
+  createPerformanceParameter: (parameterData) => api.post(`/performance-parameter`, parameterData),
+  updatePerformanceParameter: (parameterId, parameterData) => api.put(`/performance-parameter/${parameterId}`, parameterData),
+  deletePerformanceParameter: (parameterId) => api.delete(`/performance-parameter/${parameterId}`),
+};
+
+const performanceReviewApi = {
+  getAllPerformanceReviews: (filters = {}) => api.get(`/performance-review`, { params: filters }),
+  getPerformanceReview: (reviewId) => api.get(`/performance-review/${reviewId}`),
+  createPerformanceReview: (reviewData) => api.post(`/performance-review`, reviewData),
+  // Opens a whole cycle's appraisals at once. Re-runnable — already-reviewed employees
+  // are skipped, so this is also how joiners are picked up mid-round.
+  generatePerformanceReviews: (payload) => api.post(`/performance-review/generate`, payload),
+  // Same thing across every open cycle — monthly reviews and a yearly appraisal at once.
+  generateAllPerformanceReviews: (payload = {}) => api.post(`/performance-review/generate-all`, payload),
+  updatePerformanceReview: (reviewId, reviewData) => api.put(`/performance-review/${reviewId}`, reviewData),
+  updateStatus: (reviewId, status) => api.patch(`/performance-review/${reviewId}/status`, { status }),
+  finalise: (reviewId) => api.post(`/performance-review/${reviewId}/finalise`),
+  reopen: (reviewId) => api.post(`/performance-review/${reviewId}/reopen`),
+  deletePerformanceReview: (reviewId) => api.delete(`/performance-review/${reviewId}`),
+  // Employee self-service. These need no HR permission — the server scopes them to the
+  // logged-in user's own employee record, so there is no id to pass and none to trust.
+  getMyReviews: () => api.get(`/performance-review/my`),
+  getMyTeamReviews: () => api.get(`/performance-review/my-team`),
+  getMyReview: (reviewId) => api.get(`/performance-review/my/${reviewId}`),
+  saveMySelfAppraisal: (reviewId, payload) => api.put(`/performance-review/my/${reviewId}`, payload),
+  submitMySelfAppraisal: (reviewId) => api.post(`/performance-review/my/${reviewId}/submit`),
+  // The other half of the same page: scoring the people who report to you. Separate calls
+  // from the two above because they are reachable by a different person and write a
+  // different column — the appraisee must never be able to reach their own reviewer score.
+  saveMyReviewerScores: (reviewId, payload) => api.put(`/performance-review/my/${reviewId}/review`, payload),
+  submitMyReview: (reviewId) => api.post(`/performance-review/my/${reviewId}/submit-review`),
+};
+
+// --------------------------------------------
+// Operation Cycle API
+// --------------------------------------------
+const operationCycleApi = {
+  getAllOperationCycles: (filters = {}) => api.get(`/operation-cycle`, { params: filters }),
+  createOperationCycle: (operationCycleData) => api.post(`/operation-cycle`, operationCycleData),
+  updateOperationCycle: (operationCycleId, operationCycleData) => api.put(`/operation-cycle/${operationCycleId}`, operationCycleData),
+  deleteOperationCycle: (operationCycleId) => api.delete(`/operation-cycle/${operationCycleId}`),
+};
+
+// --------------------------------------------
+// Role & Responsibility API
+// --------------------------------------------
+const roleResponsibilityApi = {
+  getAllRoleResponsibilities: (filters = {}) => api.get(`/role-responsibility`, { params: filters }),
+  createRoleResponsibility: (roleData) => api.post(`/role-responsibility`, roleData),
+  updateRoleResponsibility: (roleId, roleData) => api.put(`/role-responsibility/${roleId}`, roleData),
+  deleteRoleResponsibility: (roleId) => api.delete(`/role-responsibility/${roleId}`),
+};
+
+// --------------------------------------------
+// Service Offering API
+// --------------------------------------------
+const serviceOfferingApi = {
+  getAllServiceOfferings: (filters = {}) => api.get(`/service-offering`, { params: filters }),
+  createServiceOffering: (offeringData) => api.post(`/service-offering`, offeringData),
+  updateServiceOffering: (offeringId, offeringData) => api.put(`/service-offering/${offeringId}`, offeringData),
+  deleteServiceOffering: (offeringId) => api.delete(`/service-offering/${offeringId}`),
+};
+
+// --------------------------------------------
+// Customer API (multipart for company_logo)
+// --------------------------------------------
+const customerApi = {
+  getAllCustomers: (filters = {}) => api.get(`/customer`, { params: filters }),
+  createCustomer: (formData) => api.post(`/customer`, formData),
+  updateCustomer: (customerId, formData) => api.put(`/customer/${customerId}`, formData),
+  deleteCustomer: (customerId) => api.delete(`/customer/${customerId}`),
+};
+
+// --------------------------------------------
+// Company Profile API (attendance aliases, statutory compliance defaults,
+// external-system credentials, emp_code_basis). Owned by app now; hits the
+// app server's /api/v1/company-profile routes.
+// --------------------------------------------
+const companyProfileApi = {
+  get: () => api.get(`/company-profile`),
+  update: (profile) => api.put(`/company-profile`, profile),
+};
+
+// --------------------------------------------
+// Workorder API (nested under a customer)
+// --------------------------------------------
+const workorderApi = {
+  getByCustomer: (customerId, params = {}) => api.get(`/workorder/by-customer/${customerId}`, { params }),
+  save: (customerId, workorders) => api.post(`/workorder/save`, { customer_id: customerId, workorders }),
+  delete: (id) => api.delete(`/workorder/${id}`),
+};
+
+// --------------------------------------------
+// Leaves Taken API
+// --------------------------------------------
+const leavesTakenApi = {
+  getAllLeavesTaken: (filters = {}) => api.get(`/leaves-taken`, { params: filters }),
+  createLeavesTaken: (leavesTakenData) => api.post(`/leaves-taken`, leavesTakenData),
+  updateLeavesTaken: (leavesTakenId, leavesTakenData) => api.put(`/leaves-taken/${leavesTakenId}`, leavesTakenData),
+  deleteLeavesTaken: (leavesTakenId) => api.delete(`/leaves-taken/${leavesTakenId}`),
+  // The decision as it is stored (APPR, REJ). Each is its own permission on the server.
+  updateLeavesTakenStatus: (leavesTakenId, status) => api.post(`/leaves-taken/status/${leavesTakenId}`, { status }),
+};
+
+// --------------------------------------------
+// Leave List API
+// --------------------------------------------
+const leaveListApi = {
+  getAllLeaveLists: (filters = {}) => api.get(`/leave-list`, { params: filters }),
+  createLeaveList: (leaveListData) => api.post(`/leave-list`, leaveListData),
+  updateLeaveList: (leaveListId, leaveListData) => api.put(`/leave-list/${leaveListId}`, leaveListData),
+  deleteLeaveList: (leaveListId) => api.delete(`/leave-list/${leaveListId}`),
+};
+
+// --------------------------------------------
+// Employee Merge API
+// --------------------------------------------
+const employeeMergeApi = {
+  createEmployeeMerge: (data) => employeeWrites.post('/employee-merge', data),
+  createEmployeeAndMerge: (data) => employeeWrites.post('/employee-merge/create-and-merge', data),
+  getAllEmployeeMerges: (filters = {}) => api.get('/employee-merge', { params: filters }),
+  deleteEmployeeMerge: (id) => employeeWrites.delete(`/employee-merge/${id}`),
+  redoEmployeeMerge: (id) => employeeWrites.post(`/employee-merge/${id}/redo`),
+};
+// --------------------------------------------
+// Weekly Off API
+// --------------------------------------------
+const weeklyOffApi = {
+  getAllWeeklyOffs: (options = {}) => cachedGet('/weekly-off', 'weeklyOffs', {}, options),
+  // The department master shows each department's weekly off by name.
+  createWeeklyOff: (weeklyOffData) => writesTo('weeklyOffs', 'departments').post(`/weekly-off`, weeklyOffData),
+  updateWeeklyOff: (weeklyOffId, weeklyOffData) => writesTo('weeklyOffs', 'departments').put(`/weekly-off/${weeklyOffId}`, weeklyOffData),
+  deleteWeeklyOff: (weeklyOffId) => writesTo('weeklyOffs', 'departments').delete(`/weekly-off/${weeklyOffId}`),
+};
+
+// --------------------------------------------
+// Employee Weekly Off API
+// --------------------------------------------
+const employeeWeeklyOffApi = {
+  getEmployeeWeeklyOffs: (employeeId) => api.get(`/employee-weekly-off/employee/${employeeId}`),
+  createEmployeeWeeklyOff: (employeeWeeklyOffData) => api.post(`/employee-weekly-off`, employeeWeeklyOffData),
+  updateEmployeeWeeklyOff: (id, employeeWeeklyOffData) => api.put(`/employee-weekly-off/${id}`, employeeWeeklyOffData),
+  deleteEmployeeWeeklyOff: (id) => api.delete(`/employee-weekly-off/${id}`),
+};
+
+// --------------------------------------------
+// Timetable Api
+// --------------------------------------------
+const timetableApi = {
+  getAllTimetables: (filters = {}) => api.get('/timetable', { params: filters }),
+  getTimetableById: (id) => api.get(`/timetable/${id}`),
+  createTimetable: (timetableData) => api.post('/timetable', timetableData),
+  updateTimetable: (timetableId, timetableData) => api.put(`/timetable/${timetableId}`, timetableData),
+  deleteTimetable: (timetableId) => api.delete(`/timetable/${timetableId}`),
+};
+
+// --------------------------------------------
+// Manual punches API (resource path: /manual-log)
+// --------------------------------------------
+const manualLogApi = {
+  getAllManualLogs: (filters = {}) => api.get('/manual-log', { params: filters }),
+  createManualLog: (manualLogData) => api.post('/manual-log', manualLogData),
+  updateManualLog: (manualLogId, manualLogData) => api.put(`/manual-log/${manualLogId}`, manualLogData),
+  deleteManualLog: (manualLogId) => api.delete(`/manual-log/${manualLogId}`),
+  updateManualLogStatus: (manualLogId, status) => api.put(`/manual-log/${manualLogId}/status`, { status }),
+};
+
+// --------------------------------------------
+// Manual salaries API (resource path: /manual-log-entry-master)
+// --------------------------------------------
+const manualLogEntryMasterApi = {
+  getAllManualLogEntryMasters: (filters = {}) => api.get('/manual-log-entry-master', { params: filters }),
+  getEmployeeComponents: (employeeId, params = {}) => api.get(`/manual-log-entry-master/employee-components/${employeeId}`, { params }),
+  getManualLogEntryMasterById: (id) => api.get(`/manual-log-entry-master/${id}`),
+  createManualLogEntryMaster: (manualLogEntryMasterData) => api.post('/manual-log-entry-master', manualLogEntryMasterData),
+  updateManualLogEntryMaster: (manualLogEntryMasterId, manualLogEntryMasterData) => api.put(`/manual-log-entry-master/${manualLogEntryMasterId}`, manualLogEntryMasterData),
+  deleteManualLogEntryMaster: (manualLogEntryMasterId) => api.delete(`/manual-log-entry-master/${manualLogEntryMasterId}`),
+};
+
+// --------------------------------------------
+// Vastram daily counter API (resource path: /vastram-daily-counter)
+// Powers the Vastram Daily Performance report tally + its master.
+// --------------------------------------------
+const vastramDailyCounterApi = {
+  getAllVastramDailyCounters: (filters = {}) => api.get('/vastram-daily-counter', { params: filters }),
+  getVastramDailyCounterById: (id) => api.get(`/vastram-daily-counter/${id}`),
+  createVastramDailyCounter: (data) => api.post('/vastram-daily-counter', data),
+  updateVastramDailyCounter: (id, data) => api.put(`/vastram-daily-counter/${id}`, data),
+  deleteVastramDailyCounter: (id) => api.delete(`/vastram-daily-counter/${id}`),
+  // action: 'customer' | 'sale' | 'left'
+  incrementVastramCounter: ({ emp_code, date, action }) => api.post('/vastram-daily-counter/increment', { emp_code, date, action }),
+  undoVastramCounter: ({ emp_code, date }) => api.post('/vastram-daily-counter/undo', { emp_code, date }),
+};
+
+// --------------------------------------------
+// Manual Attendance Api
+// --------------------------------------------
+const manualAttendanceApi = {
+  getAll: (filters = {}) => api.get('/manual-attendance', { params: filters }),
+  create: (data) => api.post('/manual-attendance', data),
+  update: (id, data) => api.put(`/manual-attendance/${id}`, data),
+  remove: (id) => api.delete(`/manual-attendance/${id}`),
+  approve: (id, remarks) =>
+    api.post(`/manual-attendance/status/${id}`, {
+      status: APPROVAL_STATUS.APPROVED,
+      remarks: remarks
+    }),
+  reject: (id, remarks) =>
+    api.post(`/manual-attendance/status/${id}`, {
+      status: APPROVAL_STATUS.REJECTED,
+      ...(remarks !== undefined && remarks !== null ? { remarks } : {}),
+    }),
+};
+
+// --------------------------------------------
+// report action API
+// --------------------------------------------
+const reportActionApi = {
+  toggleAttendance: (emp_code, punch_time, terminal_sn, current_direction) =>
+    api.post('/report-actions/toggle-attendance', { emp_code, punch_time, terminal_sn, current_direction }),
+  updateDirection: (emp_code, punch_time, direction, terminal_sn, current_direction) =>
+    api.post('/report-actions/update-direction', { emp_code, punch_time, direction, terminal_sn, current_direction }),
+  updatePunchMetadata: (data) => api.post('/report-actions/update-punch-metadata', data),
+  lockSalaryRegister: (data) => api.post('/report-actions/salary-register/lock', data),
+  checkLockedStatus: (data) => api.post('/report-actions/salary-register/check-locked', data),
+  getYtdSalaryData: (data) => api.post('/report-actions/salary-register/ytd', data),
+};
+
+// --------------------------------------------
+// Shift API
+// --------------------------------------------
+const shiftApi = {
+  getAllShifts: (options = {}) => cachedGet('/shifts', 'shifts', {}, options),
+};
+
+// --------------------------------------------
+// Employee Schedule API
+// --------------------------------------------
+const employeeScheduleApi = {
+  getAllEmployeeSchedules: () => api.get('/employee-schedule'),
+  createEmployeeSchedule: (employeeScheduleData) => api.post('/employee-schedule', employeeScheduleData),
+  updateEmployeeSchedule: (employeeScheduleId, employeeScheduleData) => api.put(`/employee-schedule/${employeeScheduleId}`, employeeScheduleData),
+  deleteEmployeeSchedule: (employeeScheduleId) => api.delete(`/employee-schedule/${employeeScheduleId}`),
+};
+
+// --------------------------------------------
+// Department Schedule API
+// --------------------------------------------
+const departmentScheduleApi = {
+  getDepartmentSchedules: (departmentId, { is_holiday = false } = {}) => api.get(`/department-schedule/${departmentId}`, { params: { is_holiday } }),
+  // The department master lists each department's schedules and weekly offs.
+  createDepartmentSchedule: (data) => writesTo('departments').post('/department-schedule', data),
+  updateDepartmentSchedule: (id, data) => writesTo('departments').put(`/department-schedule/${id}`, data),
+  deleteDepartmentSchedule: (id) => writesTo('departments').delete(`/department-schedule/${id}`),
+};
+
+// --------------------------------------------
+// Department Weekly Off API
+// --------------------------------------------
+const departmentWeeklyOffApi = {
+  getDepartmentWeeklyOffs: (departmentId) => api.get(`/department-weekly-off/${departmentId}`),
+  createDepartmentWeeklyOff: (data) => writesTo('departments').post('/department-weekly-off', data),
+  updateDepartmentWeeklyOff: (id, data) => writesTo('departments').put(`/department-weekly-off/${id}`, data),
+  deleteDepartmentWeeklyOff: (id) => writesTo('departments').delete(`/department-weekly-off/${id}`),
+};
+
+// --------------------------------------------
+// Company Schedule / Weekly Off API — company-wide fallbacks, so the company comes
+// from the token and never from the path.
+// --------------------------------------------
+const companyScheduleApi = {
+  getCompanySchedules: ({ is_holiday = false } = {}) => api.get('/company-schedule', { params: { is_holiday } }),
+  createCompanySchedule: (data) => api.post('/company-schedule', data),
+  updateCompanySchedule: (id, data) => api.put(`/company-schedule/${id}`, data),
+  deleteCompanySchedule: (id) => api.delete(`/company-schedule/${id}`),
+};
+
+const companyWeeklyOffApi = {
+  getCompanyWeeklyOffs: () => api.get('/company-weekly-off'),
+  createCompanyWeeklyOff: (data) => api.post('/company-weekly-off', data),
+  updateCompanyWeeklyOff: (id, data) => api.put(`/company-weekly-off/${id}`, data),
+  deleteCompanyWeeklyOff: (id) => api.delete(`/company-weekly-off/${id}`),
+};
+
+// --------------------------------------------
+// Compound Shift API
+// --------------------------------------------
+const compoundShiftApi = {
+  getAllCompoundShifts: () => api.get('/compound-shift'),
+  createCompoundShift: (compoundShiftData) => api.post('/compound-shift', compoundShiftData),
+  updateCompoundShift: (compoundShiftId, compoundShiftData) => api.put(`/compound-shift/${compoundShiftId}`, compoundShiftData),
+  deleteCompoundShift: (compoundShiftId) => api.delete(`/compound-shift/${compoundShiftId}`),
+};
+
+// Holiday Type API
+// --------------------------------------------
+const holidayTypeApi = {
+  getAllHolidayTypes: (options = {}) => cachedGet('/holiday-type', 'holidayTypes', {}, options),
+  createHolidayType: (holidayTypeData) => writesTo('holidayTypes').post('/holiday-type', holidayTypeData),
+  updateHolidayType: (holidayTypeId, holidayTypeData) => writesTo('holidayTypes').put(`/holiday-type/${holidayTypeId}`, holidayTypeData),
+  deleteHolidayType: (holidayTypeId) => writesTo('holidayTypes').delete(`/holiday-type/${holidayTypeId}`),
+};
+
+// --------------------------------------------
+// Reimbursement API
+// --------------------------------------------
+const reimbursementApi = {
+  getAll: (filters = {}) => api.get('/reimbursements', { params: filters }),
+  create: (formData) => api.post('/reimbursements', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, formData) => api.put(`/reimbursements/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  remove: (id) => api.delete(`/reimbursements/${id}`),
+};
+
+// --------------------------------------------
+// WageMaster API
+// --------------------------------------------
+const wageMasterApi = {
+  // GET /api/v1/wagemaster/wagemaster-dashboard?date=YYYY-MM-DD
+  getDashboard: (params = {}) => api.get('/wagemaster/wagemaster-dashboard', { params }),
+  // GET /api/v1/wagemaster/details/:userId?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+  getUserDetails: (userId, params = {}) => api.get(`/wagemaster/details/${userId}`, { params }),
+  // PUT /api/v1/wagemaster/wage/:wageId
+  updateWage: (wageId, { distance, da, ta }) => api.put(`/wagemaster/wage/${wageId}`, { distance, da, ta }),
+  // POST /api/v1/wagemaster/executive/:userId/approve-duration
+  approveCallDuration: (userId, { date, approvedDuration }) => api.post(`/wagemaster/executive/${userId}/approve-duration`, { date, approvedDuration }),
+  // GET /api/v1/wagemaster/coordinates?userId=...&date=...
+  getCoordinates: (params = {}) => api.get('/wagemaster/coordinates', { params }),
+  // POST /api/v1/wagemaster/trigger-sync/:userId
+  triggerSync: (userId) => api.post(`/wagemaster/trigger-sync/${userId}`),
+};
+
+// --------------------------------------------
+// WhatsApp Template API
+// --------------------------------------------
+const whatsappTemplateApi = {
+  getAllTemplates: () => api.get('/whatsapp-template'),
+  createTemplate: (data) => api.post('/whatsapp-template', data),
+  updateTemplate: (id, data) => api.put(`/whatsapp-template/${id}`, data),
+  deleteTemplate: (id) => api.delete(`/whatsapp-template/${id}`),
+};
+
+// --------------------------------------------
+// Contact API (master: /contact; callBuddy: /callBuddy for assign/bulk)
+// --------------------------------------------
+const contactApi = {
+  // Contact master (base master pattern)
+  getAllContacts: (params = {}) => api.get('/contact', { params }),
+  createContact: (contactData) => api.post('/contact', contactData),
+  updateContact: (contactData) => api.put(`/contact/${contactData.id}`, contactData),
+  deleteContact: (id) => api.delete(`/contact/${id}`),
+  // CallBuddy flows (assign, bulk, users, payment)
+  bulkCreateContacts: (contactsData) => api.post('/callBuddy/bulk_add_and_assing_contacts', contactsData),
+  assignContactsToUser: (contactId, userIds) => api.post('/callBuddy/contacts/assign', { contactId, userIds }),
+  unassignContactFromUser: (assignmentId) => api.delete(`/callBuddy/assign_contacts/${assignmentId}`),
+  // Cached with the framework's user list, so user writes expire it too.
+  getUsers: (options = {}) => cachedGet('/callBuddy/users', 'users', {}, options),
+  getHistory: (phone) => api.get('/contact/history', { params: { phone } }),
+  addPayment: (paymentData) => api.post('/callBuddy/addPayment', paymentData),
+  // Booked and collected from the contact master's own modals, which the follow-up report opens
+  // as well. Same work as the app's /callBuddy routes, same services behind them -- these are
+  // the contact master's own, gated by its permissions.
+  scheduleCall: (payload) => api.post('/contact/schedule-call', payload),
+  savePaymentReminder: (payload) => api.post('/contact/payment-reminder', payload),
+};
+
+// --------------------------------------------
+// Advance API
+// --------------------------------------------
+const advanceApi = {
+  getAll: (filters = {}) => api.get('/advance', { params: filters }),
+  getById: (id) => api.get(`/advance/${id}`),
+  create: (data) => api.post('/advance', data),
+  update: (id, data) => api.put(`/advance/${id}`, data),
+  approve: (id) => api.post(`/advance/${id}/approve`),
+  reject: (id) => api.post(`/advance/${id}/reject`),
+  createRepayment: (data) => api.post('/advance/repayments', data),
+  updateRepayment: (id, data) => api.put(`/advance/repayments/${id}`, data),
+  deleteRepayment: (id) => api.delete(`/advance/repayments/${id}`),
+  getScheduledPaymentsByEmployeeCode: (employee_code) => api.get(`/advance/scheduled-payments/employee/${employee_code}`),
+};
+
+// --------------------------------------------
+// Location / Log History API
+// --------------------------------------------
+const locationApi = {
+  // GET /api/v1/location/log-history?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+  getLogHistory: (params = {}) => api.get('/location/log-history', { params }),
+};
+
+// --------------------------------------------
+// Users API (Feedback, Dealer details)
+// --------------------------------------------
+const usersApi = {
+  // GET /api/v1/users/getDealerName?locationId=...
+  getDealerName: (locationId) => {
+    if (!locationId) throw new Error('locationId is required');
+    return api.get('/location/getDealerName', { params: { locationId } });
+  },
+  // POST /api/v1/users/complete_milestone
+  completeMilestone: (payload) => {
+    if (!payload) throw new Error('payload is required');
+    return api.post('/location/complete_milestone', payload);
+  },
+};
+
+// --------------------------------------------
+// Iclock Terminal API
+// --------------------------------------------
+const iclockTerminalApi = {
+  getAllTerminals: () => api.get('/iclock-terminal'),
+  // Live health of every biometric gateway process (adms, biomax, vyom, zk, cosec, realtime, …).
+  getGatewaysHealth: () => api.get('/iclock-terminal/gateways/health'),
+  createTerminal: (terminalData) => api.post('/iclock-terminal', terminalData),
+  updateTerminal: (terminalId, terminalData) => api.put(`/iclock-terminal/${terminalId}`, terminalData),
+  deleteTerminal: (terminalId) => api.delete(`/iclock-terminal/${terminalId}`),
+  syncTerminal: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/sync`, data),
+  syncAllTerminals: (data) => api.post('/iclock-terminal/sync-all', data),
+  syncDataToDevice: (data) => api.post('/iclock-terminal/sync-data-to-device', data),
+  rebootTerminal: (terminalId) => api.post(`/iclock-terminal/${terminalId}/reboot`),
+  clearDeviceData: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/clear-data`, data),
+  getUserDataFromDevice: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/get-user-data`, data),
+  enrollUserOnDevice: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/enroll-user`, data),
+  initialSync: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/initial-sync`, data),
+  pushDefaultTimezone: (terminalId) => api.post(`/iclock-terminal/${terminalId}/push-default-timezone`),
+  pushDefaultTimezoneToAll: () => api.post('/iclock-terminal/push-default-timezone-all'),
+  queryTimezone: (terminalId) => api.post(`/iclock-terminal/${terminalId}/query-timezone`),
+  queryFirstCard: (terminalId) => api.post(`/iclock-terminal/${terminalId}/query-first-card`),
+  runCommand: (terminalId, content) => api.post(`/iclock-terminal/${terminalId}/run-command`, { content }),
+  changeTerminalCompany: (terminalId, companyId) => api.put(`/iclock-terminal/${terminalId}/change-company`, { company_id: companyId }),
+  setTerminalEnabled: (terminalId, enabled) => api.put(`/iclock-terminal/${terminalId}/enabled`, { enabled }),
+  // Transactions recorded before the terminal's saved active_since — count then
+  // delete. Both operate on the persisted active_since, not an unsaved edit.
+  countTransactionsBeforeActiveSince: (terminalId) => api.get(`/iclock-terminal/${terminalId}/transactions-before-active-since`),
+  deleteTransactionsBeforeActiveSince: (terminalId) => api.delete(`/iclock-terminal/${terminalId}/transactions-before-active-since`),
+  // Recorded ONLINE/OFFLINE history for one terminal over the last `days`.
+  getTerminalAvailability: (terminalId, days) => api.get(`/iclock-terminal/${terminalId}/availability`, { params: { days } }),
+  // TCP-pull mode (server initiates connection to device on port 4370 by
+  // default, configurable per-terminal via pull_port). Coexists with the
+  // iClock push path on the same terminal.
+  testTcpConnection: (terminalId) => api.post(`/iclock-terminal/${terminalId}/tcp/test`),
+  tcpPullAttendance: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/tcp/pull-attendance`, data),
+  tcpPullAllAttendance: () => api.post('/iclock-terminal/tcp/pull-all-attendance'),
+  tcpPullUsers: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/tcp/pull-users`, data),
+  tcpInitialSync: (terminalId, data) => api.post(`/iclock-terminal/${terminalId}/tcp/initial-sync`, data),
+};
+
+// --------------------------------------------
+// Terminal Command API
+// --------------------------------------------
+const terminalCommandApi = {
+  getTerminalCommands: (filters = {}) => api.get('/terminal-commands', { params: withoutEmptyValues(filters) }),
+  getTerminalCommandErrors: () => {
+    return api.get('/terminal-commands/errors');
+  },
+  getUnverifiedEmployees: () => {
+    return api.get('/terminal-commands/unverified-employees');
+  },
+  getEmployeesWithoutBiotemplates: () => {
+    return api.get('/terminal-commands/employees-without-biotemplates');
+  },
+  getEmployeeSyncComparison: (params = {}) => {
+    const query = {};
+    if (params.emp_code != null && String(params.emp_code).trim() !== '') {
+      query.emp_code = String(params.emp_code).trim();
+    }
+    return api.get('/terminal-commands/employee-sync-comparison', { params: query });
+  },
+  deleteTerminalCommand: (id) => api.delete(`/terminal-commands/${id}`),
+  clearTerminalCommands: (filters = {}) => api.delete('/terminal-commands/bulk', { params: withoutEmptyValues(filters) }),
+  resendTerminalCommand: (id) => api.post(`/terminal-commands/${id}/resend`),
+};
+
+// --------------------------------------------
+// Cost Center API
+// --------------------------------------------
+const costCenterApi = {
+  getAllCostCenters: (options = {}) => cachedGet('/cost-center', 'costCenters', {}, options),
+  createCostCenter: (data) => writesTo('costCenters').post('/cost-center', data),
+  updateCostCenter: (id, data) => writesTo('costCenters').put(`/cost-center/${id}`, data),
+  deleteCostCenter: (id) => writesTo('costCenters').delete(`/cost-center/${id}`),
+};
+
+// --------------------------------------------
+// Personnel Area API
+// --------------------------------------------
+const personnelAreaApi = {
+  getAllPersonnelAreas: (options = {}) => cachedGet('/personnel-areas', 'personnelAreas', {}, options),
+  createPersonnelArea: (data) => writesTo('personnelAreas').post('/personnel-areas', data),
+  updatePersonnelArea: (id, data) => writesTo('personnelAreas').put(`/personnel-areas/${id}`, data),
+  deletePersonnelArea: (id) => writesTo('personnelAreas').delete(`/personnel-areas/${id}`),
+};
+
+// --------------------------------------------
+// Employee Area Assignment API
+// --------------------------------------------
+const employeeAreaAssignmentApi = {
+  getAllAssignments: () => api.get('/employee-area-assignments'),
+  createAssignments: (data) => api.post('/employee-area-assignments', data),
+  deleteAssignment: (id) => api.delete(`/employee-area-assignments/${id}`),
+};
+
+
+const hrDashboardApi = {
+  getTrends: () => runViaRunner('hr-dashboard/trends'),
+  getActivityHeatmap: () => runViaRunner('hr-dashboard/activity-heatmap'),
+  getPerformanceTrend: () => runViaRunner('hr-dashboard/performance-trend'),
+  getAttendanceCorrectionDeptWise: () => runViaRunner('hr-dashboard/attendance-correction-dept-wise'),
+  getShiftDisciplineDeptWise: () => runViaRunner('hr-dashboard/shift-discipline-dept-wise'),
+  getEmployeesNotSeenRecently: () => runViaRunner('hr-dashboard/employees-not-seen-recently'),
+  snapshot: {
+    newEmployees:    () => runViaRunner('hr-dashboard/snapshot/new-employees'),
+    todayPunches:    () => runViaRunner('hr-dashboard/snapshot/today-punches'),
+    onLeaveToday:    () => runViaRunner('hr-dashboard/snapshot/on-leave-today'),
+    yesterday:       () => runViaRunner('hr-dashboard/snapshot/yesterday'),
+    activeTerminals: () => runViaRunner('hr-dashboard/snapshot/active-terminals'),
+    appraisalCycle:  () => runViaRunner('hr-dashboard/snapshot/appraisal-cycle'),
+    areaHeadcount:   () => runViaRunner('hr-dashboard/snapshot/area-headcount'),
+    campusNow:       () => runViaRunner('hr-dashboard/snapshot/campus-now')
+  },
+  upcoming: {
+    birthdays:     () => runViaRunner('hr-dashboard/upcoming/birthdays'),
+    anniversaries: () => runViaRunner('hr-dashboard/upcoming/anniversaries'),
+    leaves:        () => runViaRunner('hr-dashboard/upcoming/leaves')
+  }
+};
+
+// The checklist worklist — its own page, its own permission, its own prefix.
+// Every check shares one response shape, so it takes the check id
+// ('daily/no-shift', 'monthly/payroll-bank', …) rather than repeating fifteen
+// identical wrappers. The ids live in CHECKS, and the server knows them by the
+// same name.
+const hrChecklistApi = {
+  // `filters` carries the date range picked at the top of the checklist. Checks
+  // that declare a fixed window (the forward-looking and financial-year ones)
+  // ignore it server-side.
+  run: (checkId, filters) => runViaRunner(`hr-checklist/${checkId}`, filters)
+};
+
+// Consent-based identity KYC. Two calls because DigiLocker is two-legged: open a
+// session, send the employee to `authorization_url` to authorise it, then read
+// the result back. Calling `fetchAadhaarDetails` before the employee has
+// finished simply fails — there is nothing to poll and nothing is cached.
+const kycApi = {
+  // Cache probe. A number fetched before comes straight back from our DB, so the
+  // repeat lookup needs no consent round-trip and no vendor charge.
+  getCachedAadhaarDetails: (adhaarNo) => {
+    if (!adhaarNo) throw new Error('Aadhaar number is required');
+    return api.post('/kyc/aadhaar/cached', { adhaar_no: adhaarNo });
+  },
+  startDigilockerSession: () => api.post('/kyc/digilocker/session'),
+  fetchAadhaarDetails: (transactionId, adhaarNo) => {
+    if (!transactionId) throw new Error('DigiLocker transaction id is required');
+    if (!adhaarNo) throw new Error('Aadhaar number is required');
+    return api.post('/kyc/digilocker/aadhaar', {
+      transaction_id: transactionId,
+      adhaar_no: adhaarNo
+    });
+  }
 };
 
 export { api, reportApi };

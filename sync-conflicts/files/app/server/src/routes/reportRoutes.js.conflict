@@ -1,0 +1,427 @@
+# Overlapping edits could not be merged automatically (modified on both sides).
+# Source commit: 2b6cdfec211ce41e4e3ba4d61c346c854017e92a
+# app/server/src/routes/reportRoutes.js in the tree now holds the etime-payroll version.
+# Below is the full three-way merge, markers and all.
+#
+# Resolve by editing the real file, then deleting this .conflict file.
+# The PR cannot merge while sync-conflicts/ still has entries.
+# ---------------------------------------------------------------
+
+const express = require('express');
+const authMiddleware = require('@startup/src/middleware/authMiddleware');
+
+const router = express.Router();
+router.use(authMiddleware.protect); // Protect all routes
+
+<<<<<<< startup (this repo)
+// App report routes. The framework's socket report runner
+// (startup/server/src/socket/init_setup/reports/registry.js) walks this
+// router's stack at load time and indexes every GET route by its slug, so
+// adding `router.get('/x-report', requirePermission(...), handler)` here makes
+// the report available to the report-runner process automatically.
+//
+// Empty in the reference scaffold — apps register their own report routes.
+||||||| base (common ancestor)
+// Import individual report handlers
+const { getTransactionReport } = require('../views/reports/transactionReport');
+const { getCheckinCheckoutReport } = require('../views/reports/checkinCheckoutReport');
+const { getDetailedAttendanceReport } = require('../views/reports/detailedAttendanceReport');
+const { getDeactivationUserReport } = require('../views/reports/deactivationUserReport');
+const { getEmployeeLifecycleReport } = require('../views/reports/employeeLifecycleReport');
+const { getShiftSummaryReport, getDepartmentAttendanceReport } = require('../views/reports/shiftSummaryReport');
+const { getSalaryRegisterReport } = require('../views/reports/salaryRegisterReport');
+const { getSalaryChangeReport } = require('../views/reports/salaryChangeReport');
+const { getPFReport } = require('../views/reports/pfReport');
+const { getESICReport } = require('../views/reports/esicReport');
+const { getLeaveBankReport } = require('../views/reports/leaveBankReport');
+const { getLeaveTransactionReport } = require('../views/reports/leaveTransactionReport');
+const { getAllLeavesReport } = require('../views/reports/allLeavesReport');
+const performanceReports = require('../views/reports/performanceReports');
+const { getUnregisteredFacesReport, deleteUnregisteredFace, assignUnregisteredFace } = require('../views/reports/unregisteredFacesReport');
+const { getBiotemplateReport, registerBiotemplate, pushBiotemplate, deleteBiotemplate, linkTransactions, createEmployeeForCode } = require('../views/reports/biotemplateReport');
+
+// Field-sales report handlers (daily/monthly/dealer + analytics + halt points)
+const fieldSalesReports = require('../views/reports/field_sales');
+const { getCallBuddyReport } = require('../views/reports/callBuddyReport');
+const { getLeadConversionReport } = require('../views/reports/leadConversionReport');
+const { getRepeatedCallsReport } = require('../views/reports/repeatedCallsReport');
+const { getCommonContactsReport } = require('../views/reports/commonContactsReport');
+const { getContactFollowupReport } = require('../views/reports/contactFollowupReport');
+const { getFinalWageReportForContractor } = require('../views/reports/finalWageReportForContractor');
+const { getDailySalesPersonReport } = require('../views/reports/dailySalesPersonReport');
+const { getSalesActivityReport } = require('../views/reports/salesActivityReport');
+const { getLocationLogReport } = require('../views/reports/locationLogReport');
+const { getHaltPointsReport } = require('../views/reports/haltPointsReport');
+const { getIdentifyOfficerReport } = require('../views/reports/identifyOfficerReport');
+const { getVastramDailyPerformanceReport } = require('../views/reports/vastramDailyPerformanceReport');
+const { getCanteenReport } = require('../views/reports/canteenReport');
+// Readiness reports — the data-quality gates the checklist reads from.
+const readinessReports = require('../views/reports/readiness');
+const { getAreaHeadcountReport } = require('../views/reports/areaHeadcountReport');
+const siteReports = require('../views/reports/site');
+// Customer-specific reports. They live outside the product's report set but
+// register onto this router, so they are reached at /reports/<slug> like any
+// other report and the socket runner picks them up the same way.
+const { registerCustomReportRoutes } = require('@custom/server');
+
+// Report routes
+router.get('/deactivation-user-report', requirePermission(DEACTIVATION_USER_REPORT.name), getDeactivationUserReport);
+router.get('/employee-lifecycle-report', requirePermission(EMPLOYEE_LIFECYCLE_REPORT.name), getEmployeeLifecycleReport);
+router.get('/transaction-report', requirePermission(TRANSACTION_REPORT.name), getTransactionReport);
+router.get('/direction-conflicts-report', requirePermission(DIRECTION_CONFLICTS_REPORT.name), getTransactionReport);
+router.get('/checkin-checkout-report', requirePermission(CHECKIN_CHECKOUT_REPORT.name), getCheckinCheckoutReport);
+router.get('/vastram-daily-performance-report', requirePermission(VASTRAM_DAILY_PERFORMANCE_REPORT.name), getVastramDailyPerformanceReport);
+// Monthly attendance, monthly work hours, monthly timings, detailed horizontal,
+// and printable attendance reports all use the same API as detailed-attendance-report
+router.get('/detailed-attendance-report', requirePermission(DETAILED_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-attendance-report', requirePermission(MONTHLY_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-work-hours-report', requirePermission(MONTHLY_WORK_HOURS_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-timings-report', requirePermission(MONTHLY_TIMINGS_REPORT.name), getDetailedAttendanceReport);
+router.get('/detailed-horizontal-report', requirePermission(DETAILED_HORIZONTAL_REPORT.name), getDetailedAttendanceReport);
+router.get('/printable-attendance-report', requirePermission(PRINTABLE_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+
+router.get('/salary-register-report', requirePermission(SALARY_REGISTER_REPORT.name), getSalaryRegisterReport);
+router.get('/salary-with-attendance-report', requirePermission(SALARY_WITH_ATTENDANCE_REPORT.name), getSalaryRegisterReport);
+router.get('/salary-change-report', requirePermission(SALARY_CHANGE_REPORT.name), getSalaryChangeReport);
+router.get('/shift-summary-report', requirePermission(SHIFT_SUMMARY_REPORT.name), getShiftSummaryReport);
+router.get('/department-attendance-report', requirePermission(DEPARTMENT_ATTENDANCE_REPORT.name), getDepartmentAttendanceReport);
+router.get('/pf-report', requirePermission(PF_REPORT.name), getPFReport);
+router.get('/esic-report', requirePermission(ESIC_REPORT.name), getESICReport);
+router.get('/leave-bank-report', requirePermission(LEAVE_BANK_REPORT.name), getLeaveBankReport);
+router.get('/leave-transaction-report', requirePermission(LEAVE_TRANSACTION_REPORT.name), getLeaveTransactionReport);
+router.get('/all-leaves-report', requirePermission(ALL_LEAVES_REPORT.name), getAllLeavesReport);
+
+// Performance management. Each carries its own permission: the appraisal summary lists
+// individual grades, while the distribution, KRA and progress views are aggregate, so a
+// line manager can be shown the shape of a round without being shown everybody's score.
+router.get('/appraisal-summary-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.APPRAISAL_SUMMARY_REPORT.name),  performanceReports.getAppraisalSummaryReport);
+router.get('/band-distribution-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.BAND_DISTRIBUTION_REPORT.name),  performanceReports.getBandDistributionReport);
+router.get('/kra-analysis-report',       requirePermission(REPORT_PERMISSION_CONSTANTS.KRA_ANALYSIS_REPORT.name),       performanceReports.getKraAnalysisReport);
+router.get('/cycle-progress-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CYCLE_PROGRESS_REPORT.name),     performanceReports.getCycleProgressReport);
+
+// Readiness reports. Each is guarded by its own permission — payroll readiness
+// exposes bank and statutory numbers that roster coverage does not, so they
+// are not granted together by accident.
+router.get('/payroll-readiness-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PAYROLL_READINESS_REPORT.name), readinessReports.getPayrollReadinessReport);
+router.get('/roster-coverage-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.ROSTER_COVERAGE_REPORT.name),   readinessReports.getRosterCoverageReport);
+router.get('/pending-approvals-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PENDING_APPROVALS_REPORT.name), readinessReports.getPendingApprovalsReport);
+router.get('/terminal-health-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.TERMINAL_HEALTH_REPORT.name),   readinessReports.getTerminalHealthReport);
+router.get('/advance-recovery-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.ADVANCE_RECOVERY_REPORT.name),  readinessReports.getAdvanceRecoveryReport);
+// Where the workforce sits, and whether anything at each site collects its attendance. Its
+// own permission: an area's staffing is an operational fact a site manager needs and a
+// payroll clerk does not.
+router.get('/area-headcount-report',    requirePermission(REPORT_PERMISSION_CONSTANTS.AREA_HEADCOUNT_REPORT.name),    getAreaHeadcountReport);
+
+// Multi-location HR. A permission each, because they are not one audience: campus presence
+// names who is on site this minute (a gate desk reads it), the site comparison and coverage
+// views are aggregate, and cross-site movement names individuals against places they were
+// not assigned to.
+router.get('/campus-presence-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CAMPUS_PRESENCE_REPORT.name),     siteReports.getCampusPresenceReport);
+router.get('/site-attendance-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_ATTENDANCE_REPORT.name),     siteReports.getSiteAttendanceReport);
+router.get('/cross-site-movement-report', requirePermission(REPORT_PERMISSION_CONSTANTS.CROSS_SITE_MOVEMENT_REPORT.name), siteReports.getCrossSiteMovementReport);
+router.get('/site-coverage-report',       requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_COVERAGE_REPORT.name),       siteReports.getSiteCoverageReport);
+router.get('/canteen-by-site-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_BY_SITE_REPORT.name),     siteReports.getCanteenBySiteReport);
+// Carries dates of birth for minors, so it is granted separately from the rest.
+router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
+router.get('/call-buddy-report', requirePermission(CALL_BUDDY_REPORT.name), getCallBuddyReport);
+// Same call-buddy contact data as call-buddy-report, so these share that report's permission.
+router.get('/lead-conversion-report', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionReport);
+router.get('/repeated-calls-report', requirePermission(CALL_BUDDY_REPORT.name), getRepeatedCallsReport);
+router.get('/common-contacts-report', requirePermission(CALL_BUDDY_REPORT.name), getCommonContactsReport);
+router.get('/contact-followup-report', requirePermission(CONTACT_FOLLOWUP_REPORT.name), getContactFollowupReport);
+router.get(
+  '/canteen-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_REPORT.name),
+  getCanteenReport
+);
+router.get(
+  '/final-wage-report-for-contractor',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.FINAL_WAGE_REPORT_FOR_CONTRACTOR.name),
+  getFinalWageReportForContractor
+);
+
+// Unregistered faces report
+router.get('/unregistered-faces-report', requirePermission(UNREGISTERED_FACES_REPORT.name), getUnregisteredFacesReport);
+router.post('/unregistered-faces-report/delete', requirePermission(UNREGISTERED_FACES_REPORT.name), deleteUnregisteredFace);
+router.post('/unregistered-faces-report/assign', requirePermission(UNREGISTERED_FACES_REPORT.name), assignUnregisteredFace);
+
+// Biotemplate report
+router.get(
+  '/biotemplate-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  getBiotemplateReport
+);
+router.post(
+  '/biotemplate-report/register',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  registerBiotemplate
+);
+router.post(
+  '/biotemplate-report/create-employee',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  createEmployeeForCode
+);
+router.post(
+  '/biotemplate-report/link-transactions',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  linkTransactions
+);
+router.post(
+  '/biotemplate-report/push',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  pushBiotemplate
+);
+router.post(
+  '/biotemplate-report/delete',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  deleteBiotemplate
+);
+
+// Daily Sales Person Report (registered top-level so report.slug routing works)
+router.get(
+  '/daily-sales-person-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.DAILY_SALES_PERSON_REPORT.name),
+  getDailySalesPersonReport
+);
+
+// Sales Activity Report — merges Daily Sales Person + Call Buddy data per user
+router.get(
+  '/sales-activity-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.SALES_ACTIVITY_REPORT.name),
+  getSalesActivityReport
+);
+
+router.get(
+  '/location-log-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.LOCATION_LOG_REPORT.name),
+  getLocationLogReport
+);
+router.get(
+  '/halt-points-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.HALT_POINTS_REPORT.name),
+  getHaltPointsReport
+);
+router.get(
+  '/identify-officer-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.IDENTIFY_OFFICER_REPORT.name),
+  getIdentifyOfficerReport
+);
+
+// Field-sales reports (GPS tracking + dealer visits + wage)
+router.get('/field-sales/daily', fieldSalesReports.getDailyReport);
+router.get('/field-sales/monthly', fieldSalesReports.getMonthlyReport);
+router.get('/field-sales/dealer', fieldSalesReports.getDealerReport);
+router.get('/field-sales/detailed-dealer-form', fieldSalesReports.getDetailedDealerFormReport);
+router.get('/field-sales/dealer-performance', fieldSalesReports.getDealerPerformanceReport);
+router.get('/field-sales/new-potential-dealer', fieldSalesReports.getNewPotentialDealerReport);
+router.get('/field-sales/best-worst-employees', fieldSalesReports.getBestWorstReport);
+router.get('/field-sales/lead-follow-up', fieldSalesReports.getLeadFollowUpReport);
+router.get('/field-sales/sales-trend', fieldSalesReports.getSalesTrendReport);
+router.get('/field-sales/dealer-satisfaction', fieldSalesReports.getDealerSatisfactionReport);
+
+registerCustomReportRoutes(router);
+=======
+// Import individual report handlers
+const { getTransactionReport } = require('../views/reports/transactionReport');
+const { getCheckinCheckoutReport } = require('../views/reports/checkinCheckoutReport');
+const { getDetailedAttendanceReport } = require('../views/reports/detailedAttendanceReport');
+const { getDeactivationUserReport } = require('../views/reports/deactivationUserReport');
+const { getEmployeeLifecycleReport } = require('../views/reports/employeeLifecycleReport');
+const { getShiftSummaryReport, getDepartmentAttendanceReport } = require('../views/reports/shiftSummaryReport');
+const { getSalaryRegisterReport } = require('../views/reports/salaryRegisterReport');
+const { getSalaryChangeReport } = require('../views/reports/salaryChangeReport');
+const { getPFReport } = require('../views/reports/pfReport');
+const { getESICReport } = require('../views/reports/esicReport');
+const { getLeaveBankReport } = require('../views/reports/leaveBankReport');
+const { getLeaveTransactionReport } = require('../views/reports/leaveTransactionReport');
+const { getAllLeavesReport } = require('../views/reports/allLeavesReport');
+const performanceReports = require('../views/reports/performanceReports');
+const { getUnregisteredFacesReport, deleteUnregisteredFace, assignUnregisteredFace } = require('../views/reports/unregisteredFacesReport');
+const { getBiotemplateReport, registerBiotemplate, pushBiotemplate, deleteBiotemplate, linkTransactions, createEmployeeForCode } = require('../views/reports/biotemplateReport');
+
+// Field-sales report handlers (daily/monthly/dealer + analytics + halt points)
+const fieldSalesReports = require('../views/reports/field_sales');
+const { getCallBuddyReport } = require('../views/reports/callBuddyReport');
+const { getLeadConversionReport } = require('../views/reports/leadConversionReport');
+const { getLeadConversionSnapshot } = require('../views/reports/leadConversionSnapshot');
+const { getRepeatedCallsReport } = require('../views/reports/repeatedCallsReport');
+const { getCommonContactsReport } = require('../views/reports/commonContactsReport');
+const { getContactFollowupReport } = require('../views/reports/contactFollowupReport');
+const { getFinalWageReportForContractor } = require('../views/reports/finalWageReportForContractor');
+const { getDailySalesPersonReport } = require('../views/reports/dailySalesPersonReport');
+const { getSalesActivityReport } = require('../views/reports/salesActivityReport');
+const { getLocationLogReport } = require('../views/reports/locationLogReport');
+const { getHaltPointsReport } = require('../views/reports/haltPointsReport');
+const { getIdentifyOfficerReport } = require('../views/reports/identifyOfficerReport');
+const { getVastramDailyPerformanceReport } = require('../views/reports/vastramDailyPerformanceReport');
+const { getCanteenReport } = require('../views/reports/canteenReport');
+// Readiness reports — the data-quality gates the checklist reads from.
+const readinessReports = require('../views/reports/readiness');
+const { getAreaHeadcountReport } = require('../views/reports/areaHeadcountReport');
+const siteReports = require('../views/reports/site');
+// Customer-specific reports. They live outside the product's report set but
+// register onto this router, so they are reached at /reports/<slug> like any
+// other report and the socket runner picks them up the same way.
+const { registerCustomReportRoutes } = require('@custom/server');
+
+// Report routes
+router.get('/deactivation-user-report', requirePermission(DEACTIVATION_USER_REPORT.name), getDeactivationUserReport);
+router.get('/employee-lifecycle-report', requirePermission(EMPLOYEE_LIFECYCLE_REPORT.name), getEmployeeLifecycleReport);
+router.get('/transaction-report', requirePermission(TRANSACTION_REPORT.name), getTransactionReport);
+router.get('/direction-conflicts-report', requirePermission(DIRECTION_CONFLICTS_REPORT.name), getTransactionReport);
+router.get('/checkin-checkout-report', requirePermission(CHECKIN_CHECKOUT_REPORT.name), getCheckinCheckoutReport);
+router.get('/vastram-daily-performance-report', requirePermission(VASTRAM_DAILY_PERFORMANCE_REPORT.name), getVastramDailyPerformanceReport);
+// Monthly attendance, monthly work hours, monthly timings, detailed horizontal,
+// and printable attendance reports all use the same API as detailed-attendance-report
+router.get('/detailed-attendance-report', requirePermission(DETAILED_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-attendance-report', requirePermission(MONTHLY_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-work-hours-report', requirePermission(MONTHLY_WORK_HOURS_REPORT.name), getDetailedAttendanceReport);
+router.get('/monthly-timings-report', requirePermission(MONTHLY_TIMINGS_REPORT.name), getDetailedAttendanceReport);
+router.get('/detailed-horizontal-report', requirePermission(DETAILED_HORIZONTAL_REPORT.name), getDetailedAttendanceReport);
+router.get('/printable-attendance-report', requirePermission(PRINTABLE_ATTENDANCE_REPORT.name), getDetailedAttendanceReport);
+
+router.get('/salary-register-report', requirePermission(SALARY_REGISTER_REPORT.name), getSalaryRegisterReport);
+router.get('/salary-with-attendance-report', requirePermission(SALARY_WITH_ATTENDANCE_REPORT.name), getSalaryRegisterReport);
+router.get('/salary-change-report', requirePermission(SALARY_CHANGE_REPORT.name), getSalaryChangeReport);
+router.get('/shift-summary-report', requirePermission(SHIFT_SUMMARY_REPORT.name), getShiftSummaryReport);
+router.get('/department-attendance-report', requirePermission(DEPARTMENT_ATTENDANCE_REPORT.name), getDepartmentAttendanceReport);
+router.get('/pf-report', requirePermission(PF_REPORT.name), getPFReport);
+router.get('/esic-report', requirePermission(ESIC_REPORT.name), getESICReport);
+router.get('/leave-bank-report', requirePermission(LEAVE_BANK_REPORT.name), getLeaveBankReport);
+router.get('/leave-transaction-report', requirePermission(LEAVE_TRANSACTION_REPORT.name), getLeaveTransactionReport);
+router.get('/all-leaves-report', requirePermission(ALL_LEAVES_REPORT.name), getAllLeavesReport);
+
+// Performance management. Each carries its own permission: the appraisal summary lists
+// individual grades, while the distribution, KRA and progress views are aggregate, so a
+// line manager can be shown the shape of a round without being shown everybody's score.
+router.get('/appraisal-summary-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.APPRAISAL_SUMMARY_REPORT.name),  performanceReports.getAppraisalSummaryReport);
+router.get('/band-distribution-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.BAND_DISTRIBUTION_REPORT.name),  performanceReports.getBandDistributionReport);
+router.get('/kra-analysis-report',       requirePermission(REPORT_PERMISSION_CONSTANTS.KRA_ANALYSIS_REPORT.name),       performanceReports.getKraAnalysisReport);
+router.get('/cycle-progress-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CYCLE_PROGRESS_REPORT.name),     performanceReports.getCycleProgressReport);
+
+// Readiness reports. Each is guarded by its own permission — payroll readiness
+// exposes bank and statutory numbers that roster coverage does not, so they
+// are not granted together by accident.
+router.get('/payroll-readiness-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PAYROLL_READINESS_REPORT.name), readinessReports.getPayrollReadinessReport);
+router.get('/roster-coverage-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.ROSTER_COVERAGE_REPORT.name),   readinessReports.getRosterCoverageReport);
+router.get('/pending-approvals-report', requirePermission(REPORT_PERMISSION_CONSTANTS.PENDING_APPROVALS_REPORT.name), readinessReports.getPendingApprovalsReport);
+router.get('/terminal-health-report',   requirePermission(REPORT_PERMISSION_CONSTANTS.TERMINAL_HEALTH_REPORT.name),   readinessReports.getTerminalHealthReport);
+router.get('/advance-recovery-report',  requirePermission(REPORT_PERMISSION_CONSTANTS.ADVANCE_RECOVERY_REPORT.name),  readinessReports.getAdvanceRecoveryReport);
+// Where the workforce sits, and whether anything at each site collects its attendance. Its
+// own permission: an area's staffing is an operational fact a site manager needs and a
+// payroll clerk does not.
+router.get('/area-headcount-report',    requirePermission(REPORT_PERMISSION_CONSTANTS.AREA_HEADCOUNT_REPORT.name),    getAreaHeadcountReport);
+
+// Multi-location HR. A permission each, because they are not one audience: campus presence
+// names who is on site this minute (a gate desk reads it), the site comparison and coverage
+// views are aggregate, and cross-site movement names individuals against places they were
+// not assigned to.
+router.get('/campus-presence-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CAMPUS_PRESENCE_REPORT.name),     siteReports.getCampusPresenceReport);
+router.get('/site-attendance-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_ATTENDANCE_REPORT.name),     siteReports.getSiteAttendanceReport);
+router.get('/cross-site-movement-report', requirePermission(REPORT_PERMISSION_CONSTANTS.CROSS_SITE_MOVEMENT_REPORT.name), siteReports.getCrossSiteMovementReport);
+router.get('/site-coverage-report',       requirePermission(REPORT_PERMISSION_CONSTANTS.SITE_COVERAGE_REPORT.name),       siteReports.getSiteCoverageReport);
+router.get('/canteen-by-site-report',     requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_BY_SITE_REPORT.name),     siteReports.getCanteenBySiteReport);
+// Carries dates of birth for minors, so it is granted separately from the rest.
+router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
+router.get('/call-buddy-report', requirePermission(CALL_BUDDY_REPORT.name), getCallBuddyReport);
+// Same call-buddy contact data as call-buddy-report, so these share that report's permission.
+router.get('/lead-conversion-report', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionReport);
+// Standing-book snapshot (levels as of the window end + in-window movement) for the dashboard KPIs.
+router.get('/lead-conversion-snapshot', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionSnapshot);
+router.get('/repeated-calls-report', requirePermission(CALL_BUDDY_REPORT.name), getRepeatedCallsReport);
+router.get('/common-contacts-report', requirePermission(CALL_BUDDY_REPORT.name), getCommonContactsReport);
+router.get('/contact-followup-report', requirePermission(CONTACT_FOLLOWUP_REPORT.name), getContactFollowupReport);
+router.get(
+  '/canteen-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.CANTEEN_REPORT.name),
+  getCanteenReport
+);
+router.get(
+  '/final-wage-report-for-contractor',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.FINAL_WAGE_REPORT_FOR_CONTRACTOR.name),
+  getFinalWageReportForContractor
+);
+
+// Unregistered faces report
+router.get('/unregistered-faces-report', requirePermission(UNREGISTERED_FACES_REPORT.name), getUnregisteredFacesReport);
+router.post('/unregistered-faces-report/delete', requirePermission(UNREGISTERED_FACES_REPORT.name), deleteUnregisteredFace);
+router.post('/unregistered-faces-report/assign', requirePermission(UNREGISTERED_FACES_REPORT.name), assignUnregisteredFace);
+
+// Biotemplate report
+router.get(
+  '/biotemplate-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  getBiotemplateReport
+);
+router.post(
+  '/biotemplate-report/register',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  registerBiotemplate
+);
+router.post(
+  '/biotemplate-report/create-employee',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  createEmployeeForCode
+);
+router.post(
+  '/biotemplate-report/link-transactions',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  linkTransactions
+);
+router.post(
+  '/biotemplate-report/push',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  pushBiotemplate
+);
+router.post(
+  '/biotemplate-report/delete',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.BIOTEMPLATE_REPORT.name),
+  deleteBiotemplate
+);
+
+// Daily Sales Person Report (registered top-level so report.slug routing works)
+router.get(
+  '/daily-sales-person-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.DAILY_SALES_PERSON_REPORT.name),
+  getDailySalesPersonReport
+);
+
+// Sales Activity Report — merges Daily Sales Person + Call Buddy data per user
+router.get(
+  '/sales-activity-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.SALES_ACTIVITY_REPORT.name),
+  getSalesActivityReport
+);
+
+router.get(
+  '/location-log-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.LOCATION_LOG_REPORT.name),
+  getLocationLogReport
+);
+router.get(
+  '/halt-points-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.HALT_POINTS_REPORT.name),
+  getHaltPointsReport
+);
+router.get(
+  '/identify-officer-report',
+  requirePermission(REPORT_PERMISSION_CONSTANTS.IDENTIFY_OFFICER_REPORT.name),
+  getIdentifyOfficerReport
+);
+
+// Field-sales reports (GPS tracking + dealer visits + wage)
+router.get('/field-sales/daily', fieldSalesReports.getDailyReport);
+router.get('/field-sales/monthly', fieldSalesReports.getMonthlyReport);
+router.get('/field-sales/dealer', fieldSalesReports.getDealerReport);
+router.get('/field-sales/detailed-dealer-form', fieldSalesReports.getDetailedDealerFormReport);
+router.get('/field-sales/dealer-performance', fieldSalesReports.getDealerPerformanceReport);
+router.get('/field-sales/new-potential-dealer', fieldSalesReports.getNewPotentialDealerReport);
+router.get('/field-sales/best-worst-employees', fieldSalesReports.getBestWorstReport);
+router.get('/field-sales/lead-follow-up', fieldSalesReports.getLeadFollowUpReport);
+router.get('/field-sales/sales-trend', fieldSalesReports.getSalesTrendReport);
+router.get('/field-sales/dealer-satisfaction', fieldSalesReports.getDealerSatisfactionReport);
+
+registerCustomReportRoutes(router);
+>>>>>>> etime-payroll (incoming)
+
+module.exports = router;

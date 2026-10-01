@@ -192,4 +192,17 @@ const formatDurationJson = (duration) => {
   return formatted.trim();
 };
 
-export { formatDateTime, formatTime, formatDate, formatDuration, splitFullName, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson, plural, ordinal };
+// Compact Indian-currency money, the way an Indian dashboard reads amounts:
+// thousands as K, lakhs as L, crores as Cr, with a ₹ in front. 1234567 -> "₹12.3L".
+// Full precision is for a cell the user can hover; a headline tile wants the shape.
+const formatInrCompact = (amount) => {
+  const value = Number(amount) || 0;
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  if (abs >= 10000000) return `${sign}₹${(abs / 10000000).toFixed(abs >= 100000000 ? 0 : 1)}Cr`;
+  if (abs >= 100000) return `${sign}₹${(abs / 100000).toFixed(abs >= 1000000 ? 0 : 1)}L`;
+  if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(abs >= 10000 ? 0 : 1)}K`;
+  return `${sign}₹${Math.round(abs)}`;
+};
+
+export { formatDateTime, formatTime, formatDate, formatDuration, splitFullName, formatValueOrDash, formatBytes, sanitizeHTML, getStatusClass, formatDurationJson, plural, ordinal, formatInrCompact };
