@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 2b6cdfec211ce41e4e3ba4d61c346c854017e92a
-# app/client/src/filter/reportFilterConfig.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 2b6cdfec211ce41e4e3ba4d61c346c854017e92a
+# app/client/src/filter/reportFilterConfig.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -15,7 +15,7 @@ import { dateFiltersYesterday, commonFilters, userBasedFilters, performanceCycle
 =======
 import { getLocalDateStringYmd, shiftDays } from '@utils/dateTimeUtils';
 import { dateFiltersYesterday, commonFilters, userBasedFilters, performanceCycleFilter, TODAY } from './filterConfig';
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 
 <<<<<<< startup (this repo)
 // Per-report filter panels. A report in getReportModules.js points at one of
@@ -315,11 +315,12 @@ const deactivationUserReportFilters = [
 // deactivation event time (audit log) for deletions. The "Is Active" toggle is
 // dropped because each tab is, by definition, scoped to one lifecycle event and
 // surfaces current status via a dedicated column instead.
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 //
 // A filter whose options come from the server declares `fetchData` beside its
 // name and label; `options` is what it shows until that list arrives.
 //
+<<<<<<< startup (this repo)
 // Apps add their own arrays here; `commonFilters` is the starting set the
 // example report (components/report/reports/user_report) uses.
 
@@ -342,6 +343,101 @@ const commonFilters = [
         })),
       ]),
   },
+||||||| base (common ancestor)
+// Campus Presence is a "right now" question — a date range would answer a
+// different one, since presence is decided by today's punches and nothing else.
+const CampusPresenceReportFilters = [
+  ...commonFilters,
+  { name: 'include_empty_areas', label: 'Include Empty Sites', type: 'checkbox', default: false, is_standard: false, order: 1 },
+];
+
+// Site Attendance Comparison spans a period, because comparing sites on one
+// day compares their rosters rather than their discipline.
+const SiteAttendanceReportFilters = [
+  ...standardReportFilters,
+  { name: 'include_empty_areas', label: 'Include Empty Sites', type: 'checkbox', default: false, is_standard: false, order: 1 },
+];
+
+// Cross-Site Movement defaults to the people who actually moved: a full roster
+// of "Settled" rows is how a worklist stops being read.
+const CrossSiteMovementReportFilters = [
+  ...standardReportFilters,
+  { name: 'only_movers', label: 'Only Movers', type: 'checkbox', default: true, is_standard: false, order: 1 },
+];
+
+// Site Coverage defaults to the sites where something is wrong.
+const SiteCoverageReportFilters = [
+  ...standardReportFilters,
+  { name: 'only_gaps', label: 'Only Gaps', type: 'checkbox', default: true, is_standard: false, order: 1 },
+];
+
+const CanteenBySiteReportFilters = [
+  ...standardReportFilters,
+  { name: 'include_empty_areas', label: 'Include Sites With No Meals', type: 'checkbox', default: false, is_standard: false, order: 1 },
+];
+
+// Negative Leave Balance: a preset over the Leave Bank Report. Same grid, same
+// numbers, filtered to the overdrafts.
+const NegativeLeaveBalanceReportFilters = [
+  ...standardReportFilters,
+  { name: 'only_negative', label: 'Only Negative', type: 'checkbox', default: true, is_standard: false, order: 1 },
+];
+
+
+const performanceReportGroupFilters = commonFilters.filter(
+  (filter) => ['employee', 'department', 'position'].includes(filter.name)
+);
+
+const AppraisalSummaryReportFilters = [performanceCycleFilter, ...performanceReportGroupFilters];
+
+// Band distribution is a shape, not a list, so it swaps the per-person filters for the
+// choice of which axis to count along.
+const BandDistributionReportFilters = [
+  performanceCycleFilter,
+=======
+// Apps add their own arrays here; `commonFilters` is the starting set the
+// example report (components/report/reports/user_report) uses.
+
+const ALL_USERS = { value: 'all', label: 'All Users' };
+const ALL_ROLES = { value: 'all', label: 'All Roles' };
+
+const commonFilters = [
+  ...dateFiltersYesterday,
+>>>>>>> etime-payroll (incoming, at tip)
+  {
+<<<<<<< startup (this repo)
+    name: 'role', label: 'Role', type: 'select', default: 'all', order: 4,
+    options: [ALL_ROLES],
+    fetchData: ({ force }) =>
+      ApiService.getAllRoles({ force }).then((resp) => [
+        ALL_ROLES,
+        ...resp.data.map((role) => ({ value: String(role.id), label: role.name || String(role.id) })),
+      ]),
+||||||| base (common ancestor)
+    name: 'group_by',
+    label: 'Group By',
+    type: 'select',
+    default: 'department',
+    is_standard: true,
+    order: 2,
+    options: [
+      { value: 'department', label: 'Department' },
+      { value: 'position', label: 'Designation' },
+    ],
+=======
+    name: 'user', label: 'User', type: 'select', default: 'all', order: 3,
+    options: [ALL_USERS],
+    // ApiService caches this read, so it is the same entry the framework's
+    // Notification Log fills — whichever loads first pays for both.
+    fetchData: ({ force }) =>
+      ApiService.getAllUsers({ force }).then((resp) => [
+        ALL_USERS,
+        ...resp.data.users.map((user) => ({
+          value: String(user.id),
+          label: user.name || user.username || String(user.id),
+        })),
+      ]),
+  },
   {
     name: 'role', label: 'Role', type: 'select', default: 'all', order: 4,
     options: [ALL_ROLES],
@@ -350,6 +446,7 @@ const commonFilters = [
         ALL_ROLES,
         ...resp.data.map((role) => ({ value: String(role.id), label: role.name || String(role.id) })),
       ]),
+>>>>>>> etime-payroll (incoming, at tip)
   },
 ];
 
@@ -439,5 +536,5 @@ export {
   BandDistributionReportFilters,
   KraAnalysisReportFilters,
   CycleProgressReportFilters,
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 };

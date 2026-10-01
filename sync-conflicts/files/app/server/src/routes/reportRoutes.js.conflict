@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 2b6cdfec211ce41e4e3ba4d61c346c854017e92a
-# app/server/src/routes/reportRoutes.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 2b6cdfec211ce41e4e3ba4d61c346c854017e92a
+# app/server/src/routes/reportRoutes.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -9,8 +9,28 @@
 
 const express = require('express');
 const authMiddleware = require('@startup/src/middleware/authMiddleware');
+<<<<<<< startup (this repo)
 
 const router = express.Router();
+||||||| base (common ancestor)
+const requirePermission = require('@startup/src/middleware/requirePermission');
+const { REPORT_PERMISSION_CONSTANTS } = require('../constants/permissions');
+
+// Each report route asks for the permission named after its own slug. Written out rather than
+// derived so a slug with no declared permission is caught here, not by a 403 for everybody.
+const {
+  DEACTIVATION_USER_REPORT, EMPLOYEE_LIFECYCLE_REPORT, TRANSACTION_REPORT, DIRECTION_CONFLICTS_REPORT,
+  CHECKIN_CHECKOUT_REPORT, VASTRAM_DAILY_PERFORMANCE_REPORT, DETAILED_ATTENDANCE_REPORT,
+  MONTHLY_ATTENDANCE_REPORT, MONTHLY_WORK_HOURS_REPORT, MONTHLY_TIMINGS_REPORT, DETAILED_HORIZONTAL_REPORT,
+  PRINTABLE_ATTENDANCE_REPORT, SALARY_REGISTER_REPORT, SALARY_WITH_ATTENDANCE_REPORT, SALARY_CHANGE_REPORT,
+  SHIFT_SUMMARY_REPORT, DEPARTMENT_ATTENDANCE_REPORT, PF_REPORT, ESIC_REPORT, LEAVE_BANK_REPORT,
+  LEAVE_TRANSACTION_REPORT, ALL_LEAVES_REPORT,
+  CALL_BUDDY_REPORT, CONTACT_FOLLOWUP_REPORT, UNREGISTERED_FACES_REPORT
+} = REPORT_PERMISSION_CONSTANTS;
+=======
+
+const router = express.Router();
+>>>>>>> etime-payroll (incoming, at tip)
 router.use(authMiddleware.protect); // Protect all routes
 
 <<<<<<< startup (this repo)
@@ -422,6 +442,6 @@ router.get('/field-sales/sales-trend', fieldSalesReports.getSalesTrendReport);
 router.get('/field-sales/dealer-satisfaction', fieldSalesReports.getDealerSatisfactionReport);
 
 registerCustomReportRoutes(router);
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 
 module.exports = router;
