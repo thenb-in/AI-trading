@@ -41,7 +41,9 @@ function printHelp() {
                            login and SSO keep working during a phased rollout
 
   Env: APP_KEY, WALLET_DATABASE_URL
-  The Wallet customer id and this app's company id are asked for when it runs.
+  Asks for this app's company id, then resolves the Wallet customer from what
+  Wallet already knows (the company IS a customer, or a customer_app_companies
+  mapping names it) and only asks for the Wallet customer id when it cannot.
 `);
 }
 
@@ -147,6 +149,69 @@ async function upsertAppCompanyMapping(wallet, { customerId, appKey, appCompanyI
     { replacements: { customerId, appKey, appCompanyId } }
   );
   console.log(`  mapping changed: ${rows[0].app_company_id} -> ${appCompanyId}`);
+}
+
+/**
+ * The Wallet customer this app's company id refers to, asking Wallet what it
+ * already knows instead of the operator. Mirrors Wallet's own
+ * customerAppCompanyService.resolveWalletCustomerId: the id IS a Wallet customer
+ * (wallet-provisioned apps send ours back), else a customer_app_companies row
+ * claims it (by app_key), else neither.
+ */
+async function resolveWalletCustomerIdForApp(wallet, appCompanyId, appKey) {
+  const [customers] = await wallet.query(
+    'SELECT customer_id FROM customers WHERE customer_id = :appCompanyId LIMIT 1',
+    { replacements: { appCompanyId } }
+  );
+  if (customers[0]) {
+    return { customerId: appCompanyId, via: 'customer' };
+  }
+
+  const [mappings] = await wallet.query(
+    'SELECT customer_id FROM customer_app_companies WHERE app_company_id = :appCompanyId AND app_key = :appKey',
+    { replacements: { appCompanyId, appKey } }
+  );
+  if (mappings.length === 1) {
+    return { customerId: mappings[0].customer_id, via: 'mapping' };
+  }
+  if (mappings.length > 1) {
+    return { customerId: null, via: 'ambiguous' };
+  }
+  return { customerId: null, via: 'unmapped' };
+}
+
+async function getWalletCustomerName(wallet, customerId) {
+  const [rows] = await wallet.query(
+    'SELECT name FROM customers WHERE customer_id = :customerId LIMIT 1',
+    { replacements: { customerId } }
+  );
+  return rows[0]?.name || null;
+}
+
+/**
+ * Settle on the Wallet customer for this app company. When Wallet already knows
+ * it — the company is itself a customer, or a mapping names it — take that and
+ * leave the mapping untouched. Only when Wallet can't resolve it do we ask, and
+ * flag that a mapping row has to be written.
+ */
+async function determineWalletCustomer(rl, wallet, appCompanyId, appKey) {
+  const { customerId, via } = await resolveWalletCustomerIdForApp(wallet, appCompanyId, appKey);
+
+  if (via === 'customer') {
+    console.log(`  resolved: this company is itself Wallet customer ${appCompanyId} — no mapping row needed`);
+    return { customerId, customerName: await getWalletCustomerName(wallet, customerId), needMapping: false };
+  }
+  if (via === 'mapping') {
+    console.log(`  resolved: mapped to Wallet customer ${customerId} via customer_app_companies`);
+    return { customerId, customerName: await getWalletCustomerName(wallet, customerId), needMapping: false };
+  }
+
+  console.log(via === 'ambiguous'
+    ? `  app company ${appCompanyId} is mapped to more than one Wallet customer on ${appKey} — enter the right one`
+    : `  no Wallet mapping for app company ${appCompanyId} — enter the Wallet customer id to create one`);
+  const entered = await askUuid(rl, '  Wallet customer id: ');
+  const customerName = await assertWalletCustomer(wallet, entered);
+  return { customerId: entered, customerName, needMapping: true };
 }
 
 async function findWalletUser(wallet, username) {
@@ -285,11 +350,14 @@ async function main() {
     console.log(`\n  app_key: ${appKey}`);
     console.log(`  passwords: ${opts.clearLocalPassword ? 'CLEAR after migrating' : 'keep as they are'}\n`);
 
-    const customerId = await askUuid(rl, '  Wallet customer id: ');
-    const customerName = await assertWalletCustomer(wallet, customerId);
-
+    // The app always knows its own company id; ask that, then let Wallet resolve
+    // the customer id from what it already has and only prompt if it cannot.
     const appCompanyId = await askUuid(rl, '  This app\'s company id: ');
     const companyName = await readLocalCompany(appCompanyId);
+
+    const { customerId, customerName, needMapping } = await determineWalletCustomer(
+      rl, wallet, appCompanyId, appKey
+    );
 
     const users = await User.findAll({
       where: { company_id: appCompanyId },
@@ -301,7 +369,10 @@ async function main() {
     }
 
     console.log(`\n  ${companyName} (this app, ${users.length} users)`);
-    console.log(`    -> ${customerName} (Wallet customer ${customerId})`);
+    console.log(`    -> ${customerName || '(unnamed)'} (Wallet customer ${customerId})`);
+    console.log(needMapping
+      ? '  A customer_app_companies mapping will be created.'
+      : '  Using the mapping Wallet already has.');
     if (opts.clearLocalPassword) {
       console.log('\n  Local passwords will be CLEARED. Only SSO logins will work afterwards.');
     }
@@ -314,7 +385,9 @@ async function main() {
     rl.close();
 
     console.log('');
-    await upsertAppCompanyMapping(wallet, { customerId, appKey, appCompanyId });
+    if (needMapping) {
+      await upsertAppCompanyMapping(wallet, { customerId, appKey, appCompanyId });
+    }
 
     const summary = {
       created: 0, alreadyOnWallet: 0, linked: 0,
