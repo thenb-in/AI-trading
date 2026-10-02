@@ -25,7 +25,7 @@ const { getBiotemplateReport, registerBiotemplate, pushBiotemplate, deleteBiotem
 // Field-sales report handlers (daily/monthly/dealer + analytics + halt points)
 const fieldSalesReports = require('../views/reports/field_sales');
 const { getCallBuddyReport } = require('../views/reports/callBuddyReport');
-const { getLeadConversionReport } = require('../views/reports/leadConversionReport');
+const { getLeadStatusReport } = require('../views/reports/leadStatusReport');
 const { getLeadConversionSnapshot } = require('../views/reports/leadConversionSnapshot');
 const { getRepeatedCallsReport } = require('../views/reports/repeatedCallsReport');
 const { getCommonContactsReport } = require('../views/reports/commonContactsReport');
@@ -107,8 +107,8 @@ router.get('/canteen-by-site-report',     requirePermission(REPORT_PERMISSION_CO
 // Carries dates of birth for minors, so it is granted separately from the rest.
 router.get('/employment-age-compliance-report', requirePermission(REPORT_PERMISSION_CONSTANTS.EMPLOYMENT_AGE_COMPLIANCE_REPORT.name), readinessReports.getEmploymentAgeComplianceReport);
 router.get('/call-buddy-report', requirePermission(CALL_BUDDY_REPORT.name), getCallBuddyReport);
-// Same call-buddy contact data as call-buddy-report, so these share that report's permission.
-router.get('/lead-conversion-report', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionReport);
+// Status-as-of-each-day trend, replayed from the contact-status-history trail.
+router.get('/lead-status-report', requirePermission(CALL_BUDDY_REPORT.name), getLeadStatusReport);
 // Standing-book snapshot (levels as of the window end + in-window movement) for the dashboard KPIs.
 router.get('/lead-conversion-snapshot', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionSnapshot);
 router.get('/repeated-calls-report', requirePermission(CALL_BUDDY_REPORT.name), getRepeatedCallsReport);

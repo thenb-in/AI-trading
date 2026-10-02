@@ -67,6 +67,9 @@ const ContactFollowupReportFilters = [
   },
   { name: 'lead_status', label: 'Status', type: 'select', options: [], is_standard: true, order: 5, hidden: true },
   { name: 'query', label: 'Search', type: 'text', default: '', is_standard: true, order: 6, placeholder: 'Name, phone, address', hidden: true },
+  // Off by default the report is the call worklist (due + ever-called); on, it adds
+  // every remaining contact so the full book shows, never-contacted rows included.
+  { name: 'show_all', label: 'Show all contacts', type: 'checkbox', default: false, is_standard: true, order: 7 },
 ];
 
 const LocationLogReportFilters = userBasedReportFilters;

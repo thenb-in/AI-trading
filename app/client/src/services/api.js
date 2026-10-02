@@ -326,7 +326,6 @@ const canteenMealTypeApi = {
 // Also read by the Call Buddy mobile app, which renders the same colour and icon.
 // --------------------------------------------
 const contactFollowupApi = {
-  getReport: (params = {}) => api.get('/reports/contact-followup-report', { params }),
   updateLeadStatus: (contactId, lead_status) => api.put(`/contact/${contactId}`, { id: contactId, lead_status }),
 };
 

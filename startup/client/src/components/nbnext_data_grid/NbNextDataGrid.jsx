@@ -103,6 +103,9 @@ const NbNextDataGrid = forwardRef(({
   summary: summaryProp = null,
   /** Theme id from utils/themes.js — "report" (default) or "master". */
   theme = "report",
+  /** Zebra row striping. Off flattens odd rows to the even colour (group totals
+   * and selection keep their own colours). */
+  striped = true,
   /**
    * Layout mode — "auto" (default: cards on <640px, table otherwise), "table",
    * "cards", or "kanban". Users can flip between them from the bottom toolbar
@@ -578,6 +581,7 @@ const NbNextDataGrid = forwardRef(({
     }),
     ...(infiniteScroll && !fullScreen && { maxHeight: INFINITE_SCROLL_MAX_HEIGHT }),
     ...activeTheme.vars,
+    ...(striped ? {} : { "--grid-row-odd": "var(--grid-row-even)" }),
   };
   const bodyScrollAreaStyle = useNaturalFlow
     ? { position: "relative", overflowX: "auto" }
@@ -826,6 +830,7 @@ NbNextDataGrid.propTypes = {
   showEmptyColumns: PropTypes.bool,
   summary: PropTypes.object,
   theme: PropTypes.string,
+  striped: PropTypes.bool,
   viewMode: PropTypes.oneOf(["auto", "table", "cards", "kanban"]),
   kanbanField: PropTypes.string,
   kanbanLaneValues: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
