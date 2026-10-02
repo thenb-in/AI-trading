@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 3cfb8522a325062af65ac935727e90354c196927
-# app/server/src/routes/reportRoutes.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 3cfb8522a325062af65ac935727e90354c196927
+# app/server/src/routes/reportRoutes.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -41,7 +41,7 @@ const { getLeadConversionReport } = require('../views/reports/leadConversionRepo
 const { getLeadStatusReport } = require('../views/reports/leadStatusReport');
 =======
 const { getLeadStatusReport } = require('../views/reports/leadStatusReport');
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 const { getLeadConversionSnapshot } = require('../views/reports/leadConversionSnapshot');
 const { getRepeatedCallsReport } = require('../views/reports/repeatedCallsReport');
 const { getCommonContactsReport } = require('../views/reports/commonContactsReport');
@@ -134,7 +134,7 @@ router.get('/lead-status-report', requirePermission(CALL_BUDDY_REPORT.name), get
 =======
 // Status-as-of-each-day trend, replayed from the contact-status-history trail.
 router.get('/lead-status-report', requirePermission(CALL_BUDDY_REPORT.name), getLeadStatusReport);
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 // Standing-book snapshot (levels as of the window end + in-window movement) for the dashboard KPIs.
 router.get('/lead-conversion-snapshot', requirePermission(CALL_BUDDY_REPORT.name), getLeadConversionSnapshot);
 router.get('/repeated-calls-report', requirePermission(CALL_BUDDY_REPORT.name), getRepeatedCallsReport);

@@ -1,6 +1,6 @@
 # Unresolved sync conflicts
 
-3 file(s) could not be merged automatically while syncing etime-payroll -> startup.
+2 file(s) could not be merged automatically while syncing etime-payroll -> startup.
 
 **This PR is blocked until this directory is empty.** The `sync-conflicts` check fails while any `.conflict` file remains.
 
@@ -13,10 +13,11 @@
 
 The real file currently holds the `etime-payroll` version — the source wins in the tree so the branch stays buildable and testable. Anything this repo had that the source overwrote is in the `.conflict` file, not lost.
 
+2 further file(s) conflicted against an intermediate commit but merged cleanly against the source tip, and were resolved automatically: `app/client/src/filter/reportFilterConfig.js`, `app/client/src/services/api.js`.
+
 ## Conflicts
 
 | File | Kind | Source commit | Parked as |
 |---|---|---|---|
-| `app/client/src/filter/reportFilterConfig.js` | modified on both sides | `2b6cdfec211c` | `sync-conflicts/files/app/client/src/filter/reportFilterConfig.js.conflict` |
-| `app/client/src/services/api.js` | modified on both sides | `2b6cdfec211c` | `sync-conflicts/files/app/client/src/services/api.js.conflict` |
-| `app/server/src/routes/reportRoutes.js` | modified on both sides | `2b6cdfec211c` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
+| `app/server/src/constants/app_permissions.js` | modified on both sides | `3cfb8522a325` | `sync-conflicts/files/app/server/src/constants/app_permissions.js.conflict` |
+| `app/server/src/routes/reportRoutes.js` | modified on both sides | `3cfb8522a325` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
