@@ -58,7 +58,7 @@ env:
   # The one place the Node version is declared. bytenode locks each .jsc to this
   # exact V8 build; it is captured into the bundle's VERSION and read back at
   # deploy time — nothing downstream hardcodes it.
-  NODE_VERSION: "22.22.2"
+  NODE_VERSION: "24.21.0"
 
   # The one place the build target is declared. Non-dispatch triggers build
   # linux. The `env` context is not available in `runs-on` or in a called
