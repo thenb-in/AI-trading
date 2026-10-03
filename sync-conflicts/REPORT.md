@@ -13,11 +13,9 @@
 
 The real file currently holds the `etime-payroll` version — the source wins in the tree so the branch stays buildable and testable. Anything this repo had that the source overwrote is in the `.conflict` file, not lost.
 
-2 further file(s) conflicted against an intermediate commit but merged cleanly against the source tip, and were resolved automatically: `app/client/src/filter/reportFilterConfig.js`, `app/client/src/services/api.js`.
-
 ## Conflicts
 
 | File | Kind | Source commit | Parked as |
 |---|---|---|---|
-| `app/server/src/constants/app_permissions.js` | modified on both sides | `3cfb8522a325` | `sync-conflicts/files/app/server/src/constants/app_permissions.js.conflict` |
-| `app/server/src/routes/reportRoutes.js` | modified on both sides | `3cfb8522a325` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
+| `app/server/src/constants/app_permissions.js` | parked by an earlier run | `` | `sync-conflicts/files/app/server/src/constants/app_permissions.js.conflict` |
+| `app/server/src/routes/reportRoutes.js` | parked by an earlier run | `` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
