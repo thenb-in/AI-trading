@@ -290,6 +290,12 @@ const ApiService = {
     return this.request('GET', `/admin/companies/${companyId}/users`);
   },
 
+  // Support users + the company's group business users, kept apart for the
+  // assignment screen.
+  getAssignableUsers(companyId) {
+    return this.request('GET', `/admin/companies/${companyId}/assignable-users`);
+  },
+
   // Get all layouts for a specific document (private + public)
   getLayoutsByDocument(documentName) {
     return this.request('GET', `/layouts/document/${documentName}`);

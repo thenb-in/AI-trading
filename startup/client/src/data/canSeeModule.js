@@ -14,6 +14,11 @@ const canSeeModule = (definition, userData) => {
   if (definition.requireSupportUser) {
     return Boolean(userData?.isSupportUser);
   }
+  // Switching active company is open to support staff and to anyone named in a
+  // group of companies — the one way a non-support user reaches the switcher.
+  if (definition.requireCompanySwitchAccess) {
+    return Boolean(userData?.isSupportUser || userData?.isInCompanyGroup);
+  }
   return hasPermission(getModulePermissionName(definition), userData);
 };
 

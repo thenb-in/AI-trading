@@ -8,6 +8,7 @@ const { connectionsByUser, disconnectSession } = require('../socket/utils/presen
 const { sendSuccess, sendError } = require('../utils/response');
 const allowedPermissions = require('../utils/allowedPermissions');
 const { withExtendedCompany } = require('../services/companyPayloadRegistry');
+const groupOfCompaniesService = require('../services/groupOfCompaniesService');
 const sessionService = require('../services/auth/sessionService');
 const env = require('../config/env');
 
@@ -120,7 +121,10 @@ const getMe = async (req, res) => {
   try {
     const userData=req.user;
     const user = await withExtendedCompany(await authService.getCurrentUser(userData.id));
-    res.status(200).json(user);
+    // Being named in any group of companies is what lets a non-support user
+    // reach the company switcher, so the client needs to know it up front.
+    const isInCompanyGroup = await groupOfCompaniesService.isUserInAnyGroup(userData.id);
+    res.status(200).json({ ...user, isInCompanyGroup });
   } catch (error) {
     logger.error('Error in getMe', error);
     res.status(401).json({ error: error.message });
