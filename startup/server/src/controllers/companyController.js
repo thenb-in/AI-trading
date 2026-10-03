@@ -89,9 +89,11 @@ const companyController = {
         }
       }
 
-      const company = await companyService.createCompanyAndLink({ name, companyId, mobileApp, desktopWeb, mobileWeb }, req.user.id);
-      return res.status(201).json({
-        message: `Company "${company.name}" created successfully with ID "${company.id}"!`,
+      const { company, created } = await companyService.createCompanyAndLink({ name, companyId, mobileApp, desktopWeb, mobileWeb }, req.user.id);
+      return res.status(created ? 201 : 200).json({
+        message: created
+          ? `Company "${company.name}" created successfully with ID "${company.id}"!`
+          : `Company "${company.name}" with ID "${company.id}" already exists — you have been assigned to it.`,
         company
       });
     } catch (error) {
