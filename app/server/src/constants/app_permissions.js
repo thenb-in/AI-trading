@@ -22,82 +22,21 @@
 
 
 
-const APP_REPORT_PERMISSION_CONSTANTS = {
-  DETAILED_ATTENDANCE_REPORT: create_report_permission('detailed-attendance-report'),
-  CHECKIN_CHECKOUT_REPORT: create_report_permission('checkin-checkout-report'),
-  MISSING_CHECKINS_REPORT: create_report_permission('missing-checkins-report'),
-  TRANSACTION_REPORT: create_report_permission('transaction-report'),
-  DIRECTION_CONFLICTS_REPORT: create_report_permission('direction-conflicts-report'),
-  SALARY_REGISTER_REPORT: create_report_permission('salary-register-report'),
-  SALARY_CHANGE_REPORT: create_report_permission('salary-change-report'),
-  SALARY_WITH_ATTENDANCE_REPORT: create_report_permission('salary-with-attendance-report'),
-  DEACTIVATION_USER_REPORT: create_report_permission('deactivation-user-report'),
-  EMPLOYEE_LIFECYCLE_REPORT: create_report_permission('employee-lifecycle-report'),
-  SHIFT_SUMMARY_REPORT: create_report_permission('shift-summary-report'),
-  DEPARTMENT_ATTENDANCE_REPORT: create_report_permission('department-attendance-report'),
-  MONTHLY_ATTENDANCE_REPORT: create_report_permission('monthly-attendance-report'),
-  MONTHLY_WORK_HOURS_REPORT: create_report_permission('monthly-work-hours-report'),
-  MONTHLY_TIMINGS_REPORT: create_report_permission('monthly-timings-report'),
-  DETAILED_HORIZONTAL_REPORT: create_report_permission('detailed-horizontal-report'),
-  PRINTABLE_ATTENDANCE_REPORT: create_report_permission('printable-attendance-report'),
-  PF_REPORT: create_report_permission('pf-report'),
-  ESIC_REPORT: create_report_permission('esic-report'),
-  ALL_LEAVES_REPORT: create_report_permission('all-leaves-report'),
-  LEAVE_BANK_REPORT: create_report_permission('leave-bank-report'),
-  LEAVE_TRANSACTION_REPORT: create_report_permission('leave-transaction-report'),
-  UNREGISTERED_FACES_REPORT: create_report_permission('unregistered-faces-report'),
-  CALL_BUDDY_REPORT: create_report_permission('call-buddy-report'),
-  CONTACT_FOLLOWUP_REPORT: create_report_permission('contact-followup-report'),
-  BIOTEMPLATE_REPORT: create_report_permission('biotemplate-report'),
-  FINAL_WAGE_REPORT_FOR_CONTRACTOR: create_report_permission('final-wage-report-for-contractor'),
-  DAILY_SALES_PERSON_REPORT: create_report_permission('daily-sales-person-report'),
-  SALES_ACTIVITY_REPORT: create_report_permission('sales-activity-report'),
-  // The movement trail at event grain. Its own permission because it names where
-  // an individual physically was, minute by minute — a narrower audience than the
-  // distance and visit roll-ups built on the same rows.
-  LOCATION_LOG_REPORT: create_report_permission('location-log-report'),
-  HALT_POINTS_REPORT: create_report_permission('halt-points-report'),
-  IDENTIFY_OFFICER_REPORT: create_report_permission('identify-officer-report'),
-  VASTRAM_DAILY_PERFORMANCE_REPORT: create_report_permission('vastram-daily-performance-report'),
-  CANTEEN_REPORT: create_report_permission('canteen-report'),
-  // Performance management. Separate permissions because the appraisal summary carries
-  // individual scores, while band distribution and KRA analysis are aggregate — a line
-  // manager can be shown the shape of a round without being shown everybody's grade.
-  APPRAISAL_SUMMARY_REPORT: create_report_permission('appraisal-summary-report'),
-  BAND_DISTRIBUTION_REPORT: create_report_permission('band-distribution-report'),
-  KRA_ANALYSIS_REPORT: create_report_permission('kra-analysis-report'),
-  CYCLE_PROGRESS_REPORT: create_report_permission('cycle-progress-report'),
-  // Readiness reports — the data-quality gates behind the checklist. Separate
-  // permissions because payroll readiness exposes bank and statutory numbers
-  // that roster coverage does not.
-  PAYROLL_READINESS_REPORT: create_report_permission('payroll-readiness-report'),
-  // Statutory age compliance. Separate permission because the grid carries dates
-  // of birth for minors — a narrower audience than general readiness data.
-  EMPLOYMENT_AGE_COMPLIANCE_REPORT: create_report_permission('employment-age-compliance-report'),
-  ROSTER_COVERAGE_REPORT: create_report_permission('roster-coverage-report'),
-  PENDING_APPROVALS_REPORT: create_report_permission('pending-approvals-report'),
-  TERMINAL_HEALTH_REPORT: create_report_permission('terminal-health-report'),
-  ADVANCE_RECOVERY_REPORT: create_report_permission('advance-recovery-report'),
-  // Headcount per site. Its own permission because an area's staffing is an
-  // operational fact a site manager needs and a payroll clerk does not, and the
-  // HR dashboard's headcount section is gated on this same grant.
-  AREA_HEADCOUNT_REPORT: create_report_permission('area-headcount-report'),
-  // Multi-location HR. Granted separately from each other on purpose: campus presence names
-  // who is on site right this minute, which is a security-desk fact rather than an HR one,
-  // while the site comparison and coverage views are aggregate and the movement report names
-  // individuals against the places they were not meant to be.
-  CAMPUS_PRESENCE_REPORT: create_report_permission('campus-presence-report'),
-  SITE_ATTENDANCE_REPORT: create_report_permission('site-attendance-report'),
-  CROSS_SITE_MOVEMENT_REPORT: create_report_permission('cross-site-movement-report'),
-  SITE_COVERAGE_REPORT: create_report_permission('site-coverage-report'),
-  CANTEEN_BY_SITE_REPORT: create_report_permission('canteen-by-site-report'),
-  // Filter presets over existing reports. No server route of their own — the
-  // client points them at the base report's slug — but each needs a permission
-  // so it can be granted or withheld like any other report.
-  UNLOCKED_ATTENDANCE_REPORT: create_report_permission('unlocked-attendance-report'),
-  NEGATIVE_LEAVE_BALANCE_REPORT: create_report_permission('negative-leave-balance-report'),
-  ...CUSTOM_REPORT_PERMISSION_CONSTANTS
-};
+//uncomment to use this
+// const basePermissions = require('@startup/src/constants/base_permissions');
+
+
+// const {
+//   create_master_permission,
+//   create_module_permission,
+//   create_report_permission
+// } = basePermissions;
+
+const APP_MASTER_PERMISSION_CONSTANTS = {};
+
+const APP_MODULE_PERMISSION_CONSTANTS = {};
+
+const APP_REPORT_PERMISSION_CONSTANTS = {};
 
 module.exports = {
   APP_MASTER_PERMISSION_CONSTANTS,
