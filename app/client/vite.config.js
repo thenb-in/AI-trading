@@ -125,13 +125,6 @@ export default ({ mode }) => {
           ws: true,
           changeOrigin: true,
         },
-        // SalaryMitra portal → its own dev server. ws:true passes through its
-        // HMR socket so the portal hot-reloads when accessed via this host.
-        '/salarymitra': {
-          target: salaryMitraUrl,
-          changeOrigin: true,
-          ws: true,
-        },
         // Product manual (Docusaurus) → its own dev server. ws:true passes its
         // HMR socket through so the manual hot-reloads when viewed via this host.
         '/docs': {
@@ -183,9 +176,9 @@ export default ({ mode }) => {
             },
           ],
           navigateFallback: '/index.html',
-          // /salarymitra is a separate SPA served at the same origin — keep this
+          // /docs is Docusaurus static HTML served at the same origin — keep this
           // SW's navigation fallback from hijacking its routes to the main app.
-          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/salarymitra\//, /^\/docs\//],
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/docs\//],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],

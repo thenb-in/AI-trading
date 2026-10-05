@@ -15,8 +15,6 @@ import {
   registerApproveExtension,
 } from "@startup/data/userManagementRegistry";
 import { registerAppLayout } from "@startup/data/appLayoutRegistry";
-import { registerMasterCreators } from "@startup/data/masterCreatorRegistry";
-import { registerMasterIdentifiers } from "@startup/data/masterIdentifierRegistry";
 import { registerMasterDocLinks } from "@startup/data/masterDocRegistry";
 import { registerReportApi } from "@startup/data/reportApiRegistry";
 import { registerSummaryHeaderFields } from "@startup/data/summaryFieldRegistry";
@@ -69,8 +67,6 @@ function registerAppData() {
   registerUserManagementExtraColumns(getUserManagementExtraColumns);
   registerApproveExtension(useApproveExtension);
   registerAppLayout(AppLayout);
-  registerMasterCreators(masterCreators);
-  registerMasterIdentifiers(masterIdentifiers);
   // Each master carries its own manual link (docUrl) on its module definition;
   // the registry is just those links keyed by the master's name (its title, a
   // MASTERS constant), for the Help (?) button BaseMaster shows on the page.
