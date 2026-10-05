@@ -198,10 +198,55 @@ npm run validate-env      # Validate environment variables
 - **Coverage**: Maintain good test coverage
 
 ## 📚 Documentation
+
+### Code & API docs
 - **README**: Keep README files updated
 - **API Docs**: Document API endpoints
-- **Code Comments**: Comment complex logic
+- **Code Comments**: Comment complex business logic
 - **Setup Instructions**: Provide clear setup guides
+
+### The product manual (Docusaurus)
+
+The end-user manual is a Docusaurus site, split along the usual startup/app boundary
+(principle 6 — framework first, app builds on it):
+
+- **Engine — `startup/docs/`**: generic, **content-free** Docusaurus setup (config, theme,
+  auto-generated sidebar, self-hosted offline search). Reusable by any app on the framework.
+  Never put app content, branding, or copy here.
+- **Content & data — `app/docs/`**: everything app-specific — `content/*.md` (the manual),
+  `images/` (screenshots), `static/img/` (logo, favicon), and `docs.app.config.js` (title,
+  branding, routing, FAQ endpoint). The engine reads all app specifics from
+  `docs.app.config.js`; a second app reuses the engine by dropping in its own `app/docs/`.
+
+Rules:
+
+- **Authoring**: Markdown in `app/docs/content/`. Write **lean and to-the-point** — imperatives,
+  one idea per line, lists and tables over prose. No narrative framing, motivational intros, or
+  editorial asides. Keep every operational fact: steps, field/menu names, tables, links, and any
+  warning that changes an outcome.
+- **Screenshots**: store in `app/docs/images/`; reference by relative path (`../images/x.png`,
+  or `../../images/x.png` from a nested folder) so Docusaurus bundles them. Captions stay short.
+- **Sidebar**: labels are plain-language and **numbered to match the heading numbers**
+  (`3.1 Daily checklist`). Nest related sections as a collapsible category via a folder +
+  `_category_.json`; when nesting, give each child an explicit `slug:` so its URL stays flat.
+- **ids / filenames / anchors**: kebab-case and self-describing. A rename is a *complete*
+  rename — change the frontmatter `id`, the filename, the `{#anchor}`, **and every inbound link**
+  together, not just the visible title.
+- **Links**: `onBrokenLinks` / `onBrokenAnchors` / `onBrokenMarkdownLinks` are set to `throw`.
+  Never introduce a broken cross-link or anchor — the build fails. Verify with
+  `cd startup/docs && npm run build`.
+- **Deep links into the app**: the manual lives under `/docs/`; the app (SPA) lives at the
+  site root. To link from the manual to an app screen, use a **raw root-absolute HTML anchor** —
+  `<a href="/admin/master/department?onboard=create" target="_blank" rel="noopener noreferrer">…</a>`
+  (new tab, so the reader keeps their place in the manual) — not a Markdown link and not
+  `pathname://`. Both prepend the `/docs/` baseUrl (`pathname://` is only for assets served
+  *under* baseUrl), producing `/docs/admin/…` which 404s. The raw `/…` anchor is emitted
+  verbatim, skips the broken-link checker, and full-reloads from docs into the SPA, where
+  `?onboard=create|import|template` opens the add modal (see `useMasterPageOnboarding`).
+- **Build & deploy**: the manual builds as part of the `client_build` CI job into
+  `app/client/dist/docs`, ships inside the client artifact, and deploys to `/app/<app>/docs`.
+  nginx serves it at `/docs/` (`deploy/base.conf`); Docusaurus `baseUrl` must stay `/docs/` to
+  match. Run locally with `cd startup/docs && npm run start`.
 
 ## 🚨 Error Handling
 - **Graceful Degradation**: Handle errors gracefully

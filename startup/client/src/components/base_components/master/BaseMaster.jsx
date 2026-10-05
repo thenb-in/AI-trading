@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { Clock } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
 import { MasterHeader } from './master_header/MasterHeader';
+import { masterDocUrl } from '@startup/data/masterDocRegistry';
 import { MasterTable } from './master_table/MasterTable';
 import { BaseModal, recordTitle } from './master_modal/BaseModal';
 import { FormModal } from './master_modal/FormModal';
@@ -385,6 +386,7 @@ const BaseMaster = ({
         <MasterHeader
           ref={headerRef}
           title={title}
+          docUrl={masterDocUrl(masterName)}
           description={description}
           onAdd={canAdd && showAdd ? handleAdd : undefined}
           userData={userData}

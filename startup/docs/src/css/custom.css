@@ -1,0 +1,5 @@
+/* Engine-level base styling. App-specific branding/overrides belong in app/docs. */
+:root {
+  --ifm-color-primary: #2563eb;
+  --ifm-code-font-size: 95%;
+}

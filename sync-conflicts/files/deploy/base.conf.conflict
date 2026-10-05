@@ -1,0 +1,133 @@
+# Overlapping edits could not be merged automatically (modified on both sides).
+# Source commit: e189bff1e44611772878bdb1cffc5f8e3fb1ef55
+# deploy/base.conf in the tree now holds the etime-payroll version.
+# Below is the full three-way merge, markers and all.
+#
+# Resolve by editing the real file, then deleting this .conflict file.
+# The PR cannot merge while sync-conflicts/ still has entries.
+# ---------------------------------------------------------------
+
+upstream nbnext_app_name_api {
+      ip_hash;
+      server localhost:3000;
+}
+
+server {
+      # TODO: test if this is working correctly
+      listen 80 default_server;
+      location / {
+            return 404;
+      }
+}
+
+server {
+      listen 80;
+      server_name 127.0.0.1 localhost;
+
+      location /basic_status {
+            stub_status on;
+            allow 127.0.0.1;   # Allow only local access
+            deny all;          # Deny access to others
+      }
+}
+
+server {
+    listen 80;
+    server_name public_ip_address;
+
+    set $nbnext_app_path /app/nbnext_app_name;
+
+    location /api/ {
+            proxy_pass http://nbnext_app_name_api;
+            proxy_connect_timeout      3600;
+            proxy_read_timeout         3600;
+            proxy_send_timeout         3600;
+
+            # Forward headers
+            proxy_set_header Host $host; #localhost:8000; #
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-CSRFToken $http_x_csrf_token;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Real-IP $remote_addr;
+
+            proxy_set_header Authorization $http_authorization;
+            proxy_set_header Referer $http_referer;  # http://localhost:8000; # $http_referer;
+            proxy_set_header Origin $http_origin;
+
+            # Cookie handling for CSRF
+            # proxy_cookie_path / "/";
+            # proxy_cookie_domain localhost:8000 3.6.123.135;
+
+            proxy_pass_request_headers on;
+            proxy_redirect off;
+      }
+
+      location /socket.io/ {
+            proxy_pass http://nbnext_app_name_api;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Origin $http_origin;
+
+            proxy_read_timeout 3600;
+            proxy_send_timeout 3600;
+      }
+
+<<<<<<< startup (this repo)
+||||||| base (common ancestor)
+      # ── SalaryMitra self-service portal → dedicated subpath ──────────────
+      # A separate Vite SPA (repo: ios/) built in CI and shipped INSIDE the
+      # client bundle at salarymitra/, so on disk it lives at
+      # $nbnext_app_path/salarymitra. It has its OWN SPA fallback so deep
+      # links (/salarymitra/pay, …) resolve to its index.html instead of
+      # falling through to the main app's. Longest-prefix matching makes this
+      # win over `location /` for /salarymitra/* requests.
+      location = /salarymitra { return 301 /salarymitra/; }
+      location /salarymitra/ {
+            root $nbnext_app_path/;
+            index index.html;
+            try_files $uri $uri/ /salarymitra/index.html;
+      }
+
+=======
+      # ── Product manual (Docusaurus) → dedicated subpath ─────────────────
+      # A static Docusaurus site built in CI (startup/docs) and shipped INSIDE
+      # the client bundle at docs/, so on disk it lives at $nbnext_app_path/docs
+      # (same shipping pattern as the SalaryMitra portal below). Built with
+      # baseUrl /docs/ so every asset URL is namespaced under /docs/ and never
+      # collides with the main SPA at /. Static HTML per route — unknown paths
+      # fall to Docusaurus's own 404 page rather than the SPA index. Longest-
+      # prefix matching makes this win over `location /` for /docs/* requests.
+      location = /docs { return 301 /docs/; }
+      location /docs/ {
+            root $nbnext_app_path/;
+            index index.html;
+            try_files $uri $uri/ /docs/404.html;
+      }
+
+      # ── SalaryMitra self-service portal → dedicated subpath ──────────────
+      # A separate Vite SPA (repo: ios/) built in CI and shipped INSIDE the
+      # client bundle at salarymitra/, so on disk it lives at
+      # $nbnext_app_path/salarymitra. It has its OWN SPA fallback so deep
+      # links (/salarymitra/pay, …) resolve to its index.html instead of
+      # falling through to the main app's. Longest-prefix matching makes this
+      # win over `location /` for /salarymitra/* requests.
+      location = /salarymitra { return 301 /salarymitra/; }
+      location /salarymitra/ {
+            root $nbnext_app_path/;
+            index index.html;
+            try_files $uri $uri/ /salarymitra/index.html;
+      }
+
+>>>>>>> etime-payroll (incoming)
+      location / {
+            root $nbnext_app_path/;
+            index index.html;
+            try_files $uri /index.html =404;
+      }
+}

@@ -59,6 +59,12 @@ export default ({ mode }) => {
 
   const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
 
+  // Product manual (Docusaurus) — its own dev server (default port 3000, with
+  // baseUrl /docs/ so it already serves under /docs). In prod it ships inside this
+  // client bundle and nginx serves it at /docs/; in dev we proxy the subpath to its
+  // dev server (`cd startup/docs && npm run start`). Override via env if elsewhere.
+  const docsUrl = process.env.VITE_DOCS_URL || 'http://localhost:3000';
+
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
     define: {
@@ -118,6 +124,20 @@ export default ({ mode }) => {
           target: localServerUrl,
           ws: true,
           changeOrigin: true,
+        },
+        // SalaryMitra portal → its own dev server. ws:true passes through its
+        // HMR socket so the portal hot-reloads when accessed via this host.
+        '/salarymitra': {
+          target: salaryMitraUrl,
+          changeOrigin: true,
+          ws: true,
+        },
+        // Product manual (Docusaurus) → its own dev server. ws:true passes its
+        // HMR socket through so the manual hot-reloads when viewed via this host.
+        '/docs': {
+          target: docsUrl,
+          changeOrigin: true,
+          ws: true,
         }
       },
     },
@@ -146,7 +166,10 @@ export default ({ mode }) => {
           // runtime-cached by the /assets/ CacheFirst rule below. Precaching
           // them would bloat every user's install and exceeds the size limit
           // (which otherwise hard-fails the build).
-          globIgnores: ['**/*.worker-*.js'],
+          // The manual's screenshots are tens of megabytes and are only wanted
+          // by someone actually reading /docs, so they are left to the runtime
+          // image cache rather than precached into every install.
+          globIgnores: ['**/*.worker-*.js', 'manual/images/**'],
           runtimeCaching: [
             {
               urlPattern: /^https?:\/\/[^/]+\/assets\//,
@@ -154,13 +177,15 @@ export default ({ mode }) => {
               options: { cacheName: 'static-assets', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 } },
             },
             {
-              urlPattern: /^https?:\/\/[^/]+\/(icons|uploads)\//,
+              urlPattern: /^https?:\/\/[^/]+\/(icons|uploads|manual)\//,
               handler: 'StaleWhileRevalidate',
               options: { cacheName: 'images' },
             },
           ],
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
+          // /salarymitra is a separate SPA served at the same origin — keep this
+          // SW's navigation fallback from hijacking its routes to the main app.
+          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/salarymitra\//, /^\/docs\//],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         },
         includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],

@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, HelpCircle, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { forwardRef, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
@@ -36,7 +36,9 @@ const MasterHeader = forwardRef(({
   templateButtonText = "Template",
   headerDisabled = false,
   /** Extra buttons rendered in the header action area (a React node). */
-  extraHeaderActions = null
+  extraHeaderActions = null,
+  /** Manual URL for this master; when set, a Help (?) link opens it in a new tab. */
+  docUrl = ''
 }, ref) => {
   const navigate = useNavigate();
   const {
@@ -124,6 +126,20 @@ const MasterHeader = forwardRef(({
 
       {/* Right: Action Buttons */}
       <div className="flex flex-row items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
+        {/* Help: opens this master's section of the product manual (/docs) in a new tab. */}
+        {docUrl && (
+          <a
+            href={docUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={`Help — ${title}`}
+            aria-label={`Open the manual for ${title}`}
+            className="flex-shrink-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1.5 sm:p-2 rounded-full transition duration-200"
+          >
+            <HelpCircle className="h-5 w-5" />
+          </a>
+        )}
+
         {/* Mobile: kebab menu containing ALL actions (including Add) */}
         <KebabMenu actions={mobileMenuActions} className="sm:hidden" />
 
@@ -196,7 +212,8 @@ MasterHeader.propTypes = {
   onDownloadTemplate: PropTypes.func,
   templateButtonText: PropTypes.string,
   headerDisabled: PropTypes.bool,
-  extraHeaderActions: PropTypes.node
+  extraHeaderActions: PropTypes.node,
+  docUrl: PropTypes.string
 };
 
 export { MasterHeader };
