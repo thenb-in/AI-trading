@@ -1,52 +1,42 @@
 import {
   registerAppMasterModules,
   registerAppMasterCategories,
-} from "@startup/data/masterModuleRegistry";
-import { registerAppModules } from "@startup/data/appModuleRegistry";
-import { registerAppReports } from "@startup/data/reportModuleRegistry";
-import { registerAppRouteTitles } from "@startup/seo/routeTitleRegistry";
-import {
-  registerAppLoginHandlers,
-  registerAppLogoutHandlers,
-} from "@startup/data/authHandlerRegistry";
-import { registerCompanyProfileSettings } from "@startup/data/companyProfileRegistry";
-import {
-  registerUserManagementExtraColumns,
-  registerApproveExtension,
-} from "@startup/data/userManagementRegistry";
-import { registerAppLayout } from "@startup/data/appLayoutRegistry";
-import { registerReportApi } from "@startup/data/reportApiRegistry";
-import { registerSummaryHeaderFields } from "@startup/data/summaryFieldRegistry";
-import { registerDefaultSortFields } from "@startup/data/defaultSortFieldRegistry";
-import {
-  registerAppRoutes,
-  registerAppRoutesWithoutSidebar,
-  registerReportStaticPages,
-  registerDashboardContent,
-} from "@startup/data/appRouteRegistry";
-import { reportApi } from "../services/api";
-import { SUMMARY_HEADER_FIELDS, DEFAULT_REPORT_SORT_FIELDS } from "./reportSummaryConfig";
-import { CompanyProfileSettings } from "../components/companyprofile/CompanyProfileSettings";
-import { getUserManagementExtraColumns } from "../components/userManagementExtraColumns";
-import { useApproveExtension } from "../components/user_management_extra_columns/useApproveExtension";
-import { AppLayout } from "../components/app_layout/AppLayout";
-import { DashboardContent } from "../pages/Dashboards";
-import { appRoutes, appRoutesWithoutSidebar, reportStaticPages } from "./getAppRoutes";
+} from '@startup/data/masterModuleRegistry';
+import { registerAppReports } from '@startup/data/reportModuleRegistry';
+import { registerReportApi } from '@startup/data/reportApiRegistry';
+import { registerCompanyProfileSettings } from '@startup/data/companyProfileRegistry';
+import { registerAppRoutes } from '@startup/data/appRouteRegistry';
+import { registerMasterCreators, registerMasterModalEvents } from '@startup/data/masterCreatorRegistry';
+import { registerMasterIdentifiers } from '@startup/data/masterIdentifierRegistry';
+import { registerMasterDocLinks } from '@startup/data/masterDocRegistry';
+import { getItemOptionLabel } from '../components/selectors/ItemSelector';
 
-import {
-  getAppSpecificMasterModules,
-  appSpecificMasterCategoryOrder,
-} from "./getMasterModules";
-import { getAppSpecificModuleDefinitions } from "./getAppModules";
-import { reports, categories } from "./getReportModules";
-import { registerFilterOptionResolvers } from "../filter/registerFilterOptionResolvers";
-import {
-  appRouteTitles,
-  appTitlePatterns,
-  appPrivatePathPrefixes,
-} from "../seo/appRouteTitles";
-import { onLogout } from "../hooks/onLogout";
-import { onLogin } from "../hooks/onLogin";
+import { getMasterModules, masterCategoryOrder } from './getMasterModules';
+import { reports, categories } from './getReportModules';
+import { appRoutes } from './getAppRoutes';
+import { reportApi } from '../services/api';
+import { CompanyProfileSettings } from '../components/companyprofile/CompanyProfileSettings';
+import { AddItemMaster } from '../pages/setup_masters/items/AddItemMaster';
+import { AddNamingSeriesModal } from '@startup/components/masters/naming_series_master/AddNamingSeriesModal';
+import { AddMachineMaster } from '../pages/setup_masters/machine_master/MachineForm';
+import { AddWarehouseMaster } from '../pages/setup_masters/warehouses/WarehouseForm';
+import { AddPersonMaster } from '../components/masters/person_master/AddPersonMaster';
+import { AddCostCenterMaster } from '../components/masters/costcentermaster/AddCostCenterMaster';
+import { AddItemGroupMaster } from '../pages/setup_masters/item_groups/ItemGroupForm';
+import { AddUomMaster } from '../pages/setup_masters/uoms/UOMForm';
+import { AddCustomerMaster } from '../pages/setup_masters/customers/AddCustomerMaster';
+import { AddSupplierMaster } from '../pages/setup_masters/suppliers/AddSupplierMaster';
+import { AddTransporterMaster } from '../components/masters/transporter_master/transporterForm';
+import { AddBrokerMaster } from '../components/masters/broker_master/brokerform';
+import { AddHsnCodeMaster } from '../components/masters/hsn_code_master/hsncodeform';
+import { AddCategoryMaster } from '../pages/setup_masters/category_master/AddCategoryMaster';
+import { descriptionCreator } from '../pages/setup_masters/terms_and_payment_common/DescriptionMaster';
+import { PAYMENT_TERMS } from '../pages/setup_masters/payment_terms/paymentTerms';
+import { TERMS_AND_CONDITIONS } from '../pages/setup_masters/terms_and_conditions/termsAndConditions';
+import { INCOTERMS } from '../pages/setup_masters/incoterms/incoterms';
+import { AddParameterMaster } from '../pages/setup_masters/parameter_master/ParameterForm';
+import { AddBomMaster, AddOperationMaster } from '../components/masters/manufacturing_masters/bom_master/AddBomMaster';
+import { MASTERS } from '@app/constants/masters';
 
 
 function registerAppData() {
@@ -54,25 +44,106 @@ function registerAppData() {
   registerAppMasterCategories(appSpecificMasterCategoryOrder);
   registerAppModules(getAppSpecificModuleDefinitions);
   registerAppReports(reports, categories);
-  registerFilterOptionResolvers();
-  registerAppRouteTitles({
-    titles: appRouteTitles,
-    patterns: appTitlePatterns,
-    privatePrefixes: appPrivatePathPrefixes,
-  });
-  registerAppLogoutHandlers([onLogout]);
-  registerAppLoginHandlers([onLogin]);
-  registerCompanyProfileSettings(CompanyProfileSettings);
-  registerUserManagementExtraColumns(getUserManagementExtraColumns);
-  registerApproveExtension(useApproveExtension);
-  registerAppLayout(AppLayout);
   registerReportApi(reportApi);
-  registerSummaryHeaderFields(SUMMARY_HEADER_FIELDS);
-  registerDefaultSortFields(DEFAULT_REPORT_SORT_FIELDS);
+  registerCompanyProfileSettings(CompanyProfileSettings);
   registerAppRoutes(appRoutes);
-  registerAppRoutesWithoutSidebar(appRoutesWithoutSidebar);
-  registerReportStaticPages(reportStaticPages);
-  registerDashboardContent(DashboardContent);
+  // Each master may carry its own manual link (docUrl) on its module definition;
+  // the registry is just those links keyed by the master's title, for the Help
+  // (?) button BaseMaster shows on the page. Masters without a docUrl stay out,
+  // so the button only appears where a manual page exists.
+  registerMasterDocLinks(
+    Object.fromEntries(
+      getMasterModules()
+        .filter((module) => module.docUrl)
+        .map((module) => [module.title, module.docUrl]),
+    ),
+  );
+
+  // Inline "create a master" modals, opened from dropdowns anywhere in ERP, keyed by the master's name.
+  registerMasterCreators({
+    [MASTERS.ITEM]: AddItemMaster,
+    [MASTERS.NAMING_SERIES]: AddNamingSeriesModal,
+    [MASTERS.MACHINE]: AddMachineMaster,
+    [MASTERS.WAREHOUSE]: AddWarehouseMaster,
+    [MASTERS.PERSON]: AddPersonMaster,
+    [MASTERS.COST_CENTER]: AddCostCenterMaster,
+    [MASTERS.ITEM_GROUP]: AddItemGroupMaster,
+    [MASTERS.UOM]: AddUomMaster,
+    [MASTERS.CUSTOMER]: AddCustomerMaster,
+    [MASTERS.SUPPLIER]: AddSupplierMaster,
+    [MASTERS.TRANSPORTER]: AddTransporterMaster,
+    [MASTERS.BROKER]: AddBrokerMaster,
+    [MASTERS.HSN_CODE]: AddHsnCodeMaster,
+    [MASTERS.CATEGORY]: AddCategoryMaster,
+    [MASTERS.PAYMENT_TERMS]: descriptionCreator(PAYMENT_TERMS),
+    [MASTERS.TERMS_AND_CONDITIONS]: descriptionCreator(TERMS_AND_CONDITIONS),
+    [MASTERS.INCOTERMS]: descriptionCreator(INCOTERMS),
+    [MASTERS.PARAMETER]: AddParameterMaster,
+    [MASTERS.BOM]: AddBomMaster,
+    [MASTERS.OPERATION]: AddOperationMaster,
+  });
+  // What a saved record is known by; its modal is titled with it ("Edit PO-0012", "Edit Steel Rod (ITM-1)").
+  registerMasterIdentifiers({
+    [MASTERS.ITEM]: getItemOptionLabel,
+    [MASTERS.ITEM_GROUP]: nameWithCode,
+    [MASTERS.CUSTOMER]: nameWithCode,
+    [MASTERS.WAREHOUSE]: nameWithCode,
+    [MASTERS.MACHINE]: nameWithCode,
+    [MASTERS.HSN_CODE]: 'code',
+    [MASTERS.BOM]: 'code',
+    [MASTERS.WORK_ORDER]: 'code',
+    [MASTERS.CUSTOMER_MERGE]: (log) => `${log.duplicateCustomerCode} → ${log.originalCustomerCode}`,
+    [MASTERS.ITEM_MERGE]: (log) => `${log.duplicateItemCode} → ${log.originalItemCode}`,
+    [MASTERS.SUPPLIER_MERGE]: (log) => `${log.duplicateSupplierName} → ${log.originalSupplierName}`,
+    [MASTERS.UOM]: 'name',
+    [MASTERS.SUPPLIER]: (supplier) => (supplier.gstNumber ? `${supplier.name} (${supplier.gstNumber})` : supplier.name),
+    [MASTERS.PERSON]: 'name',
+    [MASTERS.COST_CENTER]: 'name',
+    [MASTERS.CATEGORY]: 'name',
+    [MASTERS.PAYMENT_TERMS]: 'name',
+    [MASTERS.TERMS_AND_CONDITIONS]: 'name',
+    [MASTERS.INCOTERMS]: 'name',
+    [MASTERS.OPERATION]: 'name',
+    [MASTERS.PARAMETER]: 'name',
+    [MASTERS.INSPECTION_TEMPLATE]: 'name',
+    [MASTERS.PRINT_MASTER]: 'name',
+    [MASTERS.PRINT_FORMAT_MASTER]: 'name',
+    [MASTERS.LETTER_HEAD]: 'name',
+    [MASTERS.TRANSPORTER]: (transporter) => (transporter.vehicleNumber ? `${transporter.transporterName} (${transporter.vehicleNumber})` : transporter.transporterName),
+    [MASTERS.BROKER]: 'brokerName',
+    [MASTERS.NAMING_SERIES]: 'template',
+    [MASTERS.EMAIL_MASTER]: 'masterName',
+    [MASTERS.CUSTOMER_PAYMENT]: 'referenceNumber',
+    [MASTERS.INDENT]: 'indentNumber',
+    [MASTERS.REQUIREMENT]: 'requirementNumber',
+    [MASTERS.RFQ]: 'rfqNumber',
+    [MASTERS.PURCHASE_QUOTATION]: 'purchaseQuotationNumber',
+    [MASTERS.PURCHASE_ORDER]: numberWithParty('orderNumber', 'supplierName'),
+    [MASTERS.PURCHASE_RECEIPT]: numberWithParty('receiptNumber', 'supplierName'),
+    [MASTERS.PURCHASE_INVOICE]: numberWithParty('invoiceNumber', 'supplierName'),
+    [MASTERS.PURCHASE_RETURN]: numberWithParty('returnNumber', 'supplierName'),
+    [MASTERS.ENQUIRY]: numberWithParty('enquiryNumber', 'customerName'),
+    [MASTERS.QUOTATION]: numberWithParty('quotationNumber', 'customerName'),
+    [MASTERS.SALES_ORDER]: numberWithParty('orderNumber', 'customerName'),
+    [MASTERS.SALES_INVOICE]: numberWithParty('invoiceNumber', 'customerName'),
+    [MASTERS.DISPATCH]: numberWithParty('dispatchNumber', 'customerName'),
+    [MASTERS.SCRAP_SALES]: numberWithParty('invoiceNumber', 'customerName'),
+    [MASTERS.MATERIAL_ISSUE]: 'materialIssueNumber',
+    [MASTERS.MATERIAL_RETURN]: 'materialReturnNumber',
+    [MASTERS.REPAIR_WORK]: 'repairWorkNumber',
+    [MASTERS.GATE_PASS]: 'gatePassNumber',
+    [MASTERS.STOCK_RECONCILIATION]: 'reconciliationNumber',
+    [MASTERS.MATERIAL_TRANSFER]: 'transferNumber',
+    [MASTERS.WORK_ORDER_TRANSACTION]: 'transactionNumber',
+  });
+  // Master pages dispatch this when a naming series is missing, without holding the modal context.
+  registerMasterModalEvents({
+    open_naming_series_modal: (detail) => ({
+      masterName: MASTERS.NAMING_SERIES,
+      data: null,
+      defaults: { master: detail?.master || '' },
+    }),
+  });
 }
 
 export { registerAppData };

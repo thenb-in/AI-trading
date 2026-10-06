@@ -57,7 +57,27 @@ export default ({ mode }) => {
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
 
-  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
+  // Product manual (Docusaurus) — its own dev server (default port 3000, built
+  // with baseUrl /docs/ so it already serves under /docs). In prod it ships
+  // inside this client bundle and nginx serves it at /docs/ (see
+  // deploy/base.conf); in dev we proxy the subpath to its dev server
+  // (`cd startup/docs && npm run start`). Override the target via env if it
+  // runs elsewhere.
+  const docsUrl = process.env.VITE_DOCS_URL || 'http://localhost:3000';
+
+  // Framework client lives outside this package root (../../startup/client/src).
+  // The framework code refers to itself via @/, @services, @utils, @context,
+  // @data (and @base_components/@report/@theme); app code refers to itself via
+  // @app/*. So those convenience aliases resolve to the FRAMEWORK, @app to the
+  // APP, and @startup to the framework root. (App code was migrated off @/ onto
+  // @app to free @/ for the framework — mirrors the etime layout.)
+  const STARTUP_CLIENT_SRC = resolve(__dirname, '../../startup/client/src');
+  const APP_CLIENT_SRC = resolve(__dirname, './src');
+  // Force one physical copy. App and startup each have node_modules/react-toastify
+  // (possibly different patch versions). ToastContainer lives in startup App.jsx;
+  // toast() is called from app code — two copies ⇒ toasts fire into a store with
+  // no mounted container (works in some Vite-dev optimizations, fails in prod builds).
+  const REACT_TOASTIFY = resolve(__dirname, '../../startup/client/node_modules/react-toastify');
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
@@ -118,7 +138,14 @@ export default ({ mode }) => {
           target: localServerUrl,
           ws: true,
           changeOrigin: true,
-        }
+        },
+        // Product manual (Docusaurus) → its own dev server. ws:true passes its
+        // HMR socket through so the manual hot-reloads when viewed via this host.
+        '/docs': {
+          target: docsUrl,
+          changeOrigin: true,
+          ws: true,
+        },
       },
     },
     plugins: [
@@ -132,41 +159,6 @@ export default ({ mode }) => {
           );
         },
       },
-      // PWA: installable + auto-update SW + workbox runtime caches. See
-      // startup framework for inline rationale; identical config shape.
-      VitePWA({
-        registerType: 'autoUpdate',
-        injectRegister: false,  // registered manually via registerServiceWorker.js
-        strategies: 'generateSW',
-        filename: 'sw.js',
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff,woff2}'],
-          // Monaco's language-service workers (esp. ts.worker, ~6 MB) are only
-          // loaded on demand when the formula editor opens, and are already
-          // runtime-cached by the /assets/ CacheFirst rule below. Precaching
-          // them would bloat every user's install and exceeds the size limit
-          // (which otherwise hard-fails the build).
-          globIgnores: ['**/*.worker-*.js'],
-          runtimeCaching: [
-            {
-              urlPattern: /^https?:\/\/[^/]+\/assets\//,
-              handler: 'CacheFirst',
-              options: { cacheName: 'static-assets', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 } },
-            },
-            {
-              urlPattern: /^https?:\/\/[^/]+\/(icons|uploads)\//,
-              handler: 'StaleWhileRevalidate',
-              options: { cacheName: 'images' },
-            },
-          ],
-          navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//],
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        },
-        includeAssets: ['icons/nbnext.svg', 'manifest.webmanifest', 'robots.txt', 'sitemap.xml'],
-        manifest: false,  // own /manifest.webmanifest via public/
-        devOptions: { enabled: false },
-      }),
     ],
     build: {
       chunkSizeWarningLimit: 1000,

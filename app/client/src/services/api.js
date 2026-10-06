@@ -20,20 +20,19 @@ import { api } from '@startup/services/axiosConfig';
 // report pipeline calls getReportData(slug, filters) when a report runs over
 // HTTP rather than through the socket runner.
 const reportApi = {
-  getReportData: (url, filters = {}) => {
-    if (!url) throw new Error('Report name is required');
-    return api.get(`/reports/${url}`, {
-      params: filters,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
-    }).catch(error => {
-      // The interceptor will handle 401 responses
-      console.error('Error in getReportData:', error);
-      return Promise.reject(error);
-    });
-  },
+  // Generic report fetch used by the framework BaseReport. ERP reports are
+  // served as named GET endpoints under /reports/<slug>; filters go as query.
+  getReportData: (slug, filters = {}) =>
+    ApiService.request('GET', `/reports/${slug}`, null, { params: filters })
+};
+
+// Company profile (tolerances, inventory flags, email settings, font size).
+// Owned by the app since the framework upgrade — the shared ApiService no
+// longer carries these methods. Server routes: GET/PUT /api/v1/company-profile.
+const companyProfileApi = {
+  getCompanyProfile: () => ApiService.request('GET', '/company-profile', null, { cache: 'companyProfile' }),
+  updateCompanyProfile: (payload) => ApiService.request('PUT', '/company-profile', payload, { invalidates: ['companyProfile'] }),
+  sendWelcomeEmailsToCustomers: () => ApiService.request('POST', '/company-profile/send-welcome-emails')
 };
 
 export { api, reportApi };
