@@ -23,6 +23,12 @@ const isAnonymousPath = (path, publicPaths = []) =>
   path.startsWith("/forgot-password/") ||
   publicPaths.some((entry) => path === entry || path.startsWith(`${entry.replace(/\/$/, "")}/`));
 
+// Gateway paths show the login UI to an anonymous visitor but forward one who
+// already has a session onward (to /admin etc.). They need the auth check to
+// run on entry — unlike other anonymous paths, which skip it — so a logged-in
+// user landing on "/" or "/login" is redirected instead of shown the form.
+const isAuthGatewayPath = (path) => path === "/" || path === "/login";
+
 /**
  * `publicPaths` lets an app declare entry paths of its own that an anonymous
  * visitor may land on — app-owned routes passed to <App extraRoutes>, which the
@@ -43,7 +49,7 @@ const DataProvider = ({ children, publicPaths = [] }) => {
 
   useEffect(() => {
     const entryPath = window.location.pathname;
-    const isLoginPage = entryPath === "/";
+    const isAuthGateway = isAuthGatewayPath(entryPath);
     const isPublicPath = isAnonymousPath(entryPath, publicPaths);
 
     let cancelled = false;
@@ -80,7 +86,7 @@ const DataProvider = ({ children, publicPaths = [] }) => {
       }
     };
 
-    if (isPublicPath && !isLoginPage) {
+    if (isPublicPath && !isAuthGateway) {
       setLoading(false);
       setAuthChecked(true);
     } else {
@@ -100,7 +106,7 @@ const DataProvider = ({ children, publicPaths = [] }) => {
 
   useEffect(() => {
     if (!authChecked || !userData) return;
-    if (location.pathname !== "/") return;
+    if (!isAuthGatewayPath(location.pathname)) return;
 
     const params = new URLSearchParams(location.search);
     const ssoReturn = params.get("returnTo");
