@@ -13,7 +13,7 @@ function SubscriptionToolbar({
   isPushing,
   onPush,
   onBackfill,
-  isBackfilling,
+  backfillCount = 0,
   importFileRef,
   onExport,
   onImportClick,
@@ -22,15 +22,16 @@ function SubscriptionToolbar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <button
-        onClick={onBackfill}
-        disabled={isBackfilling}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        title="For every plan, add the permissions a subscribed master is missing (e.g. new comment/attachment rights). Only adds what is absent."
-      >
-        {isBackfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        Generate missing
-      </button>
+      {backfillCount > 0 && (
+        <button
+          onClick={onBackfill}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded transition-colors"
+          title="For every plan, add the permissions a subscribed master is missing (e.g. new comment/attachment rights). Only adds what is absent — review the full list before it is applied."
+        >
+          <Sparkles className="w-4 h-4" />
+          Generate missing ({backfillCount})
+        </button>
+      )}
       <button
         onClick={onExport}
         disabled={!canExport || isExporting}
@@ -101,7 +102,7 @@ SubscriptionToolbar.propTypes = {
   isPushing: PropTypes.bool,
   onPush: PropTypes.func.isRequired,
   onBackfill: PropTypes.func.isRequired,
-  isBackfilling: PropTypes.bool,
+  backfillCount: PropTypes.number,
   importFileRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
   onExport: PropTypes.func.isRequired,
   onImportClick: PropTypes.func.isRequired,

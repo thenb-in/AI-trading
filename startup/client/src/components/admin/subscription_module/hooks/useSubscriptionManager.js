@@ -27,9 +27,11 @@ function useSubscriptionManager() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
-  const [isPreviewingBackfill, setIsPreviewingBackfill] = useState(false);
   const [isBackfilling, setIsBackfilling] = useState(false);
-  const [backfillPlan, setBackfillPlan] = useState(null);
+  const [isBackfillModalOpen, setIsBackfillModalOpen] = useState(false);
+  // The dry-run plan of what "Generate missing" would add, loaded up front so
+  // the toolbar can show the count and hide the button when there is nothing.
+  const [backfillSummary, setBackfillSummary] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const importFileRef = useRef(null);
 
@@ -131,28 +133,25 @@ function useSubscriptionManager() {
     }
   }, [selectedSubscription, refetch]);
 
-  // Preview first: ask the server what a subscribed master is missing on every
-  // plan (the new comment/attachment operations added after the plan was saved)
-  // and open a modal with the full list. Nothing is written here.
-  const previewBackfill = useCallback(async () => {
-    setIsPreviewingBackfill(true);
+  // Load the dry-run plan (server writes nothing) so we know up front how many
+  // permissions are missing — the toolbar shows the count and only offers the
+  // button when there is something to add.
+  const loadBackfillSummary = useCallback(async () => {
     try {
       const response = await ApiService.backfillSubscriptionPermissions(false);
-      const plan = response.data?.data || response.data;
-      if (!plan || plan.total === 0) {
-        toast.info('Nothing to generate — every subscribed master already has its permissions.');
-        setBackfillPlan(null);
-        return;
-      }
-      setBackfillPlan(plan);
-    } catch (err) {
-      toast.error(err?.message || 'Failed to check for missing permissions');
-    } finally {
-      setIsPreviewingBackfill(false);
+      setBackfillSummary(response.data?.data || response.data || null);
+    } catch {
+      // A failed check just leaves the button hidden; the save flow still works.
+      setBackfillSummary(null);
     }
   }, []);
 
-  const closeBackfillPreview = useCallback(() => setBackfillPlan(null), []);
+  useEffect(() => {
+    loadBackfillSummary();
+  }, [loadBackfillSummary]);
+
+  const openBackfillModal = useCallback(() => setIsBackfillModalOpen(true), []);
+  const closeBackfillModal = useCallback(() => setIsBackfillModalOpen(false), []);
 
   // Apply what the preview showed. Only adds rows that are absent; an explicit
   // not-subscribed/hidden a plan has set is left as it is.
@@ -161,14 +160,15 @@ function useSubscriptionManager() {
     try {
       const response = await ApiService.backfillSubscriptionPermissions(true);
       toast.success(response.data?.message || 'Missing permissions generated');
-      setBackfillPlan(null);
+      setIsBackfillModalOpen(false);
+      await loadBackfillSummary();
       refetch();
     } catch (err) {
       toast.error(err?.message || 'Failed to generate missing permissions');
     } finally {
       setIsBackfilling(false);
     }
-  }, [refetch]);
+  }, [refetch, loadBackfillSummary]);
 
   const openImportPicker = useCallback(() => {
     if (importFileRef.current) {
@@ -224,9 +224,9 @@ function useSubscriptionManager() {
     isExporting,
     isImporting,
     isPushing,
-    isPreviewingBackfill,
     isBackfilling,
-    backfillPlan,
+    isBackfillModalOpen,
+    backfillSummary,
     // create modal
     isCreateModalOpen,
     openCreateModal: () => setIsCreateModalOpen(true),
@@ -239,9 +239,9 @@ function useSubscriptionManager() {
     saveChanges,
     exportSubscription,
     pushToWallet,
-    previewBackfill,
+    openBackfillModal,
+    closeBackfillModal,
     applyBackfill,
-    closeBackfillPreview,
     openImportPicker,
     importSubscriptionFile,
     refetch,

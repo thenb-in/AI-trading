@@ -8,13 +8,13 @@ import { BaseModal, MasterModalActions } from '@startup/components/base_componen
  * permissions under each. The Generate button carries the total so the count
  * is never out of sight.
  */
-function BackfillPreviewModal({ plan, onClose, onApply, isApplying }) {
+function BackfillPreviewModal({ isOpen, plan, onClose, onApply, isApplying }) {
   const subscriptions = plan?.subscriptions || [];
   const total = plan?.total || 0;
 
   return (
     <BaseModal
-      isOpen={!!plan}
+      isOpen={isOpen}
       onClose={onClose}
       maxWidth="lg"
       title={(
@@ -65,7 +65,8 @@ function BackfillPreviewModal({ plan, onClose, onApply, isApplying }) {
 }
 
 BackfillPreviewModal.propTypes = {
-  // null when closed; otherwise { total, subscriptions: [{ id, name, added, masters: [{ master, permissions }] }] }
+  isOpen: PropTypes.bool,
+  // { total, subscriptions: [{ id, name, added, masters: [{ master, permissions }] }] }
   plan: PropTypes.object,
   onClose: PropTypes.func.isRequired,
   onApply: PropTypes.func.isRequired,

@@ -62,8 +62,8 @@ function SubscriptionPage() {
               isPushed={!!sm.selectedSubscription?.pushed}
               isPushing={sm.isPushing}
               onPush={sm.pushToWallet}
-              onBackfill={sm.previewBackfill}
-              isBackfilling={sm.isPreviewingBackfill}
+              onBackfill={sm.openBackfillModal}
+              backfillCount={sm.backfillSummary?.total || 0}
               importFileRef={sm.importFileRef}
               onExport={sm.exportSubscription}
               onImportClick={sm.openImportPicker}
@@ -151,8 +151,9 @@ function SubscriptionPage() {
       />
 
       <BackfillPreviewModal
-        plan={sm.backfillPlan}
-        onClose={sm.closeBackfillPreview}
+        isOpen={sm.isBackfillModalOpen}
+        plan={sm.backfillSummary}
+        onClose={sm.closeBackfillModal}
         onApply={sm.applyBackfill}
         isApplying={sm.isBackfilling}
       />
