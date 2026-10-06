@@ -354,6 +354,14 @@ const ApiService = {
     return this.request('POST', `/admin/subscriptions/${subscriptionId}/push-to-wallet`);
   },
 
+  // Across every plan: for each master that already has a subscribed permission,
+  // the ones that have no row yet (new operations like comment/attachment a plan
+  // was never updated for). apply=false previews the plan without writing;
+  // apply=true inserts them as subscribed. Only ever adds what is absent.
+  backfillSubscriptionPermissions(apply = false) {
+    return this.request('POST', '/admin/subscriptions/backfill-missing', { apply });
+  },
+
   // Company-Subscription methods
   getCompanySubscriptions(companyId) {
     return this.request('GET', `/admin/companies/${companyId}/subscriptions`);

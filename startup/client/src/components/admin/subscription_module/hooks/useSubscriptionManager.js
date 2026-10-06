@@ -27,6 +27,9 @@ function useSubscriptionManager() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
+  const [isPreviewingBackfill, setIsPreviewingBackfill] = useState(false);
+  const [isBackfilling, setIsBackfilling] = useState(false);
+  const [backfillPlan, setBackfillPlan] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const importFileRef = useRef(null);
 
@@ -128,6 +131,45 @@ function useSubscriptionManager() {
     }
   }, [selectedSubscription, refetch]);
 
+  // Preview first: ask the server what a subscribed master is missing on every
+  // plan (the new comment/attachment operations added after the plan was saved)
+  // and open a modal with the full list. Nothing is written here.
+  const previewBackfill = useCallback(async () => {
+    setIsPreviewingBackfill(true);
+    try {
+      const response = await ApiService.backfillSubscriptionPermissions(false);
+      const plan = response.data?.data || response.data;
+      if (!plan || plan.total === 0) {
+        toast.info('Nothing to generate — every subscribed master already has its permissions.');
+        setBackfillPlan(null);
+        return;
+      }
+      setBackfillPlan(plan);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to check for missing permissions');
+    } finally {
+      setIsPreviewingBackfill(false);
+    }
+  }, []);
+
+  const closeBackfillPreview = useCallback(() => setBackfillPlan(null), []);
+
+  // Apply what the preview showed. Only adds rows that are absent; an explicit
+  // not-subscribed/hidden a plan has set is left as it is.
+  const applyBackfill = useCallback(async () => {
+    setIsBackfilling(true);
+    try {
+      const response = await ApiService.backfillSubscriptionPermissions(true);
+      toast.success(response.data?.message || 'Missing permissions generated');
+      setBackfillPlan(null);
+      refetch();
+    } catch (err) {
+      toast.error(err?.message || 'Failed to generate missing permissions');
+    } finally {
+      setIsBackfilling(false);
+    }
+  }, [refetch]);
+
   const openImportPicker = useCallback(() => {
     if (importFileRef.current) {
       importFileRef.current.value = '';
@@ -182,6 +224,9 @@ function useSubscriptionManager() {
     isExporting,
     isImporting,
     isPushing,
+    isPreviewingBackfill,
+    isBackfilling,
+    backfillPlan,
     // create modal
     isCreateModalOpen,
     openCreateModal: () => setIsCreateModalOpen(true),
@@ -194,6 +239,9 @@ function useSubscriptionManager() {
     saveChanges,
     exportSubscription,
     pushToWallet,
+    previewBackfill,
+    applyBackfill,
+    closeBackfillPreview,
     openImportPicker,
     importSubscriptionFile,
     refetch,

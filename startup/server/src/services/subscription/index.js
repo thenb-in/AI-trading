@@ -8,6 +8,7 @@ const { getGlobalPlanById } = require('./getSubscription.service');
 const { exportSubscription } = require('./exportSubscription.service');
 const { importSubscription } = require('./import');
 const { pushSubscriptionToWalletById } = require('./pushToWallet.service');
+const { backfillSubscribedMasters } = require('./backfillSubscribedMasters.service');
 
 module.exports = {
   createSubscription,
@@ -17,5 +18,6 @@ module.exports = {
   importSubscription,
   getGlobalPlansWithPermissions,
   getGlobalPlanById,
-  pushSubscriptionToWalletById
+  pushSubscriptionToWalletById,
+  backfillSubscribedMasters
 };

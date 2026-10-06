@@ -101,9 +101,25 @@ const pushSubscriptionToWallet = async (req, res) => {
   }
 };
 
+const backfillSubscribedMasters = async (req, res) => {
+  try {
+    const apply = req.body?.apply === true;
+    const result = await subscriptionController.backfillSubscribedMasters({ apply });
+    const verb = apply ? 'Generated' : 'Found';
+    return sendSuccess(res, {
+      data: result,
+      message: `${verb} ${result.total} missing permission(s) across ${result.subscriptions.length} subscription(s)`
+    });
+  } catch (error) {
+    logger.error('Error backfilling subscribed-master permissions', error);
+    return sendError(res, { statusCode: error.status || HTTP_STATUS_INTERNAL_ERROR, message: error.message });
+  }
+};
+
 module.exports = {
   createSubscription,
   pushSubscriptionToWallet,
+  backfillSubscribedMasters,
   getSubscriptions,
   updateSubscriptionPermissions,
   exportSubscription,
