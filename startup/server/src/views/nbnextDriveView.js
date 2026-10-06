@@ -38,7 +38,7 @@ async function fileAccess(userId, companyId, fileId) {
   if (!file.objectName) {
     return { allowed: true, showAll };
   }
-  const permission = `attachment_${masterKeyOf(file.objectName)}`;
+  const permission = `attachment_${masterKeyOf(file.permissionName || file.objectName)}`;
   return {
     allowed: await userHasDrivePermission(userId, [permission]),
     showAll: true,
@@ -97,18 +97,14 @@ async function getFilesByObject(req, res) {
     if (!objectName || objectId === undefined || objectId === null || objectId === '') {
       return res.status(400).json({ error: `objectName and objectId query parameters are required get objectName: ${objectName} , objectId: ${objectId}` });
     }
-    const permission = `attachment_${masterKeyOf(objectName)}`;
-    if (!await userHasDrivePermission(req.user?.id || null, [permission])) {
-      return res.status(403).json({ error: `You need the ${permission} permission to see the files on ${objectName} ${objectId}` });
-    }
-    const result = await nbnextDriveController.getFilesByObject(
+    const files = await nbnextDriveController.getFilesByObject(
       companyId,
       objectName,
       String(objectId),
       startDate || null,
       endDate || null
     );
-    res.status(200).json(result);
+    res.status(200).json(files);
   } catch (error) {
     logger.error('Get files by object error', error);
     sendDriveError(res, error);
@@ -121,7 +117,7 @@ async function createFile(req, res) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const { objectName, objectId, endDate } = req.body;
+    const { objectName, objectId, endDate, permissionName } = req.body;
     const createdBy = req.user?.id || null;
     const companyId = req.user?.company_id || null;
 
@@ -130,7 +126,7 @@ async function createFile(req, res) {
     // Drive's. The file is already on disk by now, so a refusal takes it back
     // off rather than leaving it orphaned there.
     if (objectName) {
-      const permission = `attachment_${masterKeyOf(objectName)}`;
+      const permission = `attachment_${masterKeyOf(permissionName || objectName)}`;
       if (!await userHasDrivePermission(createdBy, [permission])) {
         fs.unlinkSync(req.file.path);
         return res.status(403).json({ error: `You need the ${permission} permission to attach files to ${objectName} ${objectId}` });
@@ -144,6 +140,7 @@ async function createFile(req, res) {
       mimeType: req.file.mimetype,
       objectName: objectName || null,
       objectId: objectId || null,
+      permissionName: permissionName || null,
       endDate: endDate || null
     };
 

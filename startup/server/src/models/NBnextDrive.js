@@ -27,6 +27,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       field: 'mime_type'
     },
+    // The master whose attachment permission answers for this file, when that
+    // is not the object name itself. A letter head files its header and footer
+    // apart (LetterHeadHeader / LetterHeadFooter), but both are the Letter Head
+    // master — and the download request carries only the file id, so the gate
+    // has nothing but the stored row to go on. Null means the object name is
+    // the master, as it is for every ordinary record.
+    permissionName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'permission_name'
+    },
     ...ownedAuditFields(DataTypes)
   }, {
     tableName: 'nbnext_drive',

@@ -6,7 +6,7 @@ const env = require('../config/env');
 const { NBnextDrive, User } = require('../models');
 const { getDayRange } = require('../utils/dateUtils');
 
-const NBNEXT_DRIVE_SUMMARY_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
+const NBNEXT_DRIVE_SUMMARY_ATTRIBUTES = ['id', 'fileName', 'filePath', 'fileSize', 'mimeType', 'objectName', 'objectId', 'permissionName', 'createdBy', 'companyId', 'createdAt', 'updatedAt'];
 
 const NBNEXT_DRIVE_INCLUDE_CREATED_BY = {
   model: User,
@@ -93,6 +93,7 @@ const nbnextDriveService = {
         mimeType: fileData.mimeType,
         objectName: fileData.objectName || null,
         objectId: fileData.objectId || null,
+        permissionName: fileData.permissionName || null,
         createdBy,
         companyId
       };
