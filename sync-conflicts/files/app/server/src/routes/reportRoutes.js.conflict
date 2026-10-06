@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 1599a7f37f176c583164537088f9221a171fa259
-# app/server/src/routes/reportRoutes.js in the tree now holds the erp version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 1599a7f37f176c583164537088f9221a171fa259
+# app/server/src/routes/reportRoutes.js in the tree holds the erp version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -44,9 +44,9 @@ const {
 const { getStockLedgerReportView } = require('../views/reports/stockLedgerReport.view');
 
 const router = express.Router();
+<<<<<<< startup (this repo)
 router.use(authMiddleware.protect); // Protect all routes
 
-<<<<<<< startup (this repo)
 // App report routes. The framework's socket report runner
 // (startup/server/src/socket/init_setup/reports/registry.js) walks this
 // router's stack at load time and indexes every GET route by its slug, so
@@ -55,6 +55,38 @@ router.use(authMiddleware.protect); // Protect all routes
 //
 // Empty in the reference scaffold — apps register their own report routes.
 ||||||| base (common ancestor)
+const {
+  PRODUCTION_REPORT,
+  PURCHASE_REPORT,
+  KUBER_PURCHASE_REPORT,
+  MATERIAL_ISSUE_REPORT,
+  STOCK_BALANCE_REPORT,
+  CUSTOMER_STOCK_POSITION_REPORT,
+  KUBER_STOCK_SUMMARY_REPORT,
+  STOCK_LEDGER_REPORT,
+  STOCK_AGING_REPORT,
+  FG_STOCK_AGING_REPORT,
+  SALES_REPORT,
+  SALES_ORDER_REPORT,
+  OTIF_REPORT,
+  OVERDUE_ORDER_BOOK_REPORT,
+  BROKER_REPORT,
+  SALES_DASHBOARD,
+  CUSTOM_KUBER_REPORT,
+  KUBER_CUSTOMER_ITEM_REPORT,
+  KUBER_SUMMARY_REPORT,
+  MOTHER_COIL_TRACKING_REPORT,
+  MONTHLY_FG_RM_DATA_REPORT,
+  MACHINE_ONGOING_REPORT,
+  MANUFACTURING_PIPELINE_REPORT,
+  SALES_FUNNEL_REPORT,
+  SCRAP_REPORT,
+  PURCHASE_PIPELINE_REPORT,
+  INDENT_REPORT,
+  DISPATCH_REPORT,
+  ITEM_WISE_PURCHASE_HISTORY_REPORT
+} = REPORT_PERMISSION_CONSTANTS;
+
 // Import individual report handlers
 const { getTransactionReport } = require('../views/reports/transactionReport');
 const { getCheckinCheckoutReport } = require('../views/reports/checkinCheckoutReport');
@@ -257,6 +289,8 @@ router.get('/field-sales/dealer-satisfaction', fieldSalesReports.getDealerSatisf
 
 registerCustomReportRoutes(router);
 =======
+router.use(authMiddleware.protect); // Protect all routes
+
 router.use(protect);
 
 // Production Report
@@ -357,7 +391,14 @@ router.get(
   requirePermission(OTIF_REPORT.name),
   getOtifReportView
 );
+>>>>>>> erp (incoming, at tip)
 
+<<<<<<< startup (this repo)
+module.exports = router;
+||||||| base (common ancestor)
+module.exports = router;
+
+=======
 // Overdue Order Book Report (approved SOs past expected delivery, not fully dispatched)
 router.get(
   '/overdue-order-book-report',
@@ -469,6 +510,6 @@ router.get(
   requirePermission(ITEM_WISE_PURCHASE_HISTORY_REPORT.name),
   getItemWisePurchaseHistoryReportView
 );
->>>>>>> erp (incoming)
 
 module.exports = router;
+>>>>>>> erp (incoming, at tip)

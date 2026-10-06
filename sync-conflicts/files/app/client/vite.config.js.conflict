@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 1599a7f37f176c583164537088f9221a171fa259
-# app/client/vite.config.js in the tree now holds the erp version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 1599a7f37f176c583164537088f9221a171fa259
+# app/client/vite.config.js in the tree holds the erp version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -65,13 +65,18 @@ export default ({ mode }) => {
   const serverVersion = serverPackageJson.version || '0.0.0';
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
+<<<<<<< startup (this repo)
+
+  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
+||||||| base (common ancestor)
+  const localServerUrl = 'http://localhost:8332';
+
+  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
+=======
+>>>>>>> erp (incoming, at tip)
 
 <<<<<<< startup (this repo)
-  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
-
 ||||||| base (common ancestor)
-  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
-
   // Product manual (Docusaurus) — its own dev server (default port 3000, with
   // baseUrl /docs/ so it already serves under /docs). In prod it ships inside this
   // client bundle and nginx serves it at /docs/; in dev we proxy the subpath to its
@@ -101,7 +106,7 @@ export default ({ mode }) => {
   // no mounted container (works in some Vite-dev optimizations, fails in prod builds).
   const REACT_TOASTIFY = resolve(__dirname, '../../startup/client/node_modules/react-toastify');
 
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
     define: {
@@ -181,7 +186,7 @@ export default ({ mode }) => {
           changeOrigin: true,
           ws: true,
         },
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
       },
     },
     plugins: [
@@ -273,7 +278,7 @@ export default ({ mode }) => {
         devOptions: { enabled: false },
       }),
 =======
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
     ],
     build: {
       chunkSizeWarningLimit: 1000,

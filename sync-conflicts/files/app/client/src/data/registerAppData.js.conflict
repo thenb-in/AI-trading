@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 1599a7f37f176c583164537088f9221a171fa259
-# app/client/src/data/registerAppData.js in the tree now holds the erp version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 1599a7f37f176c583164537088f9221a171fa259
+# app/client/src/data/registerAppData.js in the tree holds the erp version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -85,7 +85,7 @@ import { registerMasterCreators, registerMasterModalEvents } from '@startup/data
 import { registerMasterIdentifiers } from '@startup/data/masterIdentifierRegistry';
 import { registerMasterDocLinks } from '@startup/data/masterDocRegistry';
 import { getItemOptionLabel } from '../components/selectors/ItemSelector';
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
 
 import { getMasterModules, masterCategoryOrder } from './getMasterModules';
 import { reports, categories } from './getReportModules';
@@ -252,7 +252,7 @@ function registerAppData() {
       defaults: { master: detail?.master || '' },
     }),
   });
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
 }
 
 export { registerAppData };

@@ -1,7 +1,7 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: 1599a7f37f176c583164537088f9221a171fa259
-# app/client/src/services/api.js in the tree now holds the erp version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: 1599a7f37f176c583164537088f9221a171fa259
+# app/client/src/services/api.js in the tree holds the erp version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
@@ -956,7 +956,7 @@ const companyProfileApi = {
   getCompanyProfile: () => ApiService.request('GET', '/company-profile', null, { cache: 'companyProfile' }),
   updateCompanyProfile: (payload) => ApiService.request('PUT', '/company-profile', payload, { invalidates: ['companyProfile'] }),
   sendWelcomeEmailsToCustomers: () => ApiService.request('POST', '/company-profile/send-welcome-emails')
->>>>>>> erp (incoming)
+>>>>>>> erp (incoming, at tip)
 };
 
 export { api, reportApi };
