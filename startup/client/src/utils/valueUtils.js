@@ -13,4 +13,8 @@ const numberInRange = (value, min, max) => {
   return clamp(Number.isFinite(number) ? number : min, min, max);
 };
 
-export { clamp, isEmptyValue, toNumberOrDefault, numberInRange };
+/** Names as dropdown options: trimmed, blanks dropped, each name once, in the order given. */
+const toDropdownOptions = (names) => [...new Set(names.map((name) => (name || '').trim()).filter(Boolean))]
+  .map((value) => ({ value, label: value }));
+
+export { clamp, isEmptyValue, toNumberOrDefault, numberInRange, toDropdownOptions };
