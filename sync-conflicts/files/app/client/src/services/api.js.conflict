@@ -1,13 +1,14 @@
 # Overlapping edits could not be merged automatically (modified on both sides).
-# Source commit: c27f24479c4aafa6ebae3ee4b512ab8978ebd02a
-# app/client/src/services/api.js in the tree now holds the etime-payroll version.
-# Below is the full three-way merge, markers and all.
+# First conflicting source commit: c27f24479c4aafa6ebae3ee4b512ab8978ebd02a
+# app/client/src/services/api.js in the tree holds the etime-payroll version at tip.
+# Below is the three-way merge against that tip version.
 #
 # Resolve by editing the real file, then deleting this .conflict file.
 # The PR cannot merge while sync-conflicts/ still has entries.
 # ---------------------------------------------------------------
 
 import { api } from '@startup/services/axiosConfig';
+<<<<<<< startup (this repo)
 
 // The app's HTTP API surface. `api` is the framework's configured axios
 // instance (base URL, auth cookies, 401 interceptor), so an app groups its own
@@ -28,6 +29,425 @@ import { api } from '@startup/services/axiosConfig';
 // Handed to the framework by registerAppData() via registerReportApi(). The
 // report pipeline calls getReportData(slug, filters) when a report runs over
 // HTTP rather than through the socket runner.
+||||||| base (common ancestor)
+import { ApiService } from '@startup/services/ApiService';
+import { runViaRunner } from '@startup/socket';
+import { sanitizeHTML } from '@utils/formattingUtils';
+import { getDeviceLocation } from '../utils/locationUtils';
+import { isEmptyValue } from '@startup/utils/valueUtils';
+import { APPROVAL_STATUS } from '@app/workflow/approvalWorkflow';
+
+// Query params with nothing entered left out, so the server never filters on ''.
+const withoutEmptyValues = (filters) =>
+  Object.fromEntries(Object.entries(filters).filter(([, value]) => !isEmptyValue(value)));
+
+// A reference list that changes rarely, cached by ApiService under `namespace`.
+// `options` carries `{ force }` when the user asks for a fresh copy.
+const cachedGet = (url, namespace, params = {}, options = {}) =>
+  ApiService.request('GET', url, null, { cache: namespace, params, ...options });
+
+// Writes that expire the cached lists they change, so the next read refetches.
+const writesTo = (...namespaces) => ({
+  post: (url, data, config = {}) => ApiService.request('POST', url, data, { ...config, invalidates: namespaces }),
+  put: (url, data, config = {}) => ApiService.request('PUT', url, data, { ...config, invalidates: namespaces }),
+  delete: (url, config = {}) => ApiService.request('DELETE', url, null, { ...config, invalidates: namespaces }),
+});
+
+// Every employee write changes the basic-data roster and the report filters' dept/employee list.
+const employeeWrites = writesTo('employees', 'deptEmp');
+
+// --------------------------------------------
+// Employee API
+// --------------------------------------------
+const employeeApi = {
+  getAllEmployees: (params = {}) => api.get('/employees', { params }),
+  getAllEmployeesBasicData: (params = {}, options = {}) => cachedGet('/employees/basic-data', 'employees', params, options),
+  getUnregisteredFaceEmployees: () => api.get('/employees/unregistered-faces'),
+  getEmployeeByEmpCode: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}`);
+  },
+  createEmployee: (employeeData) => {
+    if (!employeeData) throw new Error('Employee data is required');
+    return employeeWrites.post('/employees', employeeData);
+  },
+  syncEmployeeFromDevices: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const encoded = encodeURIComponent(String(empCode).trim());
+    return api.post(`/employees/${encoded}/sync-from-devices`);
+  },
+  pushEmployeeToDevices: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const encoded = encodeURIComponent(String(empCode).trim());
+    return api.post(`/employees/${encoded}/push-to-devices`);
+  },
+  getRegisteredTemplates: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const encoded = encodeURIComponent(String(empCode).trim());
+    return api.get(`/employees/${encoded}/registered-templates`);
+  },
+  updateEmployee: (empCode, employeeData) => {
+    if (!empCode || !employeeData) throw new Error('Employee code and data are required');
+    return employeeWrites.put(`/employees/${empCode}`, employeeData);
+  },
+  bulkUpdateEmployees: (employeesData) => {
+    const firstEmpCode = employeesData[0]?.emp_code;
+    if (!firstEmpCode) {
+      throw new Error('Employee code is required in employee data');
+    }
+    return employeeWrites.put(`/employees/${firstEmpCode}`, employeesData);
+  },
+  importEmployees: (formData, options = {}) => {
+    if (!formData) throw new Error('File data is required');
+    const { validateOnly, acceptedRows } = options;
+    const params = {};
+    if (validateOnly) {
+      params.validateOnly = 'true';
+    }
+    
+    const config = {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params
+    };
+    
+    // acceptedRows: sheet row numbers of the new employees to create (including an empty array).
+    // Empty array means reject all new employees but still update existing ones. Rows, not codes,
+    // because a naming-series row has no code until it is created.
+    if (Array.isArray(acceptedRows)) {
+      // For multipart/form-data, we need to send acceptedRows as JSON string in formData
+      formData.append('acceptedRows', JSON.stringify(acceptedRows));
+    }
+    
+    return employeeWrites.post('/employees/import', formData, config);
+  },
+  exportEmployees: (params = {}) => {
+    return api.get('/employees/export', { 
+      params,
+      responseType: 'blob' 
+    });
+  },
+  deactivateEmployee: (empCode, options = {}) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const emp_code = Array.isArray(empCode) ? empCode : [empCode];
+    const body = { emp_code };
+    if (options.software_only) body.software_only = true;
+    if (options.resignation_date) body.resignation_date = options.resignation_date;
+    if (options.compute_fnf) body.compute_fnf = true;
+    return employeeWrites.post('/employees/deactivate', body);
+  },
+  stopEmployeePunches: (empCode, options = {}) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const emp_code = Array.isArray(empCode) ? empCode : [empCode];
+    const body = { emp_code };
+    if (options.software_only) body.software_only = true;
+    return employeeWrites.post('/employees/stop-punches', body);
+  },
+  activateEmployee: (empCode, options = {}) => {
+    if (!empCode) throw new Error('Employee code is required');
+    const emp_code = Array.isArray(empCode) ? empCode : [empCode];
+    const body = { emp_code };
+    if (options.software_only) body.software_only = true;
+    // Sent only when this is a rejoining — it opens a new employment period. Without it the
+    // server reopens the period they were already on.
+    if (options.joining_date) body.joining_date = options.joining_date;
+    return employeeWrites.post('/employees/activate', body);
+  },
+  approveEmployee: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return employeeWrites.post(`/employees/${encodeURIComponent(String(empCode).trim())}/approve`);
+  },
+  createEmployeeUser: (empCode, { username, role_id, password, must_reset_password }) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!password) throw new Error(`A first password is required to create a login for ${empCode}`);
+    return employeeWrites.post(`/employees/${encodeURIComponent(String(empCode).trim())}/user`, {
+      username, role_id, password, must_reset_password
+    });
+  },
+  linkEmployeeUser: (empCode, userId) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!userId) throw new Error(`Pick the login to link to employee ${empCode}`);
+    return employeeWrites.post(`/employees/${encodeURIComponent(String(empCode).trim())}/user/link`, { user_id: userId });
+  },
+  getEmploymentPeriods: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}/employment-periods`);
+  },
+  verifyEmployeeImage: (empCode, imageUrl) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!imageUrl) throw new Error('Image URL is required');
+    return api.post(`/employees/${empCode}/verify-image`, { image_url: imageUrl });
+  },
+  uploadEmployeePhoto: (empCode, photoFile) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!photoFile) throw new Error('Photo file is required');
+    const formData = new FormData();
+    formData.append('photo', photoFile);
+    return api.post(`/employees/${empCode}/register-image`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteEmployeeImage: (empCode, imageId) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!imageId) throw new Error('Image id is required');
+    return api.delete(`/employees/${empCode}/images/${imageId}`);
+  },
+  recognizeCheckIn: (photoFile, punchState = '0') => {
+    if (!photoFile) throw new Error('Photo file is required');
+    const formData = new FormData();
+    formData.append('photo', photoFile);
+    formData.append('punch_state', punchState);
+    const { latitude, longitude } = getDeviceLocation();
+    if (latitude !== undefined && longitude !== undefined) {
+      formData.append('latitude', latitude);
+      formData.append('longitude', longitude);
+    }
+    return api.post('/check-in/recognize', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  confirmCheckIn: (empCode, punchState = '0') => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.post('/check-in/confirm', { emp_code: empCode, punch_state: punchState, ...getDeviceLocation() }, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  },
+  getEmployeeDashboard: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get('/check-in/employee-dashboard', { params: { emp_code: empCode } });
+  },
+  listEmployeeDocuments: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}/documents`);
+  },
+  uploadEmployeeDocuments: (empCode, files) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!files || files.length === 0) throw new Error('Files are required');
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+    return api.post(`/employees/${empCode}/documents`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteEmployeeDocument: (empCode, documentId) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!documentId) throw new Error('Document ID is required');
+    return api.delete(`/employees/${empCode}/documents/${documentId}`);
+  },
+  listEmployeeAssets: (empCode) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/employees/${empCode}/assets`);
+  },
+  // Always creates a new assignment row, so re-issuing a previously returned
+  // asset produces a fresh assign id rather than reopening the old one. Photos
+  // are uploaded separately against that id through NBnext Drive.
+  assignEmployeeAsset: (empCode, payload) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!payload?.asset_id) throw new Error('Asset is required');
+    return writesTo('assets').post(`/employees/${empCode}/assets`, payload);
+  },
+  returnEmployeeAsset: (empCode, assignmentId, payload = {}) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!assignmentId) throw new Error('Assignment ID is required');
+    return writesTo('assets').post(`/employees/${empCode}/assets/${assignmentId}/return`, payload);
+  },
+};
+
+// --------------------------------------------
+// Employee Self-Service Details Form API (public — no login)
+// --------------------------------------------
+const employeeSelfFormApi = {
+  getForm: (empCode, companyId) => {
+    if (!empCode) throw new Error('Employee code is required');
+    return api.get(`/public/employee-form/${encodeURIComponent(String(empCode).trim())}`, {
+      params: { company_id: companyId }
+    });
+  },
+  submitForm: (empCode, companyId, formData) => {
+    if (!empCode) throw new Error('Employee code is required');
+    if (!formData) throw new Error('Form data is required');
+    return api.put(`/public/employee-form/${encodeURIComponent(String(empCode).trim())}`, formData, {
+      params: { company_id: companyId }
+    });
+  },
+};
+
+// --------------------------------------------
+// Department & Employee Combined API
+// --------------------------------------------
+const deptEmpApi = {
+  getDepartmentsAndEmployees: (params = {}, options = {}) =>
+    cachedGet('/employees/get-departments-employees', 'deptEmp', { is_active: params.is_active }, options),
+};
+
+// --------------------------------------------
+// Formula API
+// --------------------------------------------
+const FormulaApi = {
+  getAllFormulas: (params = {}) => {
+    return api.get('/formulas', { params });
+  },
+  getFormulaById: (id) => {
+    if (!id) throw new Error('Formula ID is required');
+    return api.get(`/formulas/${id}`);
+  },
+  createFormula: (formulaData) => {
+    if (!formulaData) throw new Error('Formula data is required');
+    return api.post('/formulas', formulaData);
+  },
+  updateFormula: (id, formulaData) => {
+    if (!id || !formulaData) throw new Error('Formula ID and data are required');
+    return api.put(`/formulas/${id}`, formulaData);
+  },
+  deleteFormula: (id) => {
+    if (!id) throw new Error('Formula ID is required');
+    return api.delete(`/formulas/${id}`);
+  },
+  getFormulaTypes: () => cachedGet('/formulas/types', 'formulaTypes'),
+  testFormula: (payload) => {
+    if (!payload?.employee_code || !payload?.start_date || !payload?.end_date || !payload?.formula) {
+      throw new Error('All fields are required: employee_code, start_date, end_date, formula');
+    }
+    return api.post('/formulas/test', payload);
+  },
+};
+
+// --------------------------------------------
+// Holiday API
+// --------------------------------------------
+const holidayApi = {
+  // Lists
+  getAllHolidayLists: (params = {}, options = {}) => cachedGet('/holidays/lists', 'holidayLists', params, options),
+  // The department master shows each department's holiday list by name.
+  createHolidayList: (data) => writesTo('holidayLists', 'departments').post('/holidays/lists', data),
+  updateHolidayList: (listId, data) => writesTo('holidayLists', 'departments').put(`/holidays/lists/${listId}`, data),
+  deleteHolidayList: (listId) => writesTo('holidayLists', 'departments').delete(`/holidays/lists/${listId}`),
+  // Entries within a list; the lists read with includeEntries carries them.
+  getHolidaysByList: (listId) => api.get(`/holidays/lists/${listId}/entries`),
+  createHolidayEntry: (listId, data) => writesTo('holidayLists').post(`/holidays/lists/${listId}/entries`, data),
+  updateHolidayEntry: (id, data) => writesTo('holidayLists').put(`/holidays/${id}`, data),
+  deleteHolidayEntry: (id) => writesTo('holidayLists').delete(`/holidays/${id}`),
+};
+
+// --------------------------------------------
+// Salary Structure API
+// --------------------------------------------
+// The department master shows each department's salary structure by name.
+const salaryStructureWrites = writesTo('salaryStructures', 'departments');
+
+const SalaryStructureApi = {
+  getAllSalaryStructures: (params = {}, options = {}) => cachedGet('/salary-structure', 'salaryStructures', params, options),
+  getSalaryStructureById: (id) => {
+    if (!id) throw new Error('Salary structure ID is required');
+    return api.get(`/salary-structure/${id}`);
+  },
+  createSalaryStructure: (salaryStructureData) => {
+    if (!salaryStructureData) throw new Error('Salary structure data is required');
+    return salaryStructureWrites.post('/salary-structure', salaryStructureData);
+  },
+  updateSalaryStructure: (id, salaryStructureData) => {
+    if (!id || !salaryStructureData) throw new Error('Salary structure ID and data are required');
+    return salaryStructureWrites.put(`/salary-structure/${id}`, salaryStructureData);
+  },
+  deleteSalaryStructure: (id) => {
+    if (!id) throw new Error('Salary structure ID is required');
+    return salaryStructureWrites.delete(`/salary-structure/${id}`);
+  },
+  getHeadTypes: () => cachedGet('/salary-structure/head-types', 'headTypes'),
+  testSalaryStructure: (testData) => {
+    if (!testData?.salary_structure_id || !testData?.employee_code || !testData?.start_date || !testData?.end_date) {
+      throw new Error('All fields are required: salary_structure_id, employee_code, start_date, end_date');
+    }
+    return api.post('/salary-structure/test', testData);
+  },
+  exportSalaryStructure: async (id) => {
+    if (!id) throw new Error('Salary structure ID is required');
+    const response = await api.get(`/salary-structure/${id}/export`);
+    
+    // Create a blob URL and trigger download
+    const jsonString = JSON.stringify(response.data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `salary_structure_${id}_${Date.now()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    return response;
+  },
+  importSalaryStructure: (importData) => {
+    if (!importData) throw new Error('Import data is required');
+    return salaryStructureWrites.post('/salary-structure/import', importData);
+  },
+};
+
+
+// --------------------------------------------
+// raw punch API
+// --------------------------------------------
+const rawPunch = {
+  getAllPunches: (params = {}) => {
+    // Ensure pagination parameters are included
+    const queryParams = {
+      page: params.page || 1,
+      limit: params.limit || 200,
+      ...params
+    };
+    return api.get('/raw-punch', { params: queryParams });
+  },
+  getPunchById: (id) => {
+    return api.get(`/raw-punch/${id}`);
+  },
+};
+
+// --------------------------------------------
+// Canteen Token Print Master - canteen-machine punches and manual token entry
+// --------------------------------------------
+const canteenToken = {
+  getTokens: (params = {}) => {
+    const queryParams = {
+      page: params.page || 1,
+      limit: params.limit || 200,
+      ...params
+    };
+    return api.get('/canteen-token', { params: queryParams });
+  },
+  createToken: (payload) => api.post('/canteen-token', payload),
+  // Set the Meal Type (stored as the punch `comment`) on a single token.
+  updateMealType: (id, mealType) => api.patch(`/canteen-token/${id}/meal-type`, { meal_type: mealType }),
+  // How many meals the token stands for (at least 1).
+  updateQuantity: (id, quantity) => api.patch(`/canteen-token/${id}/quantity`, { quantity }),
+  rejectToken: (id) => api.delete(`/canteen-token/${id}`),
+};
+
+
+// --------------------------------------------
+// Report API - Now routes through Node.js server
+// --------------------------------------------
+=======
+
+// The app's HTTP API surface. `api` is the framework's configured axios
+// instance (base URL, auth cookies, 401 interceptor), so an app groups its own
+// endpoints here and exports them:
+//
+//   const employeeApi = {
+//     getAllEmployees: (params = {}) => api.get('/employees', { params }),
+//   };
+//
+// `reportApi` below is not optional. The framework never imports from this file
+// by name — it receives what it needs through the registries that
+// registerAppData() fills — but the report pipeline has nothing to call over
+// HTTP unless an app registers a reportApi, so every app provides one.
+
+// --------------------------------------------
+// Report API
+// --------------------------------------------
+// Handed to the framework by registerAppData() via registerReportApi(). The
+// report pipeline calls getReportData(slug, filters) when a report runs over
+// HTTP rather than through the socket runner.
+>>>>>>> etime-payroll (incoming, at tip)
 const reportApi = {
   getReportData: (url, filters = {}) => {
     if (!url) throw new Error('Report name is required');
@@ -1845,7 +2265,7 @@ const kycApi = {
       adhaar_no: adhaarNo
     });
   }
->>>>>>> etime-payroll (incoming)
+>>>>>>> etime-payroll (incoming, at tip)
 };
 
 export { api, reportApi };
