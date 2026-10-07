@@ -634,7 +634,10 @@ const buildYmd = (yearNum, monthIndex, day) => {
  * @param {number|string} year fallback year when the label has no year (e.g. "01MayFri")
  * @returns {string|null} e.g. "2026-05-01"
  */
-const attendanceColumnLabelToDate = (label, year) => {
+// Break an attendance date-column label into its parts, or null if it isn't a date.
+// Returns { day, monthIndex, year } where `year` is null when the label carries none
+// (e.g. "01MayFri") and a number when it does (e.g. "01 May 2026", "01/06/2026").
+const matchAttendanceLabel = (label) => {
   if (label === null || label === undefined) return null;
   const str = String(label).trim();
   if (!str) return null;
@@ -642,23 +645,39 @@ const attendanceColumnLabelToDate = (label, year) => {
   // Day + month-name (+ optional weekday text) (+ optional explicit year): "01MayFri", "01 May 2026".
   const nameMatch = str.match(/^(\d{1,2})\s*([A-Za-z]{3})[A-Za-z]*\.?\s*(\d{4})?$/);
   if (nameMatch) {
-    const day = parseInt(nameMatch[1], 10);
-    const monthIndex = SHORT_MONTH_INDEX[nameMatch[2].toLowerCase()];
-    const yearNum = nameMatch[3] ? parseInt(nameMatch[3], 10) : parseInt(year, 10);
-    return buildYmd(yearNum, monthIndex, day);
+    return {
+      day: parseInt(nameMatch[1], 10),
+      monthIndex: SHORT_MONTH_INDEX[nameMatch[2].toLowerCase()],
+      year: nameMatch[3] ? parseInt(nameMatch[3], 10) : null,
+    };
   }
 
   // Numeric day-first date: "01/06/2026", "01-06-2026", "1/6/26".
   const numMatch = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/);
   if (numMatch) {
-    const day = parseInt(numMatch[1], 10);
-    const monthIndex = parseInt(numMatch[2], 10) - 1;
     let yearNum = parseInt(numMatch[3], 10);
     if (numMatch[3].length === 2) yearNum += 2000; // "26" → 2026
-    return buildYmd(yearNum, monthIndex, day);
+    return {
+      day: parseInt(numMatch[1], 10),
+      monthIndex: parseInt(numMatch[2], 10) - 1,
+      year: yearNum,
+    };
   }
 
   return null;
+};
+
+const attendanceColumnLabelToDate = (label, year) => {
+  const parts = matchAttendanceLabel(label);
+  if (!parts) return null;
+  const yearNum = parts.year !== null ? parts.year : parseInt(year, 10);
+  return buildYmd(yearNum, parts.monthIndex, parts.day);
+};
+
+// True when a date label carries its own year, so the dialog's Year is not needed for it.
+const attendanceColumnLabelHasExplicitYear = (label) => {
+  const parts = matchAttendanceLabel(label);
+  return parts !== null && parts.year !== null;
 };
 
 
@@ -906,6 +925,7 @@ export {
   isMonthEnd,
   buildYmd,
   attendanceColumnLabelToDate,
+  attendanceColumnLabelHasExplicitYear,
   buildYearOptions,
   formatDateForDisplay,
   formatTimeForDisplay,
