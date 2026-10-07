@@ -1,6 +1,6 @@
 # Unresolved sync conflicts
 
-5 file(s) could not be merged automatically while syncing erp -> startup.
+6 file(s) could not be merged automatically while syncing erp -> startup.
 
 **This PR is blocked until this directory is empty.** The `sync-conflicts` check fails while any `.conflict` file remains.
 
@@ -17,8 +17,9 @@ The real file currently holds the `erp` version — the source wins in the tree 
 
 | File | Kind | Source commit | Parked as |
 |---|---|---|---|
-| `app/client/src/data/registerAppData.js` | modified on both sides | `1599a7f37f17` | `sync-conflicts/files/app/client/src/data/registerAppData.js.conflict` |
-| `app/client/src/services/api.js` | modified on both sides | `1599a7f37f17` | `sync-conflicts/files/app/client/src/services/api.js.conflict` |
-| `app/client/vite.config.js` | modified on both sides | `1599a7f37f17` | `sync-conflicts/files/app/client/vite.config.js.conflict` |
-| `app/server/.env.example` | modified on both sides | `1599a7f37f17` | `sync-conflicts/files/app/server/.env.example.conflict` |
-| `app/server/src/routes/reportRoutes.js` | modified on both sides | `1599a7f37f17` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
+| `startup/docs/src/css/custom.css` | modified on both sides | `4772ba27a02e` | `sync-conflicts/files/startup/docs/src/css/custom.css.conflict` |
+| `app/client/src/data/registerAppData.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/src/data/registerAppData.js.conflict` |
+| `app/client/src/services/api.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/src/services/api.js.conflict` |
+| `app/client/vite.config.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/vite.config.js.conflict` |
+| `app/server/.env.example` | parked by an earlier run | `` | `sync-conflicts/files/app/server/.env.example.conflict` |
+| `app/server/src/routes/reportRoutes.js` | parked by an earlier run | `` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
