@@ -350,14 +350,17 @@ const createImportFunction = ({
             // Skip existing record when configured (useful for immutable/approved records)
             skipped += 1;
           } else if (existing?.id && updateFunction && typeof updateFunction === 'function') {
-            // Update existing record
+            // Update existing record. An API that reports the row had nothing to change
+            // (`{ skipped: true }`) is counted as skipped, not updated.
             const updatePayload = { ...existing, ...payload };
-            await updateFunction(existing.id, updatePayload);
-            updated += 1;
+            const result = await updateFunction(existing.id, updatePayload);
+            if (result?.skipped === true) skipped += 1;
+            else updated += 1;
           } else {
-            // Create new record
-            await createFunction(payload);
-            created += 1;
+            // Create new record. Same `{ skipped: true }` convention as the update branch.
+            const result = await createFunction(payload);
+            if (result?.skipped === true) skipped += 1;
+            else created += 1;
           }
         } catch (error) {
           errors.push(buildImportRowError(
