@@ -22,8 +22,9 @@ import { WorkflowButtons } from '../workflow/WorkflowButtons';
  * amend opens the copy (offered only with `onAmend`), and a status change
  * validates the form and submits it with the new status. A hooked status
  * change is toasted, reported through `onChanged` and closes the form, just as
- * the row action does, and a hook that throws is reported here, so hooks only
- * do their work. `showWhen` narrows an action to the records it suits.
+ * the row action does — unless the action says `keepOpen`, when the form stays
+ * on the record the hook returned — and a hook that throws is reported here, so
+ * hooks only do their work. `showWhen` narrows an action to the records it suits.
  *
  * While the form has a `blockedReason` (useFormModal's validate), Save is
  * disabled and the reason is written out beside it, and a status change that
@@ -51,7 +52,7 @@ const FormFooter = ({ formId, form, workflow, record, hooks, showWhen, onAmend, 
     if (!action.to) return;
     toast.success(`${workflow.label} ${action.done}`);
     onChanged({ record, to: action.to, saved });
-    onClose();
+    if (!action.keepOpen) onClose();
   };
   const runAction = (action) => run(async () => {
     try {

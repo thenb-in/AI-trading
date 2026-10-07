@@ -13,7 +13,7 @@ import { masterKeyOf } from '@startup/utils/masterKey';
  *             treats every record as being in `initial`
  *   statuses  { [stored value]: { label, tone, deletable } }
  *               deletable — the record can still be deleted in this status
- *   actions   { [key]: { label, done, from, to, amend, permission, createPermission, submit, tone, icon, confirm } }
+ *   actions   { [key]: { label, done, from, to, amend, permission, createPermission, submit, tone, icon, confirm, keepOpen } }
  *               from             — statuses the action is offered in
  *               to               — status it moves the record to
  *               amend            — instead of moving the record, open a new one
@@ -29,6 +29,10 @@ import { masterKeyOf } from '@startup/utils/masterKey';
  *               done             — past tense for the list's toast ("approved")
  *               confirm          — ({ label, record }) => the question asked first,
  *                                  or nothing to go ahead without asking
+ *               keepOpen         — a hooked status change leaves the form open
+ *                                  on the record it returns, so the next action
+ *                                  (Send for Approval, then Approve) is one click
+ *                                  away; the hook must hand that record back
  *
  * Every action has a default, so a screen wires nothing to offer it: a status
  * change saves the form with the new status (or, on a list, runs the screen's
