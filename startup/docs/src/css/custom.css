@@ -1,0 +1,13 @@
+/* Engine-level base styling. App-specific branding/overrides belong in app/docs. */
+:root {
+  --ifm-color-primary: #2563eb;
+  --ifm-code-font-size: 95%;
+}
+
+/* Frame every screenshot in the manual so it stands apart from the text. */
+.markdown img {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: var(--ifm-background-surface-color);
+}
