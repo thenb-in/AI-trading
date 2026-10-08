@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { Image } from 'lucide-react';
 import { useDataContext } from '@context/useDataContext';
 import { hasPermission } from '@startup/hooks/hasPermission';
-import { nbnextDriveService } from '@startup/services/nbnextDriveService';
+import { loadDriveImageUrl } from './driveImageUrl';
 
 const PREVIEW_IMAGE_SIZE = 200;
 const PREVIEW_MAX_WIDTH = 640;
@@ -12,24 +12,6 @@ const PREVIEW_GAP = 6;
 const PREVIEW_Z_INDEX = 10000;
 // The card is placed against the window, so its size and place are values, not classes.
 const previewImageStyle = { maxHeight: PREVIEW_IMAGE_SIZE, maxWidth: PREVIEW_IMAGE_SIZE };
-
-// One blob URL per Drive file for the whole session: hovering the same image
-// again, in this dropdown or any other, shows it at once.
-const imageUrlByFileId = new Map();
-
-const loadImageUrl = (fileId) => {
-  if (!imageUrlByFileId.has(fileId)) {
-    const request = nbnextDriveService.downloadFile(fileId)
-      .then((res) => URL.createObjectURL(res?.data ?? res))
-      .catch((err) => {
-        // A failed fetch is retried on the next hover, not cached.
-        imageUrlByFileId.delete(fileId);
-        throw err;
-      });
-    imageUrlByFileId.set(fileId, request);
-  }
-  return imageUrlByFileId.get(fileId);
-};
 
 // The card sits just above what it belongs to — the open menu, else the icon
 // itself on the picked field — or beside it when there is no room above.
@@ -64,7 +46,7 @@ function DriveImageHoverIcon({ fileIds, title }) {
   useEffect(() => {
     if (!cardStyle || urls) return undefined;
     let active = true;
-    Promise.all(fileIds.map(loadImageUrl))
+    Promise.all(fileIds.map(loadDriveImageUrl))
       .then((loaded) => active && setUrls(loaded))
       .catch((err) => active && setError(`Could not load images of ${title}: ${err?.error || err?.message || 'unknown error'}`));
     return () => { active = false; };
