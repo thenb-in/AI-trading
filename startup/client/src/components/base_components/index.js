@@ -22,3 +22,4 @@ export { OrgChart } from './org_chart/OrgChart.jsx';
 // Titled icon section and empty-list placeholder for tabs and forms
 export { BaseSectionCard } from './BaseSectionCard.jsx';
 export { BaseEmptyState } from './BaseEmptyState.jsx';
+export { BaseSegmentedControl } from './BaseSegmentedControl.jsx';
