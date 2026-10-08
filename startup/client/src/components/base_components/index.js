@@ -19,3 +19,6 @@ export { ProgressBar } from './ProgressBar.jsx';
 export { Badge } from './Badge.jsx';
 // Base Org Chart - generic top-down hierarchy graph (org structure, location tree, ...)
 export { OrgChart } from './org_chart/OrgChart.jsx';
+// Titled icon section and empty-list placeholder for tabs and forms
+export { BaseSectionCard } from './BaseSectionCard.jsx';
+export { BaseEmptyState } from './BaseEmptyState.jsx';
