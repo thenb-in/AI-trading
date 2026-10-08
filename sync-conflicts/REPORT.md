@@ -17,9 +17,9 @@ The real file currently holds the `erp` version — the source wins in the tree 
 
 | File | Kind | Source commit | Parked as |
 |---|---|---|---|
-| `startup/docs/src/css/custom.css` | modified on both sides | `4772ba27a02e` | `sync-conflicts/files/startup/docs/src/css/custom.css.conflict` |
 | `app/client/src/data/registerAppData.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/src/data/registerAppData.js.conflict` |
 | `app/client/src/services/api.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/src/services/api.js.conflict` |
 | `app/client/vite.config.js` | parked by an earlier run | `` | `sync-conflicts/files/app/client/vite.config.js.conflict` |
 | `app/server/.env.example` | parked by an earlier run | `` | `sync-conflicts/files/app/server/.env.example.conflict` |
 | `app/server/src/routes/reportRoutes.js` | parked by an earlier run | `` | `sync-conflicts/files/app/server/src/routes/reportRoutes.js.conflict` |
+| `startup/docs/src/css/custom.css` | parked by an earlier run | `` | `sync-conflicts/files/startup/docs/src/css/custom.css.conflict` |
