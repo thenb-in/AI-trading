@@ -125,6 +125,7 @@ function mountFrameworkRoutes(app) {
   app.use(`${API_PREFIX}/report-runs`, reportRunRoutes);
   app.use(`${API_PREFIX}/notification-rules`, notificationRuleRoutes);
   app.use(`${API_PREFIX}/announcements`, announcementRoutes);
+  app.use(`${API_PREFIX}/group-of-companies`, groupOfCompaniesRoutes);
   app.use(`${API_PREFIX}/naming-series`, namingSeriesRoutes);
   app.use(`${API_PREFIX}/geography`, geographyRoutes);
   // Framework-shipped reports share the app's /reports namespace, so one the
