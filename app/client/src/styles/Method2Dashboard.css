@@ -51,7 +51,7 @@
 }
 .m2-header__sub { font-size: 0.75rem; color: #64748b; margin: 0; }
 .m2-header__right { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
-.m2-lastseen { font-size: 0.72rem; color: #475569; }
+.m2-lastseen { font-size: 0.72rem; color: var(--text-muted); }
 
 .m2-refresh-btn {
   padding: 0.4rem 0.9rem;
@@ -150,7 +150,7 @@
   padding: 1.1rem 1.2rem;
 }
 .m2-card--empty {
-  color: #475569;
+  color: var(--text-muted);
   font-size: 0.82rem;
   display: flex;
   align-items: center;
@@ -182,13 +182,13 @@
   justify-content: center; min-height: 140px; text-align: center;
 }
 .m2-rec__label  { font-size: 1rem; font-weight: 700; color: #94a3b8; }
-.m2-rec__sub    { font-size: 0.8rem; color: #475569; margin: 0.4rem 0 0; }
+.m2-rec__sub    { font-size: 0.8rem; color: var(--text-muted); margin: 0.4rem 0 0; }
 .m2-rec__top    { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
 .m2-rec__action { font-size: 1.05rem; font-weight: 800; color: #e2e8f0; }
 .m2-rec__meta   { font-size: 0.72rem; color: #64748b; margin-top: 0.15rem; }
 .m2-rec__conf   { display: flex; flex-direction: column; align-items: flex-end; }
 .m2-rec__conf-num   { font-size: 1.3rem; font-weight: 800; color: #e2e8f0; line-height: 1; }
-.m2-rec__conf-label { font-size: 0.62rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+.m2-rec__conf-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* ── Entry / SL row ───────────────────────────────────────────────────────── */
 .m2-levels { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem; }
@@ -206,7 +206,7 @@
 .m2-level__value { font-size: 1.1rem; font-weight: 800; color: #e2e8f0; }
 .m2-level--entry .m2-level__value { color: #93c5fd; }
 .m2-level--sl    .m2-level__value { color: #f87171; }
-.m2-level__note  { font-size: 0.65rem; color: #475569; }
+.m2-level__note  { font-size: 0.65rem; color: var(--text-muted); }
 
 /* ── Targets ──────────────────────────────────────────────────────────────── */
 .m2-targets { margin-bottom: 0.75rem; }
@@ -232,7 +232,7 @@
 .m2-target--t3 { background: rgba(16,185,129,0.18); border: 1px solid rgba(16,185,129,0.35); }
 .m2-target__tag   { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #34d399; }
 .m2-target__price { font-size: 1rem; font-weight: 800; color: #6ee7b7; }
-.m2-target__rr    { font-size: 0.65rem; color: #475569; }
+.m2-target__rr    { font-size: 0.65rem; color: var(--text-muted); }
 
 /* ── Underlying levels ────────────────────────────────────────────────────── */
 .m2-ul-levels {
@@ -315,8 +315,8 @@
 .m2-flow-item { padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.04); border-radius: 8px; }
 .m2-flow-item__header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem; }
 .m2-flow-item__label  { font-size: 0.75rem; font-weight: 700; }
-.m2-flow-item__count  { font-size: 0.68rem; color: #475569; }
-.m2-flow-item__desc   { font-size: 0.65rem; color: #475569; margin-top: 0.3rem; }
+.m2-flow-item__count  { font-size: 0.68rem; color: var(--text-muted); }
+.m2-flow-item__desc   { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.3rem; }
 
 .m2-flow-bar { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
 .m2-flow-bar__fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
@@ -332,7 +332,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #475569;
+  color: var(--text-muted);
 }
 .m2-strike-row {
   display: grid;
@@ -371,7 +371,7 @@
 .m2-kl--resistance .m2-kl__price { color: #f87171; }
 .m2-kl--support    .m2-kl__price { color: #34d399; }
 .m2-kl--maxpain    .m2-kl__price { color: #60a5fa; }
-.m2-kl__note { font-size: 0.66rem; color: #475569; }
+.m2-kl__note { font-size: 0.66rem; color: var(--text-muted); }
 .m2-kl__oi   { font-size: 0.67rem; color: #64748b; font-weight: 600; }
 
 /* ── PCR row ──────────────────────────────────────────────────────────────── */
@@ -389,7 +389,7 @@
 .pcr--bear    { color: #f87171; }
 .pcr--neutral { color: #94a3b8; }
 .m2-pcr__interp { font-size: 0.75rem; color: #cbd5e1; }
-.m2-pcr__detail { font-size: 0.65rem; color: #475569; margin-left: auto; }
+.m2-pcr__detail { font-size: 0.65rem; color: var(--text-muted); margin-left: auto; }
 
 /* ── Macro grid ───────────────────────────────────────────────────────────── */
 .m2-macro-grid {
@@ -406,7 +406,7 @@
   flex-direction: column;
   gap: 0.15rem;
 }
-.m2-macro__label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #475569; }
+.m2-macro__label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
 .m2-macro__value { font-size: 0.92rem; font-weight: 700; color: #e2e8f0; }
 
 /* ── ATM premiums ─────────────────────────────────────────────────────────── */
@@ -482,7 +482,7 @@
   margin-bottom: 0.85rem;
 }
 .m2-hist__title { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; margin: 0; }
-.m2-hist__count { font-size: 0.7rem; color: #475569; white-space: nowrap; }
+.m2-hist__count { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; }
 
 .m2-hist__wrap {
   overflow-x: auto;
@@ -505,7 +505,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--text-muted);
   border-bottom: 1px solid rgba(255,255,255,0.07);
   white-space: nowrap;
   position: sticky;
@@ -525,7 +525,7 @@
   color: #94a3b8;
   vertical-align: top;
 }
-.m2-hist__td-time { color: #475569; font-size: 0.68rem; white-space: nowrap; }
+.m2-hist__td-time { color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; }
 .m2-hist__num     { font-variant-numeric: tabular-nums; white-space: nowrap; color: #cbd5e1; }
 .m2-hist__entry   { color: #93c5fd !important; font-weight: 600; }
 .m2-hist__sl      { color: #f87171 !important; font-weight: 600; }
@@ -623,7 +623,7 @@
   flex-direction: column;
   gap: 0.15rem;
 }
-.m2-bt__stat-label { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+.m2-bt__stat-label { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
 .m2-bt__stat-value { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; }
 
 /* Trade list */
@@ -632,7 +632,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #475569;
+  color: var(--text-muted);
   margin-bottom: 0.5rem;
 }
 .m2-bt__trades {
@@ -649,7 +649,7 @@
 
 .m2-bt__note {
   font-size: 0.65rem;
-  color: #475569;
+  color: var(--text-muted);
   margin: 0.25rem 0 0.5rem;
 }
 
@@ -664,17 +664,17 @@
 }
 .m2-bt__trade:nth-child(even) { background: rgba(255,255,255,0.025); }
 
-.m2-bt__trade-date    { color: #475569; font-size: 0.65rem; white-space: nowrap; }
+.m2-bt__trade-date    { color: var(--text-muted); font-size: 0.65rem; white-space: nowrap; }
 .m2-bt__trade-sig     { font-weight: 700; font-size: 0.72rem; }
 .m2-bt__trade-sig--ce { color: #60a5fa; }
 .m2-bt__trade-sig--pe { color: #a78bfa; }
 .m2-bt__trade-sym     { color: #94a3b8; font-size: 0.62rem; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m2-bt__trade-levels  { color: #64748b; font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m2-bt__trade-exit    { color: #94a3b8; font-size: 0.65rem; white-space: nowrap; }
-.m2-bt__trade-spot    { color: #475569; font-size: 0.6rem; }
+.m2-bt__trade-spot    { color: var(--text-muted); font-size: 0.6rem; }
 .m2-bt__trade-pnl     { font-weight: 700; text-align: right; white-space: nowrap; }
 .m2-bt__trade-outcome { font-size: 0.63rem; font-weight: 700; text-align: right; white-space: nowrap; }
-.m2-bt__trade-meta    { color: #475569; font-size: 0.6rem; white-space: nowrap; }
+.m2-bt__trade-meta    { color: var(--text-muted); font-size: 0.6rem; white-space: nowrap; }
 
 @media (max-width: 900px) {
   .m2-bt__trade { grid-template-columns: 100px 55px 1fr 70px 60px; }

@@ -3,6 +3,7 @@ import { Clock } from "@app/components/Clock.jsx";
 import { TradePill } from "@app/components/TradePill.jsx";
 import { TradeEffects } from "@app/components/TradeEffects.jsx";
 import { startGlossary } from "@app/utils/glossary";
+import "@app/styles/theme.css";
 import "@app/styles/glossary.css";
 
 // App chrome rendered OUTSIDE the admin sidebar (a sibling of the sidebar via

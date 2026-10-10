@@ -57,7 +57,7 @@ function AdminLayout() {
                 collapsed ? "ml-14" : isMobileView ? "ml-48" : "ml-64"
               } min-h-screen bg-gray-50`}
             >
-              <div className="max-w-full">
+              <div className="max-w-full admin-content-outlet">
                 {/* Above the page, not over it: an announcement is read once and
                     dismissed, and must never sit on top of what someone is doing. */}
                 <AnnouncementBanner />

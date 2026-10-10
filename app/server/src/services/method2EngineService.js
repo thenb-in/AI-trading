@@ -246,7 +246,7 @@ async function computeMethod2() {
   // ── GATE 1: Session check ─────────────────────────────────────────────
   // No trade outside normal trading hours (pre/post market, lunch dead zone)
   if (!session.allowed) {
-    const vixVal0 = vix?.lastPrice ?? vix?.value ?? null;
+    const vixVal0 = vix?.vixValue ?? null;
     return ({
       direction: 'NEUTRAL', confidence: 50, bullPct: 50, bearPct: 50,
       recommendation: null, noTradeReason: `Session: ${session.reason}`,
@@ -264,7 +264,7 @@ async function computeMethod2() {
   // clear directional move; entering in chop = guaranteed theta bleed.
   const adxValue = adxState?.adx ?? null;
   if (adxValue != null && adxValue < 20) {
-    const vixVal0 = vix?.lastPrice ?? vix?.value ?? null;
+    const vixVal0 = vix?.vixValue ?? null;
     return ({
       direction: 'NEUTRAL', confidence: 50, bullPct: 50, bearPct: 50,
       recommendation: null, noTradeReason: `ADX ${adxValue.toFixed(1)} < 20 — market is choppy, no directional trend`,
@@ -278,7 +278,7 @@ async function computeMethod2() {
   }
 
   // ── GATE 3: VIX extreme — pause when fear is very high ───────────────
-  const vixVal = vix?.lastPrice ?? vix?.value ?? null;
+  const vixVal = vix?.vixValue ?? null;
   const vixOk  = vixVal == null || vixVal < 22;
   if (vixVal != null && vixVal >= 22) {
     return ({

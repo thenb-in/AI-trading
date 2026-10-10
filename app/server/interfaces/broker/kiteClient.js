@@ -321,6 +321,26 @@ async function getNiftySpotFromZerodha(kite) {
 }
 
 /**
+ * Fetches India VIX from Zerodha via getQuote(["NSE:INDIA VIX"]).
+ * Returns the last_price as a number, or throws when unavailable. The caller
+ * (nseService.getIndiaVix) wraps this with the zone/confidence logic and cache.
+ */
+async function getIndiaVixFromZerodha(kite) {
+  if (!kite) {
+    kite = getKiteWithAccessToken();
+  }
+  const key = 'NSE:INDIA VIX';
+  const raw = await kite.getQuote([key]);
+  const quoteMap = raw && typeof raw.data === 'object' ? raw.data : raw;
+  const vix = quoteMap?.[key]?.last_price;
+  if (vix != null && typeof vix === 'number' && vix > 0) {
+    logger.info(`[zerodhaService] India VIX via getQuote: ${vix}`);
+    return vix;
+  }
+  throw new Error('India VIX last_price missing or invalid from Zerodha');
+}
+
+/**
  * Persists the access token to the company's Company Profile and updates the
  * in-memory broker-credentials cache, so the very next read picks it up with no
  * restart (the daily hot-reload). Persist failures are logged by the accessor.
@@ -344,5 +364,6 @@ module.exports = {
   getCachedBankniftyOptions,
   getZerodhaProfile,
   getNiftySpotFromZerodha,
+  getIndiaVixFromZerodha,
   saveZerodhaAccessToken,
 };

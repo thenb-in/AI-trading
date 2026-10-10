@@ -5,7 +5,7 @@ const { ema, rsi, MACD, ADX } = require('technicalindicators');
 const logger = require('@startup/logger');
 const { evaluateRsiDeadZone, evaluateVwapDeadZone, evaluateMarketSession } = require('./marketHelpers');
 const { getTunables } = require('@appServer/src/config/tradingConfig');
-const { getNiftyAtmOptionQuote, getNiftyAtmPcr, getNiftyPcrFromZerodha, calculateMaxPain, getOiBasedSupportResistance, getNiftySpotFromZerodha, fetchHistoricalCandles } = require('@appServer/interfaces/broker');
+const { getNiftyAtmOptionQuote, getNiftyAtmPcr, getNiftyPcrFromZerodha, calculateMaxPain, getOiBasedSupportResistance, getNiftySpotFromZerodha, getIndiaVixFromZerodha, fetchHistoricalCandles } = require('@appServer/interfaces/broker');
 const { getOiChangeAnalysis } = require('../optionSnapshotService');
 
 const NSE_QUOTE_URL = 'https://www.nseindia.com/api/quote-equity?symbol=NIFTY%2050';
@@ -15,7 +15,6 @@ const NSE_INDICES_BANKNIFTY_URL = 'https://www.nseindia.com/api/equity-stockIndi
 const NSE_OPTION_CHAIN_NIFTY_URL = 'https://www.nseindia.com/api/option-chain-indices?symbol=NIFTY';
 const NSE_OPTION_CHAIN_PAGE_URL = 'https://www.nseindia.com/option-chain';
 const NSE_ORIGIN = 'https://www.nseindia.com';
-const NSE_VIX_URL = 'https://www.nseindia.com/api/equity-stockIndices?index=India%20VIX';
 
 const defaultHeaders = {
   'User-Agent':
@@ -299,31 +298,13 @@ async function getIndiaVix() {
     return cachedVix.value;
   }
   try {
-    const cookie = await getNseCookies();
-    const client = axios.create({
-      baseURL: NSE_ORIGIN,
-      headers: { ...defaultHeaders, ...(cookie ? { Cookie: cookie } : {}) },
-      timeout: 15000,
-      maxRedirects: 5,
-      validateStatus: (s) => s === 200,
-    });
-    const response = await client.get(NSE_VIX_URL, {
-      headers: { ...defaultHeaders, Referer: `${NSE_ORIGIN}/`, ...(cookie ? { Cookie: cookie } : {}) },
-    });
-    const body = response.data;
-    const dataArray = Array.isArray(body)
-      ? body
-      : body && typeof body === 'object' && 'data' in body
-        ? body.data
-        : undefined;
-    if (!Array.isArray(dataArray) || dataArray.length === 0) {
-      throw new Error('India VIX data not available');
+    // India VIX now comes from Zerodha (NSE:INDIA VIX index quote) instead of
+    // scraping nseindia.com, which blocks server requests. Same downstream
+    // zone/confidence logic — only the raw value source changed.
+    const vixValue = Number(await getIndiaVixFromZerodha());
+    if (!Number.isFinite(vixValue) || vixValue <= 0) {
+      throw new Error('India VIX value invalid from Zerodha');
     }
-    const vixItem = dataArray.find((item) => item?.symbol === 'India VIX');
-    if (!vixItem || vixItem.lastPrice == null) {
-      throw new Error('India VIX symbol not found in response');
-    }
-    const vixValue = Number(vixItem.lastPrice);
     const { high, low, weight } = getVixThresholds();
 
     let vixZone = 'normal';
@@ -921,11 +902,11 @@ function evaluateRuleBasedSignal(input) {
   const rsiEval = evaluateRsiDeadZone(rsiVal);
   const vwapEval = evaluateVwapDeadZone(price, vwap);
   if (rsiEval.inDeadZone) {
-    reasons.push(`RSI in dead zone (delta ${rsiEval.delta ?? 'n/a'})`);
+    reasons.push(`RSI in dead zone (delta ${rsiEval.delta != null ? rsiEval.delta.toFixed(2) : 'n/a'})`);
     return { signal: 'NO TRADE', reasons, confirmations: 0, qualityLevel: 'low' };
   }
   if (vwapEval.inDeadZone) {
-    reasons.push(`VWAP in dead zone (delta ${vwapEval.delta ?? 'n/a'})`);
+    reasons.push(`VWAP in dead zone (delta ${vwapEval.delta != null ? vwapEval.delta.toFixed(2) : 'n/a'})`);
     return { signal: 'NO TRADE', reasons, confirmations: 0, qualityLevel: 'low' };
   }
 
@@ -1054,10 +1035,10 @@ function evaluateTrendSignal({ label, price, ema20, ema50, rsiVal, vwap, confirm
   logger.info(`[${label}] indicator trend evaluation price=${price} ema20=${ema20} ema50=${ema50} confirmationBearish=${confirmationBearish} confirmationBullish=${confirmationBullish}`);
 
   if (rsiEvaluation.inDeadZone) {
-    reasons.push(`RSI in dead zone (delta ${rsiEvaluation.delta ?? 'n/a'}, threshold ${rsiEvaluation.threshold})`);
+    reasons.push(`RSI in dead zone (delta ${rsiEvaluation.delta != null ? rsiEvaluation.delta.toFixed(2) : 'n/a'}, threshold ${Number(rsiEvaluation.threshold).toFixed(2)})`);
   }
   if (vwapEvaluation.inDeadZone) {
-    reasons.push(`VWAP in dead zone (delta ${vwapEvaluation.delta ?? 'n/a'}, threshold ${vwapEvaluation.threshold})`);
+    reasons.push(`VWAP in dead zone (delta ${vwapEvaluation.delta != null ? vwapEvaluation.delta.toFixed(2) : 'n/a'}, threshold ${Number(vwapEvaluation.threshold).toFixed(2)})`);
   }
   if (rsiEvaluation.inDeadZone || vwapEvaluation.inDeadZone) {
     return { signal: 'NO TRADE', rawConfidence: 0, reasons };

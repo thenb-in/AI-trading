@@ -16,23 +16,20 @@ const PATTERN_LABELS = {
   bullish_marubozu: 'BM', bearish_marubozu: 'BM',
 };
 
-function isDark() {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-
+// The trading app is dark-only (see theme.css), so the chart is always dark and
+// its canvas colours match the theme surface — no OS-preference branch.
 function chartTheme() {
-  const dark = isDark();
   return {
     layout: {
-      background: { color: dark ? '#1a1a2e' : '#ffffff' },
-      textColor: dark ? '#d1d5db' : '#374151',
+      background: { color: '#131821' },
+      textColor: '#9aa7ba',
     },
     grid: {
-      vertLines: { color: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
-      horzLines: { color: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+      vertLines: { color: 'rgba(255,255,255,0.05)' },
+      horzLines: { color: 'rgba(255,255,255,0.05)' },
     },
     crosshair: { mode: CrosshairMode.Normal },
-    timeScale: { borderColor: dark ? '#374151' : '#e5e7eb', timeVisible: true, secondsVisible: false },
+    timeScale: { borderColor: 'rgba(255,255,255,0.10)', timeVisible: true, secondsVisible: false },
   };
 }
 

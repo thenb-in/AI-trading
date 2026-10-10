@@ -212,8 +212,8 @@ function TradeDesk() {
           <ProCard label="ADX" value={d.adx?.value != null ? Number(d.adx.value).toFixed(1) : '—'}
                    tone={d.adx?.value >= 28 ? 'up' : ''}
                    sub={d.adx?.value >= 28 ? 'trending — score bonus active' : d.adx?.value >= 20 ? 'mild trend' : 'chop — breakouts suspect'} />
-          <ProCard label="PCR" value={d.pcr != null ? Number(d.pcr).toFixed(2) : '—'}
-                   sub={d.pcr != null ? (d.pcr > 1.2 ? 'put-heavy (support below)' : d.pcr < 0.8 ? 'call-heavy (ceiling above)' : 'balanced book') : 'chain warming up'} />
+          <ProCard label="PCR" value={d.pcr?.pcr != null ? Number(d.pcr.pcr).toFixed(2) : '—'}
+                   sub={d.pcr?.pcr != null ? (d.pcr.pcr > 1.2 ? 'put-heavy (support below)' : d.pcr.pcr < 0.8 ? 'call-heavy (ceiling above)' : 'balanced book') : 'chain warming up'} />
           <ProCard label="ATM IV" value={d.atmIv ? `${d.atmIv.ce ?? '—'} / ${d.atmIv.pe ?? '—'}` : '—'}
                    tone={d.atmIv?.skew > 2 ? 'dn' : ''}
                    sub={d.atmIv?.skew != null ? `skew ${d.atmIv.skew > 0 ? '+' : ''}${d.atmIv.skew} — ${d.atmIv.skew > 2 ? 'puts bid: fear in the market' : d.atmIv.skew < -2 ? 'calls bid: chase up' : 'calm'}` : 'CE / PE implied vol'} />
@@ -230,7 +230,7 @@ function TradeDesk() {
           <FactorBar name="OI buildup" value={d.scores.oiBuildup} max={25}
                      note={d.oiChange?.summary ? `L${d.oiChange.summary.longBuildup ?? 0} S${d.oiChange.summary.shortBuildup ?? 0} SC${d.oiChange.summary.shortCovering ?? 0} LU${d.oiChange.summary.longUnwinding ?? 0}` : 'feed warming'} />
           <FactorBar name="PCR trend" value={d.scores.pcr} max={15}
-                     note={d.pcr != null ? `PCR ${Number(d.pcr).toFixed(2)}` : '—'} />
+                     note={d.pcr?.pcr != null ? `PCR ${Number(d.pcr.pcr).toFixed(2)}` : '—'} />
           <FactorBar name="OI S/R" value={d.scores.oiSr} max={10}
                      note={`walls ${d.oiSr?.support?.strike ?? '—'} / ${d.oiSr?.resistance?.strike ?? '—'}`} />
           <FactorBar name="EMA" value={d.scores.ema} max={15}

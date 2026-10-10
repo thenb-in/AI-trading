@@ -114,7 +114,7 @@ function OptionChain() {
         <div className="oc-banner">
           Websocket not connected{chain?.lastError ? ` — ${chain.lastError}` : ''}.
           If the daily Zerodha login is pending, complete it at
-          {' '}<a href="http://localhost:3000/api/v1/auth/zerodha/login">/auth/zerodha/login</a> — the chain
+          {' '}<a href="/api/v1/auth/zerodha/login">/auth/zerodha/login</a> — the chain
           connects itself right after.
         </div>
       )}

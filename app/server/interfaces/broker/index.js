@@ -14,7 +14,8 @@ const {
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
   getZerodhaProfile,
-  getNiftySpotFromZerodha
+  getNiftySpotFromZerodha,
+  getIndiaVixFromZerodha
 } = require('./kiteClient');
 const {
   getZerodhaInstruments,
@@ -53,6 +54,7 @@ module.exports = {
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
   getZerodhaProfile,
+  getIndiaVixFromZerodha,
   getZerodhaInstruments,
   getNiftyAtmOptionQuote,
   getNearestExpiryNiftyOptions,

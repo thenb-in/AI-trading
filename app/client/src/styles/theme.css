@@ -1,0 +1,40 @@
+/*
+ * Trading app dark theme — the single source of truth for colour tokens.
+ *
+ * The trading screens are watched for long stretches, so the whole app reads on
+ * a soft dark slate (NOT pure black) with light text. Every trading stylesheet
+ * uses these tokens instead of hardcoded colours, so the theme changes in one
+ * place.
+ *
+ * Imported once, globally, from AppLayout so the tokens exist on every trading
+ * page regardless of which page's CSS loaded first.
+ */
+:root {
+  --bg:         #0f141b;  /* page background — deep slate, not black */
+  --bg-card:    #161c26;  /* primary card surface */
+  --bg-card2:   #1d2430;  /* nested/secondary surface */
+  --bg-hover:   #26303d;  /* hover surface */
+  --border:     rgba(255, 255, 255, 0.10);
+  --border2:    rgba(255, 255, 255, 0.06);
+  --text:       #9aa7ba;  /* secondary text */
+  --text-h:     #eaf0f7;  /* primary text / values / headings */
+  --text-muted: #6b7890;  /* tertiary / labels */
+  --card-bg:    #161c26;
+  --code-bg:    #11161e;
+  --shadow:     0 2px 12px rgba(0, 0, 0, 0.5);
+  --bullish:    #10b981;
+  --bearish:    #f87171;
+  --accent:     #6366f1;
+}
+
+/*
+ * Darken the admin content region ONLY on trading pages — those carry the shared
+ * MethodNav. Framework admin pages (user management, company settings, …) have
+ * no MethodNav and keep the light shell. The sidebar is already dark, so this
+ * makes the whole trading experience one cohesive dark surface.
+ */
+.admin-content-outlet:has(.method-nav) {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}

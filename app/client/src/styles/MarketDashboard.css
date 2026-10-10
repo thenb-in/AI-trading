@@ -9,23 +9,7 @@ html, body {
   margin: 0;
 }
 
-:root {
-  --bg:        #0b0b0f;
-  --bg-card:   #13131a;
-  --bg-card2:  #1a1a25;
-  --bg-hover:  #1f1f2e;
-  --border:    rgba(255,255,255,0.09);
-  --border2:   rgba(255,255,255,0.05);
-  --text:      #94a3b8;
-  --text-h:    #e2e8f0;
-  --text-muted:#64748b;
-  --card-bg:   #13131a;
-  --code-bg:   #13131a;
-  --shadow:    0 2px 12px rgba(0,0,0,0.5);
-  --bullish:   #10b981;
-  --bearish:   #f87171;
-  --accent:    #6366f1;
-}
+/* Colour tokens live in theme.css (imported globally via AppLayout). */
 
 /* ── Method nav tabs (shared) ──────────────────────────────────────────────── */
 .method-nav {

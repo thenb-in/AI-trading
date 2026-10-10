@@ -35,7 +35,7 @@
   padding: 0.05rem 0.35rem; border-radius: 4px; vertical-align: middle; }
 .oc-tag--res { background: rgba(96,165,250,0.2); color: #93c5fd; }
 .oc-tag--sup { background: rgba(245,158,11,0.2); color: #fbbf24; }
-.oc-empty { color: #475569; text-align: center; }
+.oc-empty { color: var(--text-muted); text-align: center; }
 .oc-foot { color: #64748b; font-size: 0.75rem; margin-top: 0.7rem; }
 
 /* Index toggle */
@@ -58,7 +58,7 @@
 /* Bookmarks: star on each strike; starred strikes pinned in a strip on top */
 .oc-star {
   background: none; border: none; cursor: pointer; padding: 0 0.3rem 0 0;
-  color: #475569; font-size: 0.85rem; vertical-align: baseline;
+  color: var(--text-muted); font-size: 0.85rem; vertical-align: baseline;
 }
 .oc-star--on { color: #fbbf24; }
 .oc-star:focus-visible { outline: 2px solid #93c5fd; border-radius: 4px; }
