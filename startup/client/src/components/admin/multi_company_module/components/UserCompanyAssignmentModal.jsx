@@ -1,134 +1,109 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { BaseModal } from '@startup/components/base_components/master';
 import { useCompanyUserData } from './useCompanyUserData';
-import { UserAssignmentForm } from './UserAssignmentForm';
-import { UserAssignmentList } from './UserAssignmentList';
+import { UserAssignmentSection } from './UserAssignmentSection';
 import { ApiService } from '@services/ApiService';
 
+const businessLockedReason = (user) => (user.isDirectUser ? 'Direct user' : null);
+
 function UserCompanyAssignmentModal({ isOpen, onClose, company, onSuccess }) {
-  const { companyUsers, loading, loadCompanyUsers } = useCompanyUserData(isOpen, company);
+  const { companyUsers, supportUsers, businessUsers, loading, loadCompanyUsers } = useCompanyUserData(isOpen, company);
 
-  const [selectedUser, setSelectedUser] = useState('');
-  const [selectedUserName, setSelectedUserName] = useState('');
-  const [assigning, setAssigning] = useState(false);
-  const [removing, setRemoving] = useState(false);
+  const [assigningId, setAssigningId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
-  // Use the company ID from props - modal is always for a specific company
-  const selectedCompany = company?.id || '';
+  const companyId = company?.id || '';
+  const companyName = company?.name || 'Company';
 
-  const resetSelection = useCallback(() => {
-    setSelectedUser('');
-  }, []);
+  const assignedSupport = companyUsers.filter((user) => user.isSupportUser);
+  const assignedBusiness = companyUsers.filter((user) => !user.isSupportUser);
 
-  // Reset selections each time modal opens or company changes to avoid stale state
-  useEffect(() => {
-    if (isOpen) {
-      resetSelection();
-    }
-  }, [isOpen, resetSelection]);
-
-  const isUnassigned = useCallback(
-    (user) => !companyUsers.some((assigned) => (assigned.id || assigned.username) === (user.id || user.username)),
-    [companyUsers]
+  const nameOf = useCallback(
+    (userId) => [...supportUsers, ...businessUsers, ...companyUsers]
+      .find((user) => String(user.id) === String(userId))?.name || 'User',
+    [supportUsers, businessUsers, companyUsers]
   );
 
-  const handleSelectUser = useCallback((value, user) => {
-    setSelectedUser(value ?? '');
-    setSelectedUserName(user?.name || user?.username || '');
-  }, []);
-
-  const handleAssignUser = useCallback(async () => {
-    if (!selectedUser || !selectedCompany) {
-      toast.error('Please select a user to assign');
-      return;
-    }
-
-    const userName = selectedUserName || 'User';
-    const companyName = company?.name || 'Company';
-
-    setAssigning(true);
+  const handleAssign = useCallback(async (userId) => {
+    if (!userId || !companyId) return false;
+    const userName = nameOf(userId);
+    setAssigningId(userId);
     try {
-      // ApiService is used inside useCompanyUserData hook; this action uses the same API layer
-      await ApiService.assignUserToCompany(selectedUser, selectedCompany);
+      await ApiService.assignUserToCompany(userId, companyId);
       toast.success(`${userName} has been assigned to ${companyName} successfully`);
-      await loadCompanyUsers(selectedCompany);
-      setSelectedUser('');
+      await loadCompanyUsers();
       onSuccess?.();
+      return true;
     } catch (error) {
       toast.error(`Failed to assign ${userName} to ${companyName}: ${error.message || 'Unknown error'}`);
+      return false;
     } finally {
-      setAssigning(false);
+      setAssigningId(null);
     }
-  }, [selectedUser, selectedUserName, selectedCompany, company?.name, loadCompanyUsers, onSuccess]);
+  }, [companyId, companyName, nameOf, loadCompanyUsers, onSuccess]);
 
-  const handleRemoveUser = useCallback(async (userId) => {
-    const user = companyUsers.find(u => (u.id || u.username) === userId);
-    const userName = user?.name || user?.username || 'User';
-    const companyName = company?.name || 'Company';
-
-    setRemoving(userId);
+  const handleRemove = useCallback(async (userId) => {
+    const userName = nameOf(userId);
+    setRemovingId(userId);
     try {
-      // ApiService is used inside useCompanyUserData hook; this action uses the same API layer
-      await ApiService.removeUserFromCompany(userId, selectedCompany);
+      await ApiService.removeUserFromCompany(userId, companyId);
       toast.success(`${userName} has been removed from ${companyName} successfully`);
-      await loadCompanyUsers(selectedCompany);
+      await loadCompanyUsers();
       onSuccess?.();
     } catch (error) {
       toast.error(`Failed to remove ${userName} from ${companyName}: ${error.message || 'Unknown error'}`);
     } finally {
-      setRemoving(false);
+      setRemovingId(null);
     }
-  }, [selectedCompany, companyUsers, company?.name, loadCompanyUsers, onSuccess]);
+  }, [companyId, companyName, nameOf, loadCompanyUsers, onSuccess]);
 
   const handleClose = useCallback(() => {
-    if (assigning || removing) return;
-    resetSelection();
+    if (assigningId || removingId) return;
     onClose();
-  }, [assigning, removing, resetSelection, onClose]);
+  }, [assigningId, removingId, onClose]);
 
   const title = (
     <span className="text-xl font-bold text-gray-900">
       {'Assign Users for '}
-      <span className="text-blue-600">{company?.name || 'N/A'}</span>
+      <span className="text-blue-600">{companyName}</span>
     </span>
   );
 
   return (
-    <BaseModal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title={title}
-      maxWidth="md"
-      showAudit={false}
-    >
-      <div className="space-y-6">
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          </div>
-        ) : (
-          <>
-            <UserAssignmentForm
-              selectedUser={selectedUser}
-              assigning={assigning}
-              loading={loading}
-              onSelectUser={handleSelectUser}
-              onAssign={handleAssignUser}
-              isUnassigned={isUnassigned}
-            />
-
-            <UserAssignmentList
-              companyName={company?.name}
-              companyUsers={companyUsers}
-              removing={removing}
-              onRemove={handleRemoveUser}
-            />
-          </>
-        )}
-      </div>
+    <BaseModal isOpen={isOpen} onClose={handleClose} title={title} maxWidth="md" showAudit={false}>
+      {loading ? (
+        <div className="flex justify-center items-center py-8">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <UserAssignmentSection
+            title="Support Users"
+            assignableUsers={supportUsers}
+            assignedUsers={assignedSupport}
+            onAssign={handleAssign}
+            onRemove={handleRemove}
+            assigningId={assigningId}
+            removingId={removingId}
+            loading={loading}
+          />
+          <UserAssignmentSection
+            title="Business Users"
+            note="From this company's groups. A user whose home company is this one is a direct user and cannot be removed."
+            assignableUsers={businessUsers}
+            assignedUsers={assignedBusiness}
+            onAssign={handleAssign}
+            onRemove={handleRemove}
+            assigningId={assigningId}
+            removingId={removingId}
+            loading={loading}
+            lockedReason={businessLockedReason}
+          />
+        </div>
+      )}
     </BaseModal>
   );
 }

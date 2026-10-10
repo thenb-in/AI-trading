@@ -118,6 +118,20 @@ const getGenericAppModuleDefinitions = () => [
     order: 14,
   },
   {
+    id: "companySwitcher",
+    title: "Switch Company",
+    description: "Move your active company to any you are assigned to.",
+    category: "Navigation",
+    color: "indigo",
+    tags: ["Company", "Switch", "Multi-Company"],
+    keywords: "switch company change active company multi company group switcher",
+    // Support staff and anyone named in a group of companies — not a permission.
+    requireCompanySwitchAccess: true,
+    navigatePath: "/admin/switch-company",
+    icon: Building,
+    order: 15,
+  },
+  {
     id: "appGuide",
     title: "App Guide",
     description: "In-app guide and documentation.",
@@ -128,7 +142,7 @@ const getGenericAppModuleDefinitions = () => [
     skipPermissionCheck: true,
     navigatePath: "/admin/app-guide",
     icon: BookOpen,
-    order: 15,
+    order: 16,
   },
 ];
 

@@ -58,7 +58,7 @@ env:
   # The one place the Node version is declared. bytenode locks each .jsc to this
   # exact V8 build; it is captured into the bundle's VERSION and read back at
   # deploy time — nothing downstream hardcodes it.
-  NODE_VERSION: "22.22.2"
+  NODE_VERSION: "24.21.0"
 
   # The one place the build target is declared. Non-dispatch triggers build
   # linux. The `env` context is not available in `runs-on` or in a called
@@ -227,6 +227,32 @@ jobs:
 
       - name: Run build
         run: cd app/client && npm run build
+
+      - name: Cache docs dependencies (github-hosted only)
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@v5
+        id: cache-docs-deps
+        with:
+          path: startup/docs/node_modules
+          key: build-docs-deps-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('startup/docs/package-lock.json') }}
+
+      - name: Install docs dependencies
+        if: steps.cache-docs-deps.outputs.cache-hit != 'true'
+        run: cd startup/docs && npm ci
+        env:
+          CI: true
+          HUSKY: 0
+
+      - name: Build product manual (Docusaurus) into the client bundle
+        # Built alongside the client so the manual ships INSIDE the client
+        # artifact and deploys to /app/<app>/docs together with the SPA.
+        # startup/docs is self-contained (its own package-lock), so it installs
+        # independently of the root workspaces. nginx serves the result at /docs/
+        # (see deploy/base.conf); Docusaurus baseUrl is /docs/ to match.
+        run: |
+          cd startup/docs && npm run build
+          mkdir -p "$GITHUB_WORKSPACE/app/client/dist/docs"
+          cp -a build/. "$GITHUB_WORKSPACE/app/client/dist/docs/"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7

@@ -31,6 +31,7 @@ const recordCommentRoutes = require('./src/routes/recordCommentRoutes');
 const reportRunRoutes = require('./src/routes/reportRunRoutes');
 const notificationRuleRoutes = require('./src/notifications/rules/notificationRuleRoutes');
 const namingSeriesRoutes = require('./src/routes/namingSeriesRoutes');
+const groupOfCompaniesRoutes = require('./src/routes/groupOfCompaniesRoutes');
 const geographyRoutes = require('./src/routes/geographyRoutes');
 const genericReportRoutes = require('./src/routes/reportRoutes');
 const userRoutes = require('./src/routes/userRoutes');

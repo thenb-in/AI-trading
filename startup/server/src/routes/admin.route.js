@@ -49,6 +49,7 @@ router.get('/users/support', requireSupportUser, adminController.getSupportUsers
 router.post('/assign-user', requireSupportUser, adminController.assignUserToCompany);
 router.post('/remove-user', requireSupportUser, adminController.removeUserFromCompany);
 router.get('/companies/:companyId/users', requireSupportUser, adminController.getCompanyUsers);
+router.get('/companies/:companyId/assignable-users', requireSupportUser, adminController.getAssignableUsers);
 
 // Subscription routes — authoring a plan and deciding who is on it is support
 // staff's job, the same as the screen that shows them.

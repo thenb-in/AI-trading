@@ -11,7 +11,6 @@ const { randomUUID } = require('crypto');
 const readline = require('readline/promises');
 
 const APP_SERVER_DIR = path.resolve(__dirname, '../../../app/server');
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 let Sequelize;
 let env;
 let logger;
@@ -30,23 +29,28 @@ function loadAppRuntime() {
 
 function printHelp() {
   console.log(`
-  Move one company's users onto Wallet SSO.
+  Move every app company's users onto Wallet SSO, automatically.
 
     npm run migrate:sso-users -- --clear-local-password
-    npm run migrate:sso-users -- --keep-local-password
+    npm run migrate:sso-users -- --keep-local-password [--yes]
 
   --clear-local-password   wipe the local password once Wallet has the hash;
                            from then on the app only accepts SSO logins
   --keep-local-password    leave local passwords alone, so both the app's own
                            login and SSO keep working during a phased rollout
+  --yes                    skip the confirmation prompt (for unattended runs)
 
   Env: APP_KEY, WALLET_DATABASE_URL
-  The Wallet customer id and this app's company id are asked for when it runs.
+  Walks every company in this app and resolves each one's Wallet customer from
+  what Wallet already knows — the company IS a customer, or a
+  customer_app_companies mapping names it. Companies Wallet cannot resolve have
+  no tenant to migrate into, so they are skipped and listed; add their mapping
+  in Wallet's Customer Master and re-run. Nothing is asked per company.
 `);
 }
 
 function parseArgs(argv) {
-  const opts = { clearLocalPassword: null, help: false };
+  const opts = { clearLocalPassword: null, help: false, assumeYes: false };
 
   for (const arg of argv) {
     if (arg === '--help' || arg === '-h') {
@@ -55,6 +59,8 @@ function parseArgs(argv) {
       opts.clearLocalPassword = true;
     } else if (arg === '--keep-local-password') {
       opts.clearLocalPassword = false;
+    } else if (arg === '--yes' || arg === '-y') {
+      opts.assumeYes = true;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -63,16 +69,6 @@ function parseArgs(argv) {
 }
 
 const normalizeUsername = (username) => String(username || '').trim().toLowerCase();
-
-async function askUuid(rl, question) {
-  for (;;) {
-    const answer = (await rl.question(question)).trim();
-    if (UUID_PATTERN.test(answer)) {
-      return answer.toLowerCase();
-    }
-    console.log('  Not a uuid — try again (or Ctrl-C to stop).');
-  }
-}
 
 async function assertAppKeyRegistered(wallet, appKey) {
   const [rows] = await wallet.query(
@@ -87,66 +83,66 @@ async function assertAppKeyRegistered(wallet, appKey) {
   throw new Error(`APP_KEY "${appKey}" is not a registered Wallet application. Known: ${known}`);
 }
 
-async function assertWalletCustomer(wallet, customerId) {
+// Every company in this app — the automatic run walks these instead of being
+// told which one.
+async function listLocalCompanies() {
+  const [rows] = await localSequelize.query(
+    'SELECT id, name FROM nbnext_company ORDER BY name'
+  );
+  return rows;
+}
+
+/**
+ * The Wallet customer this app's company id refers to, asking Wallet what it
+ * already knows instead of the operator. Mirrors Wallet's own
+ * customerAppCompanyService.resolveWalletCustomerId: the id IS a Wallet customer
+ * (wallet-provisioned apps send ours back), else a customer_app_companies row
+ * claims it (by app_key), else neither.
+ */
+async function resolveWalletCustomerIdForApp(wallet, appCompanyId, appKey) {
   const [customers] = await wallet.query(
+    'SELECT customer_id FROM customers WHERE customer_id = :appCompanyId LIMIT 1',
+    { replacements: { appCompanyId } }
+  );
+  if (customers[0]) {
+    return { customerId: appCompanyId, via: 'customer' };
+  }
+
+  const [mappings] = await wallet.query(
+    'SELECT customer_id FROM customer_app_companies WHERE app_company_id = :appCompanyId AND app_key = :appKey',
+    { replacements: { appCompanyId, appKey } }
+  );
+  if (mappings.length === 1) {
+    return { customerId: mappings[0].customer_id, via: 'mapping' };
+  }
+  if (mappings.length > 1) {
+    return { customerId: null, via: 'ambiguous' };
+  }
+  return { customerId: null, via: 'unmapped' };
+}
+
+async function getWalletCustomerName(wallet, customerId) {
+  const [rows] = await wallet.query(
     'SELECT name FROM customers WHERE customer_id = :customerId LIMIT 1',
     { replacements: { customerId } }
   );
-  if (!customers[0]) {
-    throw new Error(`No Wallet customer with customer_id ${customerId}`);
-  }
-
-  const [companies] = await wallet.query(
-    'SELECT name FROM nbnext_company WHERE id = :customerId LIMIT 1',
-    { replacements: { customerId } }
-  );
-  if (!companies[0]) {
-    throw new Error(
-      `Wallet customer ${customerId} has no company row of the same id — create it on Wallet first`
-    );
-  }
-  return customers[0].name;
+  return rows[0]?.name || null;
 }
 
-async function readLocalCompany(companyId) {
-  const [rows] = await localSequelize.query(
-    'SELECT name FROM nbnext_company WHERE id = :companyId LIMIT 1',
-    { replacements: { companyId } }
-  );
-  if (!rows[0]) {
-    throw new Error(`No company ${companyId} in this app`);
+// Split every company into the ones Wallet can resolve (migrate) and the ones it
+// can't (skip — nothing to migrate into until a mapping exists).
+async function planCompanies(wallet, companies, appKey) {
+  const toMigrate = [];
+  const skipped = [];
+  for (const company of companies) {
+    const { customerId, via } = await resolveWalletCustomerIdForApp(wallet, company.id, appKey);
+    if (via === 'customer' || via === 'mapping') {
+      toMigrate.push({ company, customerId, via });
+    } else {
+      skipped.push({ company, via });
+    }
   }
-  return rows[0].name;
-}
-
-/** Tell Wallet which local company id to hand this app back in the SSO claim. */
-async function upsertAppCompanyMapping(wallet, { customerId, appKey, appCompanyId }) {
-  const [rows] = await wallet.query(
-    'SELECT app_company_id FROM customer_app_companies WHERE customer_id = :customerId AND app_key = :appKey LIMIT 1',
-    { replacements: { customerId, appKey } }
-  );
-
-  if (!rows[0]) {
-    await wallet.query(
-      `INSERT INTO customer_app_companies (customer_id, app_key, app_company_id, created_at, updated_at)
-       VALUES (:customerId, :appKey, :appCompanyId, NOW(), NOW())`,
-      { replacements: { customerId, appKey, appCompanyId } }
-    );
-    console.log(`  mapping added: ${appKey} -> ${appCompanyId}`);
-    return;
-  }
-
-  if (rows[0].app_company_id === appCompanyId) {
-    console.log('  mapping already correct');
-    return;
-  }
-
-  await wallet.query(
-    `UPDATE customer_app_companies SET app_company_id = :appCompanyId, updated_at = NOW()
-     WHERE customer_id = :customerId AND app_key = :appKey`,
-    { replacements: { customerId, appKey, appCompanyId } }
-  );
-  console.log(`  mapping changed: ${rows[0].app_company_id} -> ${appCompanyId}`);
+  return { toMigrate, skipped };
 }
 
 async function findWalletUser(wallet, username) {
@@ -250,6 +246,46 @@ async function migrateOneUser(ctx, user) {
   summary.passwordCleared += 1;
 }
 
+// Migrate one resolved company's users under its Wallet customer id. Returns how
+// many users it had (0 = nothing to do, printed nothing).
+async function migrateCompany(wallet, company, customerId, opts, summary) {
+  const users = await User.findAll({
+    where: { company_id: company.id },
+    attributes: ['id', 'username', 'password', 'name', 'phone', 'isActive', 'is_approved'],
+    order: [['username', 'ASC']]
+  });
+  if (users.length === 0) {
+    return 0;
+  }
+
+  const customerName = await getWalletCustomerName(wallet, customerId);
+  console.log(`\n  ${company.name} -> ${customerName || '(unnamed)'} (Wallet customer ${customerId}, ${users.length} users)`);
+
+  const ctx = { wallet, customerId, opts, summary };
+  for (const user of users) {
+    try {
+      await migrateOneUser(ctx, user);
+    } catch (err) {
+      summary.errors += 1;
+      logger.error(`[migrate-sso] FAIL ${normalizeUsername(user.username)}: ${err.message}`, err);
+    }
+  }
+  return users.length;
+}
+
+async function confirmOrAbort(opts, companyCount) {
+  if (opts.assumeYes) {
+    return true;
+  }
+  if (!process.stdin.isTTY) {
+    throw new Error('Not a terminal — re-run with --yes to migrate without the confirmation prompt');
+  }
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = (await rl.question(`\n  Type yes to migrate ${companyCount} companies: `)).trim().toLowerCase();
+  rl.close();
+  return answer === 'yes';
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.help) {
@@ -259,10 +295,6 @@ async function main() {
   if (opts.clearLocalPassword === null) {
     printHelp();
     throw new Error('Pass --clear-local-password or --keep-local-password');
-  }
-
-  if (!process.stdin.isTTY) {
-    throw new Error('Run this from a terminal — it asks for the two company ids interactively');
   }
 
   loadAppRuntime();
@@ -280,66 +312,53 @@ async function main() {
   await wallet.authenticate();
   await assertAppKeyRegistered(wallet, appKey);
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   try {
     console.log(`\n  app_key: ${appKey}`);
-    console.log(`  passwords: ${opts.clearLocalPassword ? 'CLEAR after migrating' : 'keep as they are'}\n`);
+    console.log(`  passwords: ${opts.clearLocalPassword ? 'CLEAR after migrating' : 'keep as they are'}`);
 
-    const customerId = await askUuid(rl, '  Wallet customer id: ');
-    const customerName = await assertWalletCustomer(wallet, customerId);
+    const companies = await listLocalCompanies();
+    const { toMigrate, skipped } = await planCompanies(wallet, companies, appKey);
 
-    const appCompanyId = await askUuid(rl, '  This app\'s company id: ');
-    const companyName = await readLocalCompany(appCompanyId);
-
-    const users = await User.findAll({
-      where: { company_id: appCompanyId },
-      attributes: ['id', 'username', 'password', 'name', 'phone', 'isActive', 'is_approved'],
-      order: [['username', 'ASC']]
-    });
-    if (users.length === 0) {
-      throw new Error(`No users in company ${appCompanyId}`);
+    console.log(`\n  ${companies.length} companies in this app: ${toMigrate.length} resolvable on Wallet, ${skipped.length} skipped (no Wallet customer/mapping).`);
+    for (const { company, via } of skipped) {
+      console.log(`    SKIP ${company.name} (${company.id}) — ${via}`);
     }
-
-    console.log(`\n  ${companyName} (this app, ${users.length} users)`);
-    console.log(`    -> ${customerName} (Wallet customer ${customerId})`);
+    if (toMigrate.length === 0) {
+      console.log('\n  Nothing to migrate. Add the mappings in Wallet\'s Customer Master, then re-run.');
+      return;
+    }
     if (opts.clearLocalPassword) {
-      console.log('\n  Local passwords will be CLEARED. Only SSO logins will work afterwards.');
+      console.log('\n  Local passwords will be CLEARED for migrated users. Only SSO logins will work afterwards.');
     }
 
-    const confirm = (await rl.question('\n  Type yes to go ahead: ')).trim().toLowerCase();
-    if (confirm !== 'yes') {
+    if (!(await confirmOrAbort(opts, toMigrate.length))) {
       console.log('  Cancelled, nothing written.');
       return;
     }
-    rl.close();
-
-    console.log('');
-    await upsertAppCompanyMapping(wallet, { customerId, appKey, appCompanyId });
 
     const summary = {
       created: 0, alreadyOnWallet: 0, linked: 0,
       skipped: 0, conflicts: 0, passwordCleared: 0, passwordKept: 0, errors: 0
     };
-    const ctx = { wallet, customerId, opts, summary };
-
-    for (const user of users) {
-      try {
-        await migrateOneUser(ctx, user);
-      } catch (err) {
-        summary.errors += 1;
-        logger.error(`[migrate-sso] FAIL ${normalizeUsername(user.username)}: ${err.message}`, err);
+    let companiesMigrated = 0;
+    for (const { company, customerId } of toMigrate) {
+      if (await migrateCompany(wallet, company, customerId, opts, summary) > 0) {
+        companiesMigrated += 1;
       }
     }
 
-    console.log('\n[migrate-sso] Summary:', summary);
+    console.log(`\n[migrate-sso] Companies migrated: ${companiesMigrated}/${toMigrate.length}`);
+    console.log('[migrate-sso] Summary:', summary);
     if (summary.conflicts > 0) {
       console.log('  Conflicts are usernames already used by another customer on Wallet — rename one side, then re-run.');
+    }
+    if (skipped.length > 0) {
+      console.log(`  ${skipped.length} companies skipped for having no Wallet customer/mapping — add them in the Customer Master and re-run.`);
     }
     if (summary.errors > 0) {
       throw new Error(`${summary.errors} user(s) failed`);
     }
   } finally {
-    rl.close();
     await wallet.close();
     await localSequelize.close();
   }

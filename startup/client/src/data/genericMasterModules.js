@@ -9,6 +9,7 @@ import {
   Assessment as AssessmentIcon,
   Campaign as CampaignIcon,
   AccountTree as AccountTreeIcon,
+  Domain as DomainIcon,
 } from "@mui/icons-material";
 import { NotificationRuleMaster } from "../components/masters/notification_rule_master/NotificationRuleMaster";
 import { GeographyMaster } from "../components/masters/geography_master/GeographyMaster";
@@ -18,6 +19,7 @@ import { ActivityMaster } from "../components/masters/activity_master/ActivityMa
 import { CacheMaster } from "../components/masters/cache_master/CacheMaster";
 import { NBnextDriveMaster } from "../components/masters/nbnext_drive_master/NBnextDriveMaster";
 import { NamingSeriesMaster } from "../components/masters/naming_series_master/NamingSeriesMaster";
+import { GroupOfCompanies } from "../components/admin/group_of_companies/GroupOfCompanies";
 
 
 const GENERIC_MASTER_CATEGORIES = {
@@ -163,6 +165,22 @@ const getGenericMasterModules = () => [
     keywords: "naming series code auto number sequence prefix counter employee code generate",
     category: GENERIC_MASTER_CATEGORIES.CONFIGURATION,
     permissionName: "read_naming_series",
+  },
+  {
+    id: "group-of-companies",
+    component: GroupOfCompanies,
+    title: "Group of Companies",
+    description:
+      "Group companies together and name the business users who work across them — support staff only.",
+    icon: DomainIcon,
+    color: "secondary",
+    buttonText: "Manage Groups",
+    tags: ["Group", "Companies", "Multi-Company", "Superadmin"],
+    keywords: "group of companies multi company business users support superadmin grouping",
+    category: GENERIC_MASTER_CATEGORIES.ORGANISATION,
+    // Support staff only — this master lives above any one company, so it is
+    // gated on support-user status rather than a company-scoped permission.
+    requireSupportUser: true,
   },
 ];
 

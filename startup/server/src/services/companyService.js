@@ -126,13 +126,20 @@ const companyService = {
         // Use provided companyId after trimming
         companyIdToUse = data.companyId.trim();
 
-        // Check if companyId already exists
+        // The id is already in use: the user isn't making a second company, they
+        // are asking to be put on the one this id names. Link them to it (if they
+        // aren't already) and hand it back — don't create it again.
         const existingCompany = await Company.findOne({
           where: { id: companyIdToUse },
           transaction
         });
         if (existingCompany) {
-          throw new Error(`Company ID "${companyIdToUse}" is already taken. Please choose a different ID.`);
+          await MultiCompanyModule.findOrCreate({
+            where: { userId, companyId: existingCompany.id },
+            transaction
+          });
+          await transaction.commit();
+          return { company: existingCompany, created: false };
         }
       } else {
         // Generate a random UUID if companyId is not provided
@@ -164,7 +171,7 @@ const companyService = {
       );
 
       await transaction.commit();
-      return company;
+      return { company, created: true };
     } catch (error) {
       if (!transaction.finished) {
         await transaction.rollback();

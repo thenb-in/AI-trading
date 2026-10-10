@@ -180,7 +180,7 @@ const assignUserToCompany = async (req, res) => {
       });
     }
 
-    const result = await multiCompanyService.assignSupportUserToCompany(userId, companyId);
+    const result = await multiCompanyService.assignEligibleUserToCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -207,7 +207,7 @@ const removeUserFromCompany = async (req, res) => {
       });
     }
 
-    const result = await multiCompanyService.removeSupportUserFromCompany(userId, companyId);
+    const result = await multiCompanyService.removeAssignedUserFromCompany(userId, companyId);
     res.json({
       success: true,
       message: result.message,
@@ -248,6 +248,33 @@ const getCompanyUsers = async (req, res) => {
   }
 };
 
+// Who may be assigned to this company — support users and the company's group
+// business users, kept apart so the screen can label them.
+const getAssignableUsers = async (req, res) => {
+  try {
+    const { companyId } = req.params;
+
+    if (!companyId) {
+      return res.status(400).json({
+        success: false,
+        message: `Company ID is required ${companyId}`
+      });
+    }
+
+    const users = await multiCompanyService.getAssignableUsers(companyId);
+    res.json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    logger.error('Error fetching assignable users', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 module.exports = {
   createRole,
   createPermission,
@@ -259,5 +286,6 @@ module.exports = {
   getSupportUsers,
   assignUserToCompany,
   removeUserFromCompany,
-  getCompanyUsers
+  getCompanyUsers,
+  getAssignableUsers
 };

@@ -4,6 +4,7 @@ import { UserManagement } from "../components/admin/user_management/UserManageme
 import { CompanySettings } from "../components/admin/company_setting/CompanySettings";
 import { RolePermissionsManagement } from "../components/admin/role_permissions";
 import { MultiCompanyModule } from "../components/admin/multi_company_module/MultiCompanyModule";
+import { CompanySwitcher } from "../components/admin/company_switcher/CompanySwitcher";
 import { ReportContent } from "./Reports";
 import { MasterContent } from "./Masters";
 import { Navigator } from "./navigator/Navigator";
@@ -78,6 +79,10 @@ const AdminDashboard = () => {
         <Route
           path="multi-company-setup"
           element={<RequireAccess definition={moduleById.multiCompanySetup}><MultiCompanyModule /></RequireAccess>}
+        />
+        <Route
+          path="switch-company"
+          element={<RequireAccess definition={moduleById.companySwitcher}><CompanySwitcher /></RequireAccess>}
         />
         <Route
           path="subscription"

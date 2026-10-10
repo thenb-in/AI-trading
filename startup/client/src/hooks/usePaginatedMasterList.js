@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "react-toastify";
+import { getApiErrorMessage } from "@utils/apiErrorMessage";
 
 /**
  * Drives a read-only master list that is paginated + infinite-scrolled and
@@ -42,7 +44,7 @@ function usePaginatedMasterList(fetcher, { enabled = true, pageLimit = 200, rows
       setHasMore(Boolean(pagination?.hasNextPage));
       currentPageRef.current = page;
     } catch (error) {
-      console.error("Error fetching master list:", error);
+      toast.error(`Could not load page ${page}: ${getApiErrorMessage(error, 'the server gave no reason')}`);
       if (!append) setHasMore(false);
     } finally {
       if (append) setIsLoadingMore(false);

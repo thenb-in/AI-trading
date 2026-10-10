@@ -4,6 +4,7 @@ const { MultiCompanyModule, CompanyProfile, User } = require('../models');
 const companyService = require('./companyService');
 const rolePermissionService = require('./rolePermissionService');
 const userService = require('./userService');
+const groupOfCompaniesService = require('./groupOfCompaniesService');
 
 /**
  * Retrieves all companies a user is linked to via MultiCompanyModule.
@@ -112,29 +113,57 @@ async function removeAllUserCompanyLinks(userId) {
   await MultiCompanyModule.destroy({ where: { user_id: userId } });
 }
 
-/** The active support users assigned to a company. */
+/** The active users assigned to a company — support staff and group business
+ * users alike. Each carries isSupportUser so the screen can show the two kinds
+ * apart, and isDirectUser (their home company IS this one) so a direct business
+ * user can be shown as belonging here and kept from being removed. */
 async function getCompanyUsers(companyId) {
   const assignments = await MultiCompanyModule.findAll({
     where: { companyId },
     include: [{
       model: User,
       as: 'user',
-      attributes: ['id', 'name', 'username', 'isSupportUser', 'isActive'],
-      where: { isSupportUser: true, isActive: true }
+      attributes: ['id', 'name', 'username', 'isSupportUser', 'isActive', 'company_id'],
+      where: { isActive: true }
     }],
     order: [['createdAt', 'ASC']]
   });
-  return assignments.map((assignment) => assignment.user);
+  return assignments.map(({ user }) => ({
+    id: user.id,
+    name: user.name,
+    username: user.username,
+    isSupportUser: user.isSupportUser,
+    isDirectUser: user.company_id === companyId
+  }));
 }
 
+/**
+ * The users a support staffer may assign to this company, split by kind:
+ * every support user, and the business users of the group(s) this company
+ * belongs to.
+ */
+async function getAssignableUsers(companyId) {
+  const [supportUsers, businessUsers] = await Promise.all([
+    userService.getSupportUsers(),
+    groupOfCompaniesService.listBusinessUsersForCompany(companyId)
+  ]);
+  return { supportUsers, businessUsers };
+}
 
-const assignSupportUserToCompany = async (userId, companyId) => {
+// A support user may go on any company; a business user only on a company whose
+// group they are named in. That single gate is what lets a group member be
+// assigned without being support staff.
+const assignEligibleUserToCompany = async (userId, companyId) => {
   try {
-    // Validate user exists and is support user and active - use userService
     const user = await userService.getUserById(userId);
+    if (!user.isActive) {
+      throw { status: 400, message: `User "${user.name || userId}" is not active and cannot be assigned` };
+    }
 
-    if (!user.isSupportUser || !user.isActive) {
-      throw { status: 400, message: 'Only active support users can be assigned to companies' };
+    const eligible = user.isSupportUser
+      || await groupOfCompaniesService.isUserEligibleForCompany(userId, companyId);
+    if (!eligible) {
+      throw { status: 400, message: `User "${user.name || userId}" is neither a support user nor in a group holding this company, so cannot be assigned to it` };
     }
 
     // Validate company exists - use companyService
@@ -162,10 +191,16 @@ const assignSupportUserToCompany = async (userId, companyId) => {
   }
 };
 
-const removeSupportUserFromCompany = async (userId, companyId) => {
+const removeAssignedUserFromCompany = async (userId, companyId) => {
   try {
     // Validate user exists - use userService
     const user = await userService.getUserById(userId);
+
+    // A business user whose home company IS this one belongs to it directly —
+    // the assignment is not theirs to drop, so it cannot be removed here.
+    if (!user.isSupportUser && user.company_id === companyId) {
+      throw { status: 400, message: `User "${user.name}" is a direct user of this company and cannot be removed from it` };
+    }
 
     // Validate company exists - use companyService
     const company = await companyService.getCompanySettings(companyId);
@@ -298,9 +333,10 @@ module.exports = {
   findUserCompanyLink,
   removeAllUserCompanyLinks,
   getCompanyUsers,
+  getAssignableUsers,
   removeUserFromCompany,
   getAllUsers,
   createCompanyAndLink,
-  assignSupportUserToCompany,
-  removeSupportUserFromCompany
+  assignEligibleUserToCompany,
+  removeAssignedUserFromCompany
 };
