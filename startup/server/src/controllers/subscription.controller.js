@@ -40,6 +40,10 @@ const subscriptionController = {
 
   async pushToWallet(subscriptionId, userId) {
     return subscriptionService.pushSubscriptionToWalletById(subscriptionId, userId);
+  },
+
+  async backfillSubscribedMasters({ apply }) {
+    return subscriptionService.backfillSubscribedMasters({ apply });
   }
 };
 

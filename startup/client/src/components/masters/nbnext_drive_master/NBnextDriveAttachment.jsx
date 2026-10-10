@@ -29,6 +29,7 @@ function toFiles(v) {
  */
 const NBnextDriveAttachment = ({
   objectName,
+  permissionName,
   objectId,
   accept = '*/*',
   hint = 'Any file type supported (max 100MB)',
@@ -44,7 +45,13 @@ const NBnextDriveAttachment = ({
   attachmentsState
 }) => {
   const { userData } = useDataContext();
-  const canManageFiles = hasPermission(recordPermissionName(objectName, 'attachment'), userData);
+  // A file is filed under its own object name (a letter head's header and
+  // footer are stored apart, under LetterHeadHeader / LetterHeadFooter), but
+  // the right to work with it is the owning master's attachment permission.
+  // Those two names differ only when a master files its records under more than
+  // one object, so permissionName names the master and falls back to the
+  // object name — which is the master itself everywhere else.
+  const canManageFiles = hasPermission(recordPermissionName(permissionName || objectName, 'attachment'), userData);
 
   const internal = useExistingAttachments(
     objectName,
@@ -74,7 +81,7 @@ const NBnextDriveAttachment = ({
         (async () => {
           try {
             for (const file of next) {
-              await nbnextDriveService.uploadFile(file, objectName, String(objectId), endDate || null);
+              await nbnextDriveService.uploadFile(file, objectName, String(objectId), endDate || null, permissionName || null);
             }
             toast.success(next.length === 1 ? 'File uploaded.' : `${next.length} files uploaded.`);
             refetch();
@@ -90,7 +97,7 @@ const NBnextDriveAttachment = ({
         setLocalFiles([]);
       }
     },
-    [uploadOnSubmitOnly, hasObjectId, objectName, objectId, endDate, onPendingFilesChange, refetch]
+    [uploadOnSubmitOnly, hasObjectId, objectName, permissionName, objectId, endDate, onPendingFilesChange, refetch]
   );
 
   const handleViewerLoadError = useCallback((msg) => {
@@ -235,6 +242,10 @@ const NBnextDriveAttachment = ({
 
 NBnextDriveAttachment.propTypes = {
   objectName: PropTypes.string.isRequired,
+  // The master whose attachment_<master> permission gates this panel, when it
+  // is not the object name itself (e.g. 'Letter Head' for LetterHeadHeader).
+  // Travels with each upload so the file remembers it for later requests.
+  permissionName: PropTypes.string,
   objectId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   accept: PropTypes.string,
   hint: PropTypes.string,

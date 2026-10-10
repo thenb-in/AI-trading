@@ -59,6 +59,7 @@ router.post('/subscriptions', requireSupportUser, subscriptionValidator.createSu
 router.put('/subscriptions/:subscription_id/permissions', requireSupportUser, subscriptionValidator.updateSubscriptionPermissionsValidation, subscriptionView.updateSubscriptionPermissions);
 router.get('/subscriptions/:subscription_id/export', requireSupportUser, subscriptionView.exportSubscription);
 router.post('/subscriptions/import', requireSupportUser, subscriptionValidator.importSubscriptionValidation, subscriptionView.importSubscription);
+router.post('/subscriptions/backfill-missing', requireSupportUser, subscriptionView.backfillSubscribedMasters);
 router.post('/subscriptions/:subscription_id/push-to-wallet', requireSupportUser, subscriptionView.pushSubscriptionToWallet);
 
 // Company-Subscription routes

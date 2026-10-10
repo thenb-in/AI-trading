@@ -9,6 +9,7 @@ import { SaveControls } from './components/SaveControls';
 import { Loader } from '@/components/common/Loader';
 import { AlertMessage } from '../role_permissions/components/AlertMessage';
 import { CreateSubscriptionModal } from './components/CreateSubscriptionModal';
+import { BackfillPreviewModal } from './components/BackfillPreviewModal';
 import { HeadBaseButton } from './components/HeadBaseButton';
 
 
@@ -61,6 +62,8 @@ function SubscriptionPage() {
               isPushed={!!sm.selectedSubscription?.pushed}
               isPushing={sm.isPushing}
               onPush={sm.pushToWallet}
+              onBackfill={sm.openBackfillModal}
+              backfillCount={sm.backfillSummary?.total || 0}
               importFileRef={sm.importFileRef}
               onExport={sm.exportSubscription}
               onImportClick={sm.openImportPicker}
@@ -145,6 +148,14 @@ function SubscriptionPage() {
         onClose={sm.closeCreateModal}
         onSuccess={sm.refetch}
         permissions={sm.permissions}
+      />
+
+      <BackfillPreviewModal
+        isOpen={sm.isBackfillModalOpen}
+        plan={sm.backfillSummary}
+        onClose={sm.closeBackfillModal}
+        onApply={sm.applyBackfill}
+        isApplying={sm.isBackfilling}
       />
     </div>
   );

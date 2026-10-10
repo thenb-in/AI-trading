@@ -19,7 +19,7 @@ const nbnextDriveService = {
     return response.data;
   },
 
-  async uploadFile(file, objectName = null, objectId = null, endDate = null) {
+  async uploadFile(file, objectName = null, objectId = null, endDate = null, permissionName = null) {
     const formData = new FormData();
     formData.append('file', file);
     if (objectName) {
@@ -30,6 +30,12 @@ const nbnextDriveService = {
     }
     if (endDate) {
       formData.append('endDate', endDate);
+    }
+    // When a file's object name is not a master (a letter head's header/footer),
+    // the master whose attachment permission governs it travels with the upload
+    // so every later request can read it back from the stored file.
+    if (permissionName) {
+      formData.append('permissionName', permissionName);
     }
 
     const response = await ApiService.request('POST', '/nbnext-drive', formData, {

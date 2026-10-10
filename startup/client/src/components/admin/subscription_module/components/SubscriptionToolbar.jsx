@@ -1,8 +1,8 @@
 import { FileTypeField } from '@startup/components/base_components/fields/FileTypeField';
 import PropTypes from 'prop-types';
-import { Loader2, Plus, Download, Upload, UploadCloud, Check } from 'lucide-react';
+import { Loader2, Plus, Download, Upload, UploadCloud, Check, Sparkles } from 'lucide-react';
 
-/** Header action row: Export / Import / Push to wallet / Add Subscription. Pure presentation. */
+/** Header action row: Generate missing / Export / Import / Push to wallet / Add Subscription. Pure presentation. */
 function SubscriptionToolbar({
   canExport,
   isExporting,
@@ -12,6 +12,8 @@ function SubscriptionToolbar({
   isPushed,
   isPushing,
   onPush,
+  onBackfill,
+  backfillCount = 0,
   importFileRef,
   onExport,
   onImportClick,
@@ -20,6 +22,16 @@ function SubscriptionToolbar({
 }) {
   return (
     <div className="flex items-center gap-2">
+      {backfillCount > 0 && (
+        <button
+          onClick={onBackfill}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded transition-colors"
+          title="For every plan, add the permissions a subscribed master is missing (e.g. new comment/attachment rights). Only adds what is absent — review the full list before it is applied."
+        >
+          <Sparkles className="w-4 h-4" />
+          Generate missing ({backfillCount})
+        </button>
+      )}
       <button
         onClick={onExport}
         disabled={!canExport || isExporting}
@@ -89,6 +101,8 @@ SubscriptionToolbar.propTypes = {
   isPushed: PropTypes.bool,
   isPushing: PropTypes.bool,
   onPush: PropTypes.func.isRequired,
+  onBackfill: PropTypes.func.isRequired,
+  backfillCount: PropTypes.number,
   importFileRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
   onExport: PropTypes.func.isRequired,
   onImportClick: PropTypes.func.isRequired,
