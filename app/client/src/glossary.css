@@ -1,0 +1,9 @@
+/* Terms with a glossary entry: dotted underline + help cursor; the full form
+   appears in the native hover tooltip (title attribute). */
+.gloss {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: rgba(148, 163, 184, 0.55);
+  text-underline-offset: 3px;
+  cursor: help;
+}

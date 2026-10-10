@@ -1,0 +1,70 @@
+/* ── How it works — quiet reading page, same family as the scalp desk ───── */
+.sl-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3rem;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  color: #e2e8f0;
+}
+.sl-header h2 { margin: 0 0 0.4rem; font-size: 1.3rem; }
+.sl-header p { color: #b6c2d4; font-size: 0.95rem; line-height: 1.65; max-width: 62ch; margin: 0 0 1.2rem; }
+
+.sl-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 1.1rem 1.4rem; margin-bottom: 1.1rem;
+}
+.sl-card h3 { margin: 0 0 0.5rem; font-size: 1rem; color: #f1f5f9; }
+.sl-card p { color: #cbd5e1; font-size: 0.88rem; line-height: 1.65; margin: 0 0 0.7rem; max-width: 68ch; }
+.sl-card p:last-child { margin-bottom: 0; }
+.sl-note { color: #94a3b8; font-size: 0.8rem; }
+.sl-error { background: #7f1d1d; color: #fecaca; padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; }
+
+.sl-scroll { overflow-x: auto; }
+.sl-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.3rem 0 0.8rem; }
+.sl-table td { padding: 0.45rem 0.9rem 0.45rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: top; }
+.sl-param { color: #94a3b8; white-space: nowrap; width: 1%; }
+.sl-value { color: #f1f5f9; font-weight: 650; white-space: nowrap; width: 1%; font-variant-numeric: tabular-nums; }
+.sl-meaning { color: #cbd5e1; }
+
+/* timeline — the left border color IS the verdict */
+.sl-timeline { list-style: none; margin: 0.4rem 0 0.8rem; padding: 0; }
+.sl-tl { display: flex; gap: 1.1rem; padding: 0.65rem 0 0.65rem 0.9rem; border-left: 3px solid; margin-bottom: 0.35rem; }
+.sl-tl--good { border-color: #34d399; }
+.sl-tl--bad  { border-color: #f87171; }
+.sl-tl--ok   { border-color: #64748b; }
+.sl-tl--live { border-color: #60a5fa; }
+.sl-tl__when { flex: 0 0 6.5rem; color: #94a3b8; font-size: 0.78rem; padding-top: 0.1rem; }
+.sl-tl__body { min-width: 0; }
+.sl-tl__what { margin: 0 0 0.2rem; color: #e2e8f0; font-size: 0.86rem; line-height: 1.5; }
+.sl-tl__result { margin: 0; color: #94a3b8; font-size: 0.82rem; line-height: 1.5; }
+
+@media (max-width: 640px) {
+  .sl-tl { flex-direction: column; gap: 0.15rem; }
+}
+
+/* ── Side rail: parameter sets and their timeline ── */
+.sl-page--wide { max-width: 1180px; }
+.sl-columns { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 1.4rem; align-items: start; }
+.sl-rail {
+  position: sticky; top: 1rem;
+  border-left: 1px solid rgba(255,255,255,0.09);
+  padding-left: 1.1rem;
+}
+.sl-rail h3 { margin: 0 0 0.7rem; font-size: 0.9rem; color: #f1f5f9; }
+.sl-railset { margin-bottom: 1rem; }
+.sl-railset__when { color: #64748b; font-size: 0.72rem; }
+.sl-railset__name { color: #e2e8f0; font-size: 0.8rem; font-weight: 650; margin: 0.1rem 0 0.25rem; }
+.sl-railset__list { list-style: none; margin: 0; padding: 0; }
+.sl-railset__list li {
+  color: #94a3b8; font-size: 0.74rem; line-height: 1.45;
+  padding-left: 0.8rem; position: relative;
+  font-variant-numeric: tabular-nums;
+}
+.sl-railset__list li::before { content: '·'; position: absolute; left: 0.15rem; color: #475569; }
+.sl-railset--current { border-left: 2px solid #60a5fa; margin-left: -1.2rem; padding-left: 1.05rem; }
+.sl-railset--current .sl-railset__name { color: #93c5fd; }
+
+@media (max-width: 900px) {
+  .sl-columns { grid-template-columns: 1fr; }
+  .sl-rail { position: static; border-left: none; padding-left: 0; }
+}

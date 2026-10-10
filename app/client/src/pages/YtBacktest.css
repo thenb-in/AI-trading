@@ -1,0 +1,10 @@
+/* YT backtest — extends YearBacktest.css */
+.yt-scope { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.yt-scope > div { line-height: 1.5; }
+.yt-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0 4px; }
+.yt-strip__card { padding: 10px 14px; border: 1px solid rgba(127,127,127,.25); border-radius: 8px; display: flex; flex-direction: column; gap: 3px; }
+.yt-strip__card--me { border-color: rgba(60,160,90,.6); }
+.yt-strip__card span { font-size: 12px; opacity: .75; }
+.yt-strip__card b { font-size: 20px; }
+.yt-strip__card i { font-size: 12px; opacity: .8; font-style: normal; }
+@media (max-width: 800px) { .yt-scope, .yt-strip { grid-template-columns: 1fr; } }

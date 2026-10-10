@@ -1,0 +1,134 @@
+/* ── Scalp desk — dark, tabular, one bold verdict ─────────────────────────
+   Fits the app's slate theme; profit/loss carry the only strong color.
+   Every money figure is tabular-numeric and right-aligned. */
+
+.sc-dashboard {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3rem;
+  font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+  color: #e2e8f0;
+}
+.sc-dashboard .sc-num,
+.sc-dashboard td, .sc-dashboard .sc-stats b {
+  font-variant-numeric: tabular-nums;
+}
+.sc-num { text-align: right; }
+
+/* ── Verdict band — the one loud element ── */
+.sc-verdict {
+  display: flex; gap: 2rem; align-items: stretch;
+  background: linear-gradient(180deg, rgba(251,191,36,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(251,191,36,0.25);
+  border-radius: 14px;
+  padding: 1.4rem 1.75rem;
+  margin-bottom: 0.9rem;
+}
+.sc-verdict__main { flex: 1 1 auto; min-width: 0; }
+.sc-verdict__lede { margin: 0; color: #94a3b8; font-size: 0.85rem; }
+.sc-verdict__figure {
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0.2rem 0;
+  color: #fbbf24;
+  font-variant-numeric: tabular-nums;
+}
+.sc-verdict__figure--none { color: #64748b; }
+.sc-verdict__sub { margin: 0; color: #cbd5e1; font-size: 0.9rem; }
+.sc-verdict__lots { margin-top: 0.8rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.sc-lotchip {
+  padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.8rem;
+  font-variant-numeric: tabular-nums; border: 1px solid transparent;
+}
+.sc-lotchip--win  { background: rgba(52,211,153,0.12); color: #34d399; border-color: rgba(52,211,153,0.3); }
+.sc-lotchip--loss { background: rgba(248,113,113,0.09); color: #f87171; border-color: rgba(248,113,113,0.25); }
+
+.sc-verdict__chart { flex: 0 0 340px; display: flex; flex-direction: column; justify-content: center; }
+.sc-bars { width: 100%; height: auto; }
+.sc-bars__zero { stroke: rgba(255,255,255,0.18); stroke-width: 1; }
+.sc-bars__win  { fill: #34d399; }
+.sc-bars__loss { fill: #f87171; }
+.sc-verdict__chartlabel { margin: 0.3rem 0 0; color: #64748b; font-size: 0.72rem; text-align: center; }
+
+/* ── Status strip ── */
+.sc-strip {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem;
+  padding: 0.55rem 0.9rem; margin-bottom: 1.1rem;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  color: #94a3b8; font-size: 0.78rem;
+}
+.sc-strip b { color: #e2e8f0; font-weight: 600; }
+
+/* ── Cards & layout ── */
+.sc-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.1rem;
+}
+.sc-card h3 { margin: 0 0 0.25rem; font-size: 0.95rem; color: #f1f5f9; }
+.sc-card-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.sc-twocol { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr); gap: 1.1rem; }
+.sc-note { color: #94a3b8; font-size: 0.82rem; line-height: 1.5; margin: 0.25rem 0 0.5rem; }
+
+/* ── Tables ── */
+.sc-scroll { overflow-x: auto; }
+.sc-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.sc-table th {
+  text-align: left; color: #64748b; font-weight: 600; font-size: 0.74rem;
+  padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.09);
+}
+.sc-table th.sc-num { text-align: right; }
+.sc-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.sc-row--good { background: rgba(52,211,153,0.07); }
+.sc-good { color: #34d399; }
+.sc-bad  { color: #f87171; }
+.sc-inhand { font-weight: 700; }
+
+/* ── Stats rows, pills, trades ── */
+.sc-stats { display: flex; flex-wrap: wrap; gap: 1rem 1.75rem; margin: 0.75rem 0; }
+.sc-stats > div { display: flex; flex-direction: column; }
+.sc-stats span { color: #64748b; font-size: 0.72rem; }
+.sc-stats b { font-size: 1.05rem; }
+.sc-pill {
+  display: inline-block; padding: 0.12rem 0.55rem; border-radius: 999px;
+  font-size: 0.68rem; font-weight: 700;
+}
+.sc-pill--good { background: rgba(52,211,153,0.15); color: #34d399; }
+.sc-pill--bad  { background: rgba(248,113,113,0.12); color: #f87171; }
+.sc-open-trade {
+  background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.25);
+  border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.82rem; margin: 0.5rem 0;
+}
+.sc-closed-trade { display: flex; gap: 0.75rem; align-items: center; padding: 0.3rem 0; font-size: 0.82rem; }
+
+/* ── Buttons, details, errors ── */
+.sc-run {
+  flex: none; padding: 0.55rem 1.1rem; border-radius: 8px; border: 1px solid #2563eb;
+  background: #1d4ed8; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85rem;
+}
+.sc-run:hover { background: #2563eb; }
+.sc-run:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.sc-run:disabled { opacity: 0.5; cursor: wait; }
+.sc-run--small { padding: 0.35rem 0.8rem; font-size: 0.78rem; }
+.sc-detailhead { display: flex; justify-content: space-between; align-items: center; margin: 1.4rem 0 0.5rem; }
+.sc-detailhead h3 { margin: 0; font-size: 0.95rem; color: #f1f5f9; }
+.sc-details {
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+  background: rgba(255,255,255,0.02); padding: 0.6rem 1.25rem; margin-bottom: 0.9rem;
+}
+.sc-details summary { cursor: pointer; color: #cbd5e1; font-size: 0.88rem; padding: 0.25rem 0; }
+.sc-details[open] summary { margin-bottom: 0.4rem; }
+.sc-error { background: #7f1d1d; color: #fecaca; padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; }
+.sc-empty { color: #94a3b8; padding: 1.25rem; text-align: center; border: 1px dashed rgba(255,255,255,0.15); border-radius: 10px; margin: 0.5rem 0; }
+.sc-footer { color: #64748b; font-size: 0.74rem; margin-top: 1.5rem; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 860px) {
+  .sc-verdict { flex-direction: column; gap: 1rem; }
+  .sc-verdict__chart { flex-basis: auto; }
+  .sc-twocol { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-dashboard * { transition: none !important; }
+}

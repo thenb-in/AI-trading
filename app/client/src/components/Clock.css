@@ -1,0 +1,23 @@
+.app-clock {
+  position: fixed; top: 8px; right: 12px; z-index: 1000;
+  pointer-events: none; user-select: none;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1px;
+  padding: 0.3rem 0.6rem; border-radius: 8px;
+  background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  text-align: right; line-height: 1.25;
+}
+.app-clock-date { color: #94a3b8; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.02em; }
+.app-clock-time { color: #e2e8f0; font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.app-clock-time em { font-style: normal; color: #64748b; font-size: 0.62rem; font-weight: 600; }
+.app-clock-spot { display: flex; flex-direction: column; align-items: flex-end;
+  font-variant-numeric: tabular-nums; margin-top: 4px; }
+.app-clock-spot__top { display: flex; align-items: baseline; gap: 0.4rem; }
+.app-clock-spot__sub { display: flex; align-items: baseline; gap: 0.4rem; }
+.app-clock-spot em { font-style: normal; color: #64748b; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.03em; }
+.app-clock-spot b { color: #e2e8f0; font-size: 0.76rem; font-weight: 700; }
+.app-clock-spot i { font-style: normal; font-size: 0.66rem; font-weight: 700; }
+.app-clock-spot i.up { color: #34d399; }
+.app-clock-spot i.dn { color: #f87171; }
+.app-clock-spot u { text-decoration: none; color: #64748b; font-size: 0.6rem; }

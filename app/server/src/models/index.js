@@ -26,7 +26,7 @@ for (const [name, model] of Object.entries(frameworkDb)) {
 }
 
 const isModelDir = (parentDir, name) => {
-  if (name.includes('abstract_') || name.includes('base') || name === 'mixins') {
+  if (name.includes('abstract_') || name.includes('base') || name === 'mixins' || name === 'register') {
     return false;
   }
   return fs.statSync(path.join(parentDir, name)).isDirectory();
