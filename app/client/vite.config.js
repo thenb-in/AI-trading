@@ -59,11 +59,11 @@ export default ({ mode }) => {
 
   const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
 
-  // Product manual (Docusaurus) — its own dev server (default port 3000, with
+  // Product manual (Docusaurus) — its own dev server (port 5172, with
   // baseUrl /docs/ so it already serves under /docs). In prod it ships inside this
   // client bundle and nginx serves it at /docs/; in dev we proxy the subpath to its
   // dev server (`cd startup/docs && npm run start`). Override via env if elsewhere.
-  const docsUrl = process.env.VITE_DOCS_URL || 'http://localhost:3000';
+  const docsUrl = 'http://localhost:5172';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',
