@@ -1,6 +1,6 @@
 {
-  "name": "@app/server",
-  "version": "1.0.3",
+  "name": "AI-trading",
+  "version": "1.0.0",
   "private": true,
   "type": "commonjs",
   "main": "index.js",
@@ -9,7 +9,7 @@
     "start": "node index.js",
     "build": "node ../../startup/server/scripts/build-bytecode.js --src . --out-dir ./dist",
     "create-new-company": "node ../../startup/server/create_company_with_role_and_perms.js",
-    "kill": "kill -9 $(lsof -t -i:3000) 2>/dev/null || true",
+    "kill": "kill -9 $(lsof -t -i:8469) 2>/dev/null || true",
     "setup-env": "node ../../startup/server/scripts/setup-env/index.js setup",
     "check-env": "node ../../startup/server/scripts/setup-env/index.js check",
     "validate-env": "node ../../startup/server/scripts/setup-env/index.js validate",
