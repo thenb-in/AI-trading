@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { seasonalityApi } from '@app/services/api';
 import '@app/styles/Seasonality.css';
 
@@ -12,7 +12,7 @@ function cellStyle(v) {
   return { background: v >= 0 ? `rgba(52,211,153,${a})` : `rgba(248,113,113,${a})` };
 }
 
-export default function Seasonality() {
+function Seasonality() {
   const [symbol, setSymbol] = useState('NIFTY');
   const [data, setData] = useState(null);
   const [err, setErr] = useState(null);
@@ -211,3 +211,5 @@ export default function Seasonality() {
     </div>
   );
 }
+
+export { Seasonality };

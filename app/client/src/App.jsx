@@ -4,6 +4,8 @@
 
 import { App as StartupApp } from '@startup/App';
 
-export function App() {
+function App() {
   return <StartupApp />;
 }
+
+export { App };

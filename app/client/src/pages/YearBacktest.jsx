@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { useLocation } from 'react-router-dom';
 import { method2Api } from '@app/services/api';
-import BacktestReport from '../components/BacktestReport.jsx';
+import { BacktestReport } from '../components/BacktestReport.jsx';
 import { rs, pc } from '@app/utils/money.js';
 import '@app/styles/YearBacktest.css';
 
@@ -29,7 +29,7 @@ const PLUS_LABEL = {
   adxMin: (v) => `ADX ≥ ${v}`, gate: (v) => `gate ${v}%`,
 };
 
-export default function YearBacktest() {
+function YearBacktest() {
   const { search } = useLocation();
   const pick = (q) => (q.includes('m=m3') ? 'm3' : q.includes('m=m2p') ? 'm2p' : 'm2');
   const [method, setMethod] = useState(pick(search));
@@ -60,6 +60,15 @@ export default function YearBacktest() {
   };
 
   const months = report?.by_day ?? report?.byDay ?? report?.summary?.monthly ?? [];
+
+  const renderOutcomeNote = (s) => (
+    <p className="yb-note">
+      Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} — the
+      lifecycle's trailing stops and fast invalidation keep losses
+      smaller than wins, which is how a {pc(s.winRate)} win rate
+      stays net positive. Avg hold {s.avgHoldMins} min.
+    </p>
+  );
 
   return (
     <div className="yb-page">
@@ -122,15 +131,10 @@ export default function YearBacktest() {
         err={err}
         months={months}
         outcomeLabels={OUTCOME_LABEL}
-        outcomeNote={(s) => (
-          <p className="yb-note">
-            Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} — the
-            lifecycle's trailing stops and fast invalidation keep losses
-            smaller than wins, which is how a {pc(s.winRate)} win rate
-            stays net positive. Avg hold {s.avgHoldMins} min.
-          </p>
-        )}
+        outcomeNote={renderOutcomeNote}
       />
     </div>
   );
 }
+
+export { YearBacktest };

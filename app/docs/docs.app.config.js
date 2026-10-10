@@ -4,8 +4,8 @@
 // An app built on this base overrides these values and adds its own pages under
 // app/docs/content — those are merged on top of the generic manual.
 module.exports = {
-  title: 'User Manual',
-  tagline: 'How to get the day’s work done',
+  title: 'AI Trading — User Manual',
+  tagline: 'Set up the broker, read the signals, run the desk',
 
   // Production origin the manual is served from, used for the sitemap and
   // absolute links. The manual ships inside the client bundle and nginx serves

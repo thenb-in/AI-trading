@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 function fmt(v) {
   if (v == null) return '—';
   return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -8,6 +10,11 @@ function RR({ risk, reward }) {
   const rr = (reward / risk).toFixed(1);
   return <span className="csp-rr">1:{rr} R/R</span>;
 }
+
+RR.propTypes = {
+  risk: PropTypes.number,
+  reward: PropTypes.number,
+};
 
 function ScenarioCard({ scenario }) {
   const isBuy = scenario.direction === 'BUY';
@@ -58,7 +65,19 @@ function ScenarioCard({ scenario }) {
   );
 }
 
-export default function ChartSignalPanel({ scenarios }) {
+ScenarioCard.propTypes = {
+  scenario: PropTypes.shape({
+    direction: PropTypes.string,
+    trigger: PropTypes.number,
+    entry: PropTypes.number,
+    stopLoss: PropTypes.number,
+    target1: PropTypes.number,
+    target2: PropTypes.number,
+    notes: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
+};
+
+function ChartSignalPanel({ scenarios }) {
   if (!scenarios?.length) return null;
   return (
     <div className="csp-panel">
@@ -70,3 +89,9 @@ export default function ChartSignalPanel({ scenarios }) {
     </div>
   );
 }
+
+ChartSignalPanel.propTypes = {
+  scenarios: PropTypes.arrayOf(PropTypes.object),
+};
+
+export { ChartSignalPanel };

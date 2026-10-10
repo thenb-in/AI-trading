@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 import { marketApi } from '@app/services/api';
 import '@app/styles/Clock.css';
 
@@ -37,7 +38,16 @@ function SpotRow({ label, q }) {
   );
 }
 
-export default function Clock() {
+SpotRow.propTypes = {
+  label: PropTypes.string,
+  q: PropTypes.shape({
+    changePct: PropTypes.number,
+    spot: PropTypes.number,
+    open: PropTypes.number,
+  }),
+};
+
+function Clock() {
   const [now, setNow] = useState(istNow);
   const [spots, setSpots] = useState(null);
   useEffect(() => {
@@ -62,3 +72,5 @@ export default function Clock() {
     </div>
   );
 }
+
+export { Clock };

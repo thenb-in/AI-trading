@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { rs, pc } from '@app/utils/money.js';
 import '@app/styles/YearBacktest.css';
 
@@ -16,7 +17,7 @@ import '@app/styles/YearBacktest.css';
  *  - renderExtraPanel  optional (summary) => node, extra breakdown shown above "How trades ended"
  *  - showTrigger    include the per-trade Trigger column in the log (YT screen only)
  */
-export default function BacktestReport({
+function BacktestReport({
   report,
   err,
   months = [],
@@ -111,3 +112,18 @@ export default function BacktestReport({
     </>
   );
 }
+
+BacktestReport.propTypes = {
+  report: PropTypes.shape({
+    summary: PropTypes.object,
+    trades: PropTypes.array,
+  }),
+  err: PropTypes.string,
+  months: PropTypes.array,
+  outcomeLabels: PropTypes.object,
+  outcomeNote: PropTypes.func,
+  renderExtraPanel: PropTypes.func,
+  showTrigger: PropTypes.bool,
+};
+
+export { BacktestReport };

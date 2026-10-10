@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { backtestApi } from '@app/services/api';
-import BacktestReport from '../components/BacktestReport.jsx';
+import { BacktestReport } from '../components/BacktestReport.jsx';
 import { rs, pc } from '@app/utils/money.js';
 import '@app/styles/YearBacktest.css';
 import '@app/styles/YtBacktest.css';
@@ -34,7 +34,7 @@ const PRICING = {
   calibrated: { label: 'Calibrated premiums', tag: 'IV measured on the real chain, expiry-day honest (−₹500/trade vs project model)' },
 };
 
-export default function YtBacktest() {
+function YtBacktest() {
   const [pricing, setPricing] = useState('project');
   const [triggerSet, setTriggerSet] = useState('yt');
   const [expiryRule, setExpiryRule] = useState(false);
@@ -85,6 +85,30 @@ export default function YtBacktest() {
     { k: 'yt', name: 'YT × ours (this screen)', r: report },
   ];
 
+  const toggleExpiryRule = () => setExpiryRule(v => !v);
+
+  const renderTriggerPanel = (summary) => (
+    <>
+      <h3>Which of their triggers paid</h3>
+      <table className="yb-table">
+        <thead><tr><th>Trigger</th><th>Trades</th><th>Win</th><th>In hand</th></tr></thead>
+        <tbody>
+          {Object.entries(summary.byTrigger ?? {}).sort((a, b) => b[1].netRs - a[1].netRs).map(([k, v]) => (
+            <tr key={k}>
+              <td>{TRIGGER_LABEL[k] ?? k}</td><td className="yb-num">{v.trades}</td>
+              <td className="yb-num">{pc(v.trades ? v.wins / v.trades * 100 : 0)}</td>
+              <td className={`yb-num yb-strong ${v.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(v.netRs)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+
+  const renderOutcomeNote = (summary) => (
+    <p className="yb-note">Avg win {rs(summary.avgWinRs)} vs avg loss {rs(-summary.avgLossRs)} · avg hold {summary.avgHoldMins} min.</p>
+  );
+
   return (
     <div className="yb-page">
       <MethodNav />
@@ -93,7 +117,7 @@ export default function YtBacktest() {
         {Object.entries(TRIGGERS).map(([k, m]) => (
           <button key={k} className={`yb-method__btn ${triggerSet === k ? 'on' : ''}`} onClick={() => setTriggerSet(k)}>{m.label}</button>
         ))}
-        <button className={`yb-method__btn ${expiryRule ? 'on' : ''}`} onClick={() => setExpiryRule(v => !v)} title="Ours, data-derived: on expiry day no entries after 13:00, force-close 13:30">
+        <button className={`yb-method__btn ${expiryRule ? 'on' : ''}`} onClick={toggleExpiryRule} title="Ours, data-derived: on expiry day no entries after 13:00, force-close 13:30">
           {expiryRule ? '✓ ' : ''}expiry-day rule
         </button>
         <span className="yb-method__tag">{TRIGGERS[triggerSet].tag}</span>
@@ -176,27 +200,11 @@ export default function YtBacktest() {
         months={months}
         outcomeLabels={OUTCOME_LABEL}
         showTrigger
-        renderExtraPanel={(s) => (
-          <>
-            <h3>Which of their triggers paid</h3>
-            <table className="yb-table">
-              <thead><tr><th>Trigger</th><th>Trades</th><th>Win</th><th>In hand</th></tr></thead>
-              <tbody>
-                {Object.entries(s.byTrigger ?? {}).sort((a, b) => b[1].netRs - a[1].netRs).map(([k, v]) => (
-                  <tr key={k}>
-                    <td>{TRIGGER_LABEL[k] ?? k}</td><td className="yb-num">{v.trades}</td>
-                    <td className="yb-num">{pc(v.trades ? v.wins / v.trades * 100 : 0)}</td>
-                    <td className={`yb-num yb-strong ${v.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(v.netRs)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-        outcomeNote={(s) => (
-          <p className="yb-note">Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} · avg hold {s.avgHoldMins} min.</p>
-        )}
+        renderExtraPanel={renderTriggerPanel}
+        outcomeNote={renderOutcomeNote}
       />
     </div>
   );
 }
+
+export { YtBacktest };

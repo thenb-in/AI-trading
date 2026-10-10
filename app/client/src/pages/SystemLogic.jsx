@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { marketApi } from '@app/services/api';
 import '@app/styles/SystemLogic.css';
@@ -127,7 +128,13 @@ function ParamRow({ name, value, meaning }) {
   );
 }
 
-export default function SystemLogic() {
+ParamRow.propTypes = {
+  name: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  meaning: PropTypes.node,
+};
+
+function SystemLogic() {
   const [cfg, setCfg] = useState(null);
   const [err, setErr] = useState(null);
 
@@ -245,3 +252,5 @@ export default function SystemLogic() {
     </div>
   );
 }
+
+export { SystemLogic };

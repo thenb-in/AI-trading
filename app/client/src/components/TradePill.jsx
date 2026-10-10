@@ -48,7 +48,7 @@ function enterScore(active, conv) {
   return { score, sidePct };
 }
 
-export default function TradePill() {
+function TradePill() {
   const [d, setD] = useState(null);
   const [seen, setSeen] = useState(false);
 
@@ -138,3 +138,5 @@ export default function TradePill() {
     </span>
   );
 }
+
+export { TradePill };

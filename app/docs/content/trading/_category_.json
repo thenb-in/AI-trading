@@ -1,0 +1,10 @@
+{
+  "label": "7. Trading platform",
+  "position": 7,
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "doc",
+    "id": "trading-overview"
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { liveTradingApi } from '@app/services/api';
 import '@app/styles/LiveTrading.css';
 
@@ -13,7 +13,7 @@ const MODE_TEXT = {
   live: 'LIVE — real orders on the linked Zerodha account. 2 lots hard cap, stop resting on the exchange, MIS auto square-off as the last net.',
 };
 
-export default function LiveTrading() {
+function LiveTrading() {
   const [d, setD] = useState(null);
   const [book, setBook] = useState(null);
   const [err, setErr] = useState(null);
@@ -58,6 +58,16 @@ export default function LiveTrading() {
   };
 
   const active = d?.trades?.find(t => t.live);
+
+  const catchUpEntry = () => {
+    if (!active || !window.confirm(
+      `ENTER THIS TRADE FOR REAL?\n\nBUY 130 qty ${active.tradingsymbol} @ MARKET (now ~₹${t2(active.exit)})\nSystem stop ₹${t2(active.trailSl)} will rest on the exchange.\n\nRefused automatically if the premium has run past entry + 0.5R.`)) return;
+    setBusy(true);
+    liveTradingApi.catchUpEntry()
+      .then(() => pull())
+      .catch(e => window.alert('Catch-up refused: ' + (e.message || e.error || e)))
+      .finally(() => setBusy(false));
+  };
 
   return (
     <div className="lt-page">
@@ -117,15 +127,7 @@ export default function LiveTrading() {
               'unknown': `? could not read the account: ${d.account.error ?? ''}`,
             }[d.account.sync]}</span>
             {d.account.sync === 'paper-only' && active && (
-              <button className="lt-catchup" disabled={busy} onClick={() => {
-                if (!window.confirm(
-                  `ENTER THIS TRADE FOR REAL?\n\nBUY 130 qty ${active.tradingsymbol} @ MARKET (now ~₹${t2(active.exit)})\nSystem stop ₹${t2(active.trailSl)} will rest on the exchange.\n\nRefused automatically if the premium has run past entry + 0.5R.`)) return;
-                setBusy(true);
-                liveTradingApi.catchUpEntry()
-                  .then(() => pull())
-                  .catch(e => window.alert('Catch-up refused: ' + (e.message || e.error || e)))
-                  .finally(() => setBusy(false));
-              }}>
+              <button className="lt-catchup" disabled={busy} onClick={catchUpEntry}>
                 ⚡ Enter this trade now — BUY 130 {active.tradingsymbol} @ market
               </button>
             )}
@@ -269,3 +271,5 @@ export default function LiveTrading() {
     </div>
   );
 }
+
+export { LiveTrading };

@@ -72,7 +72,7 @@ function fireConfetti() {
   setTimeout(() => { cancelAnimationFrame(raf); canvas.remove(); }, DURATION + 200);
 }
 
-export default function TradeEffects() {
+function TradeEffects() {
   const [alarm, setAlarm] = useState(false);
   const baseline = useRef({ loaded: false, lastId: null, activeKey: null });
 
@@ -122,3 +122,5 @@ export default function TradeEffects() {
 
   return alarm ? <div className="fx-alarm" aria-hidden="true" /> : null;
 }
+
+export { TradeEffects };

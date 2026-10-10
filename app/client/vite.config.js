@@ -57,7 +57,7 @@ export default ({ mode }) => {
   const appVersion = rootPackageJson.version || '0.0.0';
   const clientName = clientPackageJson.name;
 
-  const localServerUrl = (process.env.VITE_PROXY_URL || 'http://localhost:3000');
+  const localServerUrl = (process.env.VITE_PROXY_URL);
 
   // Product manual (Docusaurus) — its own dev server (port 5172, with
   // baseUrl /docs/ so it already serves under /docs). In prod it ships inside this

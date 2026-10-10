@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { scalpApi } from '@app/services/api';
 import '@app/styles/ScalpDashboard.css';
@@ -39,6 +40,16 @@ function DailyBars({ days, lotsScale = 1 }) {
     </svg>
   );
 }
+
+DailyBars.propTypes = {
+  days: PropTypes.arrayOf(PropTypes.shape({
+    date: PropTypes.string,
+    netRs: PropTypes.number,
+    wins: PropTypes.number,
+    trades: PropTypes.number,
+  })),
+  lotsScale: PropTypes.number,
+};
 
 // ── Verdict band — the one answer this page exists to give ────────────────
 function VerdictBand({ matrix, focus }) {
@@ -92,6 +103,24 @@ function VerdictBand({ matrix, focus }) {
   );
 }
 
+VerdictBand.propTypes = {
+  matrix: PropTypes.shape({
+    summary: PropTypes.shape({
+      rows: PropTypes.array,
+      cells: PropTypes.number,
+    }),
+    params: PropTypes.shape({
+      window: PropTypes.shape({
+        from: PropTypes.string,
+        to: PropTypes.string,
+      }),
+    }),
+  }),
+  focus: PropTypes.shape({
+    by_day: PropTypes.array,
+  }),
+};
+
 // ── Status strip ──────────────────────────────────────────────────────────
 function StatusStrip({ paper, archive, matrix }) {
   const sessions = matrix?.summary?.rows?.[0] ? null : null;
@@ -105,6 +134,27 @@ function StatusStrip({ paper, archive, matrix }) {
     </div>
   );
 }
+
+StatusStrip.propTypes = {
+  paper: PropTypes.shape({
+    params: PropTypes.shape({
+      config: PropTypes.string,
+      targetPts: PropTypes.number,
+      stopPts: PropTypes.number,
+    }),
+    openPositions: PropTypes.number,
+    closed: PropTypes.number,
+    netRs: PropTypes.number,
+  }),
+  archive: PropTypes.shape({
+    index: PropTypes.object,
+  }),
+  matrix: PropTypes.shape({
+    summary: PropTypes.shape({
+      rows: PropTypes.array,
+    }),
+  }),
+};
 
 // ── Strategy × lots matrix ────────────────────────────────────────────────
 function MatrixCard({ matrix, onRun, running }) {
@@ -168,6 +218,20 @@ function MatrixCard({ matrix, onRun, running }) {
   );
 }
 
+MatrixCard.propTypes = {
+  matrix: PropTypes.shape({
+    summary: PropTypes.shape({
+      rows: PropTypes.array,
+    }),
+    params: PropTypes.shape({
+      lots: PropTypes.array,
+      strategies: PropTypes.array,
+    }),
+  }),
+  onRun: PropTypes.func.isRequired,
+  running: PropTypes.bool.isRequired,
+};
+
 // ── Monthly projection ────────────────────────────────────────────────────
 function ProjectionCard({ proj }) {
   if (!proj) return null;
@@ -187,6 +251,22 @@ function ProjectionCard({ proj }) {
     </section>
   );
 }
+
+ProjectionCard.propTypes = {
+  proj: PropTypes.shape({
+    summary: PropTypes.shape({
+      avgPerSessionRs: PropTypes.number,
+      stdPerSessionRs: PropTypes.number,
+      projectedMonthRs: PropTypes.number,
+      rangeLowRs: PropTypes.number,
+      rangeHighRs: PropTypes.number,
+      note: PropTypes.string,
+    }),
+    params: PropTypes.shape({
+      sessionsMeasured: PropTypes.number,
+    }),
+  }),
+};
 
 // ── Live paper recorder ───────────────────────────────────────────────────
 function PaperCard({ paper }) {
@@ -230,6 +310,35 @@ function PaperCard({ paper }) {
   );
 }
 
+PaperCard.propTypes = {
+  paper: PropTypes.shape({
+    openPositions: PropTypes.number,
+    closed: PropTypes.number,
+    winRate: PropTypes.number,
+    requiredWinRate: PropTypes.number,
+    grossRs: PropTypes.number,
+    chargesRs: PropTypes.number,
+    netRs: PropTypes.number,
+    open: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      tradingsymbol: PropTypes.string,
+      premium_entry: PropTypes.number,
+      premium_target: PropTypes.number,
+      premium_stop: PropTypes.number,
+      premium_best: PropTypes.number,
+      premium_worst: PropTypes.number,
+    })),
+    recent: PropTypes.arrayOf(PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      status: PropTypes.string,
+      tradingsymbol: PropTypes.string,
+      premium_entry: PropTypes.number,
+      premium_exit: PropTypes.number,
+      net_rs: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    })),
+  }),
+};
+
 // ── Detail tables (kept out of the way) ───────────────────────────────────
 function ShapeTable({ title, note, rows }) {
   if (!rows || rows.length === 0) return null;
@@ -266,8 +375,26 @@ function ShapeTable({ title, note, rows }) {
   );
 }
 
+ShapeTable.propTypes = {
+  title: PropTypes.string.isRequired,
+  note: PropTypes.string,
+  rows: PropTypes.arrayOf(PropTypes.shape({
+    label: PropTypes.string,
+    summary: PropTypes.shape({
+      profitable: PropTypes.bool,
+      trades: PropTypes.number,
+      winRate: PropTypes.number,
+      requiredWinRate: PropTypes.number,
+      grossRs: PropTypes.number,
+      chargesRs: PropTypes.number,
+      slippageRs: PropTypes.number,
+      netRs: PropTypes.number,
+    }),
+  })),
+};
+
 // ── Page ──────────────────────────────────────────────────────────────────
-export default function ScalpDashboard() {
+function ScalpDashboard() {
   const [reports, setReports] = useState([]);
   const [paper, setPaper] = useState(null);
   const [archive, setArchive] = useState(null);
@@ -364,3 +491,5 @@ export default function ScalpDashboard() {
     </div>
   );
 }
+
+export { ScalpDashboard };

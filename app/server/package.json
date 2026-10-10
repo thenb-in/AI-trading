@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "build": "node ../../startup/server/scripts/build-bytecode.js --src . --out-dir ./dist",
-    "create-new-company": "node ../../startup/server/create_company_with_role_and_perms.js",
+    "create-new-company": "node scripts/create_new_company.js",
     "kill": "kill -9 $(lsof -t -i:8469) 2>/dev/null || true",
     "setup-env": "node ../../startup/server/scripts/setup-env/index.js setup",
     "check-env": "node ../../startup/server/scripts/setup-env/index.js check",

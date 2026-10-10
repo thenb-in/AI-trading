@@ -2,17 +2,17 @@
 // framework router by registerAppData(). Paths are relative to /admin, so
 // `market-dashboard` renders at /admin/market-dashboard and its nav module's
 // navigatePath must be /admin/market-dashboard.
-import MarketDashboard from "@app/pages/MarketDashboard.jsx";
-import SystemLogic from "@app/pages/SystemLogic.jsx";
-import Method2Dashboard from "@app/pages/Method2Dashboard.jsx";
-import Method2Brief from "@app/pages/Method2Brief.jsx";
-import YearBacktest from "@app/pages/YearBacktest.jsx";
-import ScalpDashboard from "@app/pages/ScalpDashboard.jsx";
-import OptionChain from "@app/pages/OptionChain.jsx";
-import YtBacktest from "@app/pages/YtBacktest.jsx";
-import Seasonality from "@app/pages/Seasonality.jsx";
-import LiveTrading from "@app/pages/LiveTrading.jsx";
-import TradeDesk from "@app/pages/TradeDesk.jsx";
+import { MarketDashboard } from "@app/pages/MarketDashboard.jsx";
+import { SystemLogic } from "@app/pages/SystemLogic.jsx";
+import { Method2Dashboard } from "@app/pages/Method2Dashboard.jsx";
+import { Method2Brief } from "@app/pages/Method2Brief.jsx";
+import { YearBacktest } from "@app/pages/YearBacktest.jsx";
+import { ScalpDashboard } from "@app/pages/ScalpDashboard.jsx";
+import { OptionChain } from "@app/pages/OptionChain.jsx";
+import { YtBacktest } from "@app/pages/YtBacktest.jsx";
+import { Seasonality } from "@app/pages/Seasonality.jsx";
+import { LiveTrading } from "@app/pages/LiveTrading.jsx";
+import { TradeDesk } from "@app/pages/TradeDesk.jsx";
 
 const appRoutes = [
   { path: "market-dashboard", element: <MarketDashboard /> },

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { method2Api, mailerApi } from '@app/services/api';
 import '@app/styles/Method2Dashboard.css';
@@ -21,6 +22,9 @@ function DirectionChip({ direction }) {
   const cls = direction === 'BUY' ? 'chip--bull' : direction === 'SELL' ? 'chip--bear' : 'chip--neutral';
   return <span className={`chip ${cls}`}>{direction}</span>;
 }
+DirectionChip.propTypes = {
+  direction: PropTypes.string,
+};
 
 // ── Confidence bar ─────────────────────────────────────────────────────────
 function ConfBar({ bull, bear }) {
@@ -35,6 +39,10 @@ function ConfBar({ bull, bear }) {
     </div>
   );
 }
+ConfBar.propTypes = {
+  bull: PropTypes.number,
+  bear: PropTypes.number,
+};
 
 // ── Recommendation card ────────────────────────────────────────────────────
 // ── Active trade — the call that stands until ITS levels resolve it ───────
@@ -73,6 +81,12 @@ function EnterMeter({ trade, bullPct, bearPct, macd }) {
     </div>
   );
 }
+EnterMeter.propTypes = {
+  trade: PropTypes.object,
+  bullPct: PropTypes.number,
+  bearPct: PropTypes.number,
+  macd: PropTypes.object,
+};
 
 // Auto-execution switch: Off (default) / Dry-run / LIVE. Dry-run records the
 // orders it would place into the audit table; LIVE places real 2-lot MIS
@@ -140,6 +154,12 @@ function ActiveTradeCard({ trade, bullPct, bearPct, macd }) {
     </div>
   );
 }
+ActiveTradeCard.propTypes = {
+  trade: PropTypes.object,
+  bullPct: PropTypes.number,
+  bearPct: PropTypes.number,
+  macd: PropTypes.object,
+};
 
 function RecommendationCard({ rec, direction, confidence, noTradeReason }) {
   if (direction === 'NEUTRAL' || !rec) {
@@ -262,6 +282,12 @@ function RecommendationCard({ rec, direction, confidence, noTradeReason }) {
     </div>
   );
 }
+RecommendationCard.propTypes = {
+  rec: PropTypes.object,
+  direction: PropTypes.string,
+  confidence: PropTypes.number,
+  noTradeReason: PropTypes.string,
+};
 
 // ── OI flow panel ──────────────────────────────────────────────────────────
 function OiFlowPanel({ oiChange }) {
@@ -321,6 +347,9 @@ function OiFlowPanel({ oiChange }) {
     </div>
   );
 }
+OiFlowPanel.propTypes = {
+  oiChange: PropTypes.object,
+};
 
 // ── Key levels panel ───────────────────────────────────────────────────────
 function KeyLevelsPanel({ oiSr, maxPain, price, pcr }) {
@@ -374,6 +403,12 @@ function KeyLevelsPanel({ oiSr, maxPain, price, pcr }) {
     </div>
   );
 }
+KeyLevelsPanel.propTypes = {
+  oiSr: PropTypes.object,
+  maxPain: PropTypes.object,
+  price: PropTypes.number,
+  pcr: PropTypes.object,
+};
 
 // ── Indicators / macro panel ───────────────────────────────────────────────
 function MacroPanel({ indicators, vix, session, ceQuote, peQuote, adx, macd, supertrend }) {
@@ -475,6 +510,16 @@ function MacroPanel({ indicators, vix, session, ceQuote, peQuote, adx, macd, sup
     </div>
   );
 }
+MacroPanel.propTypes = {
+  indicators: PropTypes.object,
+  vix: PropTypes.object,
+  session: PropTypes.object,
+  ceQuote: PropTypes.object,
+  peQuote: PropTypes.object,
+  adx: PropTypes.object,
+  macd: PropTypes.object,
+  supertrend: PropTypes.string,
+};
 
 // ── Recommendation history table ───────────────────────────────────────────
 function HistoryTable({ history, livePremiums = {} }) {
@@ -574,6 +619,10 @@ function HistoryTable({ history, livePremiums = {} }) {
     </div>
   );
 }
+HistoryTable.propTypes = {
+  history: PropTypes.array,
+  livePremiums: PropTypes.object,
+};
 // ── Mailer Settings Panel ──────────────────────────────────────────────────
 function MailerSettings() {
   const [config, setConfig]       = useState(null);  // { secretKeySet, signalEmail }
@@ -582,6 +631,8 @@ function MailerSettings() {
   const [saving, setSaving]       = useState(false);
   const [testing, setTesting]     = useState(false);
   const [open, setOpen]           = useState(false);
+
+  const toggleOpen = useCallback(() => setOpen(o => !o), []);
 
   useEffect(() => {
     mailerApi.getConfig()
@@ -618,7 +669,7 @@ function MailerSettings() {
   return (
     <div className="m2-card" style={{ marginTop: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-           onClick={() => setOpen(o => !o)}>
+           onClick={toggleOpen}>
         <h3 className="m2-card__title" style={{ margin: 0 }}>
           Mail Alerts
           {config?.secretKeySet && (
@@ -678,7 +729,7 @@ function MailerSettings() {
 }
 
 // ── Main dashboard ─────────────────────────────────────────────────────────
-export default function Method2Dashboard() {
+function Method2Dashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -819,3 +870,5 @@ export default function Method2Dashboard() {
     </div>
   );
 }
+
+export { Method2Dashboard };

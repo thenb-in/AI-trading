@@ -78,7 +78,7 @@ function annotate(root) {
   }
 }
 
-export function startGlossary() {
+function startGlossary() {
   let timer = null;
   const run = () => { timer = null; try { annotate(document.body); } catch { /* never break the app */ } };
   const schedule = () => { if (!timer) timer = setTimeout(run, 400); };
@@ -87,3 +87,5 @@ export function startGlossary() {
   mo.observe(document.body, { childList: true, subtree: true, characterData: true });
   return () => { mo.disconnect(); if (timer) clearTimeout(timer); };
 }
+
+export { startGlossary };

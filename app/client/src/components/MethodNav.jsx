@@ -26,7 +26,7 @@ const MORE = [
   { to: '/brief',    label: 'Trade Brief' },
 ];
 
-export default function MethodNav() {
+function MethodNav() {
   const { pathname, search } = useLocation();
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
@@ -46,6 +46,8 @@ export default function MethodNav() {
   };
   const moreActive = MORE.some(isActive);
 
+  const toggleOpen = () => setOpen(o => !o);
+
   return (
     <nav className="method-nav">
       {PRIMARY.map(item => (
@@ -56,7 +58,7 @@ export default function MethodNav() {
       ))}
       <span className="method-nav__more" ref={boxRef}>
         <button className={`method-nav__tab method-nav__plus ${moreActive ? 'method-nav__tab--active' : ''}`}
-                onClick={() => setOpen(o => !o)} title="More screens">
+                onClick={toggleOpen} title="More screens">
           + more
         </button>
         {open && (
@@ -73,3 +75,5 @@ export default function MethodNav() {
     </nav>
   );
 }
+
+export { MethodNav };

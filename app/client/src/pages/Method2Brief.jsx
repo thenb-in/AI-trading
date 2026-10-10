@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import '@app/styles/Method2Brief.css';
 
@@ -9,7 +9,7 @@ import '@app/styles/Method2Brief.css';
  * rendered text of the whole document in one go.
  * Content matches the code as of 2026-09-25; update alongside logic changes.
  */
-export default function Method2Brief() {
+function Method2Brief() {
   const docRef = useRef(null);
   const [copied, setCopied] = useState(false);
 
@@ -165,3 +165,5 @@ CONFIDENCE = max(bullPct, 100 − bullPct)`}</pre>
     </div>
   );
 }
+
+export { Method2Brief };

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import PropTypes from 'prop-types';
 import { createChart, CrosshairMode } from 'lightweight-charts';
 import { marketApi } from '@app/services/api';
 
@@ -206,7 +207,7 @@ function fillPill(ctx, x, y, w, h, r = 3) {
   }
 }
 
-export default function NiftyChart({ chartData, symbol = 'NIFTY', onSymbolChange, onScenariosUpdate }) {
+function NiftyChart({ chartData, symbol = 'NIFTY', onSymbolChange, onScenariosUpdate }) {
   const containerRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -468,28 +469,33 @@ export default function NiftyChart({ chartData, symbol = 'NIFTY', onSymbolChange
     }
   }, [chartData, symbol, applyAnalysis]);
 
+  const handleSelectNifty = useCallback(() => onSymbolChange?.('NIFTY'), [onSymbolChange]);
+  const handleSelectBankNifty = useCallback(() => onSymbolChange?.('BANKNIFTY'), [onSymbolChange]);
+
+  const handleGoLive = useCallback(() => {
+    studyingRef.current = false;
+    setIsStudying(false);
+    const chart = chartRef.current;
+    if (!chart) return;
+    const total = allCandlesRef.current.length;
+    const currentRange = chart.timeScale().getVisibleLogicalRange();
+    const visibleBars = currentRange ? Math.round(currentRange.to - currentRange.from) : 60;
+    const half = Math.floor(visibleBars / 2);
+    chart.timeScale().setVisibleLogicalRange({
+      from: total - 1 - half,
+      to: total - 1 + half,
+    });
+  }, []);
+
   return (
     <div className="chart-card">
       <div className="chart-card__header">
         <div className="chart-symbol-toggle">
-          <button className={`chart-symbol-btn ${symbol === 'NIFTY' ? 'chart-symbol-btn--active' : ''}`} onClick={() => onSymbolChange?.('NIFTY')}>NIFTY</button>
-          <button className={`chart-symbol-btn ${symbol === 'BANKNIFTY' ? 'chart-symbol-btn--active' : ''}`} onClick={() => onSymbolChange?.('BANKNIFTY')}>BANKNIFTY</button>
+          <button className={`chart-symbol-btn ${symbol === 'NIFTY' ? 'chart-symbol-btn--active' : ''}`} onClick={handleSelectNifty}>NIFTY</button>
+          <button className={`chart-symbol-btn ${symbol === 'BANKNIFTY' ? 'chart-symbol-btn--active' : ''}`} onClick={handleSelectBankNifty}>BANKNIFTY</button>
         </div>
         {isStudying && (
-          <button className="chart-golive-btn" onClick={() => {
-            studyingRef.current = false;
-            setIsStudying(false);
-            const chart = chartRef.current;
-            if (!chart) return;
-            const total = allCandlesRef.current.length;
-            const currentRange = chart.timeScale().getVisibleLogicalRange();
-            const visibleBars = currentRange ? Math.round(currentRange.to - currentRange.from) : 60;
-            const half = Math.floor(visibleBars / 2);
-            chart.timeScale().setVisibleLogicalRange({
-              from: total - 1 - half,
-              to: total - 1 + half,
-            });
-          }}>
+          <button className="chart-golive-btn" onClick={handleGoLive}>
             ● Go Live
           </button>
         )}
@@ -512,3 +518,15 @@ export default function NiftyChart({ chartData, symbol = 'NIFTY', onSymbolChange
     </div>
   );
 }
+
+NiftyChart.propTypes = {
+  chartData: PropTypes.shape({
+    candles: PropTypes.array,
+    symbol: PropTypes.string,
+  }),
+  symbol: PropTypes.string,
+  onSymbolChange: PropTypes.func,
+  onScenariosUpdate: PropTypes.func,
+};
+
+export { NiftyChart };

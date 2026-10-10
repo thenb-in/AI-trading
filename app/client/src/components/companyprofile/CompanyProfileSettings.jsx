@@ -13,6 +13,9 @@ import { SearchableDropdown } from "@startup/components/base_components/fields/S
 import { getApiErrorMessage } from "@utils/apiErrorMessage";
 import { companyProfileTradingService } from "../../services/companyProfileTradingService";
 
+// Read-only fields still need an onChange to stay controlled; this no-op absorbs it.
+const noop = () => {};
+
 // Field descriptors drive the render so a new tunable is one line, not new JSX.
 const SYMBOL_OPTIONS = [
   { value: "NIFTY", label: "NIFTY" },
@@ -151,7 +154,7 @@ const CompanyProfileSettings = forwardRef(function CompanyProfileSettings({ isLo
           <TextTypeField label="Zerodha user id" value={form.zerodha_user_id} onChange={onText("zerodha_user_id")} placeholder="e.g. AB1234" />
           <TextTypeField label="API key" value={form.zerodha_api_key} onChange={onText("zerodha_api_key")} placeholder="Kite Connect API key" />
           <PasswordTypeField label="API secret" value={form.zerodha_api_secret} onChange={onText("zerodha_api_secret")} placeholder="Kite Connect API secret" />
-          <TextTypeField label="Access token" value={form.zerodha_access_token} readOnly onChange={() => {}} hint="Set automatically after Zerodha login and refreshed daily — no need to edit." />
+          <TextTypeField label="Access token" value={form.zerodha_access_token} readOnly onChange={noop} hint="Set automatically after Zerodha login and refreshed daily — no need to edit." />
         </div>
       </SettingsCard>
 

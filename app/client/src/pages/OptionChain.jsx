@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { optionChainApi } from '@app/services/api';
 import '@app/styles/OptionChain.css';
@@ -22,7 +23,22 @@ function Cell({ side, data, isWall }) {
     : <>{ltp}{sprd}{vol}{oich}{oi}</>;
 }
 
-export default function OptionChain() {
+Cell.propTypes = {
+  side: PropTypes.string,
+  isWall: PropTypes.bool,
+  data: PropTypes.shape({
+    oiChangeToday: PropTypes.number,
+    oi: PropTypes.number,
+    volume: PropTypes.number,
+    bid: PropTypes.number,
+    ask: PropTypes.number,
+    spread: PropTypes.number,
+    changePct: PropTypes.number,
+    ltp: PropTypes.number,
+  }),
+};
+
+function OptionChain() {
   const [symbol, setSymbol] = useState('NIFTY');
   const [chain, setChain] = useState(null);
   const [err, setErr] = useState(null);
@@ -34,6 +50,8 @@ export default function OptionChain() {
       .then((payload) => setBookmarks(payload.bookmarks ?? []))
       .catch(() => {});
   }, []);
+
+  const selectSymbol = (sym) => { setSymbol(sym); setChain(null); };
 
   const toggleBookmark = (strike) => {
     const key = `${symbol}:${strike}`;
@@ -78,7 +96,7 @@ export default function OptionChain() {
             {['NIFTY', 'BANKNIFTY'].map((sym) => (
               <button key={sym} role="tab" aria-selected={symbol === sym}
                       className={`oc-toggle__btn ${symbol === sym ? 'oc-toggle__btn--on' : ''}`}
-                      onClick={() => { setSymbol(sym); setChain(null); }}>
+                      onClick={() => selectSymbol(sym)}>
                 {sym}
               </button>
             ))}
@@ -167,3 +185,5 @@ export default function OptionChain() {
     </div>
   );
 }
+
+export { OptionChain };

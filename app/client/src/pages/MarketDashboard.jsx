@@ -1,15 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { Link, useLocation } from 'react-router-dom';
 import '@app/styles/MarketDashboard.css';
-import NiftyChart from '../components/trading/NiftyChart.jsx';
-import ChartSignalPanel from '../components/trading/ChartSignalPanel.jsx';
+import { NiftyChart } from '../components/trading/NiftyChart.jsx';
+import { ChartSignalPanel } from '../components/trading/ChartSignalPanel.jsx';
 import { marketApi } from '@app/services/api';
 
 function formatNum(value) {
   if (value == null || typeof value !== 'number' || Number.isNaN(value)) return '—';
   return value.toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 }
+
+const hasValue = (item) => item.value !== undefined;
 
 function IndicatorCard({ title, items, getColor }) {
   return (
@@ -36,6 +39,16 @@ function IndicatorCard({ title, items, getColor }) {
     </div>
   );
 }
+
+IndicatorCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  items: PropTypes.arrayOf(PropTypes.shape({
+    label: PropTypes.string,
+    value: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    interpretation: PropTypes.string,
+  })).isRequired,
+  getColor: PropTypes.func,
+};
 
 function rsiColor(interpretation) {
   if (!interpretation) return null;
@@ -95,6 +108,10 @@ function SentimentBar({ nifty }) {
   );
 }
 
+SentimentBar.propTypes = {
+  nifty: PropTypes.object,
+};
+
 function SessionBanner({ session }) {
   if (!session) return null;
   const allowed = session.allowed;
@@ -106,6 +123,14 @@ function SessionBanner({ session }) {
     </div>
   );
 }
+
+SessionBanner.propTypes = {
+  session: PropTypes.shape({
+    allowed: PropTypes.bool,
+    reason: PropTypes.string,
+    isExpiryDay: PropTypes.bool,
+  }),
+};
 
 function ConfidenceBreakdown({ breakdown }) {
   if (!breakdown) return null;
@@ -146,6 +171,10 @@ function ConfidenceBreakdown({ breakdown }) {
     </div>
   );
 }
+
+ConfidenceBreakdown.propTypes = {
+  breakdown: PropTypes.object,
+};
 
 const REFRESH_MS = 5000;
 
@@ -232,6 +261,7 @@ function computeMasterSignal(signalData, chartScenarios, priceData, chartSymbol)
 
 function MasterSignalCard({ master }) {
   const [showDetail, setShowDetail] = useState(false);
+  const toggleDetail = useCallback(() => setShowDetail(v => !v), []);
   if (!master) return null;
 
   const { direction, status, statusClass, masterConfidence, engineConfidence, chartBonus,
@@ -318,7 +348,7 @@ function MasterSignalCard({ master }) {
 
       <div className="master-signal__footer">
         {tradesToday != null && <span className="master-footer-item">Trades today: {tradesToday}/3</span>}
-        <button className="master-footer-detail" onClick={() => setShowDetail(v => !v)}>
+        <button className="master-footer-detail" onClick={toggleDetail}>
           {showDetail ? 'Hide' : 'Show'} engine breakdown ↓
         </button>
       </div>
@@ -331,6 +361,30 @@ function MasterSignalCard({ master }) {
     </div>
   );
 }
+
+MasterSignalCard.propTypes = {
+  master: PropTypes.shape({
+    direction: PropTypes.string,
+    status: PropTypes.string,
+    statusClass: PropTypes.string,
+    masterConfidence: PropTypes.number,
+    engineConfidence: PropTypes.number,
+    chartBonus: PropTypes.number,
+    chartAligned: PropTypes.bool,
+    hasChartConflict: PropTypes.bool,
+    entry: PropTypes.number,
+    stopLoss: PropTypes.number,
+    target1: PropTypes.number,
+    target2: PropTypes.number,
+    trigger: PropTypes.number,
+    risk: PropTypes.number,
+    optionTrade: PropTypes.string,
+    notes: PropTypes.arrayOf(PropTypes.string),
+    qualityLevel: PropTypes.string,
+    regime: PropTypes.string,
+    tradesToday: PropTypes.number,
+  }),
+};
 
 function TradeModeToggle({ mode, onChange }) {
   const isSelective = mode === 'selective';
@@ -360,7 +414,12 @@ function TradeModeToggle({ mode, onChange }) {
   );
 }
 
-export default function MarketDashboard() {
+TradeModeToggle.propTypes = {
+  mode: PropTypes.string,
+  onChange: PropTypes.func,
+};
+
+function MarketDashboard() {
   const [priceData, setPriceData] = useState(null);
   const [indicatorData, setIndicatorData] = useState(null);
   const [bankniftyData, setBankniftyData] = useState(null);
@@ -443,6 +502,11 @@ export default function MarketDashboard() {
     }
   }, [chartSymbol]);
 
+  const handleSymbolChange = useCallback((sym) => {
+    setChartSymbol(sym);
+    fetchData(sym);
+  }, [fetchData]);
+
   useEffect(() => {
     marketApi.getTradeMode()
       .then(r => setTradeModeState(r.mode))
@@ -504,7 +568,7 @@ export default function MarketDashboard() {
       <NiftyChart
         chartData={chartData}
         symbol={chartSymbol}
-        onSymbolChange={(sym) => { setChartSymbol(sym); fetchData(sym); }}
+        onSymbolChange={handleSymbolChange}
         onScenariosUpdate={setChartScenarios}
       />
       <ChartSignalPanel scenarios={chartScenarios} />
@@ -589,8 +653,8 @@ export default function MarketDashboard() {
                 value: indicatorData?.rsi,
                 interpretation: indicatorData?.rsiInterpretation,
               },
-            ].filter((item) => item.value !== undefined)}
-            getColor={(interpretation) => rsiColor(interpretation)}
+            ].filter(hasValue)}
+            getColor={rsiColor}
           />
         )}
 
@@ -607,8 +671,8 @@ export default function MarketDashboard() {
                 value: bankniftyData.rsi,
                 interpretation: bankniftyData.rsiInterpretation,
               },
-            ].filter((item) => item.value !== undefined)}
-            getColor={(interpretation) => rsiColor(interpretation)}
+            ].filter(hasValue)}
+            getColor={rsiColor}
           />
         )}
 
@@ -693,7 +757,7 @@ export default function MarketDashboard() {
                 interpretation: signalData.volumeConfirmation === 'strong-breakout' ? 'bullish' : signalData.volumeConfirmation === 'weak-move' ? 'bearish' : null,
               },
             ].filter(Boolean)}
-            getColor={(interpretation) => biasColor(interpretation)}
+            getColor={biasColor}
           />
         )}
 
@@ -720,7 +784,7 @@ export default function MarketDashboard() {
                 value: signalData.oiResistance,
               },
             ].filter(Boolean)}
-            getColor={(interpretation) => biasColor(interpretation)}
+            getColor={biasColor}
           />
         )}
 
@@ -738,10 +802,12 @@ export default function MarketDashboard() {
                 interpretation: signalData.cprDayType === 'trending' ? 'bullish' : null,
               },
             ].filter(Boolean)}
-            getColor={(interpretation) => biasColor(interpretation)}
+            getColor={biasColor}
           />
         )}
       </div>
     </div>
   );
 }
+
+export { MarketDashboard };

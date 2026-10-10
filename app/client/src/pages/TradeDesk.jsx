@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import MethodNav from '../components/MethodNav.jsx';
+import PropTypes from 'prop-types';
+import { MethodNav } from '../components/MethodNav.jsx';
 import { liveTradingApi } from '@app/services/api';
 import '@app/styles/TradeDesk.css';
 
@@ -72,6 +73,13 @@ function FactorBar({ name, value, max, note }) {
   );
 }
 
+FactorBar.propTypes = {
+  name: PropTypes.string,
+  value: PropTypes.number,
+  max: PropTypes.number,
+  note: PropTypes.node,
+};
+
 function ProCard({ label, value, sub, tone }) {
   return (
     <div className={`td-pro ${tone ?? ''}`}>
@@ -82,7 +90,14 @@ function ProCard({ label, value, sub, tone }) {
   );
 }
 
-export default function TradeDesk() {
+ProCard.propTypes = {
+  label: PropTypes.string,
+  value: PropTypes.node,
+  sub: PropTypes.node,
+  tone: PropTypes.string,
+};
+
+function TradeDesk() {
   const [d, setD] = useState(null);
   const [at, setAt] = useState(null);
   const [err, setErr] = useState(null);
@@ -264,3 +279,5 @@ export default function TradeDesk() {
     </div>
   );
 }
+
+export { TradeDesk };
