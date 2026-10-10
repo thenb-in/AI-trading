@@ -5,7 +5,7 @@ const {
   getCachedNfoInstruments,
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
-  getNiftySpotFromZerodha,
+  getNiftySpotFromZerodha
 } = require('./kiteClient');
 
 /**
@@ -16,12 +16,12 @@ async function getZerodhaInstruments() {
   await getCachedNfoInstruments(kite);
   const optionRows = [...getCachedNiftyOptions(), ...getCachedBankniftyOptions()].filter(
     (row) =>
-      (row.instrument_type === "CE" || row.instrument_type === "PE") &&
-      (row.name === "NIFTY" || row.name === "BANKNIFTY")
+      (row.instrument_type === 'CE' || row.instrument_type === 'PE') &&
+      (row.name === 'NIFTY' || row.name === 'BANKNIFTY')
   );
   const sorted = optionRows.slice().sort((a, b) => {
-    const expA = a.expiry ?? "";
-    const expB = b.expiry ?? "";
+    const expA = a.expiry ?? '';
+    const expB = b.expiry ?? '';
     return String(expA).localeCompare(String(expB));
   });
   logger.info(`Total option instruments found ${sorted.length}`);
@@ -33,14 +33,18 @@ const NIFTY_ATM_STRIKES_RANGE = 5; // ±5 strikes around ATM
 const NIFTY_STRIKE_RANGE_POINTS = NIFTY_ATM_STRIKES_RANGE * NIFTY_STRIKE_STEP; // 250 points
 
 function normalizeExpiry(exp) {
-  if (!exp) return "";
+  if (!exp) {
+    return '';
+  }
 
   if (exp instanceof Date) {
-    return Number.isNaN(exp.getTime()) ? "" : exp.toISOString().slice(0, 10);
+    return Number.isNaN(exp.getTime()) ? '' : exp.toISOString().slice(0, 10);
   }
 
   const expStr = String(exp).trim();
-  if (!expStr) return "";
+  if (!expStr) {
+    return '';
+  }
 
   const parsedDate = new Date(expStr);
   if (!Number.isNaN(parsedDate.getTime())) {
@@ -57,12 +61,12 @@ function getAtmStrike(spotPrice) {
 
 function getUpcomingExpiryOptions(options) {
   const expiries = [
-    ...new Set(options.map((r) => normalizeExpiry(r.expiry)).filter((exp) => exp && exp !== "2030-12-31")),
+    ...new Set(options.map((r) => normalizeExpiry(r.expiry)).filter((exp) => exp && exp !== '2030-12-31'))
   ];
 
   expiries.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split('T')[0];
   const attemptedExpiries = [];
   let selectedExpiryStr = null;
   let expiryOptions = [];
@@ -87,7 +91,7 @@ function getUpcomingExpiryOptions(options) {
   return {
     attemptedExpiries,
     selectedExpiryStr,
-    expiryOptions,
+    expiryOptions
   };
 }
 
@@ -96,13 +100,13 @@ function resolveClosestAtmOption(options, optionType, atmStrike) {
     .map((row) => {
       const strike = Number(row.strike ?? 0);
       const instrumentToken =
-        typeof row.instrument_token === "number" ? row.instrument_token : Number(row.instrument_token);
+        typeof row.instrument_token === 'number' ? row.instrument_token : Number(row.instrument_token);
 
       return {
         tradingsymbol: row.tradingsymbol,
         strike,
         instrumentToken: Number.isNaN(instrumentToken) ? undefined : instrumentToken,
-        strikeDistance: Number.isNaN(strike) ? Number.POSITIVE_INFINITY : Math.abs(strike - atmStrike),
+        strikeDistance: Number.isNaN(strike) ? Number.POSITIVE_INFINITY : Math.abs(strike - atmStrike)
       };
     })
     .filter(({ tradingsymbol, strikeDistance }) => Boolean(tradingsymbol) && Number.isFinite(strikeDistance))
@@ -116,7 +120,7 @@ function resolveClosestAtmOption(options, optionType, atmStrike) {
   return {
     tradingsymbol: selectedInstrument.tradingsymbol,
     strike: selectedInstrument.strike,
-    instrumentToken: selectedInstrument.instrumentToken,
+    instrumentToken: selectedInstrument.instrumentToken
   };
 }
 
@@ -127,7 +131,7 @@ async function getNiftyAtmOptionQuote(optionType) {
 
   await getCachedNfoInstruments(kite);
   const niftyOptions = getCachedNiftyOptions().filter(
-    (row) => row.segment === "NFO-OPT" && row.instrument_type === optionType
+    (row) => row.segment === 'NFO-OPT' && row.instrument_type === optionType
   );
 
   if (niftyOptions.length === 0) {
@@ -138,14 +142,14 @@ async function getNiftyAtmOptionQuote(optionType) {
   const { selectedExpiryStr, expiryOptions } = getUpcomingExpiryOptions(niftyOptions);
   if (!selectedExpiryStr || expiryOptions.length === 0) {
     logger.error(`[zerodhaService] No upcoming NIFTY expiry available for signal trade optionType=${optionType}`);
-    throw new Error("No upcoming NIFTY expiry available");
+    throw new Error(`No upcoming NIFTY expiry available`);
   }
 
   const selectedInstrument = resolveClosestAtmOption(expiryOptions, optionType, atmStrike);
 
   if (!selectedInstrument?.tradingsymbol) {
     logger.error(`[zerodhaService] Failed to resolve ATM option instrument for signal trade optionType=${optionType} atmStrike=${atmStrike} selectedExpiry=${selectedExpiryStr}`);
-    throw new Error("Failed to resolve ATM option instrument");
+    throw new Error(`Failed to resolve ATM option instrument`);
   }
 
   const key = `NFO:${selectedInstrument.tradingsymbol}`;
@@ -153,14 +157,14 @@ async function getNiftyAtmOptionQuote(optionType) {
 
   const rawLtp = await kite.getLTP([key]);
   const quoteMap =
-    rawLtp && typeof rawLtp.data === "object"
+    rawLtp && typeof rawLtp.data === 'object'
       ? rawLtp.data
       : rawLtp;
   const premium = Number(quoteMap?.[key]?.last_price);
 
   if (!Number.isFinite(premium) || premium <= 0) {
     logger.error(`[zerodhaService] Invalid option premium returned from Zerodha optionType=${optionType} key=${key} rawLtp=${JSON.stringify(rawLtp)}`);
-    throw new Error("Invalid option premium returned from Zerodha");
+    throw new Error(`Invalid option premium returned from Zerodha`);
   }
 
   return {
@@ -171,7 +175,7 @@ async function getNiftyAtmOptionQuote(optionType) {
     spotPrice,
     premium,
     instrumentToken: selectedInstrument.instrumentToken,
-    selectedExpiry: selectedExpiryStr,
+    selectedExpiry: selectedExpiryStr
   };
 }
 
@@ -186,30 +190,30 @@ async function getNearestExpiryNiftyOptions(strikeRange = 10) {
   await getCachedNfoInstruments(kite);
   const niftyOptions = getCachedNiftyOptions().filter(
     (row) =>
-      row.segment === "NFO-OPT" &&
-      (row.instrument_type === "CE" || row.instrument_type === "PE")
+      row.segment === 'NFO-OPT' &&
+      (row.instrument_type === 'CE' || row.instrument_type === 'PE')
   );
 
   if (niftyOptions.length === 0) {
     logger.error(`[zerodhaService] No cached NIFTY options found for snapshot collection`);
-    throw new Error("No cached NIFTY option instruments found");
+    throw new Error(`No cached NIFTY option instruments found`);
   }
 
   const { selectedExpiryStr, expiryOptions } = getUpcomingExpiryOptions(niftyOptions);
   if (!selectedExpiryStr || expiryOptions.length === 0) {
     logger.error(`[zerodhaService] No upcoming NIFTY expiry available for snapshot collection`);
-    throw new Error("No upcoming NIFTY expiry available");
+    throw new Error(`No upcoming NIFTY expiry available`);
   }
 
   const options = [];
   for (const row of expiryOptions) {
     const strike = Number(row.strike ?? 0);
     const instrumentToken =
-      typeof row.instrument_token === "number" ? row.instrument_token : Number(row.instrument_token);
+      typeof row.instrument_token === 'number' ? row.instrument_token : Number(row.instrument_token);
 
     if (
       !row.tradingsymbol ||
-      (row.instrument_type !== "CE" && row.instrument_type !== "PE") ||
+      (row.instrument_type !== 'CE' && row.instrument_type !== 'PE') ||
       !Number.isFinite(strike) ||
       strike < lowerStrike ||
       strike > upperStrike
@@ -221,7 +225,7 @@ async function getNearestExpiryNiftyOptions(strikeRange = 10) {
       tradingsymbol: row.tradingsymbol,
       strike,
       optionType: row.instrument_type,
-      instrumentToken: Number.isNaN(instrumentToken) ? undefined : instrumentToken,
+      instrumentToken: Number.isNaN(instrumentToken) ? undefined : instrumentToken
     });
   }
 
@@ -233,7 +237,7 @@ async function getNearestExpiryNiftyOptions(strikeRange = 10) {
     spotPrice,
     atmStrike,
     selectedExpiry: selectedExpiryStr,
-    options,
+    options
   };
 }
 
@@ -247,5 +251,5 @@ module.exports = {
   resolveClosestAtmOption,
   getZerodhaInstruments,
   getNiftyAtmOptionQuote,
-  getNearestExpiryNiftyOptions,
+  getNearestExpiryNiftyOptions
 };

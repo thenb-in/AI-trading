@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     net_rs:         { type: DataTypes.DECIMAL(12, 2), allowNull: true },
     held_seconds:   { type: DataTypes.INTEGER, allowNull: true },
     regime:         { type: DataTypes.JSONB, allowNull: true },   // band, efficiency, position
-    reason:         { type: DataTypes.STRING(160), allowNull: true },
+    reason:         { type: DataTypes.STRING(160), allowNull: true }
   }, {
     tableName: 'scalp_paper_trades',
     timestamps: false,
@@ -44,8 +44,8 @@ module.exports = (sequelize, DataTypes) => {
     indexes: [
       { fields: ['entry_time'] },
       { fields: ['status'] },
-      { fields: ['tradingsymbol'] },
-    ],
+      { fields: ['tradingsymbol'] }
+    ]
   });
 
   return ScalpPaperTrade;

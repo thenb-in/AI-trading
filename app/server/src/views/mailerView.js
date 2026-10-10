@@ -10,12 +10,12 @@ function getMailerConfigView(_req, res) {
 async function saveMailerConfigView(req, res) {
   const { secretKey } = req.body;
   if (typeof secretKey !== 'string') {
-    return res.status(400).json({ success: false, error: 'Provide secretKey (string)' });
+    return res.status(400).json({ success: false, error: `Provide secretKey (string)` });
   }
   try {
     res.json({ success: true, data: await mailerController.saveConfig(secretKey) });
   } catch (err) {
-    logger.error(`[Mailer] config save failed: ${err.message}`);
+    logger.error(`[Mailer] config save failed: ${err.message}`, err);
     res.status(500).json({ success: false, error: 'Failed to persist mailer config', message: err.message });
   }
 }

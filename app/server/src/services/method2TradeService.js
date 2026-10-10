@@ -41,11 +41,15 @@ async function getActive() {
 }
 
 async function openTrade(rec, direction, confidence, reasons) {
-  if (await getActive()) return null;                    // one trade at a time
+  if (await getActive()) {
+    return null;
+  }                    // one trade at a time
   const nowMin = istMinutes(Math.floor(Date.now() / 1000));
   // entries allowed all day; only the last minutes are mechanical — a trade
   // opened after 15:15 cannot live before the 15:20 no-carry force-close
-  if (nowMin >= 15 * 60 + 15) return null;
+  if (nowMin >= 15 * 60 + 15) {
+    return null;
+  }
   return Method2Trade.create({
     entry_time: new Date(),
     status: 'active',
@@ -66,7 +70,7 @@ async function openTrade(rec, direction, confidence, reasons) {
     last_premium: rec.premiumEntry,
     max_premium: rec.premiumEntry,
     min_premium: rec.premiumEntry,
-    entry_reasons: reasons ?? null,
+    entry_reasons: reasons ?? null
   }).then(async (trade) => {
     await execution.onTradeOpened(trade).catch(() => {});
     return trade;
@@ -76,7 +80,7 @@ async function openTrade(rec, direction, confidence, reasons) {
 async function resolve(trade, status, exitPremium, reason) {
   await trade.update({
     status, exit_time: new Date(),
-    exit_premium: exitPremium, resolve_reason: reason.slice(0, 200),
+    exit_premium: exitPremium, resolve_reason: reason.slice(0, 200)
   });
   logger.info(`[m2trade] ${trade.tradingsymbol} ${status}: ${reason}`);
   await execution.onTradeResolved(trade, status).catch(() => {});
@@ -90,7 +94,9 @@ async function resolve(trade, status, exitPremium, reason) {
  */
 async function evaluateActive(ctx = {}) {
   const trade = await getActive();
-  if (!trade) return null;
+  if (!trade) {
+    return null;
+  }
   const nowSec = Math.floor(Date.now() / 1000);
 
   let premium = ctx.premium;
@@ -111,9 +117,15 @@ async function evaluateActive(ctx = {}) {
     const minP = Math.min(Number(trade.min_premium ?? entry), premium);
 
     // targets ratchet the stop — banked progress stops being returnable
-    if (targetsHit < 1 && maxP >= t.t1) { targetsHit = 1; trailSl = Math.max(trailSl, entry); }
-    if (targetsHit < 2 && maxP >= t.t2) { targetsHit = 2; trailSl = Math.max(trailSl, t.t1); }
-    if (targetsHit < 3 && maxP >= t.t3) targetsHit = 3;
+    if (targetsHit < 1 && maxP >= t.t1) {
+      targetsHit = 1; trailSl = Math.max(trailSl, entry);
+    }
+    if (targetsHit < 2 && maxP >= t.t2) {
+      targetsHit = 2; trailSl = Math.max(trailSl, t.t1);
+    }
+    if (targetsHit < 3 && maxP >= t.t3) {
+      targetsHit = 3;
+    }
 
     // 1R breakeven ratchet + 1.5R profit trail: once the premium has been 1R
     // in favour the trade can no longer turn into a loss (stop to entry +
@@ -131,7 +143,9 @@ async function evaluateActive(ctx = {}) {
 
     const trailLifted = trailSl > Number(trade.trail_sl);
     await trade.update({ last_premium: premium, max_premium: maxP, min_premium: minP, trail_sl: trailSl, targets_hit: targetsHit });
-    if (trailLifted) await execution.onTrailMoved(trade, trailSl).catch(() => {});
+    if (trailLifted) {
+      await execution.onTrailMoved(trade, trailSl).catch(() => {});
+    }
 
     if (targetsHit >= 3) {
       return resolve(trade, 'target', Math.min(premium, t.t3), `T3 ₹${t.t3} reached (all targets done)`);
@@ -173,7 +187,9 @@ async function evaluateActive(ctx = {}) {
  * earns it.
  */
 function describe(trade, currentAnalysisDirection) {
-  if (!trade) return null;
+  if (!trade) {
+    return null;
+  }
   const entry = Number(trade.entry_premium);
   const last = Number(trade.last_premium ?? entry);
   const trailSl = Number(trade.trail_sl);
@@ -206,7 +222,7 @@ function describe(trade, currentAnalysisDirection) {
     state: 'ACTIVE',
     substate: trade.targets_hit > 0 ? `T${trade.targets_hit} hit` : (last >= entry ? 'in profit' : 'drawdown'),
     pnlPerUnit,
-    line,
+    line
   };
 }
 
@@ -223,7 +239,7 @@ async function tradePulse() {
   const active = await getActive();
   const last = await Method2Trade.findOne({
     where: { status: { [Op.ne]: 'active' } },
-    order: [['exit_time', 'DESC']],
+    order: [['exit_time', 'DESC']]
   });
   return {
     active: active ? {
@@ -231,14 +247,14 @@ async function tradePulse() {
       direction: active.direction, tradingsymbol: active.tradingsymbol, strike: active.strike,
       entry: Number(active.entry_premium),
       last: active.last_premium != null ? Number(active.last_premium) : null,
-      trailSl: Number(active.trail_sl), t1: Number(active.t1_premium),
+      trailSl: Number(active.trail_sl), t1: Number(active.t1_premium)
     } : null,
     last: last ? {
       id: last.id, outcome: last.status,
       entry: Number(last.entry_premium),
       exit: last.exit_premium != null ? Number(last.exit_premium) : null,
-      exitTime: last.exit_time,
-    } : null,
+      exitTime: last.exit_time
+    } : null
   };
 }
 
@@ -260,11 +276,11 @@ async function todaysTrades() {
 async function closedTradesWithExit() {
   return Method2Trade.findAll({
     where: { status: { [Op.ne]: 'active' }, exit_premium: { [Op.ne]: null } },
-    order: [['exit_time', 'ASC']],
+    order: [['exit_time', 'ASC']]
   });
 }
 
 module.exports = {
   getActive, openTrade, evaluateActive, describe, recentTrades, tradePulse,
-  todaysTrades, closedTradesWithExit, GATE,
+  todaysTrades, closedTradesWithExit, GATE
 };

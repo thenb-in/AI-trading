@@ -5,7 +5,7 @@ const { getKiteWithAccessToken } = require('./kiteClient');
 const INDEX_TOKENS = {
   NIFTY: 256265,
   BANKNIFTY: 260105,
-  SENSEX:    265,      // BSE INDICES
+  SENSEX:    265      // BSE INDICES
 };
 
 /**
@@ -18,27 +18,35 @@ const INDEX_TOKENS = {
 async function fetchHistoricalCandles(symbol, fromUnix, toUnix, interval = '5minute') {
   const kite = getKiteWithAccessToken();
   const token = INDEX_TOKENS[symbol];
-  if (!token) throw new Error(`Unknown symbol: ${symbol}`);
+  if (!token) {
+    throw new Error(`Unknown symbol: ${symbol}`);
+  }
 
   const from = new Date(fromUnix * 1000);
   const to = new Date(toUnix * 1000);
 
   const raw = await kite.getHistoricalData(token, interval, from, to, false, false);
 
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(raw)) {
+    return [];
+  }
 
   const candles = [];
   for (const row of raw) {
     const date = row.date instanceof Date ? row.date : new Date(row.date);
-    if (isNaN(date.getTime())) continue;
-    if (row.open == null || row.high == null || row.low == null || row.close == null) continue;
+    if (isNaN(date.getTime())) {
+      continue;
+    }
+    if (row.open == null || row.high == null || row.low == null || row.close == null) {
+      continue;
+    }
     candles.push({
       time: Math.floor(date.getTime() / 1000),
       open: row.open,
       high: row.high,
       low: row.low,
       close: row.close,
-      volume: row.volume ?? 0,
+      volume: row.volume ?? 0
     });
   }
 
@@ -63,13 +71,19 @@ async function fetchOptionCandles(instrumentToken, fromUnix, toUnix, interval = 
   // snapshots were too coarse and too stale to provide.
   const raw = await kite.getHistoricalData(instrumentToken, interval, from, to, false, true);
 
-  if (!Array.isArray(raw)) return [];
+  if (!Array.isArray(raw)) {
+    return [];
+  }
 
   const candles = [];
   for (const row of raw) {
     const date = row.date instanceof Date ? row.date : new Date(row.date);
-    if (isNaN(date.getTime())) continue;
-    if (row.open == null || row.close == null) continue;
+    if (isNaN(date.getTime())) {
+      continue;
+    }
+    if (row.open == null || row.close == null) {
+      continue;
+    }
     candles.push({
       time:   Math.floor(date.getTime() / 1000),
       open:   row.open,
@@ -77,7 +91,7 @@ async function fetchOptionCandles(instrumentToken, fromUnix, toUnix, interval = 
       low:    row.low,
       close:  row.close,
       volume: row.volume ?? 0,
-      oi:     row.oi ?? null,
+      oi:     row.oi ?? null
     });
   }
 
@@ -88,5 +102,5 @@ async function fetchOptionCandles(instrumentToken, fromUnix, toUnix, interval = 
 module.exports = {
   INDEX_TOKENS,
   fetchHistoricalCandles,
-  fetchOptionCandles,
+  fetchOptionCandles
 };

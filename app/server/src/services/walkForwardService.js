@@ -30,12 +30,17 @@ const { IST } = require('../utils/optionMath');
 // ST×EMA 0.63) say the trend factors triple-count one opinion — so the grid
 // may now ZERO the redundant ones and let validation decide.
 const GRID = [];
-for (const gate of [65, 70, 75])
-  for (const wEma of [10, 15, 20])
-    for (const wMacd of [5, 10, 15])
-      for (const wRsi of [0, 10])
-        for (const wSt of [0, 5])
+for (const gate of [65, 70, 75]) {
+  for (const wEma of [10, 15, 20]) {
+    for (const wMacd of [5, 10, 15]) {
+      for (const wRsi of [0, 10]) {
+        for (const wSt of [0, 5]) {
           GRID.push({ gate, wEma, wMacd, wRsi, wSt, wAdx: 5 });
+        }
+      }
+    }
+  }
+}
 
 const MIN_TRAIN_TRADES = 25;
 
@@ -47,15 +52,20 @@ async function runWalkForward({ from = '2025-09-24', to = '2026-09-25', trainMon
   const fromUnix = Math.floor(new Date(`${from}T00:00:00+05:30`).getTime() / 1000);
   const toUnix = Math.floor(new Date(`${to}T23:59:59+05:30`).getTime() / 1000);
   const candles = await getIndexCandles('NIFTY', fromUnix, toUnix);
-  if (candles.length < 5000) throw new Error('Not enough candles');
+  if (candles.length < 5000) {
+    throw new Error(`Not enough candles`);
+  }
   const pre = precompute(candles);
 
   // month → [startIdx, endIdx)
   const monthIdx = new Map();
   for (let i = 0; i < candles.length; i++) {
     const m = monthOf(candles[i].time);
-    if (!monthIdx.has(m)) monthIdx.set(m, [i, i + 1]);
-    else monthIdx.get(m)[1] = i + 1;
+    if (!monthIdx.has(m)) {
+      monthIdx.set(m, [i, i + 1]);
+    } else {
+      monthIdx.get(m)[1] = i + 1;
+    }
   }
   const months = [...monthIdx.keys()].sort();
 
@@ -72,9 +82,13 @@ async function runWalkForward({ from = '2025-09-24', to = '2026-09-25', trainMon
     for (const g0 of GRID) {
       const g = slip != null ? { ...g0, slip } : g0;
       const tr = simulateRange(pre, g, trainStart, trainEnd);
-      if (tr.length < MIN_TRAIN_TRADES) continue;
+      if (tr.length < MIN_TRAIN_TRADES) {
+        continue;
+      }
       const sm = summarize(tr);
-      if (!best || sm.netRs > best.trainNet) best = { params: g, trainNet: sm.netRs, trainTrades: sm.trades };
+      if (!best || sm.netRs > best.trainNet) {
+        best = { params: g, trainNet: sm.netRs, trainTrades: sm.trades };
+      }
     }
     const chosen = best?.params ?? (slip != null ? { ...DEFAULT_PARAMS, slip } : DEFAULT_PARAMS);
 
@@ -88,7 +102,7 @@ async function runWalkForward({ from = '2025-09-24', to = '2026-09-25', trainMon
       chosen, chosenWasDefault: !best,
       trainNet: best?.trainNet ?? null, trainTrades: best?.trainTrades ?? null,
       oos: summarize(testTrades),
-      baselineOos: summarize(baseline),
+      baselineOos: summarize(baseline)
     });
   }
 
@@ -98,21 +112,21 @@ async function runWalkForward({ from = '2025-09-24', to = '2026-09-25', trainMon
     params: {
       from, to, trainMonths, slip: slip ?? 'engine default', gridSize: GRID.length, minTrainTrades: MIN_TRAIN_TRADES,
       defaults: DEFAULT_PARAMS,
-      note: 'out-of-sample months only; baseline = manual config on the same months',
+      note: 'out-of-sample months only; baseline = manual config on the same months'
     },
     summary: {
       testMonths: windows.length,
       walkForwardOos: summarize(oosTrades),
       baselineOos: summarize(baseTrades),
-      verdict: null,   // filled below
+      verdict: null   // filled below
     },
     byDay: windows.map(w => ({
       month: w.testMonth,
       chosen: `g${w.chosen.gate}/e${w.chosen.wEma}/m${w.chosen.wMacd}/r${w.chosen.wRsi}/s${w.chosen.wSt}${w.chosenWasDefault ? ' (default)' : ''}`,
       wfNetRs: w.oos.netRs, wfTrades: w.oos.trades,
-      baseNetRs: w.baselineOos.netRs, baseTrades: w.baselineOos.trades,
+      baseNetRs: w.baselineOos.netRs, baseTrades: w.baselineOos.trades
     })),
-    trades: null,
+    trades: null
   };
   const wf = report.summary.walkForwardOos.netRs, bl = report.summary.baselineOos.netRs;
   report.summary.verdict = wf > bl
@@ -121,7 +135,7 @@ async function runWalkForward({ from = '2025-09-24', to = '2026-09-25', trainMon
 
   const row = await ScalpReport.create({
     kind: report.kind, label: report.label, params: report.params,
-    summary: report.summary, by_day: report.byDay, trades: null,
+    summary: report.summary, by_day: report.byDay, trades: null
   });
   return { id: row.id, ...report };
 }

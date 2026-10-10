@@ -17,12 +17,22 @@ function buildSwingLevels(candles, lookback = 3, maxLevels = 8, clusterTol = 0.0
     const c = candles[i];
     let isHigh = true, isLow = true;
     for (let j = i - lookback; j <= i + lookback; j++) {
-      if (j === i) continue;
-      if (candles[j].high >= c.high) isHigh = false;
-      if (candles[j].low <= c.low) isLow = false;
+      if (j === i) {
+        continue;
+      }
+      if (candles[j].high >= c.high) {
+        isHigh = false;
+      }
+      if (candles[j].low <= c.low) {
+        isLow = false;
+      }
     }
-    if (isHigh) highs.push(c.high);
-    if (isLow) lows.push(c.low);
+    if (isHigh) {
+      highs.push(c.high);
+    }
+    if (isLow) {
+      lows.push(c.low);
+    }
   }
   const cluster = (pts, type) => {
     const out = [];
@@ -30,7 +40,9 @@ function buildSwingLevels(candles, lookback = 3, maxLevels = 8, clusterTol = 0.0
       const last = out[out.length - 1];
       if (last && Math.abs(p - last.price) / last.price < clusterTol) {
         last.price = (last.price * last.n + p) / (last.n + 1); last.n++;
-      } else out.push({ price: p, n: 1, type });
+      } else {
+        out.push({ price: p, n: 1, type });
+      }
     }
     return out.sort((a, b) => b.n - a.n).slice(0, maxLevels);
   };
@@ -39,7 +51,9 @@ function buildSwingLevels(candles, lookback = 3, maxLevels = 8, clusterTol = 0.0
 
 /** candles: oldest→newest bars (5-min, >=40). Returns the live breakout read. */
 function breakoutState(candles) {
-  if (!Array.isArray(candles) || candles.length < 40) return { sig: 0, ready: false };
+  if (!Array.isArray(candles) || candles.length < 40) {
+    return { sig: 0, ready: false };
+  }
   const live = candles[candles.length - 1];
   const prev = candles[candles.length - 2];
   // levels from the bars BEFORE the ones being tested — no self-confirmation
@@ -51,13 +65,16 @@ function breakoutState(candles) {
   const buyTrig = res ? +(res.price * 1.001).toFixed(2) : null;
   const sellTrig = sup ? +(sup.price * 0.999).toFixed(2) : null;
   let sig = 0;
-  if (buyTrig != null && (live.high >= buyTrig || prev.high >= buyTrig)) sig = 1;
-  else if (sellTrig != null && (live.low <= sellTrig || prev.low <= sellTrig)) sig = -1;
+  if (buyTrig != null && (live.high >= buyTrig || prev.high >= buyTrig)) {
+    sig = 1;
+  } else if (sellTrig != null && (live.low <= sellTrig || prev.low <= sellTrig)) {
+    sig = -1;
+  }
   return {
     sig, ready: true,
     buyTrig, sellTrig,
     nearestRes: res ? +res.price.toFixed(2) : null,
-    nearestSup: sup ? +sup.price.toFixed(2) : null,
+    nearestSup: sup ? +sup.price.toFixed(2) : null
   };
 }
 
@@ -68,13 +85,17 @@ function resample5(oneMin) {
   for (const c of oneMin) {
     const bucket = Math.floor((c.time + 19800) / 300);
     if (!cur || cur.bucket !== bucket) {
-      if (cur) out.push(cur);
+      if (cur) {
+        out.push(cur);
+      }
       cur = { bucket, time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
     } else {
       cur.high = Math.max(cur.high, c.high); cur.low = Math.min(cur.low, c.low); cur.close = c.close;
     }
   }
-  if (cur) out.push(cur);
+  if (cur) {
+    out.push(cur);
+  }
   return out;
 }
 
@@ -102,8 +123,11 @@ function buildBreakoutSignal(candles, VALID_MIN = 5, WINDOW = 100) {
         sellTrig = sup ? sup.price * 0.999 : null;
       }
     }
-    if (buyTrig != null && candles[i].high >= buyTrig) { lastFire = t; lastDir = 1; buyTrig = null; }
-    else if (sellTrig != null && candles[i].low <= sellTrig) { lastFire = t; lastDir = -1; sellTrig = null; }
+    if (buyTrig != null && candles[i].high >= buyTrig) {
+      lastFire = t; lastDir = 1; buyTrig = null;
+    } else if (sellTrig != null && candles[i].low <= sellTrig) {
+      lastFire = t; lastDir = -1; sellTrig = null;
+    }
     sig[i] = (t - lastFire) <= VALID_MIN * 60 ? lastDir : 0;
   }
   return sig;

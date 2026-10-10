@@ -8,8 +8,12 @@ function directionColor(direction) {
 }
 
 function confidenceColor(confidence) {
-  if (confidence >= 85) return '#16a34a';
-  if (confidence >= 75) return '#d97706';
+  if (confidence >= 85) {
+    return '#16a34a';
+  }
+  if (confidence >= 75) {
+    return '#d97706';
+  }
   return '#6b7280';
 }
 
@@ -195,16 +199,18 @@ function buildSignalEmail(rec, direction, confidence) {
 async function sendTradeSignalMail(rec, direction, confidence, toEmail) {
   const recipient = toEmail || getSignalEmail();
   if (!recipient) {
-    logger.warn('[TradeSignalMail] No recipient set — configure in dashboard settings');
+    logger.warn(`[TradeSignalMail] No recipient set — configure in dashboard settings`);
     return;
   }
-  if (!rec) return;
+  if (!rec) {
+    return;
+  }
 
   const subject = `[AI-Trading] ${direction} ${rec.optionType || ''} - ${rec.tradingsymbol || 'NIFTY'} | ${confidence}% confidence`;
   const content = buildSignalEmail(rec, direction, confidence);
 
   sendMail(subject, content, recipient).catch(err =>
-    logger.error(`[TradeSignalMail] send failed: ${err.message}`)
+    logger.error(`[TradeSignalMail] send failed: ${err.message}`, err)
   );
 }
 

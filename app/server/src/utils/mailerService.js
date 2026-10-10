@@ -19,25 +19,32 @@ const _signalEmail = env.SIGNAL_EMAIL_TO || '';
 function getAppSettingModel() {
   // Lazy require: model file initializes against the framework's sequelize instance,
   // which isn't ready when this util is first imported at app boot.
-  try { return require('../models').AppSetting; }
-  catch { return null; }
+  try {
+    return require('../models').AppSetting;
+  } catch {
+    return null;
+  }
 }
 
 async function loadMailerConfig() {
   const AppSetting = getAppSettingModel();
-  if (!AppSetting) return;
+  if (!AppSetting) {
+    return;
+  }
   try {
     const row = await AppSetting.findByPk(SETTINGS_KEY);
     if (row?.value && typeof row.value.secretKey === 'string') {
       _secretKey = row.value.secretKey;
     }
   } catch (err) {
-    logger.error(`[Mailer] Failed to load config from DB: ${err.message}`);
+    logger.error(`[Mailer] Failed to load config from DB: ${err.message}`, err);
   }
 }
 
 async function setMailerConfig({ secretKey }) {
-  if (secretKey === undefined) return;
+  if (secretKey === undefined) {
+    return;
+  }
   _secretKey = secretKey;
   const AppSetting = getAppSettingModel();
   if (AppSetting) {
@@ -49,18 +56,22 @@ function getMailerConfig() {
   return {
     secretKeySet: _secretKey.length > 0,
     secretKey:    _secretKey,
-    signalEmail:  _signalEmail,
+    signalEmail:  _signalEmail
   };
 }
 
-function getSignalEmail()  { return _signalEmail; }
-function getSecretKey()    { return _secretKey; }
+function getSignalEmail()  {
+  return _signalEmail;
+}
+function getSecretKey()    {
+  return _secretKey;
+}
 
 async function sendMail(subject, content, toEmail) {
   logger.info(`[Mailer] sendMail — subject: "${subject}", to: ${toEmail || '(none)'}`);
 
   if (!_secretKey) {
-    logger.warn('[Mailer] MAILER_SECRET_KEY not set — skipping (configure in dashboard settings)');
+    logger.warn(`[Mailer] MAILER_SECRET_KEY not set — skipping (configure in dashboard settings)`);
     return;
   }
 
@@ -84,13 +95,15 @@ async function sendMail(subject, content, toEmail) {
       method:   'POST',
       headers: {
         'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(body),
-      },
+        'Content-Length': Buffer.byteLength(body)
+      }
     };
 
     const req = lib.request(options, (res) => {
       let data = '';
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', chunk => {
+        data += chunk;
+      });
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           logger.info(`[Mailer] Sent — subject: "${subject}", to: ${toEmail}`);

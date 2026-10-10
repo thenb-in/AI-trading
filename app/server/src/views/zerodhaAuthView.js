@@ -44,7 +44,7 @@ async function profileView(_req, res) {
     const profile = await zerodhaAuthController.getProfile();
     res.json({ success: true, data: profile });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Zerodha profile fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: `Zerodha profile fetch failed`, message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
@@ -53,29 +53,37 @@ async function instrumentsView(_req, res) {
     const instruments = await zerodhaAuthController.getInstruments();
     res.json({ success: true, data: instruments });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Zerodha instruments fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: `Zerodha instruments fetch failed`, message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function ltpView(req, res) {
   try {
     const token = req.params.token;
-    if (!token?.trim()) { res.status(400).json({ success: false, error: 'Missing token' }); return; }
+    if (!token?.trim()) {
+      res.status(400).json({ success: false, error: 'Missing token' }); return;
+    }
     const ltp = await zerodhaAuthController.getLTP(token);
     res.json({ success: true, data: ltp });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Zerodha LTP fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: `Zerodha LTP fetch failed`, message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function debugNiftyView(_req, res) {
-  try { res.json({ success: true, data: await zerodhaAuthController.debugNifty() }); }
-  catch (err) { res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
+  try {
+    res.json({ success: true, data: await zerodhaAuthController.debugNifty() });
+  } catch (err) {
+    res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+  }
 }
 
 async function debugNiftyIndicesView(_req, res) {
-  try { res.json({ success: true, data: await zerodhaAuthController.debugNiftyIndices() }); }
-  catch (err) { res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
+  try {
+    res.json({ success: true, data: await zerodhaAuthController.debugNiftyIndices() });
+  } catch (err) {
+    res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+  }
 }
 
 module.exports = {
@@ -85,5 +93,5 @@ module.exports = {
   instrumentsView,
   ltpView,
   debugNiftyView,
-  debugNiftyIndicesView,
+  debugNiftyIndicesView
 };

@@ -18,15 +18,15 @@ module.exports = (sequelize, DataTypes) => {
     low:           { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     close:         { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     volume:        { type: DataTypes.BIGINT, allowNull: true },
-    oi:            { type: DataTypes.BIGINT, allowNull: true },
+    oi:            { type: DataTypes.BIGINT, allowNull: true }
   }, {
     tableName: 'option_candles',
     timestamps: false,
     indexes: [
       { unique: true, fields: ['tradingsymbol', 'time'] },
       { fields: ['expiry', 'strike', 'type'] },
-      { fields: ['time'] },
-    ],
+      { fields: ['time'] }
+    ]
   });
 
   return OptionCandle;

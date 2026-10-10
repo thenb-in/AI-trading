@@ -41,5 +41,5 @@ module.exports = {
   getOiChangeAnalysis,
 
   // --- spot summary (header clock strip) ---
-  getSpotSummary,
+  getSpotSummary
 };

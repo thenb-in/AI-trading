@@ -49,5 +49,5 @@ module.exports = {
   getInstruments,
   getLTP,
   debugNifty,
-  debugNiftyIndices,
+  debugNiftyIndices
 };

@@ -10,7 +10,7 @@ async function autotradeStateView(_req, res) {
   try {
     res.json({ success: true, data: await executionController.getAutotradeState() });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Autotrade state failed', message: err.message });
+    res.status(500).json({ success: false, error: `Autotrade state failed`, message: err.message });
   }
 }
 
@@ -18,7 +18,7 @@ async function setModeView(req, res) {
   try {
     res.json({ success: true, data: { mode: await executionController.setMode(req.body?.mode) } });
   } catch (err) {
-    res.status(400).json({ success: false, error: 'Autotrade mode failed', message: err.message });
+    res.status(400).json({ success: false, error: `Autotrade mode failed`, message: err.message });
   }
 }
 
@@ -29,7 +29,7 @@ async function catchUpView(_req, res) {
   try {
     const trade = await executionController.getActiveTrade();
     if (!trade) {
-      res.status(400).json({ success: false, error: 'No active trade to catch up' });
+      res.status(400).json({ success: false, error: `No active trade to catch up` });
       return;
     }
     res.json({ success: true, data: await executionController.catchUpEntry(trade) });
@@ -53,5 +53,5 @@ module.exports = {
   autotradeStateView,
   setModeView,
   catchUpView,
-  modifyGttView,
+  modifyGttView
 };

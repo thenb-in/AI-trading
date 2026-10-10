@@ -21,7 +21,7 @@ const logger = require('@startup/logger');
 const { ScalpPaperTrade, NfoInstrument } = require('../models');
 const { fetchHistoricalCandles, getOptionQuotesByTradingSymbols } = require('@appServer/interfaces/broker');
 const {
-  evaluateScalp, estimateCosts, QTY, REGIME_STRICT,
+  evaluateScalp, estimateCosts, QTY, REGIME_STRICT
 } = require('./scalpService');
 
 /**
@@ -38,19 +38,29 @@ const oiHistory = new Map();
 
 function recordOi(nowSec, quoteMap) {
   for (const [sym, q] of Object.entries(quoteMap ?? {})) {
-    if (!Number.isFinite(q?.oi)) continue;
+    if (!Number.isFinite(q?.oi)) {
+      continue;
+    }
     const arr = oiHistory.get(sym) ?? [];
     arr.push({ t: nowSec, oi: q.oi });
-    while (arr.length && arr[0].t < nowSec - 20 * 60) arr.shift();
+    while (arr.length && arr[0].t < nowSec - 20 * 60) {
+      arr.shift();
+    }
     oiHistory.set(sym, arr);
   }
 }
 
 function oiAt(sym, t, tolSec = 90) {
   const arr = oiHistory.get(sym);
-  if (!arr) return null;
+  if (!arr) {
+    return null;
+  }
   let best = null;
-  for (const p of arr) if (Math.abs(p.t - t) <= tolSec && (!best || Math.abs(p.t - t) < Math.abs(best.t - t))) best = p;
+  for (const p of arr) {
+    if (Math.abs(p.t - t) <= tolSec && (!best || Math.abs(p.t - t) < Math.abs(best.t - t))) {
+      best = p;
+    }
+  }
   return best?.oi ?? null;
 }
 
@@ -64,17 +74,25 @@ function liveOiFlow(nowSec, spot, candidates) {
   for (const c of candidates) {
     const now = oiAt(c.tradingsymbol, nowSec);
     const then = oiAt(c.tradingsymbol, nowSec - RECORD_CFG.flowWindowMin * 60);
-    if (now == null || then == null) continue;
+    if (now == null || then == null) {
+      continue;
+    }
     const d = now - then;
     seen++;
-    if (c.type === 'PE' && c.strike <= spot) peBelow += d;
-    if (c.type === 'CE' && c.strike >= spot) ceAbove += d;
+    if (c.type === 'PE' && c.strike <= spot) {
+      peBelow += d;
+    }
+    if (c.type === 'CE' && c.strike >= spot) {
+      ceAbove += d;
+    }
   }
   return { peBelow, ceAbove, seen };
 }
 
 function flowAgrees(flow, direction) {
-  if (flow.seen < 10) return false;
+  if (flow.seen < 10) {
+    return false;
+  }
   return direction === 'BUY'
     ? flow.peBelow > 0 && flow.peBelow > Math.abs(flow.ceAbove)
     : flow.ceAbove > 0 && flow.ceAbove > Math.abs(flow.peBelow);
@@ -101,22 +119,26 @@ const pastCutoff = (nowSec) => istMinutes(nowSec) >= EXIT_CUTOFF_MIN;
 async function liveStrikeCandidates(optType, spot, symbol = 'NIFTY') {
   const today = new Date().toISOString().slice(0, 10);
   const latestSnap = await NfoInstrument.max('snapshot_date');
-  if (!latestSnap) return [];
+  if (!latestSnap) {
+    return [];
+  }
   const rows = await NfoInstrument.findAll({
     where: {
       snapshot_date: latestSnap,
       name: symbol,
       instrument_type: optType,
       expiry: { [Op.gte]: today },
-      strike: { [Op.between]: [spot - 600, spot + 600] },
+      strike: { [Op.between]: [spot - 600, spot + 600] }
     },
     order: [['expiry', 'ASC'], ['strike', 'ASC']],
-    raw: true,
+    raw: true
   });
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    return [];
+  }
   const nearest = rows[0].expiry;
   return rows.filter(r => r.expiry === nearest)
-             .map(r => ({ strike: Number(r.strike), tradingsymbol: r.tradingsymbol }));
+    .map(r => ({ strike: Number(r.strike), tradingsymbol: r.tradingsymbol }));
 }
 
 /** Marks an open position against a fresh quote and closes it if resolved. */
@@ -144,7 +166,7 @@ async function markOpenPosition(trade, nowSec) {
         costs_rs: costs.toFixed(2),
         net_rs: (-costs).toFixed(2),
         held_seconds: held,
-        reason: `${trade.reason ?? ''} | closed unquotable`.slice(0, 160),
+        reason: `${trade.reason ?? ''} | closed unquotable`.slice(0, 160)
       });
       logger.warn(`[scalpPaper] force-closed unquotable ${trade.tradingsymbol} as timeout`);
       return 'timeout';
@@ -158,9 +180,13 @@ async function markOpenPosition(trade, nowSec) {
   let status = null, exitPrem = ltp;
   // Stop is checked first: if a single poll shows both breached, the honest
   // reading for live money is that the loss could have come first.
-  if (ltp <= stop)              { status = 'loss'; exitPrem = ltp; }
-  else if (ltp >= target)       { status = 'win';  exitPrem = ltp; }
-  else if (pastCutoff(nowSec))  { status = 'eod';  exitPrem = ltp; }   // no carry
+  if (ltp <= stop)              {
+    status = 'loss'; exitPrem = ltp;
+  } else if (ltp >= target)       {
+    status = 'win';  exitPrem = ltp;
+  } else if (pastCutoff(nowSec))  {
+    status = 'eod';  exitPrem = ltp;
+  }   // no carry
 
   if (!status) {
     await trade.update({ premium_best: best, premium_worst: worst, polls: (trade.polls ?? 0) + 1 });
@@ -179,7 +205,7 @@ async function markOpenPosition(trade, nowSec) {
     gross_rs:      gross.toFixed(2),
     costs_rs:      costs.toFixed(2),
     net_rs:        (gross - costs).toFixed(2),
-    held_seconds:  held,
+    held_seconds:  held
   });
   logger.info(`[scalpPaper] closed ${trade.tradingsymbol} ${status} entry=${entry} exit=${exitPrem} net=Rs.${(gross - costs).toFixed(0)}`);
   return status;
@@ -188,19 +214,28 @@ async function markOpenPosition(trade, nowSec) {
 /** One minute of the recorder. Safe to call when the market is shut. */
 async function tick(symbol = 'NIFTY') {
   const nowSec = Math.floor(Date.now() / 1000);
-  if (!isMarketOpen(nowSec)) return { skipped: 'market closed' };
+  if (!isMarketOpen(nowSec)) {
+    return { skipped: 'market closed' };
+  }
 
   // 1. Mark anything already open.
   const open = await ScalpPaperTrade.findAll({ where: { status: 'open' } });
   let closedThisTick = 0;
   for (const t of open) {
-    try { if (await markOpenPosition(t, nowSec)) closedThisTick++; }
-    catch (err) { logger.error(`[scalpPaper] mark failed: ${err.message}`); }
+    try {
+      if (await markOpenPosition(t, nowSec)) {
+        closedThisTick++;
+      }
+    } catch (err) {
+      logger.error(`[scalpPaper] mark failed: ${err.message}`, err);
+    }
   }
 
   // One position at a time, matching how the backtest counts trades.
   const stillOpen = await ScalpPaperTrade.count({ where: { status: 'open' } });
-  if (stillOpen > 0) return { marked: open.length, opened: 0 };
+  if (stillOpen > 0) {
+    return { marked: open.length, opened: 0 };
+  }
 
   // Never re-enter on the same tick that just closed a trade. Otherwise a win
   // immediately re-buys at the target price we just sold at, which is chasing,
@@ -208,7 +243,9 @@ async function tick(symbol = 'NIFTY') {
   if (closedThisTick > 0) {
     return { marked: open.length, closed: closedThisTick, opened: 0, reason: 'cooldown after exit' };
   }
-  if (isNearClose(nowSec)) return { marked: open.length, opened: 0, skipped: 'near close' };
+  if (isNearClose(nowSec)) {
+    return { marked: open.length, opened: 0, skipped: 'near close' };
+  }
 
   // 2. Look for a fresh signal.
   const candles = await fetchHistoricalCandles(symbol, nowSec - 3 * 3600, nowSec, 'minute');
@@ -220,11 +257,11 @@ async function tick(symbol = 'NIFTY') {
   if (Number.isFinite(spotNow)) {
     const [ce, pe] = await Promise.all([
       liveStrikeCandidates('CE', spotNow, symbol),
-      liveStrikeCandidates('PE', spotNow, symbol),
+      liveStrikeCandidates('PE', spotNow, symbol)
     ]);
     chain = [
       ...ce.map(c => ({ ...c, type: 'CE' })),
-      ...pe.map(c => ({ ...c, type: 'PE' })),
+      ...pe.map(c => ({ ...c, type: 'PE' }))
     ];
     if (chain.length) {
       chainQuotes = await getOptionQuotesByTradingSymbols(chain.map(c => c.tradingsymbol));
@@ -238,17 +275,21 @@ async function tick(symbol = 'NIFTY') {
     // serve quotes from the chain already fetched this tick; fall back to the
     // API only for symbols outside it
     quoteFn: async (symbols) => {
-      if (symbols.every(sym => chainQuotes[sym])) return chainQuotes;
+      if (symbols.every(sym => chainQuotes[sym])) {
+        return chainQuotes;
+      }
       return getOptionQuotesByTradingSymbols(symbols);
     },
-    strikeCandidatesFn: (optType, spot) => liveStrikeCandidates(optType, spot, symbol),
+    strikeCandidatesFn: (optType, spot) => liveStrikeCandidates(optType, spot, symbol)
   });
   // A modelled premium is not a tradable order card — without a real quote
   // there is nothing to mark the position against, so record nothing.
   if (signal.tradable && signal.pricedFrom !== 'live-quote') {
     return { marked: open.length, opened: 0, reason: 'signal present but no live quote — not recording' };
   }
-  if (!signal.tradable) return { marked: open.length, opened: 0, reason: signal.reason };
+  if (!signal.tradable) {
+    return { marked: open.length, opened: 0, reason: signal.reason };
+  }
 
   // ── Option-chain confirmation gate ─────────────────────────────────────
   const flow = liveOiFlow(nowSec, spotNow, chain);
@@ -273,7 +314,7 @@ async function tick(symbol = 'NIFTY') {
     premium_worst:  signal.entryPremium,
     qty:            signal.qty,
     regime:         { ...(signal.regime?.metrics ?? {}), flow, config: 'strict+OIflow +3/-5' },
-    reason:         (signal.reason || '').slice(0, 160),
+    reason:         (signal.reason || '').slice(0, 160)
   });
   logger.info(`[scalpPaper] opened ${signal.tradingsymbol} @ ${signal.entryPremium} (${signal.pricedFrom})`);
   return { marked: open.length, opened: 1, tradingsymbol: signal.tradingsymbol };
@@ -284,7 +325,7 @@ async function getPaperStats() {
   const trades = await ScalpPaperTrade.findAll({
     where: { status: { [Op.ne]: 'open' } },
     order: [['entry_time', 'DESC']],
-    limit: 500,
+    limit: 500
   });
   const openNow = await ScalpPaperTrade.findAll({ where: { status: 'open' } });
 
@@ -316,7 +357,7 @@ async function getPaperStats() {
     everTouchedTarget: touchedTarget,
     byStatus: ['win', 'loss', 'eod', 'timeout'].map(s => ({ status: s, n: trades.filter(t => t.status === s).length })),
     recent:   trades.slice(0, 50),
-    open:     openNow,
+    open:     openNow
   };
 }
 

@@ -20,14 +20,14 @@ module.exports = (sequelize, DataTypes) => {
     avg_spread:    { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     min_spread:    { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     max_spread:    { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-    ticks:         { type: DataTypes.INTEGER, allowNull: false },
+    ticks:         { type: DataTypes.INTEGER, allowNull: false }
   }, {
     tableName: 'spread_samples',
     timestamps: false,
     indexes: [
       { unique: true, fields: ['minute', 'tradingsymbol'] },
-      { fields: ['symbol', 'minute'] },
-    ],
+      { fields: ['symbol', 'minute'] }
+    ]
   });
 
   return SpreadSample;

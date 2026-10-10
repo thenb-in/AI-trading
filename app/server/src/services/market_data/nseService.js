@@ -138,7 +138,7 @@ async function getCandlesAndIndicators(zerodhaSymbol, _unused, logLabel, windowS
         logger.info(`EMA20 rolling average windowSize=${effectiveWindowSize} value=${ema20}`);
         logger.info(`EMA50 rolling average windowSize=${effectiveWindowSize} value=${ema50}`);
       } catch (emaErr) {
-        logger.error(`[nseService] EMA calculation failed err=${emaErr instanceof Error ? emaErr.message : emaErr}`);
+        logger.error(`[nseService] EMA calculation failed err=${emaErr instanceof Error ? emaErr.message : emaErr}`, emaErr);
       }
     }
 
@@ -178,7 +178,7 @@ async function getCandlesAndIndicators(zerodhaSymbol, _unused, logLabel, windowS
           else if (rsiVal < 40) rsiInterpretation = 'bearish momentum';
         }
       } catch (rsiErr) {
-        logger.error(`[nseService] RSI calculation failed err=${rsiErr instanceof Error ? rsiErr.message : rsiErr}`);
+        logger.error(`[nseService] RSI calculation failed err=${rsiErr instanceof Error ? rsiErr.message : rsiErr}`, rsiErr);
       }
     }
 
@@ -195,7 +195,7 @@ async function getCandlesAndIndicators(zerodhaSymbol, _unused, logLabel, windowS
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getCandlesAndIndicators (${logLabel}) failed message=${message}`);
+    logger.error(`[nseService] getCandlesAndIndicators (${logLabel}) failed message=${message}`, err);
     return {
       candles: [],
       latestClosePrice: null,
@@ -346,7 +346,7 @@ async function getIndiaVix() {
     return result;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getIndiaVix failed message=${message}`);
+    logger.error(`[nseService] getIndiaVix failed message=${message}`, err);
     return { vixValue: null, tradingAllowed: true, vixZone: 'normal', slAdjustmentFactor: 1, confidenceContribution: 0, error: message };
   }
 }
@@ -567,7 +567,7 @@ function calculateMacd(candles, signalDir) {
 
     return { macd: macdVal, signal: signalVal, histogram: histVal, crossover, histogramDirection, confidenceContribution: contribution };
   } catch (err) {
-    logger.error(`[nseService] MACD calculation failed err=${err instanceof Error ? err.message : err}`);
+    logger.error(`[nseService] MACD calculation failed err=${err instanceof Error ? err.message : err}`, err);
     return { macd: null, signal: null, histogram: null, crossover: 'none', histogramDirection: 'flat', confidenceContribution: 0 };
   }
 }
@@ -1339,7 +1339,7 @@ async function getNiftyTradeSignal(windowSize = DEFAULT_INDICATOR_WINDOW_SIZE) {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getNiftyTradeSignal failed message=${message}`);
+    logger.error(`[nseService] getNiftyTradeSignal failed message=${message}`, err);
     return {
       signal: 'NO TRADE', trade: 'NO TRADE', entry: null, stopLoss: null,
       target1: null, target2: null, rawConfidence: 0, confidence: 0,
@@ -1384,7 +1384,7 @@ async function getBankNiftyTradeSignal(windowSize = DEFAULT_INDICATOR_WINDOW_SIZ
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getBankNiftyTradeSignal failed message=${message}`);
+    logger.error(`[nseService] getBankNiftyTradeSignal failed message=${message}`, err);
     return {
       signal: 'NO TRADE', trade: 'NO TRADE', entry: null, stopLoss: null, target1: null, target2: null,
       rawConfidence: 0, confidence: 0, weightedConfidence: 0, pcrWeight: null, atr: null,
@@ -1442,7 +1442,7 @@ async function getNiftyOptions() {
     return { underlyingPrice, firstExpiryDate, numberOfStrikes, symbol: YAHOO_NIFTY_SYMBOL };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getNiftyOptions failed message=${message}`);
+    logger.error(`[nseService] getNiftyOptions failed message=${message}`, err);
     return {
       underlyingPrice: null, firstExpiryDate: null, numberOfStrikes: 0,
       symbol: YAHOO_NIFTY_SYMBOL, error: message,
@@ -1530,7 +1530,7 @@ async function debugNiftyRaw() {
     return { keys: first20Keys, sample, statusCode: response.status };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] debugNiftyRaw failed message=${message}`);
+    logger.error(`[nseService] debugNiftyRaw failed message=${message}`, err);
     return { keys: [], sample: {}, error: message };
   }
 }
@@ -1561,7 +1561,7 @@ async function debugNiftyIndices() {
     return { firstItem, firstItemKeys, statusCode: response.status };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] debugNiftyIndices failed message=${message}`);
+    logger.error(`[nseService] debugNiftyIndices failed message=${message}`, err);
     return { firstItem: null, firstItemKeys: [], error: message };
   }
 }
@@ -1623,7 +1623,7 @@ async function debugNiftyOptionChain() {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] debugNiftyOptionChain failed message=${message}`);
+    logger.error(`[nseService] debugNiftyOptionChain failed message=${message}`, err);
     return { underlyingValue: null, firstExpiryDate: null, totalRecords: 0, recordCount: 0, firstCEKeys: [], responseKeys: [], error: message };
   }
 }
@@ -1656,7 +1656,7 @@ async function debugNiftyOptionChainRaw() {
     return { rawPreview, responseLength, statusCode: response.status };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] debugNiftyOptionChainRaw failed message=${message}`);
+    logger.error(`[nseService] debugNiftyOptionChainRaw failed message=${message}`, err);
     return { rawPreview: '', responseLength: 0, error: message };
   }
 }
@@ -1677,7 +1677,7 @@ async function getNiftyPcr() {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[nseService] getNiftyPcr failed message=${message}`);
+    logger.error(`[nseService] getNiftyPcr failed message=${message}`, err);
     throw err;
   }
 }

@@ -18,7 +18,7 @@ const {
   getZerodhaErrorMessage,
   getNearestExpiryNiftyOptions,
   getOptionQuotesByTradingSymbols,
-  isZerodhaTokenError,
+  isZerodhaTokenError
 } = require('@appServer/interfaces/broker');
 const analytics = require('./optionSnapshot/analytics');
 const { getTunables } = require('@appServer/src/config/tradingConfig');
@@ -32,9 +32,9 @@ let lastZerodhaTokenErrorLogAt = 0;
 
 function reloadEnvForZerodhaToken() {
   try {
-    dotenv.config({ path: path.join(process.cwd(), ".env"), override: true });
+    dotenv.config({ path: path.join(process.cwd(), '.env'), override: true });
   } catch (err) {
-    logger.error(`[optionSnapshot] Failed to reload .env (Zerodha token may be stale): ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`[optionSnapshot] Failed to reload .env (Zerodha token may be stale): ${err instanceof Error ? err.message : String(err)}`, err);
   }
 }
 
@@ -50,7 +50,7 @@ function logZerodhaTokenErrorThrottled(err) {
 async function collectNiftyOptionSnapshots() {
   reloadEnvForZerodhaToken();
   const snapshotTime = new Date();
-  logger.info("[optionSnapshot] Fetching nearest-expiry NIFTY option snapshot...");
+  logger.info(`[optionSnapshot] Fetching nearest-expiry NIFTY option snapshot...`);
 
   try {
     const optionSlice = await getNearestExpiryNiftyOptions(10);
@@ -78,8 +78,8 @@ async function collectNiftyOptionSnapshots() {
           type: option.optionType,
           oi: quote.oi,
           ltp: quote.ltp,
-          timestamp: snapshotTime,
-        },
+          timestamp: snapshotTime
+        }
       ];
     });
 
@@ -92,7 +92,7 @@ async function collectNiftyOptionSnapshots() {
         skipped,
         atmStrike: optionSlice.atmStrike,
         selectedExpiry: optionSlice.selectedExpiry,
-        snapshotTime,
+        snapshotTime
       };
     }
 
@@ -105,10 +105,10 @@ async function collectNiftyOptionSnapshots() {
       skipped,
       atmStrike: optionSlice.atmStrike,
       selectedExpiry: optionSlice.selectedExpiry,
-      snapshotTime,
+      snapshotTime
     };
   } catch (err) {
-    logger.error(`[optionSnapshot] Failed to fetch/store option snapshots: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`[optionSnapshot] Failed to fetch/store option snapshots: ${err instanceof Error ? err.message : String(err)}`, err);
     throw err;
   }
 }
@@ -122,14 +122,14 @@ function startOptionSnapshotScheduler() {
     return;
   }
 
-  logger.info("[optionSnapshot] Starting scheduler (every 2 minutes)");
+  logger.info(`[optionSnapshot] Starting scheduler (every 2 minutes)`);
   void collectNiftyOptionSnapshots().catch((err) => {
     if (isZerodhaTokenError(err)) {
       logZerodhaTokenErrorThrottled(err);
       return;
     }
 
-    logger.error(`[optionSnapshot] Initial scheduled run failed: ${err instanceof Error ? err.message : String(err)}`);
+    logger.error(`[optionSnapshot] Initial scheduled run failed: ${err instanceof Error ? err.message : String(err)}`, err);
   });
 
   optionSnapshotInterval = setInterval(() => {
@@ -139,7 +139,7 @@ function startOptionSnapshotScheduler() {
         return;
       }
 
-      logger.error(`[optionSnapshot] Scheduled run failed: ${err instanceof Error ? err.message : String(err)}`);
+      logger.error(`[optionSnapshot] Scheduled run failed: ${err instanceof Error ? err.message : String(err)}`, err);
     });
   }, OPTION_SNAPSHOT_INTERVAL_MS);
 }
@@ -149,20 +149,34 @@ function startOptionSnapshotScheduler() {
 // ---------------------------------------------------------------------------
 
 function interpretOiChange(oiChange, ltpChange, optionType) {
-  if (Math.abs(oiChange) < 100) return 'no-change';
+  if (Math.abs(oiChange) < 100) {
+    return 'no-change';
+  }
 
   const oiUp = oiChange > 0;
   const priceUp = ltpChange > 0;
 
   if (optionType === 'CE') {
-    if (oiUp && priceUp) return 'long-buildup';      // Fresh CE buying = bullish
-    if (oiUp && !priceUp) return 'short-buildup';     // CE writing = bearish
-    if (!oiUp && priceUp) return 'short-covering';    // CE shorts covering = bullish
+    if (oiUp && priceUp) {
+      return 'long-buildup';
+    }      // Fresh CE buying = bullish
+    if (oiUp && !priceUp) {
+      return 'short-buildup';
+    }     // CE writing = bearish
+    if (!oiUp && priceUp) {
+      return 'short-covering';
+    }    // CE shorts covering = bullish
     return 'long-unwinding';                           // CE longs exiting = bearish
   } else {
-    if (oiUp && priceUp) return 'short-buildup';      // PE writing = bullish
-    if (oiUp && !priceUp) return 'long-buildup';      // Fresh PE buying = bearish
-    if (!oiUp && !priceUp) return 'long-unwinding';   // PE longs exiting = bullish
+    if (oiUp && priceUp) {
+      return 'short-buildup';
+    }      // PE writing = bullish
+    if (oiUp && !priceUp) {
+      return 'long-buildup';
+    }      // Fresh PE buying = bearish
+    if (!oiUp && !priceUp) {
+      return 'long-unwinding';
+    }   // PE longs exiting = bullish
     return 'short-covering';                           // PE shorts covering = bearish
   }
 }
@@ -176,7 +190,7 @@ async function getOiChangeAnalysis() {
       attributes: [[db.sequelize.fn('DISTINCT', db.sequelize.col('timestamp')), 'timestamp']],
       order: [['timestamp', 'DESC']],
       limit: 2,
-      raw: true,
+      raw: true
     });
 
     if (recentTimestamps.length < 2) {
@@ -188,7 +202,7 @@ async function getOiChangeAnalysis() {
 
     const [currentSnapshots, previousSnapshots] = await Promise.all([
       OptionSnapshot.findAll({ where: { timestamp: currentTs }, raw: true }),
-      OptionSnapshot.findAll({ where: { timestamp: previousTs }, raw: true }),
+      OptionSnapshot.findAll({ where: { timestamp: previousTs }, raw: true })
     ]);
 
     // Build lookup for previous snapshots
@@ -204,7 +218,9 @@ async function getOiChangeAnalysis() {
     for (const s of currentSnapshots) {
       const key = `${s.strike}-${s.type}`;
       const prev = prevMap.get(key);
-      if (!prev) continue;
+      if (!prev) {
+        continue;
+      }
 
       const currentOi = Number(s.oi);
       const previousOi = prev.oi;
@@ -225,22 +241,31 @@ async function getOiChangeAnalysis() {
         currentLtp,
         previousLtp,
         ltpChange: Number(ltpChange.toFixed(2)),
-        interpretation,
+        interpretation
       });
 
       // Score bias: CE long-buildup/short-covering = bullish, CE short-buildup/long-unwinding = bearish (and vice versa for PE)
       if (s.type === 'CE') {
-        if (interpretation === 'long-buildup' || interpretation === 'short-covering') bullishCount++;
-        else if (interpretation === 'short-buildup' || interpretation === 'long-unwinding') bearishCount++;
+        if (interpretation === 'long-buildup' || interpretation === 'short-covering') {
+          bullishCount++;
+        } else if (interpretation === 'short-buildup' || interpretation === 'long-unwinding') {
+          bearishCount++;
+        }
       } else {
-        if (interpretation === 'short-buildup' || interpretation === 'short-covering') bullishCount++;
-        else if (interpretation === 'long-buildup' || interpretation === 'long-unwinding') bearishCount++;
+        if (interpretation === 'short-buildup' || interpretation === 'short-covering') {
+          bullishCount++;
+        } else if (interpretation === 'long-buildup' || interpretation === 'long-unwinding') {
+          bearishCount++;
+        }
       }
     }
 
     let overallBias = 'neutral';
-    if (bullishCount > bearishCount + 2) overallBias = 'bullish';
-    else if (bearishCount > bullishCount + 2) overallBias = 'bearish';
+    if (bullishCount > bearishCount + 2) {
+      overallBias = 'bullish';
+    } else if (bearishCount > bullishCount + 2) {
+      overallBias = 'bearish';
+    }
 
     const biasDelta = Math.abs(bullishCount - bearishCount);
     const total = bullishCount + bearishCount;
@@ -257,11 +282,13 @@ async function getOiChangeAnalysis() {
       'long-buildup':   'longBuildup',
       'short-buildup':  'shortBuildup',
       'short-covering': 'shortCovering',
-      'long-unwinding': 'longUnwinding',
+      'long-unwinding': 'longUnwinding'
     };
     for (const c of changes) {
       const k = CAMEL[c.interpretation];
-      if (k) summary[k] += 1;
+      if (k) {
+        summary[k] += 1;
+      }
     }
 
     // `strikes` is exposed so the dashboard can render the top per-strike rows;
@@ -271,7 +298,7 @@ async function getOiChangeAnalysis() {
     return { atmStrike, changes, strikes, summary, overallBias, confidenceContribution };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[optionSnapshot] getOiChangeAnalysis failed: ${message}`);
+    logger.error(`[optionSnapshot] getOiChangeAnalysis failed: ${message}`, err);
     return { atmStrike: null, changes: [], overallBias: 'neutral', confidenceContribution: 0, error: message };
   }
 }
@@ -290,7 +317,7 @@ async function getRecentSnapshots({ limit, strike, expiry, type, from, to } = {}
   if (expiry) {
     where.expiry = expiry;
   }
-  if (typeof strike === "number") {
+  if (typeof strike === 'number') {
     where.strike = strike;
   }
   if (type) {
@@ -299,14 +326,14 @@ async function getRecentSnapshots({ limit, strike, expiry, type, from, to } = {}
   if (from || to) {
     where.timestamp = {
       ...(from ? { [Op.gte]: from } : {}),
-      ...(to ? { [Op.lte]: to } : {}),
+      ...(to ? { [Op.lte]: to } : {})
     };
   }
 
   const queryOptions = {
-    attributes: ["expiry", "strike", "type", "oi", "ltp", "timestamp"],
-    order: [["timestamp", "DESC"]],
-    limit: effectiveLimit,
+    attributes: ['expiry', 'strike', 'type', 'oi', 'ltp', 'timestamp'],
+    order: [['timestamp', 'DESC']],
+    limit: effectiveLimit
   };
   if (Object.keys(where).length > 0) {
     queryOptions.where = where;
@@ -320,7 +347,7 @@ async function getRecentSnapshots({ limit, strike, expiry, type, from, to } = {}
     type: snapshot.type,
     oi: Number(snapshot.oi),
     ltp: Number(snapshot.ltp),
-    timestamp: snapshot.timestamp,
+    timestamp: snapshot.timestamp
   }));
 }
 
@@ -332,5 +359,5 @@ module.exports = {
   getRecentSnapshots,
   RECENT_OPTION_SNAPSHOT_LIMIT,
   isZerodhaTokenError,
-  ...analytics,
+  ...analytics
 };

@@ -21,16 +21,21 @@ async function calculateMaxPain(signalDir) {
     const strikeData = new Map();
     for (const opt of optionSlice.options) {
       const quote = quotes[opt.tradingsymbol];
-      if (!quote || quote.oi == null) continue;
+      if (!quote || quote.oi == null) {
+        continue;
+      }
       const existing = strikeData.get(opt.strike) ?? { ceOi: 0, peOi: 0 };
-      if (opt.optionType === 'CE') existing.ceOi = quote.oi;
-      else existing.peOi = quote.oi;
+      if (opt.optionType === 'CE') {
+        existing.ceOi = quote.oi;
+      } else {
+        existing.peOi = quote.oi;
+      }
       strikeData.set(opt.strike, existing);
     }
 
     const strikes = [...strikeData.keys()].sort((a, b) => a - b);
     if (strikes.length === 0) {
-      return { maxPainStrike: 0, spotPrice: optionSlice.spotPrice, distanceFromSpot: 0, distancePct: 0, direction: 'at-spot', confidenceContribution: 0, isExpiryDay: false, error: 'No strike data available' };
+      return { maxPainStrike: 0, spotPrice: optionSlice.spotPrice, distanceFromSpot: 0, distancePct: 0, direction: 'at-spot', confidenceContribution: 0, isExpiryDay: false, error: `No strike data available` };
     }
 
     // For each candidate settlement strike S, compute total payout to option buyers
@@ -41,9 +46,13 @@ async function calculateMaxPain(signalDir) {
       let totalPayout = 0;
       for (const [K, data] of strikeData) {
         // CE buyers get paid when S > K
-        if (S > K) totalPayout += (S - K) * data.ceOi;
+        if (S > K) {
+          totalPayout += (S - K) * data.ceOi;
+        }
         // PE buyers get paid when S < K
-        if (S < K) totalPayout += (K - S) * data.peOi;
+        if (S < K) {
+          totalPayout += (K - S) * data.peOi;
+        }
       }
       if (totalPayout < minPayout) {
         minPayout = totalPayout;
@@ -86,11 +95,11 @@ async function calculateMaxPain(signalDir) {
       distancePct: Number(distancePct.toFixed(2)),
       direction,
       confidenceContribution: Math.min(contribution, weight * 2),
-      isExpiryDay,
+      isExpiryDay
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[zerodhaService] calculateMaxPain failed message=${message}`);
+    logger.error(`[zerodhaService] calculateMaxPain failed message=${message}`, err);
     return { maxPainStrike: 0, spotPrice: 0, distanceFromSpot: 0, distancePct: 0, direction: 'at-spot', confidenceContribution: 0, isExpiryDay: false, error: message };
   }
 }
@@ -115,7 +124,9 @@ async function getOiBasedSupportResistance(signalDir) {
 
     for (const opt of optionSlice.options) {
       const quote = quotes[opt.tradingsymbol];
-      if (!quote || quote.oi == null) continue;
+      if (!quote || quote.oi == null) {
+        continue;
+      }
       if (opt.optionType === 'CE' && quote.oi > maxCeOi) {
         maxCeOi = quote.oi;
         maxCeStrike = opt.strike;
@@ -160,23 +171,23 @@ async function getOiBasedSupportResistance(signalDir) {
       resistance: { strike: maxCeStrike, ceOi: maxCeOi },
       spotPrice,
       priceRelation,
-      confidenceContribution: contribution,
+      confidenceContribution: contribution
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error(`[zerodhaService] getOiBasedSupportResistance failed message=${message}`);
+    logger.error(`[zerodhaService] getOiBasedSupportResistance failed message=${message}`, err);
     return {
       support: { strike: 0, peOi: 0 },
       resistance: { strike: 0, ceOi: 0 },
       spotPrice: 0,
       priceRelation: 'between-levels',
       confidenceContribution: 0,
-      error: message,
+      error: message
     };
   }
 }
 
 module.exports = {
   calculateMaxPain,
-  getOiBasedSupportResistance,
+  getOiBasedSupportResistance
 };

@@ -25,7 +25,7 @@ const logger = require('@startup/logger');
 const { fetchHistoricalCandles } = require('@appServer/interfaces/broker');
 const {
   IST, istMinutes, isMarketOpen, isNearClose,
-  bsPrice, dteYears, atmStrike, optSymbol,
+  bsPrice, dteYears, atmStrike, optSymbol
 } = require('../utils/optionMath');
 
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ const REGIME = {
   MIN_RANGE_PCT:   0.0008,  // band narrower than this is dead, not volatile
   MAX_RANGE_PCT:   0.0035,  // band wider than this is not a "small" range
   MIN_PATH_RATIO:  1.6,     // price must traverse the band 1.6x+ = genuinely volatile
-  EDGE_ZONE:       0.25,    // enter only in the bottom/top quarter of the band
+  EDGE_ZONE:       0.25    // enter only in the bottom/top quarter of the band
 };
 
 /**
@@ -83,10 +83,16 @@ const REGIME_STRICT = { ...REGIME, EDGE_ZONE: 0.12, MAX_EFFICIENCY: 0.22, MIN_PA
  * A small volatile range is precisely "low ER, long path".
  */
 function efficiencyRatio(closes) {
-  if (closes.length < 2) return 1;
+  if (closes.length < 2) {
+    return 1;
+  }
   let path = 0;
-  for (let i = 1; i < closes.length; i++) path += Math.abs(closes[i] - closes[i - 1]);
-  if (path === 0) return 0;   // nothing moved: dead, not trending
+  for (let i = 1; i < closes.length; i++) {
+    path += Math.abs(closes[i] - closes[i - 1]);
+  }
+  if (path === 0) {
+    return 0;
+  }   // nothing moved: dead, not trending
   return Math.abs(closes[closes.length - 1] - closes[0]) / path;
 }
 
@@ -112,7 +118,9 @@ function detectRangeRegime(window, price, cfg = REGIME) {
   const rangePct = bandPts / price;
 
   let path = 0;
-  for (let i = 1; i < closes.length; i++) path += Math.abs(closes[i] - closes[i - 1]);
+  for (let i = 1; i < closes.length; i++) {
+    path += Math.abs(closes[i] - closes[i - 1]);
+  }
   const pathRatio = bandPts > 0 ? path / bandPts : 0;
   const er        = efficiencyRatio(closes);
 
@@ -126,7 +134,7 @@ function detectRangeRegime(window, price, cfg = REGIME) {
     rangePct:   Number((rangePct * 100).toFixed(3)),
     efficiency: Number(er.toFixed(3)),
     pathRatio:  Number(pathRatio.toFixed(2)),
-    position:   Number(position.toFixed(3)),
+    position:   Number(position.toFixed(3))
   };
 
   // ── Gate 1: must not be trending ──────────────────────────────────────────
@@ -162,8 +170,12 @@ function detectRangeRegime(window, price, cfg = REGIME) {
 
   // ── Direction: fade the edge we are standing on ───────────────────────────
   let direction = null;
-  if      (position <= cfg.EDGE_ZONE)     direction = 'BUY';   // at the floor → CE
-  else if (position >= 1 - cfg.EDGE_ZONE) direction = 'SELL';  // at the ceiling → PE
+  if      (position <= cfg.EDGE_ZONE)     {
+    direction = 'BUY';
+  }   // at the floor → CE
+  else if (position >= 1 - cfg.EDGE_ZONE) {
+    direction = 'SELL';
+  }  // at the ceiling → PE
 
   if (!direction) {
     return { inRange: true, direction: null, metrics,
@@ -176,7 +188,7 @@ function detectRangeRegime(window, price, cfg = REGIME) {
     metrics,
     reason: direction === 'BUY'
       ? `At range floor (${(position * 100).toFixed(0)}% of band) — fading the low`
-      : `At range ceiling (${(position * 100).toFixed(0)}% of band) — fading the high`,
+      : `At range ceiling (${(position * 100).toFixed(0)}% of band) — fading the high`
   };
 }
 
@@ -193,7 +205,9 @@ function selectStrike(optType, spot, T, vol, maxPremium = MAX_ENTRY_PREMIUM) {
   let K = atmStrike(spot);
   for (let step = 0; step < 20; step++) {
     const premium = bsPrice(optType, spot, K, T, vol);
-    if (premium <= maxPremium) return { strike: K, premium };
+    if (premium <= maxPremium) {
+      return { strike: K, premium };
+    }
     // CE gets cheaper going up, PE going down
     K += optType === 'CE' ? STRIKE_STEP : -STRIKE_STEP;
   }
@@ -234,8 +248,8 @@ function estimateCosts(entryPrem, exitPrem, qty = QTY) {
  * what actually got filled and is the number that decides profitability.
  */
 function breakevenWinRate(slippagePts = DEFAULT_SLIPPAGE_PTS,
-                          refPremium = MAX_ENTRY_PREMIUM * 0.9,
-                          targetPts = TARGET_PTS, stopPts = STOP_PTS) {
+  refPremium = MAX_ENTRY_PREMIUM * 0.9,
+  targetPts = TARGET_PTS, stopPts = STOP_PTS) {
   const grossWin  = targetPts * QTY;
   const grossLoss = stopPts   * QTY;
   const slip      = slippagePts * 2 * QTY;                       // both sides
@@ -244,12 +258,14 @@ function breakevenWinRate(slippagePts = DEFAULT_SLIPPAGE_PTS,
 
   const netWin  = grossWin  - slip - costWin;
   const netLoss = grossLoss + slip + costLoss;
-  if (netWin <= 0) return { breakeven: null, netWin, netLoss, note: 'target does not cover costs' };
+  if (netWin <= 0) {
+    return { breakeven: null, netWin, netLoss, note: 'target does not cover costs' };
+  }
 
   return {
     breakeven: Number((netLoss / (netLoss + netWin) * 100).toFixed(1)),
     netWin:    Number(netWin.toFixed(0)),
-    netLoss:   Number(netLoss.toFixed(0)),
+    netLoss:   Number(netLoss.toFixed(0))
   };
 }
 
@@ -279,9 +295,15 @@ function candidateStrikes(optType, spot, steps = 8) {
 function selectStrikeFromQuotes(quotes, maxPremium = MAX_ENTRY_PREMIUM) {
   let best = null;
   for (const q of quotes) {
-    if (!q || !Number.isFinite(q.ltp) || q.ltp <= 0) continue;
-    if (q.ltp > maxPremium) continue;
-    if (!best || q.ltp > best.ltp) best = q;
+    if (!q || !Number.isFinite(q.ltp) || q.ltp <= 0) {
+      continue;
+    }
+    if (q.ltp > maxPremium) {
+      continue;
+    }
+    if (!best || q.ltp > best.ltp) {
+      best = q;
+    }
   }
   return best;
 }
@@ -341,7 +363,7 @@ async function evaluateScalp(candles, opts = {}) {
       }
       if (!Array.isArray(cands) || cands.length === 0) {
         cands = candidateStrikes(optType, price).map(K => ({
-          strike: K, tradingsymbol: optSymbol(K, optType, now),
+          strike: K, tradingsymbol: optSymbol(K, optType, now)
         }));
       }
       const symbols = cands.map(c => c.tradingsymbol);
@@ -349,7 +371,7 @@ async function evaluateScalp(candles, opts = {}) {
       const quoted = cands.map(c => ({
         strike: c.strike,
         tradingsymbol: c.tradingsymbol,
-        ltp: quoteMap?.[c.tradingsymbol]?.ltp,
+        ltp: quoteMap?.[c.tradingsymbol]?.ltp
       }));
       const best = selectStrikeFromQuotes(quoted);
       if (best) {
@@ -362,7 +384,7 @@ async function evaluateScalp(candles, opts = {}) {
           reason: `No ${optType} strike quoted at or under ${MAX_ENTRY_PREMIUM} — cheapest is above the cap` };
       }
     } catch (err) {
-      logger.error(`[scalp] quote lookup failed, falling back to model price: ${err.message}`);
+      logger.error(`[scalp] quote lookup failed, falling back to model price: ${err.message}`, err);
     }
   }
 
@@ -393,7 +415,7 @@ async function evaluateScalp(candles, opts = {}) {
     targetRs:      targetPts * QTY,
     riskRs:        stopPts   * QTY,
     maxHoldMins:   MAX_HOLD_MINUTES,
-    breakeven:     breakevenWinRate(),
+    breakeven:     breakevenWinRate()
   };
 }
 
@@ -421,7 +443,11 @@ async function fetchMinuteCandles(symbol, fromUnix, toUnix) {
 
   const seen = new Set();
   return all
-    .filter(c => { if (seen.has(c.time)) return false; seen.add(c.time); return true; })
+    .filter(c => {
+      if (seen.has(c.time)) {
+        return false;
+      } seen.add(c.time); return true;
+    })
     .sort((a, b) => a.time - b.time);
 }
 
@@ -434,10 +460,16 @@ function inferStepSecs(candles) {
   const counts = new Map();
   for (let i = 1; i < Math.min(candles.length, 2000); i++) {
     const d = candles[i].time - candles[i - 1].time;
-    if (d > 0 && d <= 3600) counts.set(d, (counts.get(d) ?? 0) + 1);
+    if (d > 0 && d <= 3600) {
+      counts.set(d, (counts.get(d) ?? 0) + 1);
+    }
   }
   let best = 60, bestN = 0;
-  for (const [d, n] of counts) if (n > bestN) { best = d; bestN = n; }
+  for (const [d, n] of counts) {
+    if (n > bestN) {
+      best = d; bestN = n;
+    }
+  }
   return best;
 }
 
@@ -455,11 +487,17 @@ function buildVolSeries(candles) {
   }
   return function volAt(candleIdx) {
     let d = dailyCloses.length - 1;
-    while (d >= 0 && dailyCloses[d].idx > candleIdx) d--;
+    while (d >= 0 && dailyCloses[d].idx > candleIdx) {
+      d--;
+    }
     const slice = dailyCloses.slice(Math.max(0, d - 20), d + 1);
-    if (slice.length < 3) return 0.15;
+    if (slice.length < 3) {
+      return 0.15;
+    }
     const rets = [];
-    for (let j = 1; j < slice.length; j++) rets.push(Math.log(slice[j].close / slice[j - 1].close));
+    for (let j = 1; j < slice.length; j++) {
+      rets.push(Math.log(slice[j].close / slice[j - 1].close));
+    }
     const mean = rets.reduce((s, r) => s + r, 0) / rets.length;
     const varc = rets.reduce((s, r) => s + (r - mean) ** 2, 0) / rets.length;
     return Math.max(0.10, Math.min(0.60, Math.sqrt(varc * 252)));
@@ -537,32 +575,44 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
   while (i < candles.length - 2) {
     const cur = candles[i];
 
-    if (!isMarketOpen(cur.time) || isNearClose(cur.time)) { i++; continue; }
+    if (!isMarketOpen(cur.time) || isNearClose(cur.time)) {
+      i++; continue;
+    }
 
     const day = Math.floor((cur.time + IST) / 86400);
     if (day !== curDay) {
       curDay = day; consecStops = 0;
-      if (halted) haltedDays++;
+      if (halted) {
+        haltedDays++;
+      }
       halted = false;
     }
-    if (halted) { i++; continue; }
+    if (halted) {
+      i++; continue;
+    }
 
     const window = candles.slice(i - REGIME.WINDOW, i);
     // Window must be one contiguous session, or the "range" spans an overnight gap
-    if (window[0].time !== cur.time - REGIME.WINDOW * stepSecs) { i++; continue; }
+    if (window[0].time !== cur.time - REGIME.WINDOW * stepSecs) {
+      i++; continue;
+    }
 
     let regime;
     if (bypassRegime) {
       regime = { inRange: true, direction: rand() < 0.5 ? 'BUY' : 'SELL',
-                 metrics: { bandPts: 0, efficiency: 0 }, reason: 'control: random entry' };
+        metrics: { bandPts: 0, efficiency: 0 }, reason: 'control: random entry' };
     } else {
       regime = detectRangeRegime(window, cur.close);
-      if (!regime.inRange || !regime.direction) { i++; continue; }
+      if (!regime.inRange || !regime.direction) {
+        i++; continue;
+      }
     }
 
     const entryIdx    = i + entryDelayBars;
     const entryCandle = candles[entryIdx];
-    if (!entryCandle || entryCandle.time !== cur.time + entryDelayBars * stepSecs) { i++; continue; }
+    if (!entryCandle || entryCandle.time !== cur.time + entryDelayBars * stepSecs) {
+      i++; continue;
+    }
 
     const optType   = regime.direction === 'BUY' ? 'CE' : 'PE';
     const entrySpot = entryDelayBars === 0 ? entryCandle.close : entryCandle.open;
@@ -571,7 +621,9 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
     const T0        = dteYears(entryCandle.time, entryDow);
 
     const pick = selectStrike(optType, entrySpot, T0, vol);
-    if (!pick) { i++; continue; }
+    if (!pick) {
+      i++; continue;
+    }
 
     const K         = pick.strike;
     const entryPrem = pick.premium + slippagePts;   // pay up to get filled
@@ -588,7 +640,9 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
 
     for (let k = scanStart; k < holdEnd; k++) {
       const ec = candles[k];
-      if (ec.time !== entryCandle.time + (k - entryIdx) * stepSecs) { break; } // session broke
+      if (ec.time !== entryCandle.time + (k - entryIdx) * stepSecs) {
+        break;
+      } // session broke
       const T  = dteYears(ec.time, entryDow);
 
       // A CE is worth most at the candle's high, a PE at its low.
@@ -602,18 +656,26 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
 
       const hitStop   = premMin <= stopPrem;
       const hitTarget = premMax >= targetPrem;
-      if (hitStop && hitTarget) ambiguousBars++;
+      if (hitStop && hitTarget) {
+        ambiguousBars++;
+      }
 
       if (hitStop && !(optimisticTies && hitTarget)) {
         outcome = 'loss'; exitPrem = stopPrem; break;
       }
-      if (hitTarget) { outcome = 'win'; exitPrem = targetPrem; break; }
-      if (istMinutes(ec.time) >= exitCutoffMin) { outcome = 'timeout'; break; }
+      if (hitTarget) {
+        outcome = 'win'; exitPrem = targetPrem; break;
+      }
+      if (istMinutes(ec.time) >= exitCutoffMin) {
+        outcome = 'timeout'; break;
+      }
     }
 
     if (outcome === 'loss') {
       consecStops++;
-      if (maxConsecStops > 0 && consecStops >= maxConsecStops) halted = true;
+      if (maxConsecStops > 0 && consecStops >= maxConsecStops) {
+        halted = true;
+      }
     } else if (outcome === 'win') {
       consecStops = 0;
     }
@@ -641,7 +703,7 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
       costsRs:       Math.round(costs),
       netRs:         Math.round(net),
       bandPts:       regime.metrics.bandPts,
-      efficiency:    regime.metrics.efficiency,
+      efficiency:    regime.metrics.efficiency
     });
 
     i = exitIdx + 1;   // no overlapping positions
@@ -657,8 +719,12 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
   let peak = 0, maxDd = 0, equity = 0;
   for (const t of trades) {
     equity += t.netRs;
-    if (equity > peak) peak = equity;
-    if (peak - equity > maxDd) maxDd = peak - equity;
+    if (equity > peak) {
+      peak = equity;
+    }
+    if (peak - equity > maxDd) {
+      maxDd = peak - equity;
+    }
   }
 
   const targetHits = trades.filter(t => t.outcome === 'win').length;
@@ -707,7 +773,7 @@ async function runScalpBacktest(symbol = 'NIFTY', opts = {}) {
     profitFactor:  grossLoss > 0 ? Number((grossWin / grossLoss).toFixed(2)) : null,
     maxDrawdownRs: Math.round(maxDd),
     avgHoldMins:   trades.length ? Number((trades.reduce((s, t) => s + t.heldMins, 0) / trades.length).toFixed(1)) : 0,
-    trades:        trades.slice(-200).reverse(),
+    trades:        trades.slice(-200).reverse()
   };
 }
 
@@ -727,5 +793,5 @@ module.exports = {
   QTY,
   TARGET_PTS,
   STOP_PTS,
-  MAX_ENTRY_PREMIUM,
+  MAX_ENTRY_PREMIUM
 };

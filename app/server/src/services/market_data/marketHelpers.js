@@ -7,7 +7,9 @@ const DEFAULT_VWAP_DEAD_ZONE_PCT = 0.001;
 
 function getNumericEnv(name, fallback) {
   const rawValue = process.env[name];
-  if (!rawValue?.trim()) { return fallback; }
+  if (!rawValue?.trim()) {
+    return fallback;
+  }
   const parsedValue = Number(rawValue);
   return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : fallback;
 }
@@ -69,15 +71,25 @@ function evaluateMarketSession(now) {
   const lunchEnd = istTimeInMinutes(13, 30);
   const closingBlockStart = isExpiryDay ? istTimeInMinutes(15, 0) : istTimeInMinutes(15, 15);
   const marketClose = istTimeInMinutes(15, 30);
-  if (timeMin < marketOpen) return { allowed: false, reason: 'Pre-market hours (before 9:15 AM IST)', session: 'pre-market', isExpiryDay };
-  if (timeMin < openingBlockEnd && blockOpening) return { allowed: false, reason: 'Opening 15-min volatility trap (9:15-9:30 AM IST)', session: 'opening-block', isExpiryDay };
-  if (timeMin >= marketClose) return { allowed: false, reason: 'Post-market hours (after 3:30 PM IST)', session: 'post-market', isExpiryDay };
+  if (timeMin < marketOpen) {
+    return { allowed: false, reason: 'Pre-market hours (before 9:15 AM IST)', session: 'pre-market', isExpiryDay };
+  }
+  if (timeMin < openingBlockEnd && blockOpening) {
+    return { allowed: false, reason: 'Opening 15-min volatility trap (9:15-9:30 AM IST)', session: 'opening-block', isExpiryDay };
+  }
+  if (timeMin >= marketClose) {
+    return { allowed: false, reason: 'Post-market hours (after 3:30 PM IST)', session: 'post-market', isExpiryDay };
+  }
   if (timeMin >= closingBlockStart && blockClosing) {
     const label = isExpiryDay ? 'Expiry day closing block (after 3:00 PM IST)' : 'Closing 15-min block (after 3:15 PM IST)';
     return { allowed: false, reason: label, session: 'closing-block', isExpiryDay };
   }
-  if (timeMin >= lunchStart && timeMin < lunchEnd && blockLunch) return { allowed: false, reason: 'Lunch hour dead zone (12:30-1:30 PM IST)', session: 'lunch-block', isExpiryDay };
-  if (timeMin < istTimeInMinutes(12, 30)) return { allowed: true, reason: 'Morning session active', session: 'morning', isExpiryDay };
+  if (timeMin >= lunchStart && timeMin < lunchEnd && blockLunch) {
+    return { allowed: false, reason: 'Lunch hour dead zone (12:30-1:30 PM IST)', session: 'lunch-block', isExpiryDay };
+  }
+  if (timeMin < istTimeInMinutes(12, 30)) {
+    return { allowed: true, reason: 'Morning session active', session: 'morning', isExpiryDay };
+  }
   return { allowed: true, reason: 'Afternoon session active', session: 'afternoon', isExpiryDay };
 }
 
@@ -86,5 +98,5 @@ module.exports = {
   getVwapDeadZonePct,
   evaluateRsiDeadZone,
   evaluateVwapDeadZone,
-  evaluateMarketSession,
+  evaluateMarketSession
 };

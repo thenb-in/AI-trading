@@ -12,7 +12,7 @@ async function getStatusView(_req, res) {
   try {
     res.json({ success: true, data: await archiveController.getStatus() });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Archive status failed', message: getZerodhaErrorMessage(err) });
+    res.status(500).json({ success: false, error: `Archive status failed`, message: getZerodhaErrorMessage(err) });
   }
 }
 
@@ -31,7 +31,7 @@ async function archiveOptionsView(req, res) {
     const symbol = req.query.symbol === 'BANKNIFTY' ? 'BANKNIFTY' : 'NIFTY';
     res.json({ success: true, data: await archiveController.archiveOptions(symbol) });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Options archive failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: `Options archive failed`, message: getZerodhaErrorMessage(err) });
   }
 }
 

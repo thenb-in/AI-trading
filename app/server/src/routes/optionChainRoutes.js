@@ -19,7 +19,7 @@ const {
   saveBookmarksView,
   getSpreadSummaryView,
   runChainBenchmarkView,
-  getFeedStatusView,
+  getFeedStatusView
 } = require('../views/optionChainView');
 
 const router = Router();

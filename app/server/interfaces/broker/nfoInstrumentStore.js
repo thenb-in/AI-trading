@@ -16,7 +16,7 @@ async function saveNfoInstrumentsSnapshot() {
   const instruments = await kite.getInstruments('NFO');
 
   if (!Array.isArray(instruments) || instruments.length === 0) {
-    throw new Error('getInstruments returned empty list');
+    throw new Error(`getInstruments returned empty list`);
   }
 
   // IST date string YYYY-MM-DD
@@ -35,9 +35,13 @@ async function saveNfoInstrumentsSnapshot() {
    * then read the UTC components.
    */
   const toIstDateString = (value) => {
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
     const d = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(d.getTime())) return null;
+    if (Number.isNaN(d.getTime())) {
+      return null;
+    }
     return new Date(d.getTime() + IST_OFFSET_MS).toISOString().slice(0, 10);
   };
 
@@ -59,7 +63,7 @@ async function saveNfoInstrumentsSnapshot() {
     lot_size:         num(inst.lot_size),
     instrument_type:  inst.instrument_type ?? null,
     segment:          inst.segment ?? null,
-    exchange:         inst.exchange ?? null,
+    exchange:         inst.exchange ?? null
   })).filter(r => r.instrument_token != null && r.tradingsymbol);
 
   let inserted = 0;
@@ -71,7 +75,7 @@ async function saveNfoInstrumentsSnapshot() {
     const chunk = rows.slice(i, i + CHUNK);
     const result = await NfoInstrument.bulkCreate(chunk, {
       ignoreDuplicates: true,
-      returning: false,
+      returning: false
     });
     inserted += result.length;
     skipped  += chunk.length - result.length;
@@ -93,10 +97,10 @@ async function lookupOptionToken(tradingsymbol, queryDate) {
   const row = await NfoInstrument.findOne({
     where: {
       tradingsymbol,
-      snapshot_date: { [Op.lte]: queryDate },
+      snapshot_date: { [Op.lte]: queryDate }
     },
     order: [['snapshot_date', 'DESC']],
-    attributes: ['instrument_token'],
+    attributes: ['instrument_token']
   });
 
   return row ? Number(row.instrument_token) : null;
@@ -104,5 +108,5 @@ async function lookupOptionToken(tradingsymbol, queryDate) {
 
 module.exports = {
   saveNfoInstrumentsSnapshot,
-  lookupOptionToken,
+  lookupOptionToken
 };

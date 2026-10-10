@@ -30,7 +30,7 @@ const { isMarketOpen } = require('../utils/optionMath');
 // Strike spans differ because the strike steps differ (NIFTY 50, BN 100).
 const SYMBOLS = {
   NIFTY:     { spotToken: 256265, span: 800,  defaultSpot: 23000 },
-  BANKNIFTY: { spotToken: 260105, span: 1800, defaultSpot: 55500 },
+  BANKNIFTY: { spotToken: 260105, span: 1800, defaultSpot: 55500 }
 };
 const SPOT_TOKENS = new Map(Object.entries(SYMBOLS).map(([k, v]) => [v.spotToken, k]));
 const RECENTER_MS = 5 * 60 * 1000;
@@ -77,13 +77,19 @@ async function loadBaselines() {
   baselineDate = todayIst();
   oiBaselines = new Map();
   const rows = await ChainOiBaseline.findAll({ where: { date: baselineDate }, raw: true });
-  for (const r of rows) oiBaselines.set(r.tradingsymbol, Number(r.oi));
+  for (const r of rows) {
+    oiBaselines.set(r.tradingsymbol, Number(r.oi));
+  }
   logger.info(`[ticker] loaded ${oiBaselines.size} OI baselines for ${baselineDate}`);
 }
 
 function noteBaseline(sym, oi) {
-  if (baselineDate !== todayIst()) { oiBaselines = new Map(); baselineDate = todayIst(); }
-  if (oiBaselines.has(sym)) return;
+  if (baselineDate !== todayIst()) {
+    oiBaselines = new Map(); baselineDate = todayIst();
+  }
+  if (oiBaselines.has(sym)) {
+    return;
+  }
   oiBaselines.set(sym, oi);
   pendingBaselines.push({ date: baselineDate, tradingsymbol: sym, oi, captured_at: new Date() });
 }
@@ -92,8 +98,11 @@ async function flushMinuteData() {
   // baselines
   if (pendingBaselines.length) {
     const batch = pendingBaselines.splice(0);
-    try { await ChainOiBaseline.bulkCreate(batch, { ignoreDuplicates: true }); }
-    catch (e) { logger.error(`[ticker] baseline flush failed: ${e.message}`); }
+    try {
+      await ChainOiBaseline.bulkCreate(batch, { ignoreDuplicates: true });
+    } catch (e) {
+      logger.error(`[ticker] baseline flush failed: ${e.message}`, e);
+    }
   }
   // spreads: one row per contract per minute
   if (spreadAgg.size) {
@@ -106,18 +115,23 @@ async function flushMinuteData() {
         symbol: st?.symbol ?? 'NIFTY', strike: st?.strike ?? null, type: st?.type ?? null,
         ltp: st?.ltp ?? null,
         avg_spread: (a.sum / a.n).toFixed(2), min_spread: a.min.toFixed(2),
-        max_spread: a.max.toFixed(2), ticks: a.n,
+        max_spread: a.max.toFixed(2), ticks: a.n
       });
     }
     spreadAgg.clear();
-    try { await SpreadSample.bulkCreate(rows, { ignoreDuplicates: true }); }
-    catch (e) { logger.error(`[ticker] spread flush failed: ${e.message}`); }
+    try {
+      await SpreadSample.bulkCreate(rows, { ignoreDuplicates: true });
+    } catch (e) {
+      logger.error(`[ticker] spread flush failed: ${e.message}`, e);
+    }
   }
 }
 
 async function chainTokens(symbol, centerSpot) {
   const latestSnap = await NfoInstrument.max('snapshot_date');
-  if (!latestSnap) return [];
+  if (!latestSnap) {
+    return [];
+  }
   const today = new Date().toISOString().slice(0, 10);
   const span = SYMBOLS[symbol].span;
   const rows = await NfoInstrument.findAll({
@@ -125,16 +139,18 @@ async function chainTokens(symbol, centerSpot) {
       snapshot_date: latestSnap, name: symbol,
       instrument_type: { [Op.in]: ['CE', 'PE'] },
       expiry: { [Op.gte]: today },
-      strike: { [Op.between]: [centerSpot - span, centerSpot + span] },
+      strike: { [Op.between]: [centerSpot - span, centerSpot + span] }
     },
     order: [['expiry', 'ASC'], ['strike', 'ASC']],
-    raw: true,
+    raw: true
   });
-  if (rows.length === 0) return [];
+  if (rows.length === 0) {
+    return [];
+  }
   const nearest = rows[0].expiry;
   return rows.filter(r => r.expiry === nearest).map(r => ({
     symbol, token: Number(r.instrument_token), tradingsymbol: r.tradingsymbol,
-    strike: Number(r.strike), type: r.instrument_type, expiry: String(r.expiry),
+    strike: Number(r.strike), type: r.instrument_type, expiry: String(r.expiry)
   }));
 }
 
@@ -149,10 +165,14 @@ function onTicks(ticks) {
       continue;
     }
     const s = state.get(t.instrument_token);
-    if (!s) continue;
+    if (!s) {
+      continue;
+    }
     s.ltp = t.last_price ?? s.ltp;
     if (t.oi != null) {
-      if (s.oiOpen == null) s.oiOpen = t.oi;
+      if (s.oiOpen == null) {
+        s.oiOpen = t.oi;
+      }
       s.oi = t.oi;
       noteBaseline(s.tradingsymbol, t.oi);
     }
@@ -162,12 +182,19 @@ function onTicks(ticks) {
       s.bid = bid; s.ask = ask;
       const spread = ask - bid;
       let a = spreadAgg.get(s.tradingsymbol);
-      if (!a) { a = { sum: 0, n: 0, min: spread, max: spread }; spreadAgg.set(s.tradingsymbol, a); }
+      if (!a) {
+        a = { sum: 0, n: 0, min: spread, max: spread }; spreadAgg.set(s.tradingsymbol, a);
+      }
       a.sum += spread; a.n++; a.min = Math.min(a.min, spread); a.max = Math.max(a.max, spread);
     }
-    if (t.volume_traded != null) s.volume = t.volume_traded;
-    else if (t.volume != null) s.volume = t.volume;
-    if (t.ohlc?.close != null) s.prevClose = t.ohlc.close;
+    if (t.volume_traded != null) {
+      s.volume = t.volume_traded;
+    } else if (t.volume != null) {
+      s.volume = t.volume;
+    }
+    if (t.ohlc?.close != null) {
+      s.prevClose = t.ohlc.close;
+    }
     s.lastTickAt = now;
   }
 }
@@ -178,7 +205,9 @@ async function subscribeChain() {
     const center = spots[sym].price ?? SYMBOLS[sym].defaultSpot;
     chains.push(...await chainTokens(sym, center));
   }
-  if (chains.length === 0) { lastError = 'no instruments for chains (snapshot missing?)'; return; }
+  if (chains.length === 0) {
+    lastError = 'no instruments for chains (snapshot missing?)'; return;
+  }
 
   const spotTokens = Object.values(SYMBOLS).map(v => v.spotToken);
   const wanted = new Set([...spotTokens, ...chains.map(c => c.token)]);
@@ -190,7 +219,15 @@ async function subscribeChain() {
   // drop strikes that drifted out of the window
   const toUnsub = [...subscribedTokens].filter(t => !wanted.has(t));
   const toSub = [...wanted].filter(t => !subscribedTokens.has(t));
-  if (toUnsub.length) { try { ticker.unsubscribe(toUnsub); } catch {} toUnsub.forEach(t => { subscribedTokens.delete(t); if (!SPOT_TOKENS.has(t)) state.delete(t); }); }
+  if (toUnsub.length) {
+    try {
+      ticker.unsubscribe(toUnsub);
+    } catch {} toUnsub.forEach(t => {
+      subscribedTokens.delete(t); if (!SPOT_TOKENS.has(t)) {
+        state.delete(t);
+      }
+    });
+  }
   if (toSub.length) {
     ticker.subscribe(toSub);
     ticker.setMode(ticker.modeFull, toSub.filter(t => !SPOT_TOKENS.has(t)));
@@ -198,7 +235,9 @@ async function subscribeChain() {
     // one Zerodha has silently dropped twice; full mode rides the same class
     // of subscription the options provably keep.
     const spotSubs = toSub.filter(t => SPOT_TOKENS.has(t));
-    if (spotSubs.length) ticker.setMode(ticker.modeFull, spotSubs);
+    if (spotSubs.length) {
+      ticker.setMode(ticker.modeFull, spotSubs);
+    }
     toSub.forEach(t => subscribedTokens.add(t));
   }
   logger.info(`[ticker] subscriptions: ${subscribedTokens.size - spotTokens.length} contracts across ${Object.keys(SYMBOLS).join('+')}`);
@@ -210,7 +249,9 @@ function start() {
   const creds = brokerCredentials.getBrokerCreds();
   const api_key = creds.apiKey;
   const access_token = creds.accessToken;
-  if (!api_key || !access_token) { lastError = 'no Zerodha credentials'; return; }
+  if (!api_key || !access_token) {
+    lastError = 'no Zerodha credentials'; return;
+  }
 
   ticker = new KiteTicker({ api_key, access_token });
   lastStartAt = Date.now();
@@ -224,26 +265,60 @@ function start() {
   // handler checks it still belongs to the current instance.
   const self = ticker;
   ticker.on('connect', async () => {
-    if (ticker !== self) return;
+    if (ticker !== self) {
+      return;
+    }
     connected = true; lastError = null;
     logger.info(`[ticker] ${new Date().toISOString()} websocket connected`);
-    try { await subscribeChain(); } catch (e) { lastError = e.message; }
+    try {
+      await subscribeChain();
+    } catch (e) {
+      lastError = e.message;
+    }
     // The first subscription centers on default spots (real spot ticks have
     // not arrived yet). Re-center once shortly after, so a market far from
     // the defaults gets its proper ATM window in seconds, not 5 minutes.
-    setTimeout(() => { if (ticker === self && connected) subscribeChain().catch(e => { lastError = e.message; }); }, 15000);
+    setTimeout(() => {
+      if (ticker === self && connected) {
+        subscribeChain().catch(e => {
+          lastError = e.message;
+        });
+      }
+    }, 15000);
   });
-  ticker.on('ticks', (t) => { if (ticker === self) onTicks(t); });
-  ticker.on('disconnect', () => { if (ticker !== self) return; connected = false; logger.info(`[ticker] ${new Date().toISOString()} websocket disconnected`); });
-  ticker.on('error', (e) => { if (ticker === self) lastError = e?.message ?? 'websocket error'; });
-  ticker.on('noreconnect', () => { if (ticker !== self) return; connected = false; lastError = 'gave up reconnecting (token likely expired)'; logger.info(`[ticker] ${new Date().toISOString()} gave up reconnecting`); });
+  ticker.on('ticks', (t) => {
+    if (ticker === self) {
+      onTicks(t);
+    }
+  });
+  ticker.on('disconnect', () => {
+    if (ticker !== self) {
+      return;
+    } connected = false; logger.info(`[ticker] ${new Date().toISOString()} websocket disconnected`);
+  });
+  ticker.on('error', (e) => {
+    if (ticker === self) {
+      lastError = e?.message ?? 'websocket error';
+    }
+  });
+  ticker.on('noreconnect', () => {
+    if (ticker !== self) {
+      return;
+    } connected = false; lastError = 'gave up reconnecting (token likely expired)'; logger.info(`[ticker] ${new Date().toISOString()} gave up reconnecting`);
+  });
   ticker.connect();
 
-  loadBaselines().catch(e => logger.error(`[ticker] baseline load failed: ${e.message}`));
-  flushTimer = setInterval(() => { flushMinuteData().catch(() => {}); }, 60 * 1000);
+  loadBaselines().catch(e => logger.error(`[ticker] baseline load failed: ${e.message}`, e));
+  flushTimer = setInterval(() => {
+    flushMinuteData().catch(() => {});
+  }, 60 * 1000);
 
   recenterTimer = setInterval(() => {
-    if (connected) subscribeChain().catch(e => { lastError = e.message; });
+    if (connected) {
+      subscribeChain().catch(e => {
+        lastError = e.message;
+      });
+    }
   }, RECENTER_MS);
 
   // Staleness self-heal: judge the feed by tick recency, never by `connected`.
@@ -254,9 +329,15 @@ function start() {
   healthTimer = setInterval(() => {
     const now = Date.now();
     const istDay = new Date(now + 19800 * 1000).getUTCDay();
-    if (istDay === 0 || istDay === 6) return;
-    if (!isMarketOpen(Math.floor(now / 1000))) return;
-    if (now - lastStartAt < STARTUP_GRACE_MS) return;
+    if (istDay === 0 || istDay === 6) {
+      return;
+    }
+    if (!isMarketOpen(Math.floor(now / 1000))) {
+      return;
+    }
+    if (now - lastStartAt < STARTUP_GRACE_MS) {
+      return;
+    }
     const spotFreshest = Math.max(spots.NIFTY.at || 0, spots.BANKNIFTY.at || 0);
     const spotSilentMs = now - spotFreshest;
     const anySilentMs = now - Math.max(lastAnyTickAt, lastStartAt);
@@ -270,33 +351,53 @@ function start() {
         ticker.unsubscribe(spotTokens);
         ticker.subscribe(spotTokens);
         ticker.setMode(ticker.modeFull, spotTokens);
-      } catch (e) { lastError = e.message; }
+      } catch (e) {
+        lastError = e.message;
+      }
     }
   }, 15 * 1000);
 }
 
 function stop() {
-  if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
-  if (recenterTimer) { clearInterval(recenterTimer); recenterTimer = null; }
-  if (healthTimer) { clearInterval(healthTimer); healthTimer = null; }
-  if (ticker) { try { ticker.disconnect(); } catch {} ticker = null; }
+  if (flushTimer) {
+    clearInterval(flushTimer); flushTimer = null;
+  }
+  if (recenterTimer) {
+    clearInterval(recenterTimer); recenterTimer = null;
+  }
+  if (healthTimer) {
+    clearInterval(healthTimer); healthTimer = null;
+  }
+  if (ticker) {
+    try {
+      ticker.disconnect();
+    } catch {} ticker = null;
+  }
   connected = false;
   subscribedTokens = new Set();
 }
 
 /** Restart with fresh credentials — called after a successful daily login. */
-function restart() { logger.info('[ticker] restarting with fresh token'); start(); }
+function restart() {
+  logger.info(`[ticker] restarting with fresh token`); start();
+}
 
 /** Memory snapshot the UI polls every second — zero Zerodha cost. */
 function getChain(symbol = 'NIFTY') {
-  if (!SYMBOLS[symbol]) symbol = 'NIFTY';
+  if (!SYMBOLS[symbol]) {
+    symbol = 'NIFTY';
+  }
   const byStrike = new Map();
   let expiry = null;
   for (const s of state.values()) {
-    if (s.symbol !== symbol) continue;
+    if (s.symbol !== symbol) {
+      continue;
+    }
     expiry = expiry ?? s.expiry;
     let row = byStrike.get(s.strike);
-    if (!row) { row = { strike: s.strike }; byStrike.set(s.strike, row); }
+    if (!row) {
+      row = { strike: s.strike }; byStrike.set(s.strike, row);
+    }
     const base = oiBaselines.get(s.tradingsymbol) ?? s.oiOpen;
     row[s.type] = {
       tradingsymbol: s.tradingsymbol,
@@ -307,7 +408,7 @@ function getChain(symbol = 'NIFTY') {
       volume: s.volume,
       bid: s.bid ?? null, ask: s.ask ?? null,
       spread: (s.bid > 0 && s.ask > 0) ? Number((s.ask - s.bid).toFixed(2)) : null,
-      ageMs: s.lastTickAt ? Date.now() - s.lastTickAt : null,
+      ageMs: s.lastTickAt ? Date.now() - s.lastTickAt : null
     };
   }
   const rows = [...byStrike.values()].sort((a, b) => a.strike - b.strike);
@@ -321,16 +422,22 @@ function getChain(symbol = 'NIFTY') {
   const NEAR = 500;
   let maxPeOi = 0, maxCeOi = 0, support = null, resistance = null;
   for (const r of rows) {
-    if (nearSpot != null && Math.abs(r.strike - nearSpot) > NEAR) continue;
-    if (r.PE?.oi > maxPeOi) { maxPeOi = r.PE.oi; support = r.strike; }
-    if (r.CE?.oi > maxCeOi) { maxCeOi = r.CE.oi; resistance = r.strike; }
+    if (nearSpot != null && Math.abs(r.strike - nearSpot) > NEAR) {
+      continue;
+    }
+    if (r.PE?.oi > maxPeOi) {
+      maxPeOi = r.PE.oi; support = r.strike;
+    }
+    if (r.CE?.oi > maxCeOi) {
+      maxCeOi = r.CE.oi; resistance = r.strike;
+    }
   }
   return {
     symbol, connected, lastError,
     spot: sp.price, spotAgeMs: sp.at ? Date.now() - sp.at : null,
     dayOhlc: sp.ohlc ?? null,
     expiry, support, resistance,
-    contracts: rows.length * 2, rows,
+    contracts: rows.length * 2, rows
   };
 }
 

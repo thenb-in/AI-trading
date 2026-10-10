@@ -16,7 +16,7 @@ async function getAutotradeState() {
   const [status, orders, today] = await Promise.all([
     execution.dayStatus(),
     execution.recentOrders(30),
-    execution.todaysTrades(),
+    execution.todaysTrades()
   ]);
   const trades = today.map(t => {
     const entry = Number(t.entry_premium);
@@ -26,7 +26,7 @@ async function getAutotradeState() {
       id: t.id, status: t.status, direction: t.direction, tradingsymbol: t.tradingsymbol,
       entryTime: t.entry_time, exitTime: t.exit_time, reason: t.resolve_reason,
       entry, exit, trailSl: Number(t.trail_sl), targetsHit: t.targets_hit,
-      netRs, live: t.status === 'active',
+      netRs, live: t.status === 'active'
     };
   });
   const dayNetRs = trades.filter(t => !t.live && t.netRs != null).reduce((a, t) => a + t.netRs, 0);
@@ -58,5 +58,5 @@ module.exports = {
   setMode,
   getActiveTrade,
   catchUpEntry,
-  modifyGtt,
+  modifyGtt
 };

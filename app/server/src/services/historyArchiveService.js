@@ -69,11 +69,15 @@ async function selectHarvestContracts(symbol = 'NIFTY') {
   const now = Math.floor(Date.now() / 1000);
   const recent = await fetchHistoricalCandles(symbol, now - 3 * 24 * 3600, now, 'minute');
   const spot = recent.length ? recent[recent.length - 1].close : null;
-  if (!Number.isFinite(spot)) throw new Error(`No spot for ${symbol}`);
+  if (!Number.isFinite(spot)) {
+    throw new Error(`No spot for ${symbol}`);
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const latestSnap = await NfoInstrument.max('snapshot_date');
-  if (!latestSnap) throw new Error('nfo_instruments is empty — run the snapshot first');
+  if (!latestSnap) {
+    throw new Error(`nfo_instruments is empty — run the snapshot first`);
+  }
 
   const rows = await NfoInstrument.findAll({
     where: {
@@ -81,10 +85,10 @@ async function selectHarvestContracts(symbol = 'NIFTY') {
       name: symbol,
       instrument_type: { [Op.in]: ['CE', 'PE'] },
       expiry: { [Op.gte]: today },
-      strike: { [Op.between]: [spot - ATM_STRIKE_SPAN, spot + ATM_STRIKE_SPAN] },
+      strike: { [Op.between]: [spot - ATM_STRIKE_SPAN, spot + ATM_STRIKE_SPAN] }
     },
     order: [['expiry', 'ASC'], ['strike', 'ASC']],
-    raw: true,
+    raw: true
   });
 
   const expiries = [...new Set(rows.map(r => r.expiry))].slice(0, 2);
@@ -95,7 +99,7 @@ async function selectHarvestContracts(symbol = 'NIFTY') {
   // be collected while the contract lives. Costs one extra fetch per day.
   const futs = await NfoInstrument.findAll({
     where: { snapshot_date: latestSnap, name: symbol, instrument_type: 'FUT', expiry: { [Op.gte]: today } },
-    order: [['expiry', 'ASC']], limit: 1, raw: true,
+    order: [['expiry', 'ASC']], limit: 1, raw: true
   });
   return { spot, contracts: [...picked, ...futs] };
 }
@@ -113,15 +117,17 @@ async function archiveOptionCandles(symbol = 'NIFTY') {
   for (const c of contracts) {
     try {
       const candles = await fetchOptionCandles(c.instrument_token, from, to);
-      if (candles.length === 0) { empty++; continue; }
+      if (candles.length === 0) {
+        empty++; continue;
+      }
       dbRows += await upsertOptionCandles({
         tradingsymbol: c.tradingsymbol, expiry: String(c.expiry),
-        strike: Number(c.strike), type: c.instrument_type,
+        strike: Number(c.strike), type: c.instrument_type
       }, candles);
       saved++;
     } catch (err) {
       failed++;
-      logger.error(`[archive] ${c.tradingsymbol} failed: ${err.message ?? err}`);
+      logger.error(`[archive] ${c.tradingsymbol} failed: ${err.message ?? err}`, err);
     }
     await sleep(REQUEST_GAP_MS);
   }
@@ -148,5 +154,5 @@ module.exports = {
   archiveIndexCandles,
   archiveOptionCandles,
   runNightlyArchive,
-  archiveStatus,
+  archiveStatus
 };

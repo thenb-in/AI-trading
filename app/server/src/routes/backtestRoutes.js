@@ -19,7 +19,7 @@ const {
   tiltStateView,
   setTiltView,
   resampledCandlesView,
-  candleStatusView,
+  candleStatusView
 } = require('../views/backtestView');
 
 const router = express.Router();

@@ -34,11 +34,11 @@ module.exports = (sequelize, DataTypes) => {
     max_premium:    { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     min_premium:    { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     exit_premium:   { type: DataTypes.DECIMAL(10, 2), allowNull: true },
-    entry_reasons:  { type: DataTypes.JSONB, allowNull: true },
+    entry_reasons:  { type: DataTypes.JSONB, allowNull: true }
   }, {
     tableName: 'method2_trades',
     timestamps: false,
-    indexes: [{ fields: ['status'] }, { fields: ['entry_time'] }],
+    indexes: [{ fields: ['status'] }, { fields: ['entry_time'] }]
   });
 
   return Method2Trade;

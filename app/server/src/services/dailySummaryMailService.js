@@ -3,7 +3,9 @@
 const logger = require('@startup/logger');
 const { sendMail, getSignalEmail } = require('../utils/mailerService');
 
-function dirColor(d) { return d === 'BUY' ? '#16a34a' : '#dc2626'; }
+function dirColor(d) {
+  return d === 'BUY' ? '#16a34a' : '#dc2626';
+}
 
 function buildDailySummaryEmail(signals, dateStr) {
   const total   = signals.length;
@@ -133,19 +135,21 @@ function buildDailySummaryEmail(signals, dateStr) {
 async function sendDailySummaryMail(signals) {
   const recipient = getSignalEmail();
   if (!recipient) {
-    logger.warn('[DailySummary] No recipient set — configure in dashboard settings');
+    logger.warn(`[DailySummary] No recipient set — configure in dashboard settings`);
     return;
   }
 
   const dateStr = new Date().toLocaleDateString('en-IN', {
     timeZone: 'Asia/Kolkata',
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
   });
 
   // Only today's signals (IST date match)
   const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD
   const todaySignals = (signals || []).filter(s => {
-    if (!s.timestamp) return false;
+    if (!s.timestamp) {
+      return false;
+    }
     const d = new Date(s.timestamp).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     return d === todayIST;
   });
@@ -157,7 +161,7 @@ async function sendDailySummaryMail(signals) {
     await sendMail(subject, content, recipient);
     logger.info(`[DailySummary] Sent — ${todaySignals.length} signals for ${todayIST}`);
   } catch (err) {
-    logger.error(`[DailySummary] send failed: ${err.message}`);
+    logger.error(`[DailySummary] send failed: ${err.message}`, err);
   }
 }
 

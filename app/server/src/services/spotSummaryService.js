@@ -30,14 +30,20 @@ async function restQuotes() {
 
 async function getAnchors() {
   const today = istDate();
-  if (anchorCache.date === today && anchorCache.data) return anchorCache.data;
+  if (anchorCache.date === today && anchorCache.data) {
+    return anchorCache.data;
+  }
   const q = await restQuotes();
   const data = {};
   for (const [sym, key] of Object.entries(KEYS)) {
     const r = q[key];
-    if (r?.ohlc) data[sym] = { open: r.ohlc.open, prevClose: r.ohlc.close, last: r.last_price };
+    if (r?.ohlc) {
+      data[sym] = { open: r.ohlc.open, prevClose: r.ohlc.close, last: r.last_price };
+    }
   }
-  if (Object.keys(data).length === 2) anchorCache = { date: today, data };
+  if (Object.keys(data).length === 2) {
+    anchorCache = { date: today, data };
+  }
   restSpotCache = { at: Date.now(), data };   // the same call is a fresh spot too
   return data;
 }
@@ -47,12 +53,16 @@ async function getSpotSummary() {
   const out = { at: Date.now() };
   for (const sym of Object.keys(KEYS)) {
     const a = anchors[sym];
-    if (!a) continue;
+    if (!a) {
+      continue;
+    }
     // websocket spot when this process runs the ticker and it is fresh
     let spot = null, source = 'ws';
     try {
       const c = tickerService.getChain(sym);
-      if (c.spot != null && c.spotAgeMs != null && c.spotAgeMs < 10000) spot = c.spot;
+      if (c.spot != null && c.spotAgeMs != null && c.spotAgeMs < 10000) {
+        spot = c.spot;
+      }
     } catch { /* ticker not running here */ }
     if (spot == null) {
       // REST fallback, cached a few seconds so a 1s-polling widget stays polite
@@ -60,7 +70,9 @@ async function getSpotSummary() {
         try {
           const q = await restQuotes();
           const data = {};
-          for (const [s2, key] of Object.entries(KEYS)) data[s2] = { last: q[key]?.last_price };
+          for (const [s2, key] of Object.entries(KEYS)) {
+            data[s2] = { last: q[key]?.last_price };
+          }
           restSpotCache = { at: Date.now(), data };
         } catch { /* keep the stale cache */ }
       }
@@ -70,7 +82,7 @@ async function getSpotSummary() {
     out[sym] = {
       spot, open: a.open, prevClose: a.prevClose,
       changePct: a.prevClose ? +((spot - a.prevClose) / a.prevClose * 100).toFixed(2) : null,
-      source,
+      source
     };
   }
   return out;

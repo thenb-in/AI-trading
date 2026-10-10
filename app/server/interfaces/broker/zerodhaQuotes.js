@@ -5,18 +5,22 @@ const {
   getCachedNfoInstruments,
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
-  getNiftySpotFromZerodha,
+  getNiftySpotFromZerodha
 } = require('./kiteClient');
 const {
   getAtmStrike,
   getUpcomingExpiryOptions,
-  resolveClosestAtmOption,
+  resolveClosestAtmOption
 } = require('./zerodhaInstruments');
 
 function interpretationFromPcr(pcr) {
-  if (pcr > 1.1) return "bearish (more put OI)";
-  if (pcr < 0.9) return "bullish (more call OI)";
-  return "neutral";
+  if (pcr > 1.1) {
+    return `bearish (more put OI)`;
+  }
+  if (pcr < 0.9) {
+    return `bullish (more call OI)`;
+  }
+  return 'neutral';
 }
 
 async function getOptionQuotesByTradingSymbols(tradingSymbols) {
@@ -35,7 +39,7 @@ async function getOptionQuotesByTradingSymbols(tradingSymbols) {
   try {
     const rawQuote = await kite.getQuote(quoteKeys);
     const quoteMap =
-      rawQuote && typeof rawQuote.data === "object"
+      rawQuote && typeof rawQuote.data === 'object'
         ? rawQuote.data
         : rawQuote;
 
@@ -50,12 +54,12 @@ async function getOptionQuotesByTradingSymbols(tradingSymbols) {
         tradingsymbol: symbol,
         oi: Number.isFinite(oi) ? oi : null,
         ltp: Number.isFinite(ltp) ? ltp : null,
-        volume: Number.isFinite(volume) ? volume : null,
+        volume: Number.isFinite(volume) ? volume : null
       };
       return acc;
     }, {});
   } catch (err) {
-    logger.error(`[zerodhaService] Failed to fetch quote snapshots err=${err} count=${quoteKeys.length}`);
+    logger.error(`[zerodhaService] Failed to fetch quote snapshots err=${err} count=${quoteKeys.length}`, err);
     throw err;
   }
 }
@@ -72,10 +76,10 @@ async function getNiftyPcrFromZerodha() {
   logger.info(`[zerodhaService] PCR ATM strike: ${atmStrike}`);
 
   await getCachedNfoInstruments(kite);
-  const niftyOptions = getCachedNiftyOptions().filter((r) => r.segment === "NFO-OPT");
+  const niftyOptions = getCachedNiftyOptions().filter((r) => r.segment === 'NFO-OPT');
   if (niftyOptions.length === 0) {
     logger.error(`[zerodhaService] No NIFTY option instruments found (name=NIFTY, segment=NFO-OPT)`);
-    throw new Error("No NIFTY option instruments found");
+    throw new Error(`No NIFTY option instruments found`);
   }
 
   const { attemptedExpiries, selectedExpiryStr, expiryOptions } =
@@ -87,8 +91,8 @@ async function getNiftyPcrFromZerodha() {
       totalCE_OI: 0,
       totalPE_OI: 0,
       pcr: null,
-      interpretation: "insufficient data",
-      error: "No valid NIFTY expiry available",
+      interpretation: 'insufficient data',
+      error: `No valid NIFTY expiry available`,
       verification: {
         atm_strike: atmStrike,
         strikes_used: [],
@@ -97,8 +101,8 @@ async function getNiftyPcrFromZerodha() {
         pcr: null,
         selected_instruments: [],
         attempted_expiries: [],
-        selected_expiry: null,
-      },
+        selected_expiry: null
+      }
     };
   }
 
@@ -108,8 +112,8 @@ async function getNiftyPcrFromZerodha() {
       totalCE_OI: 0,
       totalPE_OI: 0,
       pcr: null,
-      interpretation: "insufficient data",
-      error: "No NIFTY option instruments found",
+      interpretation: 'insufficient data',
+      error: `No NIFTY option instruments found`,
       verification: {
         atm_strike: atmStrike,
         strikes_used: [],
@@ -118,30 +122,30 @@ async function getNiftyPcrFromZerodha() {
         pcr: null,
         selected_instruments: [],
         attempted_expiries: Array.from(new Set(attemptedExpiries)),
-        selected_expiry: null,
-      },
+        selected_expiry: null
+      }
     };
   }
 
   const ceInstrument = resolveClosestAtmOption(
-    expiryOptions.filter((row) => row.instrument_type === "CE"),
-    "CE",
+    expiryOptions.filter((row) => row.instrument_type === 'CE'),
+    'CE',
     atmStrike
   );
   const peInstrument = resolveClosestAtmOption(
-    expiryOptions.filter((row) => row.instrument_type === "PE"),
-    "PE",
+    expiryOptions.filter((row) => row.instrument_type === 'PE'),
+    'PE',
     atmStrike
   );
 
   if (!ceInstrument?.tradingsymbol || !peInstrument?.tradingsymbol) {
-    const error = "Unable to resolve ATM CE/PE symbols from cached Zerodha instruments";
+    const error = 'Unable to resolve ATM CE/PE symbols from cached Zerodha instruments';
     logger.error(`[zerodhaService] PCR symbol resolution failed atmStrike=${atmStrike} selectedExpiry=${selectedExpiryStr} ceSymbol=${ceInstrument?.tradingsymbol} peSymbol=${peInstrument?.tradingsymbol}`);
     return {
       totalCE_OI: 0,
       totalPE_OI: 0,
       pcr: null,
-      interpretation: "insufficient data",
+      interpretation: 'insufficient data',
       error,
       verification: {
         atm_strike: atmStrike,
@@ -151,8 +155,8 @@ async function getNiftyPcrFromZerodha() {
         pcr: null,
         selected_instruments: [],
         attempted_expiries: Array.from(new Set(attemptedExpiries)),
-        selected_expiry: selectedExpiryStr,
-      },
+        selected_expiry: selectedExpiryStr
+      }
     };
   }
 
@@ -166,7 +170,7 @@ async function getNiftyPcrFromZerodha() {
     const rawQuote = await kite.getQuote([ceKey, peKey]);
 
     const quoteMap =
-      rawQuote && typeof rawQuote.data === "object"
+      rawQuote && typeof rawQuote.data === 'object'
         ? rawQuote.data
         : rawQuote;
     const ceQuote = quoteMap?.[ceKey];
@@ -182,19 +186,19 @@ async function getNiftyPcrFromZerodha() {
     logger.info(`[zerodhaService] PCR PE fetched OI: symbol=${peInstrument.tradingsymbol} strike=${peInstrument.strike} oi=${peOi} rawOi=${peQuote?.oi ?? peQuote?.open_interest ?? null}`);
 
     if (!ceOiAvailable || !peOiAvailable) {
-      const error = "OI data unavailable from Zerodha. Market may be closed or quotes are incomplete.";
+      const error = 'OI data unavailable from Zerodha. Market may be closed or quotes are incomplete.';
       logger.error(`[zerodhaService] PCR OI unavailable ceSymbol=${ceInstrument.tradingsymbol} peSymbol=${peInstrument.tradingsymbol} ceQuote=${JSON.stringify(ceQuote)} peQuote=${JSON.stringify(peQuote)}`);
       return {
         totalCE_OI: ceOi,
         totalPE_OI: peOi,
         pcr: null,
-        interpretation: "insufficient data",
+        interpretation: 'insufficient data',
         error,
         verification: {
           atm_strike: atmStrike,
           strikes_used: [
-            { strike: ceInstrument.strike, instrument_type: "CE", oi: ceOi },
-            { strike: peInstrument.strike, instrument_type: "PE", oi: peOi },
+            { strike: ceInstrument.strike, instrument_type: 'CE', oi: ceOi },
+            { strike: peInstrument.strike, instrument_type: 'PE', oi: peOi }
           ],
           ce_oi: ceOi,
           pe_oi: peOi,
@@ -203,17 +207,17 @@ async function getNiftyPcrFromZerodha() {
             {
               tradingsymbol: ceInstrument.tradingsymbol,
               strike: ceInstrument.strike,
-              instrument_token: ceInstrument.instrumentToken,
+              instrument_token: ceInstrument.instrumentToken
             },
             {
               tradingsymbol: peInstrument.tradingsymbol,
               strike: peInstrument.strike,
-              instrument_token: peInstrument.instrumentToken,
-            },
+              instrument_token: peInstrument.instrumentToken
+            }
           ],
           attempted_expiries: Array.from(new Set(attemptedExpiries)),
-          selected_expiry: selectedExpiryStr,
-        },
+          selected_expiry: selectedExpiryStr
+        }
       };
     }
 
@@ -221,7 +225,7 @@ async function getNiftyPcrFromZerodha() {
     logger.info(`[zerodhaService] PCR totals spot=${niftyPrice} atmStrike=${atmStrike} ceOi=${ceOi} peOi=${peOi} pcr=${pcr}`);
 
     const interpretation =
-      pcr != null ? interpretationFromPcr(pcr) : "insufficient data";
+      pcr != null ? interpretationFromPcr(pcr) : 'insufficient data';
     logger.info(`[zerodhaService] Computed real PCR from Zerodha option OI`);
     return {
       totalCE_OI: ceOi,
@@ -231,8 +235,8 @@ async function getNiftyPcrFromZerodha() {
       verification: {
         atm_strike: atmStrike,
         strikes_used: [
-          { strike: ceInstrument.strike, instrument_type: "CE", oi: ceOi },
-          { strike: peInstrument.strike, instrument_type: "PE", oi: peOi },
+          { strike: ceInstrument.strike, instrument_type: 'CE', oi: ceOi },
+          { strike: peInstrument.strike, instrument_type: 'PE', oi: peOi }
         ],
         ce_oi: ceOi,
         pe_oi: peOi,
@@ -241,20 +245,20 @@ async function getNiftyPcrFromZerodha() {
           {
             tradingsymbol: ceInstrument.tradingsymbol,
             strike: ceInstrument.strike,
-            instrument_token: ceInstrument.instrumentToken,
+            instrument_token: ceInstrument.instrumentToken
           },
           {
             tradingsymbol: peInstrument.tradingsymbol,
             strike: peInstrument.strike,
-            instrument_token: peInstrument.instrumentToken,
-          },
+            instrument_token: peInstrument.instrumentToken
+          }
         ],
         attempted_expiries: Array.from(new Set(attemptedExpiries)),
-        selected_expiry: selectedExpiryStr,
-      },
+        selected_expiry: selectedExpiryStr
+      }
     };
   } catch (err) {
-    logger.error(`[zerodhaService] getNiftyPcrFromZerodha getQuote failed err=${err}`);
+    logger.error(`[zerodhaService] getNiftyPcrFromZerodha getQuote failed err=${err}`, err);
     throw err;
   }
 }
@@ -271,7 +275,7 @@ async function getNiftyAtmPcr() {
     logger.info(`[zerodhaService] ATM PCR resolved rawPcr=${pcrResult.pcr} normalizedPcr=${normalizedPcr} atmStrike=${pcrResult.verification.atm_strike} selectedExpiry=${pcrResult.verification.selected_expiry}`);
     return normalizedPcr;
   } catch (err) {
-    logger.error(`[zerodhaService] Failed to fetch ATM PCR, using neutral fallback err=${err}`);
+    logger.error(`[zerodhaService] Failed to fetch ATM PCR, using neutral fallback err=${err}`, err);
     return 0.5;
   }
 }
@@ -288,7 +292,7 @@ async function getZerodhaLTP(instrumentToken) {
     const optionUniverse = [...getCachedNiftyOptions(), ...getCachedBankniftyOptions()];
     const tokenStr = String(instrumentToken).trim();
     const row = optionUniverse.find(
-      (r) => String(r.instrument_token ?? "") === tokenStr
+      (r) => String(r.instrument_token ?? '') === tokenStr
     );
     if (!row?.tradingsymbol) {
       logger.error(`[zerodhaService] Instrument not found for token instrumentToken=${instrumentToken}`);
@@ -298,7 +302,7 @@ async function getZerodhaLTP(instrumentToken) {
     const ltp = await kite.getLTP([key]);
     return ltp;
   } catch (err) {
-    logger.error(`[zerodhaService] getLTP failed instrumentToken=${instrumentToken} err=${err}`);
+    logger.error(`[zerodhaService] getLTP failed instrumentToken=${instrumentToken} err=${err}`, err);
     throw err;
   }
 }
@@ -308,5 +312,5 @@ module.exports = {
   getOptionQuotesByTradingSymbols,
   getNiftyPcrFromZerodha,
   getNiftyAtmPcr,
-  getZerodhaLTP,
+  getZerodhaLTP
 };

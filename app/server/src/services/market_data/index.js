@@ -20,5 +20,5 @@ module.exports = {
   ...nseService,
   ...marketCache,
   ...marketHelpers,
-  ...m1Signal,
+  ...m1Signal
 };

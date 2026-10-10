@@ -24,7 +24,7 @@ async function upsertIndexCandles(symbol, candles) {
   let written = 0;
   for (let i = 0; i < candles.length; i += CHUNK) {
     const rows = candles.slice(i, i + CHUNK).map(c => ({
-      symbol, time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
+      symbol, time: c.time, open: c.open, high: c.high, low: c.low, close: c.close
     }));
     const res = await IndexCandle.bulkCreate(rows, { ignoreDuplicates: true });
     written += res.length;
@@ -39,7 +39,7 @@ async function upsertOptionCandles(meta, candles) {
       tradingsymbol: meta.tradingsymbol, expiry: meta.expiry,
       strike: meta.strike, type: meta.type,
       time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
-      volume: c.volume ?? null, oi: c.oi ?? null,
+      volume: c.volume ?? null, oi: c.oi ?? null
     }));
     const res = await OptionCandle.bulkCreate(rows, { ignoreDuplicates: true });
     written += res.length;
@@ -57,7 +57,9 @@ async function upsertOptionCandles(meta, candles) {
  * is its first minute's start, matching how exchanges label candles.
  */
 function resample(oneMinCandles, intervalMins) {
-  if (intervalMins <= 1) return oneMinCandles;
+  if (intervalMins <= 1) {
+    return oneMinCandles;
+  }
   const buckets = new Map();
   for (const c of oneMinCandles) {
     const istMinOfDay = Math.floor(((c.time + IST) % 86400) / 60);
@@ -67,13 +69,15 @@ function resample(oneMinCandles, intervalMins) {
     const b = buckets.get(key);
     if (!b) {
       buckets.set(key, { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
-                         volume: c.volume ?? 0, oi: c.oi ?? null });
+        volume: c.volume ?? 0, oi: c.oi ?? null });
     } else {
       b.high = Math.max(b.high, c.high);
       b.low = Math.min(b.low, c.low);
       b.close = c.close;                        // candles arrive time-sorted
       b.volume += c.volume ?? 0;
-      if (c.oi != null) b.oi = c.oi;            // OI is a level, take the latest
+      if (c.oi != null) {
+        b.oi = c.oi;
+      }            // OI is a level, take the latest
     }
   }
   return [...buckets.values()].sort((a, b) => a.time - b.time);
@@ -85,11 +89,11 @@ async function getIndexCandles(symbol, fromUnix, toUnix) {
   const rows = await IndexCandle.findAll({
     where: { symbol, time: { [Op.between]: [fromUnix, toUnix] } },
     order: [['time', 'ASC']],
-    raw: true,
+    raw: true
   });
   return rows.map(r => ({
     time: Number(r.time), open: Number(r.open), high: Number(r.high),
-    low: Number(r.low), close: Number(r.close),
+    low: Number(r.low), close: Number(r.close)
   }));
 }
 
@@ -102,19 +106,21 @@ async function storeStatus() {
   for (const symbol of ['NIFTY', 'BANKNIFTY', 'SENSEX']) {
     const { Op, fn, col } = require('sequelize');
     const n = await IndexCandle.count({ where: { symbol } });
-    if (!n) { bySymbol[symbol] = { rows: 0 }; continue; }
+    if (!n) {
+      bySymbol[symbol] = { rows: 0 }; continue;
+    }
     const min = await IndexCandle.min('time', { where: { symbol } });
     const max = await IndexCandle.max('time', { where: { symbol } });
     bySymbol[symbol] = {
       rows: n,
       from: new Date(Number(min) * 1000).toISOString().slice(0, 10),
-      to:   new Date(Number(max) * 1000).toISOString().slice(0, 10),
+      to:   new Date(Number(max) * 1000).toISOString().slice(0, 10)
     };
   }
   return {
     index: bySymbol,
     optionRows: await OptionCandle.count(),
-    optionContracts: (await OptionCandle.aggregate('tradingsymbol', 'count', { distinct: true })),
+    optionContracts: (await OptionCandle.aggregate('tradingsymbol', 'count', { distinct: true }))
   };
 }
 
@@ -129,14 +135,14 @@ async function loadOptionContractsFromDb() {
     let c = bySym.get(r.tradingsymbol);
     if (!c) {
       c = { sym: r.tradingsymbol, expiry: r.expiry, strike: Number(r.strike),
-            type: r.type, byTime: new Map(), first: Number(r.time) };
+        type: r.type, byTime: new Map(), first: Number(r.time) };
       bySym.set(r.tradingsymbol, c);
     }
     c.byTime.set(Number(r.time), {
       time: Number(r.time), open: Number(r.open), high: Number(r.high),
       low: Number(r.low), close: Number(r.close),
       volume: r.volume == null ? 0 : Number(r.volume),
-      oi: r.oi == null ? null : Number(r.oi),
+      oi: r.oi == null ? null : Number(r.oi)
     });
   }
   return [...bySym.values()];
@@ -147,5 +153,5 @@ module.exports = {
   resample,
   getIndexCandles, getResampledIndexCandles,
   loadOptionContractsFromDb,
-  storeStatus,
+  storeStatus
 };

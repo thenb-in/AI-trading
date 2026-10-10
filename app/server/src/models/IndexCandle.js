@@ -15,13 +15,13 @@ module.exports = (sequelize, DataTypes) => {
     open:   { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     high:   { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     low:    { type: DataTypes.DECIMAL(12, 2), allowNull: false },
-    close:  { type: DataTypes.DECIMAL(12, 2), allowNull: false },
+    close:  { type: DataTypes.DECIMAL(12, 2), allowNull: false }
   }, {
     tableName: 'index_candles',
     timestamps: false,
     indexes: [
-      { unique: true, fields: ['symbol', 'time'] },
-    ],
+      { unique: true, fields: ['symbol', 'time'] }
+    ]
   });
 
   return IndexCandle;

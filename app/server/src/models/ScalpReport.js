@@ -14,11 +14,11 @@ module.exports = (sequelize, DataTypes) => {
     params:     { type: DataTypes.JSONB, allowNull: false },        // targetPts, stopPts, qty, cap, slippage, window
     summary:    { type: DataTypes.JSONB, allowNull: false },        // trades, winRate, requiredWinRate, netRs, ...
     by_day:     { type: DataTypes.JSONB, allowNull: true },         // [{date, trades, wins, netRs}]
-    trades:     { type: DataTypes.JSONB, allowNull: true },         // capped trade log
+    trades:     { type: DataTypes.JSONB, allowNull: true }         // capped trade log
   }, {
     tableName: 'scalp_reports',
     timestamps: false,
-    indexes: [{ fields: ['created_at'] }, { fields: ['kind'] }],
+    indexes: [{ fields: ['created_at'] }, { fields: ['kind'] }]
   });
 
   return ScalpReport;

@@ -13,7 +13,7 @@ async function getLiveScalpView(req, res) {
     const result = await scalpController.getLiveScalp(symbol);
     res.json({ success: true, data: result });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Scalp evaluation failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: `Scalp evaluation failed`, message: getZerodhaErrorMessage(err) });
   }
 }
 
@@ -27,7 +27,7 @@ async function getBacktestView(req, res) {
     const result = await scalpController.runBacktest(symbol, days, slippagePts);
     res.json({ success: true, data: result });
   } catch (err) {
-    res.status(502).json({ success: false, error: 'Scalp backtest failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: `Scalp backtest failed`, message: getZerodhaErrorMessage(err) });
   }
 }
 
@@ -57,7 +57,7 @@ async function runPaperTickView(_req, res) {
 // POST /market/scalp/report/run — runs +1..+4 vs -5 on both engines, saves all
 async function runShapeReportView(_req, res) {
   try {
-    logger.info('[scalpReport] running shape report…');
+    logger.info(`[scalpReport] running shape report…`);
     res.json({ success: true, data: await scalpController.runShapeReport() });
   } catch (err) {
     res.status(502).json({ success: false, error: 'Shape report failed', message: getZerodhaErrorMessage(err) });
@@ -67,7 +67,7 @@ async function runShapeReportView(_req, res) {
 // POST /market/scalp/report/matrix — strategy × lots matrix
 async function runMatrixReportView(_req, res) {
   try {
-    logger.info('[scalpReport] running strategy x lots matrix…');
+    logger.info(`[scalpReport] running strategy x lots matrix…`);
     res.json({ success: true, data: await scalpController.runMatrixReport() });
   } catch (err) {
     res.status(502).json({ success: false, error: 'Matrix report failed', message: getZerodhaErrorMessage(err) });
@@ -81,17 +81,24 @@ function getConfigView(_req, res) {
 
 // GET /market/scalp/report — latest saved reports
 async function listReportsView(_req, res) {
-  try { res.json({ success: true, data: await scalpController.listReports() }); }
-  catch (err) { res.status(500).json({ success: false, error: 'Report list failed', message: getZerodhaErrorMessage(err) }); }
+  try {
+    res.json({ success: true, data: await scalpController.listReports() });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Report list failed', message: getZerodhaErrorMessage(err) });
+  }
 }
 
 // GET /market/scalp/report/:id — one full report incl. trade log
 async function getReportView(req, res) {
   try {
     const row = await scalpController.getReport(Number(req.params.id));
-    if (!row) return res.status(404).json({ success: false, error: 'No such report' });
+    if (!row) {
+      return res.status(404).json({ success: false, error: 'No such report' });
+    }
     res.json({ success: true, data: row });
-  } catch (err) { res.status(500).json({ success: false, error: 'Report fetch failed', message: getZerodhaErrorMessage(err) }); }
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Report fetch failed', message: getZerodhaErrorMessage(err) });
+  }
 }
 
 module.exports = {
@@ -104,5 +111,5 @@ module.exports = {
   runMatrixReportView,
   getConfigView,
   listReportsView,
-  getReportView,
+  getReportView
 };

@@ -26,7 +26,7 @@ const basePermissions = require('@startup/src/constants/base_permissions');
 
 const {
   create_master_permission,
-  create_module_permission,
+  create_module_permission
   // create_report_permission
 } = basePermissions;
 
@@ -46,7 +46,7 @@ const APP_MASTER_PERMISSION_CONSTANTS = {
   COMPANY_TRADING_CONFIG: create_master_permission('company_trading_config'),
   AUTO_EXECUTION: create_master_permission('auto_execution'),
   MAILER_CONFIG: create_master_permission('mailer_config'),
-  HISTORY_ARCHIVE: create_master_permission('history_archive'),
+  HISTORY_ARCHIVE: create_master_permission('history_archive')
 };
 
 // Module-style permissions (view_<x>_module) — one per page/dashboard.
@@ -57,7 +57,7 @@ const APP_MODULE_PERMISSION_CONSTANTS = {
   SCALP_DASHBOARD: create_module_permission('scalp_dashboard', 'Scalp Dashboard'),
   OPTION_CHAIN: create_module_permission('option_chain', 'Option Chain'),
   VIEW_YT_BACKTEST_MODULE: create_module_permission('yt_backtest', 'YT Backtest'),
-  VIEW_SEASONALITY_MODULE: create_module_permission('seasonality', 'Seasonality'),
+  VIEW_SEASONALITY_MODULE: create_module_permission('seasonality', 'Seasonality')
 };
 
 const APP_REPORT_PERMISSION_CONSTANTS = {};

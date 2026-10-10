@@ -14,30 +14,30 @@ const {
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
   getZerodhaProfile,
-  getNiftySpotFromZerodha,
+  getNiftySpotFromZerodha
 } = require('./kiteClient');
 const {
   getZerodhaInstruments,
   getNiftyAtmOptionQuote,
-  getNearestExpiryNiftyOptions,
+  getNearestExpiryNiftyOptions
 } = require('./zerodhaInstruments');
 const {
   getOptionQuotesByTradingSymbols,
   getNiftyPcrFromZerodha,
   getNiftyAtmPcr,
-  getZerodhaLTP,
+  getZerodhaLTP
 } = require('./zerodhaQuotes');
 const {
   calculateMaxPain,
-  getOiBasedSupportResistance,
+  getOiBasedSupportResistance
 } = require('./zerodhaOptionAnalytics');
 const {
   fetchHistoricalCandles,
-  fetchOptionCandles,
+  fetchOptionCandles
 } = require('./zerodhaHistorical');
 const {
   saveNfoInstrumentsSnapshot,
-  lookupOptionToken,
+  lookupOptionToken
 } = require('./nfoInstrumentStore');
 
 module.exports = {
@@ -65,5 +65,5 @@ module.exports = {
   fetchHistoricalCandles,
   fetchOptionCandles,
   saveNfoInstrumentsSnapshot,
-  lookupOptionToken,
+  lookupOptionToken
 };

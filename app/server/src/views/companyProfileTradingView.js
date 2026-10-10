@@ -8,7 +8,7 @@ async function getTradingConfigView(req, res) {
     const data = await companyProfileTradingController.getTradingConfig(companyId);
     res.json({ success: true, data });
   } catch (error) {
-    logger.error(`Error reading company trading config for company=${req.user?.company_id}: ${error.message}`);
+    logger.error(`Error reading company trading config for company=${req.user?.company_id}: ${error.message}`, error);
     res.status(400).json({ error: error.message });
   }
 }
@@ -19,7 +19,7 @@ async function updateTradingConfigView(req, res) {
     const data = await companyProfileTradingController.updateTradingConfig(companyId, req.body);
     res.json({ success: true, data });
   } catch (error) {
-    logger.error(`Error updating company trading config for company=${req.user?.company_id}: ${error.message}`);
+    logger.error(`Error updating company trading config for company=${req.user?.company_id}: ${error.message}`, error);
     res.status(400).json({ error: error.message });
   }
 }

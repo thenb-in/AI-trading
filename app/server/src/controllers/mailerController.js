@@ -16,7 +16,7 @@ async function saveConfig(secretKey) {
 async function sendTest() {
   const recipient = mailer.getSignalEmail();
   if (!recipient) {
-    const err = new Error('No recipient email set. Configure signalEmail first.');
+    const err = new Error(`No recipient email set. Configure signalEmail first.`);
     err.statusCode = 400;
     throw err;
   }
@@ -36,7 +36,7 @@ async function sendTest() {
     ulT1: 24600,
     ulT2: 24700,
     maxPainLevel: 24400,
-    reasons: ['This is a test email from AI-Trading.', 'If you received this, the mailer is configured correctly.'],
+    reasons: ['This is a test email from AI-Trading.', 'If you received this, the mailer is configured correctly.']
   };
   await sendTradeSignalMail(mockRec, 'BUY', 82, recipient);
   return { ok: true, sentTo: recipient };

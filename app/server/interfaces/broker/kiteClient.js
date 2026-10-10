@@ -208,7 +208,7 @@ async function getCachedNfoInstruments(kite) {
       logger.info(`[zerodhaService] BANKNIFTY options: ${cachedBankniftyOptions.length}`);
       return cachedInstruments;
     } catch (err) {
-      logger.error(`[zerodhaService] Failed to load instruments err=${err}`);
+      logger.error(`[zerodhaService] Failed to load instruments err=${err}`, err);
       if (cachedInstruments) {
         logger.info(`[zerodhaService] Using cached instruments`);
         return cachedInstruments;

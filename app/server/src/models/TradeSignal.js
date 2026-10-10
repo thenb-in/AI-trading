@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
     ema50:         { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     rsi:           { type: DataTypes.DECIMAL(6, 2),  allowNull: true },
     pcr:           { type: DataTypes.DECIMAL(6, 3),  allowNull: true },
-    reasons:       { type: DataTypes.JSONB,      allowNull: true },    // array of reason strings
+    reasons:       { type: DataTypes.JSONB,      allowNull: true }    // array of reason strings
   }, {
     tableName: 'trade_signals',
     timestamps: false,
@@ -32,8 +32,8 @@ module.exports = (sequelize, DataTypes) => {
     indexes: [
       { fields: ['timestamp'] },
       { fields: ['direction'] },
-      { fields: ['tradingsymbol'] },
-    ],
+      { fields: ['tradingsymbol'] }
+    ]
   });
 
   return TradeSignal;

@@ -11,11 +11,11 @@ module.exports = (sequelize, DataTypes) => {
     date:          { type: DataTypes.DATEONLY, allowNull: false },
     tradingsymbol: { type: DataTypes.STRING(32), allowNull: false },
     oi:            { type: DataTypes.BIGINT, allowNull: false },
-    captured_at:   { type: DataTypes.DATE, allowNull: false },
+    captured_at:   { type: DataTypes.DATE, allowNull: false }
   }, {
     tableName: 'chain_oi_baselines',
     timestamps: false,
-    indexes: [{ unique: true, fields: ['date', 'tradingsymbol'] }],
+    indexes: [{ unique: true, fields: ['date', 'tradingsymbol'] }]
   });
 
   return ChainOiBaseline;

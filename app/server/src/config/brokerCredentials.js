@@ -108,7 +108,7 @@ async function setAccessToken(token) {
     await companyProfileTradingService.updateTradingConfig(companyId, { zerodha_access_token: accessToken });
     logger.info(`[brokerCredentials] Zerodha access token persisted to company profile and cache`);
   } catch (err) {
-    logger.error(`[brokerCredentials] FAILED to persist Zerodha access token (held in memory only — will be lost on restart): ${err instanceof Error ? err.message : err}`);
+    logger.error(`[brokerCredentials] FAILED to persist Zerodha access token (held in memory only — will be lost on restart): ${err instanceof Error ? err.message : err}`, err);
   }
 }
 

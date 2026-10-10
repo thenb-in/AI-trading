@@ -44,11 +44,15 @@ function normalCDF(x) {
 }
 
 function bsPrice(type, S, K, T, sigma, r = 0.065) {
-  if (T <= 0) return Math.max(0, type === 'CE' ? S - K : K - S);
+  if (T <= 0) {
+    return Math.max(0, type === 'CE' ? S - K : K - S);
+  }
   const sqrtT = Math.sqrt(T);
   const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrtT);
   const d2 = d1 - sigma * sqrtT;
-  if (type === 'CE') return S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2);
+  if (type === 'CE') {
+    return S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2);
+  }
   return K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1);
 }
 
@@ -58,21 +62,33 @@ function bsPrice(type, S, K, T, sigma, r = 0.065) {
  * e.g. a price below intrinsic from a stale quote.
  */
 function impliedVol(type, S, K, T, price, tol = 0.01) {
-  if (!(price > 0) || !(S > 0) || !(T > 0)) return null;
+  if (!(price > 0) || !(S > 0) || !(T > 0)) {
+    return null;
+  }
   let lo = 0.01, hi = 3.0;
-  if (bsPrice(type, S, K, T, lo) > price || bsPrice(type, S, K, T, hi) < price) return null;
+  if (bsPrice(type, S, K, T, lo) > price || bsPrice(type, S, K, T, hi) < price) {
+    return null;
+  }
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
     const p = bsPrice(type, S, K, T, mid);
-    if (Math.abs(p - price) < tol) return mid;
-    if (p > price) hi = mid; else lo = mid;
+    if (Math.abs(p - price) < tol) {
+      return mid;
+    }
+    if (p > price) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
   }
   return (lo + hi) / 2;
 }
 
 /** Black-Scholes delta (CE in (0,1), PE in (-1,0)). */
 function bsDelta(type, S, K, T, sigma, r = 0.065) {
-  if (!(T > 0) || !(sigma > 0)) return null;
+  if (!(T > 0) || !(sigma > 0)) {
+    return null;
+  }
   const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
   return type === 'CE' ? normalCDF(d1) : normalCDF(d1) - 1;
 }
@@ -96,7 +112,9 @@ function dteYears(unixTs, entryDayOfWeek) {
 }
 
 /** Nearest-50 ATM strike */
-function atmStrike(spot) { return Math.round(spot / 50) * 50; }
+function atmStrike(spot) {
+  return Math.round(spot / 50) * 50;
+}
 
 // Tradingsymbol matching NSE weekly option format: NIFTY25514XXXCE
 // Weekly: NIFTY + YY + single-char-month-code + DD + strike + type
@@ -132,5 +150,5 @@ module.exports = {
   bsDelta,
   dteYears,
   atmStrike,
-  optSymbol,
+  optSymbol
 };

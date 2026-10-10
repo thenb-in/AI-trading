@@ -46,18 +46,24 @@ function kite() {
 }
 
 async function getMode() {
-  if (Date.now() - modeCache.at < 30 * 1000) return modeCache.mode;
+  if (Date.now() - modeCache.at < 30 * 1000) {
+    return modeCache.mode;
+  }
   let mode = 'off';
   try {
     const row = await AppSetting.findByPk(SWITCH_KEY);
-    if (['off', 'dry', 'live'].includes(row?.value?.mode)) mode = row.value.mode;
+    if (['off', 'dry', 'live'].includes(row?.value?.mode)) {
+      mode = row.value.mode;
+    }
   } catch { /* unreadable switch = OFF */ }
   modeCache = { at: Date.now(), mode };
   return mode;
 }
 
 async function setMode(mode) {
-  if (!['off', 'dry', 'live'].includes(mode)) throw new Error(`bad mode ${mode}`);
+  if (!['off', 'dry', 'live'].includes(mode)) {
+    throw new Error(`bad mode ${mode}`);
+  }
   await AppSetting.upsert({ key: SWITCH_KEY, value: { mode } });
   modeCache = { at: Date.now(), mode };
   logger.info(`[autotrade] mode set to ${mode.toUpperCase()}`);
@@ -65,8 +71,11 @@ async function setMode(mode) {
 }
 
 async function audit(row) {
-  try { return await AutoOrder.create(row); }
-  catch (e) { logger.error(`[autotrade] audit write failed: ${e.message}`); return null; }
+  try {
+    return await AutoOrder.create(row);
+  } catch (e) {
+    logger.error(`[autotrade] audit write failed: ${e.message}`, e); return null;
+  }
 }
 
 const tick = (p) => +(Math.max(0.05, Math.round(p / 0.05) * 0.05)).toFixed(2);
@@ -82,7 +91,9 @@ const marketableSell = (ltp) => tick(Math.max(0.05, ltp * 0.98 - 0.5));
 async function ltpOf(k, tradingsymbol) {
   const q = await k.getLTP(`NFO:${tradingsymbol}`);
   const v = q?.[`NFO:${tradingsymbol}`]?.last_price;
-  if (!(v > 0)) throw new Error(`no LTP for ${tradingsymbol}`);
+  if (!(v > 0)) {
+    throw new Error(`no LTP for ${tradingsymbol}`);
+  }
   return Number(v);
 }
 
@@ -108,21 +119,31 @@ async function dayStatus() {
     tradesToday: trades, maxTradesDay: MAX_TRADES_PER_DAY,
     stopsToday: stops, maxStopsDay: MAX_STOPS_PER_DAY,
     blocked: trades >= MAX_TRADES_PER_DAY ? 'daily trade cap reached'
-           : stops >= MAX_STOPS_PER_DAY ? 'circuit breaker (stops)' : null,
+      : stops >= MAX_STOPS_PER_DAY ? 'circuit breaker (stops)' : null
   };
 }
 
 /** After a trade row is created: entry order + resting exchange SL. */
 async function onTradeOpened(trade) {
   const mode = await getMode();
-  if (mode === 'off') return;
+  if (mode === 'off') {
+    return;
+  }
   const base = { trade_id: trade.id, mode, tradingsymbol: trade.tradingsymbol, qty: QTY };
   try {
-    if (!isMarketOpen(Math.floor(Date.now() / 1000))) throw new Error('market closed — refused');
-    if ((await stopsToday()) >= MAX_STOPS_PER_DAY) throw new Error(`circuit breaker: ${MAX_STOPS_PER_DAY} stops today — refused`);
-    if ((await entriesToday()) >= MAX_TRADES_PER_DAY) throw new Error(`daily cap: ${MAX_TRADES_PER_DAY} executed trades today — refused`);
+    if (!isMarketOpen(Math.floor(Date.now() / 1000))) {
+      throw new Error(`market closed — refused`);
+    }
+    if ((await stopsToday()) >= MAX_STOPS_PER_DAY) {
+      throw new Error(`circuit breaker: ${MAX_STOPS_PER_DAY} stops today — refused`);
+    }
+    if ((await entriesToday()) >= MAX_TRADES_PER_DAY) {
+      throw new Error(`daily cap: ${MAX_TRADES_PER_DAY} executed trades today — refused`);
+    }
     const dupe = await AutoOrder.findOne({ where: { trade_id: trade.id, kind: 'entry', status: { [Op.in]: ['dry', 'placed'] } } });
-    if (dupe) throw new Error('entry already executed for this trade — refused');
+    if (dupe) {
+      throw new Error(`entry already executed for this trade — refused`);
+    }
 
     if (mode === 'dry') {
       await audit({ ...base, kind: 'entry', transaction: 'BUY', order_type: 'MARKET', status: 'dry',
@@ -138,7 +159,7 @@ async function onTradeOpened(trade) {
     const buyPrice = marketableBuy(ltp);
     const entry = await k.placeOrder('regular', {
       exchange: EXCHANGE, tradingsymbol: trade.tradingsymbol,
-      transaction_type: 'BUY', quantity: QTY, product: PRODUCT, order_type: 'LIMIT', price: buyPrice,
+      transaction_type: 'BUY', quantity: QTY, product: PRODUCT, order_type: 'LIMIT', price: buyPrice
     });
     await audit({ ...base, kind: 'entry', transaction: 'BUY', order_type: 'LIMIT', limit_price: buyPrice,
       broker_order_id: String(entry?.order_id ?? entry), status: 'placed', detail: `live entry — marketable limit ${buyPrice} (ltp ${ltp})` });
@@ -172,13 +193,13 @@ async function onTradeOpened(trade) {
     const sl = await k.placeOrder('regular', {
       exchange: EXCHANGE, tradingsymbol: trade.tradingsymbol,
       transaction_type: 'SELL', quantity: QTY, product: PRODUCT, order_type: 'SL',
-      trigger_price: trig, price: slLimit(trig),
+      trigger_price: trig, price: slLimit(trig)
     });
     await audit({ ...base, kind: 'sl', transaction: 'SELL', order_type: 'SL',
       trigger_price: trig, limit_price: slLimit(trig),
       broker_order_id: String(sl?.order_id ?? sl), status: 'placed', detail: 'resting stop on exchange' });
   } catch (e) {
-    logger.error(`[autotrade] entry failed for trade ${trade.id}: ${e.message}`);
+    logger.error(`[autotrade] entry failed for trade ${trade.id}: ${e.message}`, e);
     await audit({ ...base, kind: 'entry', transaction: 'BUY', order_type: 'MARKET', status: 'error',
       detail: String(e.message).slice(0, 380) });
   }
@@ -187,13 +208,15 @@ async function onTradeOpened(trade) {
 /** When the lifecycle lifts the trail: lift the resting exchange SL too. */
 async function onTrailMoved(trade, newSl) {
   const mode = await getMode();
-  if (mode === 'off') return;
+  if (mode === 'off') {
+    return;
+  }
   const base = { trade_id: trade.id, mode, tradingsymbol: trade.tradingsymbol, qty: QTY };
   try {
     const trig = tick(Number(newSl));
     const slRow = await AutoOrder.findOne({
       where: { trade_id: trade.id, kind: { [Op.in]: ['sl', 'sl-modify'] }, status: { [Op.in]: ['placed', 'modified'] } },
-      order: [['id', 'DESC']],
+      order: [['id', 'DESC']]
     });
     if (mode === 'dry' || !slRow?.broker_order_id) {
       await audit({ ...base, kind: 'sl-modify', transaction: 'SELL', order_type: 'SL', status: 'dry',
@@ -204,7 +227,7 @@ async function onTrailMoved(trade, newSl) {
     await audit({ ...base, kind: 'sl-modify', transaction: 'SELL', order_type: 'SL', status: 'modified',
       trigger_price: trig, limit_price: slLimit(trig), broker_order_id: slRow.broker_order_id, detail: 'stop lifted' });
   } catch (e) {
-    logger.error(`[autotrade] SL modify failed for trade ${trade.id}: ${e.message}`);
+    logger.error(`[autotrade] SL modify failed for trade ${trade.id}: ${e.message}`, e);
     await audit({ ...base, kind: 'sl-modify', transaction: 'SELL', order_type: 'SL', status: 'error',
       detail: String(e.message).slice(0, 380) });
   }
@@ -213,7 +236,9 @@ async function onTrailMoved(trade, newSl) {
 /** When the lifecycle resolves: cancel the resting SL and go flat. */
 async function onTradeResolved(trade, outcome) {
   const mode = await getMode();
-  if (mode === 'off') return;
+  if (mode === 'off') {
+    return;
+  }
   const base = { trade_id: trade.id, mode, tradingsymbol: trade.tradingsymbol, qty: QTY };
   try {
     if (mode === 'dry') {
@@ -224,7 +249,7 @@ async function onTradeResolved(trade, outcome) {
     const k = kite();
     const slRow = await AutoOrder.findOne({
       where: { trade_id: trade.id, kind: { [Op.in]: ['sl', 'sl-modify'] }, status: { [Op.in]: ['placed', 'modified'] } },
-      order: [['id', 'DESC']],
+      order: [['id', 'DESC']]
     });
     // the exchange SL may already have fired — never sell what is not held
     let slFilled = false;
@@ -253,7 +278,7 @@ async function onTradeResolved(trade, outcome) {
       const sellPrice = marketableSell(ltp);
       const exit = await k.placeOrder('regular', {
         exchange: EXCHANGE, tradingsymbol: trade.tradingsymbol,
-        transaction_type: 'SELL', quantity: Math.min(held, QTY), product: PRODUCT, order_type: 'LIMIT', price: sellPrice,
+        transaction_type: 'SELL', quantity: Math.min(held, QTY), product: PRODUCT, order_type: 'LIMIT', price: sellPrice
       });
       await audit({ ...base, kind: 'exit', transaction: 'SELL', order_type: 'LIMIT', qty: Math.min(held, QTY), limit_price: sellPrice,
         broker_order_id: String(exit?.order_id ?? exit), status: 'placed', detail: `flattened on '${outcome}' — marketable limit ${sellPrice} (ltp ${ltp})` });
@@ -262,7 +287,7 @@ async function onTradeResolved(trade, outcome) {
         detail: `no ${PRODUCT} position held — already flat ('${outcome}')` });
     }
   } catch (e) {
-    logger.error(`[autotrade] exit failed for trade ${trade.id}: ${e.message}`);
+    logger.error(`[autotrade] exit failed for trade ${trade.id}: ${e.message}`, e);
     await audit({ ...base, kind: 'exit', transaction: 'SELL', order_type: 'MARKET', status: 'error',
       detail: String(e.message).slice(0, 380) });
   }
@@ -287,23 +312,31 @@ async function todaysTrades() {
 let lastSlEnsureAt = 0;
 async function ensureStopResting(trade) {
   try {
-    if ((await getMode()) !== 'live') return;
-    if (Date.now() - lastSlEnsureAt < 60 * 1000) return;
+    if ((await getMode()) !== 'live') {
+      return;
+    }
+    if (Date.now() - lastSlEnsureAt < 60 * 1000) {
+      return;
+    }
     lastSlEnsureAt = Date.now();
     const k = kite();
     const positions = await k.getPositions();
     const pos = positions?.net?.find(p => p.tradingsymbol === trade.tradingsymbol && p.product === PRODUCT && Number(p.quantity) > 0);
-    if (!pos) return;
+    if (!pos) {
+      return;
+    }
     const orders = await k.getOrders();
     const resting = orders.find(o => o.tradingsymbol === trade.tradingsymbol && o.transaction_type === 'SELL'
       && ['OPEN', 'TRIGGER PENDING'].includes(o.status) && ['SL', 'SL-M'].includes(o.order_type));
-    if (resting) return;
+    if (resting) {
+      return;
+    }
     const trig = tick(Number(trade.trail_sl));
     const qty = Math.min(Number(pos.quantity), QTY);
     const sl = await k.placeOrder('regular', {
       exchange: EXCHANGE, tradingsymbol: trade.tradingsymbol,
       transaction_type: 'SELL', quantity: qty, product: PRODUCT, order_type: 'SL',
-      trigger_price: trig, price: slLimit(trig),
+      trigger_price: trig, price: slLimit(trig)
     });
     await audit({ trade_id: trade.id, kind: 'sl', mode: 'live', tradingsymbol: trade.tradingsymbol,
       transaction: 'SELL', qty, order_type: 'SL', trigger_price: trig, limit_price: slLimit(trig),
@@ -311,7 +344,7 @@ async function ensureStopResting(trade) {
       detail: 'stop restored — position was held with no stop resting' });
     logger.info(`[autotrade] restored missing resting stop for trade ${trade.id} at ${trig}`);
   } catch (e) {
-    logger.error(`[autotrade] ensureStopResting failed: ${e.message}`);
+    logger.error(`[autotrade] ensureStopResting failed: ${e.message}`, e);
   }
 }
 
@@ -325,11 +358,19 @@ async function ensureStopResting(trade) {
 let lastCatchUpAt = 0;
 async function maybeCatchUpEntry(trade, sidePct) {
   try {
-    if ((await getMode()) !== 'live') return;
-    if (!(sidePct >= 70)) return;                                  // favourable NOW, not at entry time
-    if (Date.now() - lastCatchUpAt < 3 * 60 * 1000) return;
+    if ((await getMode()) !== 'live') {
+      return;
+    }
+    if (!(sidePct >= 70)) {
+      return;
+    }                                  // favourable NOW, not at entry time
+    if (Date.now() - lastCatchUpAt < 3 * 60 * 1000) {
+      return;
+    }
     const attempts = await AutoOrder.count({ where: { trade_id: trade.id, kind: 'entry' } });
-    if (attempts >= 6) return;   // 6, not 3: infra refusals (IP, order-type) burned attempts on day one
+    if (attempts >= 6) {
+      return;
+    }   // 6, not 3: infra refusals (IP, order-type) burned attempts on day one
     lastCatchUpAt = Date.now();
     await catchUpEntry(trade);                                     // flat-account, chase-cap and cage guards inside
     logger.info(`[autotrade] catch-up entry fired for trade ${trade.id} (${trade.tradingsymbol}) at side ${sidePct}%`);
@@ -350,13 +391,21 @@ async function maybeCatchUpEntry(trade, sidePct) {
  */
 async function catchUpEntry(trade) {
   const mode = await getMode();
-  if (mode !== 'live') throw new Error(`auto-trade mode is ${mode} — arm LIVE first`);
+  if (mode !== 'live') {
+    throw new Error(`auto-trade mode is ${mode} — arm LIVE first`);
+  }
   const acct = await accountState(trade);
-  if (!acct.ok) throw new Error(`cannot read account: ${acct.error}`);
+  if (!acct.ok) {
+    throw new Error(`cannot read account: ${acct.error}`);
+  }
   const held = acct.positions.find(p => p.tradingsymbol === trade.tradingsymbol && p.qty > 0);
-  if (held) throw new Error(`account already holds ${held.qty} of ${trade.tradingsymbol} (${held.product}) — nothing to catch up`);
+  if (held) {
+    throw new Error(`account already holds ${held.qty} of ${trade.tradingsymbol} (${held.product}) — nothing to catch up`);
+  }
   const dupe = await AutoOrder.findOne({ where: { trade_id: trade.id, kind: 'entry', status: 'placed' } });
-  if (dupe) throw new Error('a live entry was already placed for this trade');
+  if (dupe) {
+    throw new Error(`a live entry was already placed for this trade`);
+  }
   const entry = Number(trade.entry_premium);
   const oneR = entry - Number(trade.sl_premium);
   const ltp = Number(trade.last_premium) || entry;
@@ -365,7 +414,9 @@ async function catchUpEntry(trade) {
   }
   await onTradeOpened(trade);
   const placed = await AutoOrder.findOne({ where: { trade_id: trade.id, kind: 'entry' }, order: [['id', 'DESC']] });
-  if (placed?.status !== 'placed' && placed?.status !== 'dry') throw new Error(placed?.detail ?? 'entry was refused — see audit');
+  if (placed?.status !== 'placed' && placed?.status !== 'dry') {
+    throw new Error(placed?.detail ?? 'entry was refused — see audit');
+  }
   return { ok: true, status: placed.status, detail: placed.detail };
 }
 
@@ -381,14 +432,14 @@ async function accountState(activeTrade) {
       const k = kite();
       const [positions, gtts] = await Promise.all([
         k.getPositions(),
-        k.getGTTs().catch(() => []),   // GTT read failing must not blank the panel
+        k.getGTTs().catch(() => [])   // GTT read failing must not blank the panel
       ]);
       const open = (positions?.net ?? [])
         .filter(p => Number(p.quantity) !== 0)
         .map(p => ({
           tradingsymbol: p.tradingsymbol, exchange: p.exchange, product: p.product,
           qty: Number(p.quantity), avgPrice: Number(p.average_price),
-          lastPrice: Number(p.last_price), pnl: Math.round(Number(p.pnl)),
+          lastPrice: Number(p.last_price), pnl: Math.round(Number(p.pnl))
         }));
       // attach active GTT triggers to the position they guard: a two-leg
       // (OCO) GTT on a long option is [stoploss, target]; single-leg shows
@@ -400,7 +451,7 @@ async function accountState(activeTrade) {
           p.gtt = vals.length >= 2
             ? { sl: vals[0], target: vals[vals.length - 1], type: 'OCO' }
             : (vals[0] < p.avgPrice ? { sl: vals[0], target: null, type: 'single' }
-                                    : { sl: null, target: vals[0], type: 'single' });
+              : { sl: null, target: vals[0], type: 'single' });
           p.gtt.id = g.id;
         }
       }
@@ -421,7 +472,9 @@ async function accountState(activeTrade) {
         for (const row of chain.rows ?? []) {
           for (const side of ['CE', 'PE']) {
             const c = row[side];
-            if (c?.tradingsymbol && c.ltp != null && (c.ageMs ?? 1e9) < 10000) bySymbol.set(c.tradingsymbol, c.ltp);
+            if (c?.tradingsymbol && c.ltp != null && (c.ageMs ?? 1e9) < 10000) {
+              bySymbol.set(c.tradingsymbol, c.ltp);
+            }
           }
         }
       }
@@ -438,10 +491,15 @@ async function accountState(activeTrade) {
   let sync = 'flat';
   if (acct.ok) {
     const match = activeTrade ? acct.positions.find(p => p.tradingsymbol === activeTrade.tradingsymbol && p.qty > 0) : null;
-    if (activeTrade && match) sync = match.qty === QTY ? 'in-sync' : 'qty-mismatch';
-    else if (activeTrade && acct.positions.length === 0) sync = 'paper-only';
-    else if (activeTrade) sync = 'different-position';
-    else if (acct.positions.length > 0) sync = 'account-only';
+    if (activeTrade && match) {
+      sync = match.qty === QTY ? 'in-sync' : 'qty-mismatch';
+    } else if (activeTrade && acct.positions.length === 0) {
+      sync = 'paper-only';
+    } else if (activeTrade) {
+      sync = 'different-position';
+    } else if (acct.positions.length > 0) {
+      sync = 'account-only';
+    }
     // suggest the system's CURRENT levels for the matching position's GTT:
     // the trailing stop (with every ratchet baked in) and the next uncleared
     // capped target. Suggestion only — applying is always the user's click.
@@ -451,7 +509,7 @@ async function accountState(activeTrade) {
       match.suggest = {
         sl: +Number(activeTrade.trail_sl).toFixed(2),
         target: +tgt.toFixed(2),
-        basis: `system stop (1R BE + 1.5R trail) and T${hit + 1}`,
+        basis: `system stop (1R BE + 1.5R trail) and T${hit + 1}`
       };
     }
   } else {
@@ -467,11 +525,15 @@ async function accountState(activeTrade) {
  */
 async function modifyPositionGtt({ tradingsymbol, sl, target }) {
   sl = Number(sl); target = Number(target);
-  if (!(sl > 0) || !(target > 0) || !(target > sl)) throw new Error('need 0 < SL < target');
+  if (!(sl > 0) || !(target > 0) || !(target > sl)) {
+    throw new Error(`need 0 < SL < target`);
+  }
   const k = kite();
   const gtts = await k.getGTTs();
   const g = (gtts ?? []).find(x => x.status === 'active' && x.condition?.tradingsymbol === tradingsymbol);
-  if (!g) throw new Error(`no active GTT found for ${tradingsymbol}`);
+  if (!g) {
+    throw new Error(`no active GTT found for ${tradingsymbol}`);
+  }
   const leg = g.orders?.[0];
   const qty = Number(leg?.quantity) || QTY;
   const product = leg?.product || 'NRML';
@@ -482,14 +544,14 @@ async function modifyPositionGtt({ tradingsymbol, sl, target }) {
     last_price: lastPrice,
     orders: [
       { transaction_type: 'SELL', quantity: qty, order_type: 'LIMIT', product, price: slLimit(tick(sl)) },
-      { transaction_type: 'SELL', quantity: qty, order_type: 'LIMIT', product, price: tick(target) },
-    ],
+      { transaction_type: 'SELL', quantity: qty, order_type: 'LIMIT', product, price: tick(target) }
+    ]
   });
   await audit({
     trade_id: 0, kind: 'gtt-modify', mode: await getMode(), tradingsymbol,
     transaction: 'SELL', qty, order_type: 'GTT', trigger_price: tick(sl), limit_price: tick(target),
     broker_order_id: String(g.id), status: 'modified',
-    detail: `user applied suggested levels: SL ${tick(sl)} / target ${tick(target)}`,
+    detail: `user applied suggested levels: SL ${tick(sl)} / target ${tick(target)}`
   });
   acctCache = { at: 0, data: acctCache.data };   // next read shows the new triggers
   return { id: g.id, sl: tick(sl), target: tick(target), qty, product };

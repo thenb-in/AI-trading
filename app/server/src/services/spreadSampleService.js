@@ -18,7 +18,7 @@ async function getSpreadSummary({ symbol, premMin, premMax }) {
                  min(minute) as from_minute, max(minute) as to_minute
           from spread_samples
           where symbol = :symbol and ltp between :premMin and :premMax`,
-    { replacements: { symbol, premMin, premMax }, type: QueryTypes.SELECT });
+  { replacements: { symbol, premMin, premMax }, type: QueryTypes.SELECT });
   return rows[0] ?? {};
 }
 

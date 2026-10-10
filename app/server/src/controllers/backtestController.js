@@ -56,5 +56,5 @@ module.exports = {
   setTilt,
   getResampledCandles,
   getStoreStatus,
-  formatBrokerError,
+  formatBrokerError
 };

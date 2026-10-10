@@ -33,7 +33,7 @@ async function getMarketSnapshot() {
         getNiftyPrice(),
         getNiftyCandles(),
         getNiftyPcr().catch((e) => {
-          logger.error(`[marketCache] PCR fetch failed ${e instanceof Error ? e.message : e}`);
+          logger.error(`[marketCache] PCR fetch failed ${e instanceof Error ? e.message : e}`, e);
           return { totalCE_OI: 0, totalPE_OI: 0, pcr: null, interpretation: 'unavailable', error: 'Zerodha token invalid' };
         }),
         getNiftyTradeSignal(),
@@ -58,7 +58,7 @@ async function getMarketSnapshot() {
       return marketCache;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      logger.error(`[marketCache] refresh failed message=${message}`);
+      logger.error(`[marketCache] refresh failed message=${message}`, err);
       throw err;
     } finally {
       marketCachePromise = null;

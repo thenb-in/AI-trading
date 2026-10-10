@@ -41,7 +41,11 @@ async function getPulse() {
     // live spot (websocket, sub-second) + the concrete unlock levels, so the
     // meter can be PROACTIVE: not just "63%", but what must happen
     let spotLive = null;
-    try { const c = tickerService.getChain('NIFTY'); if ((c.spotAgeMs ?? 1e9) < 10000) spotLive = c.spot; } catch {}
+    try {
+      const c = tickerService.getChain('NIFTY'); if ((c.spotAgeMs ?? 1e9) < 10000) {
+        spotLive = c.spot;
+      }
+    } catch {}
     p.conviction = {
       bullPct: cached.bullPct, bearPct: cached.bearPct,
       macdCrossover: cached.macd?.crossover ?? 'none',
@@ -51,7 +55,7 @@ async function getPulse() {
       sellTrig: cached.breakout?.sellTrig ?? null,
       ema20: cached.indicators?.ema20 ?? null,
       wallRes: cached.oiSr?.resistance?.strike ?? null,
-      wallSup: cached.oiSr?.support?.strike ?? null,
+      wallSup: cached.oiSr?.support?.strike ?? null
     };
   }
   return p;
@@ -62,7 +66,7 @@ async function getAutotradeState() {
   const [status, orders, today] = await Promise.all([
     execution.dayStatus(),
     execution.recentOrders(30),
-    m2trade.todaysTrades(),
+    m2trade.todaysTrades()
   ]);
   const trades = today.map(t => {
     const entry = Number(t.entry_premium);
@@ -72,7 +76,7 @@ async function getAutotradeState() {
       id: t.id, status: t.status, direction: t.direction, tradingsymbol: t.tradingsymbol,
       entryTime: t.entry_time, exitTime: t.exit_time, reason: t.resolve_reason,
       entry, exit, trailSl: Number(t.trail_sl), targetsHit: t.targets_hit,
-      netRs, live: t.status === 'active',
+      netRs, live: t.status === 'active'
     };
   });
   const dayNetRs = trades.filter(t => !t.live && t.netRs != null).reduce((a, t) => a + t.netRs, 0);
@@ -88,7 +92,7 @@ async function setAutotradeMode(mode) {
 async function catchUp() {
   const trade = await m2trade.getActive();
   if (!trade) {
-    const err = new Error('No active trade to catch up');
+    const err = new Error(`No active trade to catch up`);
     err.noActive = true;
     throw err;
   }
@@ -109,8 +113,12 @@ async function getDaybook() {
     const entry = Number(t.entry_premium), exit = Number(t.exit_premium);
     const netRs = Math.round((exit - entry) * 130 - estimateCosts(entry, exit, 130));
     let row = days.get(d);
-    if (!row) { row = { date: d, trades: 0, wins: 0, netRs: 0 }; days.set(d, row); }
-    row.trades++; if (netRs > 0) row.wins++; row.netRs += netRs;
+    if (!row) {
+      row = { date: d, trades: 0, wins: 0, netRs: 0 }; days.set(d, row);
+    }
+    row.trades++; if (netRs > 0) {
+      row.wins++;
+    } row.netRs += netRs;
   }
   const list = [...days.values()].sort((a, b) => b.date.localeCompare(a.date));
   return { days: list, totalRs: list.reduce((a, r) => a + r.netRs, 0) };
@@ -139,21 +147,31 @@ async function runMethod2PlusYear({ from, to } = {}) {
 }
 async function latestMethod2PlusYear() {
   const row = await method2BacktestService.latestPlusReport();
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
   return { ...row.toJSON(), plusParams: method2BacktestService.PLUS_PARAMS };
 }
 
 // Returns { filename, csv } or null when there is no report yet.
 function csvFrom(row, prefix) {
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
   return {
     filename: `${prefix}_backtest_${row.params?.from}_${row.params?.to}.csv`,
-    csv: method2BacktestService.tradesToCsv(row.trades),
+    csv: method2BacktestService.tradesToCsv(row.trades)
   };
 }
-async function method2YearCsv() { return csvFrom(await method2BacktestService.latestYearReport(), 'method2'); }
-async function method3YearCsv() { return csvFrom(await method2BacktestService.latestM3Report(), 'method3'); }
-async function method2PlusYearCsv() { return csvFrom(await method2BacktestService.latestPlusReport(), 'method2plus'); }
+async function method2YearCsv() {
+  return csvFrom(await method2BacktestService.latestYearReport(), 'method2');
+}
+async function method3YearCsv() {
+  return csvFrom(await method2BacktestService.latestM3Report(), 'method3');
+}
+async function method2PlusYearCsv() {
+  return csvFrom(await method2BacktestService.latestPlusReport(), 'method2plus');
+}
 
 module.exports = {
   MIN_DIRECTION_PCT,
@@ -166,5 +184,5 @@ module.exports = {
   getDaybook,
   runMethod2Year, latestMethod2Year, method2YearCsv,
   runMethod3Year, latestMethod3Year, method3YearCsv,
-  runMethod2PlusYear, latestMethod2PlusYear, method2PlusYearCsv,
+  runMethod2PlusYear, latestMethod2PlusYear, method2PlusYearCsv
 };

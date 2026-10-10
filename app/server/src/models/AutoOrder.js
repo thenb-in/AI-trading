@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     limit_price:   { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     broker_order_id: { type: DataTypes.STRING(32), allowNull: true },
     status:        { type: DataTypes.STRING(16), allowNull: false },   // dry | placed | modified | cancelled | rejected | error
-    detail:        { type: DataTypes.STRING(400), allowNull: true },
+    detail:        { type: DataTypes.STRING(400), allowNull: true }
   }, { tableName: 'auto_orders', underscored: true });
 
   return AutoOrder;

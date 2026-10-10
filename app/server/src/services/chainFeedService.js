@@ -32,26 +32,36 @@ let lastTick = 0;
 
 async function tick(symbol = 'NIFTY') {
   const now = Math.floor(Date.now() / 1000);
-  if (!isMarketOpen(now)) return { skipped: 'market closed' };
+  if (!isMarketOpen(now)) {
+    return { skipped: 'market closed' };
+  }
 
   // spot proxy: mid of the harvest candidates works, but the cheapest robust
   // spot here is the candidate selector's own input — reuse it via candidates
   const [ce, pe] = await Promise.all([
     liveStrikeCandidatesForFeed('CE', symbol),
-    liveStrikeCandidatesForFeed('PE', symbol),
+    liveStrikeCandidatesForFeed('PE', symbol)
   ]);
   const chain = [...ce, ...pe];
-  if (chain.length === 0) return { skipped: 'no candidates (instrument snapshot missing?)' };
+  if (chain.length === 0) {
+    return { skipped: 'no candidates (instrument snapshot missing?)' };
+  }
 
   const quotes = await getOptionQuotesByTradingSymbols(chain.map(c => c.tradingsymbol));
   let updated = 0;
   for (const c of chain) {
     const q = quotes[c.tradingsymbol];
-    if (!q || !Number.isFinite(q.oi)) continue;
+    if (!q || !Number.isFinite(q.oi)) {
+      continue;
+    }
     let s = series.get(c.tradingsymbol);
-    if (!s) { s = { strike: c.strike, type: c.type, points: [] }; series.set(c.tradingsymbol, s); }
+    if (!s) {
+      s = { strike: c.strike, type: c.type, points: [] }; series.set(c.tradingsymbol, s);
+    }
     s.points.push({ t: now, oi: q.oi, ltp: q.ltp, volume: q.volume });
-    while (s.points.length && s.points[0].t < now - KEEP_MIN * 60) s.points.shift();
+    while (s.points.length && s.points[0].t < now - KEEP_MIN * 60) {
+      s.points.shift();
+    }
     updated++;
   }
   lastTick = now;
@@ -68,16 +78,26 @@ async function liveStrikeCandidatesForFeed(type, symbol) {
 // fall back to a wide default so the candidate query still returns the chain
 let lastSpot = null;
 async function spotGuess() {
-  if (lastSpot) return lastSpot;
+  if (lastSpot) {
+    return lastSpot;
+  }
   return 23500;
 }
-function setSpot(v) { if (Number.isFinite(v)) lastSpot = v; }
+function setSpot(v) {
+  if (Number.isFinite(v)) {
+    lastSpot = v;
+  }
+}
 
 function at(points, t, tolSec = 90) {
   let best = null;
   for (const p of points) {
-    if (Math.abs(p.t - t) > tolSec) continue;
-    if (!best || Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
+    if (Math.abs(p.t - t) > tolSec) {
+      continue;
+    }
+    if (!best || Math.abs(p.t - t) < Math.abs(best.t - t)) {
+      best = p;
+    }
   }
   return best;
 }
@@ -88,7 +108,9 @@ function at(points, t, tolSec = 90) {
  */
 function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
   const now = lastTick;
-  if (!now) return { ready: false, reason: 'chain feed has no samples yet' };
+  if (!now) {
+    return { ready: false, reason: 'chain feed has no samples yet' };
+  }
   setSpot(spot);
 
   const changes = [];
@@ -98,8 +120,14 @@ function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
     let c = 0, p = 0;
     for (const s of series.values()) {
       const pt = at(s.points, t);
-      if (!pt) continue;
-      if (s.type === 'CE') c += pt.oi; else p += pt.oi;
+      if (!pt) {
+        continue;
+      }
+      if (s.type === 'CE') {
+        c += pt.oi;
+      } else {
+        p += pt.oi;
+      }
     }
     return c > 0 ? p / c : null;
   };
@@ -108,9 +136,15 @@ function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
   for (const [sym, s] of series) {
     const nowPt = at(s.points, now);
     const thenPt = at(s.points, now - windowMin * 60);
-    if (!nowPt || !thenPt) continue;
+    if (!nowPt || !thenPt) {
+      continue;
+    }
     spanned++;
-    if (s.type === 'CE') ceOI += nowPt.oi; else peOI += nowPt.oi;
+    if (s.type === 'CE') {
+      ceOI += nowPt.oi;
+    } else {
+      peOI += nowPt.oi;
+    }
 
     const dOI = nowPt.oi - thenPt.oi;
     const dLtp = (nowPt.ltp ?? 0) - (thenPt.ltp ?? 0);
@@ -120,21 +154,31 @@ function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
     // the label is about the OPTION's own OI/price; direction for the index
     // is applied at voting time, per type
     const interpretation = oiUp ? (priceUp ? 'long-buildup' : 'short-buildup')
-                                : (priceUp ? 'short-covering' : 'long-unwinding');
+      : (priceUp ? 'short-covering' : 'long-unwinding');
 
     // volume validation: an OI print with nothing traded in the window is a
     // stale or bookkeeping artifact — it does not get a vote
     changes.push({
       tradingsymbol: sym, strike: s.strike, type: s.type,
       oi: nowPt.oi, oiChange: dOI, ltp: nowPt.ltp, ltpChange: Number(dLtp.toFixed(2)),
-      volumeChange: dVol, interpretation, voted: dVol > 0,
+      volumeChange: dVol, interpretation, voted: dVol > 0
     });
-    if (dVol <= 0) { skippedNoVolume++; continue; }
+    if (dVol <= 0) {
+      skippedNoVolume++; continue;
+    }
 
     if (s.type === 'CE') {
-      if (interpretation === 'long-buildup' || interpretation === 'short-covering') bull++; else bear++;
+      if (interpretation === 'long-buildup' || interpretation === 'short-covering') {
+        bull++;
+      } else {
+        bear++;
+      }
     } else {
-      if (interpretation === 'short-buildup' || interpretation === 'short-covering') bull++; else bear++;
+      if (interpretation === 'short-buildup' || interpretation === 'short-covering') {
+        bull++;
+      } else {
+        bear++;
+      }
     }
   }
 
@@ -162,7 +206,7 @@ function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
       longBuildup:  changes.filter(c => c.voted && c.interpretation === 'long-buildup').length,
       shortBuildup: changes.filter(c => c.voted && c.interpretation === 'short-buildup').length,
       shortCovering:changes.filter(c => c.voted && c.interpretation === 'short-covering').length,
-      longUnwinding:changes.filter(c => c.voted && c.interpretation === 'long-unwinding').length,
+      longUnwinding:changes.filter(c => c.voted && c.interpretation === 'long-unwinding').length
     },
     bullVotes: bull, bearVotes: bear, skippedNoVolume,
     overallBias,
@@ -175,10 +219,10 @@ function analyze(spot, windowMin = DEFAULT_WINDOW_MIN) {
       trend: pcrTrend,
       interpretation: pcrTrend.m10 == null ? 'trend warming up'
         : pcrTrend.m10 > 0.01 ? 'put writing rising — bullish'
-        : pcrTrend.m10 < -0.01 ? 'put writing falling — bearish'
-        : 'flat',
-      source: 'live-feed',
-    },
+          : pcrTrend.m10 < -0.01 ? 'put writing falling — bearish'
+            : 'flat',
+      source: 'live-feed'
+    }
   };
 }
 

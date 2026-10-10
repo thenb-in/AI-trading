@@ -38,7 +38,7 @@ const MONTH_THEORY = {
   7:  'Q1 earnings season lands with monsoon visibility — two of the year\'s biggest uncertainties resolve at once, and FII flows have historically followed.',
   9:  'Advance-tax outflows again plus the global "September effect" — worldwide, it is equities\' statistically weakest month.',
   10: 'Festive-season demand (Diwali quarter) is India\'s strongest consumption window, and Q2 earnings usually confirm it.',
-  12: 'The global "Santa rally": fund managers square shorts into year-end books, volumes thin, and drift turns upward.',
+  12: 'The global "Santa rally": fund managers square shorts into year-end books, volumes thin, and drift turns upward.'
 };
 
 async function dailyBars(symbol) {
@@ -56,7 +56,7 @@ async function dailyBars(symbol) {
     order by d`, { replacements: { symbol } });
   return rows.map(r => ({
     date: String(r.d).slice(0, 10),
-    open: +r.open, high: +r.high, low: +r.low, close: +r.close,
+    open: +r.open, high: +r.high, low: +r.low, close: +r.close
   }));
 }
 
@@ -70,7 +70,9 @@ const pct = (x, dp = 2) => +(x * 100).toFixed(dp);
 
 function computeFromDaily(days) {
   // daily close-to-close returns (index 0 has none)
-  for (let i = 1; i < days.length; i++) days[i].ret = days[i].close / days[i - 1].close - 1;
+  for (let i = 1; i < days.length; i++) {
+    days[i].ret = days[i].close / days[i - 1].close - 1;
+  }
   const ret = days.slice(1);
 
   // ── FY × month matrix (month return = last close vs previous month's last close)
@@ -78,7 +80,9 @@ function computeFromDaily(days) {
   const monthKeys = [];
   for (const d of days) {
     const k = d.date.slice(0, 7);
-    if (!monthLast.has(k)) monthKeys.push(k);
+    if (!monthLast.has(k)) {
+      monthKeys.push(k);
+    }
     monthLast.set(k, d.close);
   }
   const monthRet = new Map();    // 'YYYY-MM' -> return
@@ -90,20 +94,26 @@ function computeFromDaily(days) {
     const m = +k.slice(5, 7);
     const fy = fyOf(`${k}-15`);
     let row = fyRows.get(fy);
-    if (!row) { row = { fy, months: {}, total: 1 }; fyRows.set(fy, row); }
+    if (!row) {
+      row = { fy, months: {}, total: 1 }; fyRows.set(fy, row);
+    }
     row.months[m] = pct(r);
     row.total *= 1 + r;
   }
   const matrix = [...fyRows.values()].map(r => ({
     fy: r.fy,
     months: FY_MONTH_ORDER.map(m => r.months[m] ?? null),
-    totalPct: pct(r.total - 1, 1),
+    totalPct: pct(r.total - 1, 1)
   }));
 
   // ── calendar-month consistency across years
   const byMonth = FY_MONTH_ORDER.map(m => {
     const rets = [];
-    for (const [k, r] of monthRet) if (+k.slice(5, 7) === m) rets.push(r);
+    for (const [k, r] of monthRet) {
+      if (+k.slice(5, 7) === m) {
+        rets.push(r);
+      }
+    }
     const up = rets.filter(r => r > 0).length;
     const avg = rets.length ? rets.reduce((a, b) => a + b, 0) / rets.length : 0;
     const sorted = [...rets].sort((a, b) => a - b);
@@ -117,7 +127,7 @@ function computeFromDaily(days) {
       worstPct: rets.length ? pct(Math.min(...rets)) : null,
       qualifies,
       tilt: qualifies ? (upPct >= PATTERN_PCT ? 1 : -1) : 0,
-      theory: qualifies ? (MONTH_THEORY[m] ?? null) : null,
+      theory: qualifies ? (MONTH_THEORY[m] ?? null) : null
     };
   });
 
@@ -139,7 +149,7 @@ function computeFromDaily(days) {
       day: DOW_NAMES[dow], n: rets.length,
       avgBps: +(avg * 10000).toFixed(1),
       upPct: rets.length ? Math.round(100 * up / rets.length) : null,
-      fyPositive: `${fyPos}/${fyList.length}`,
+      fyPositive: `${fyPos}/${fyList.length}`
     };
   });
 
@@ -149,8 +159,12 @@ function computeFromDaily(days) {
     const cm = days[i].date.slice(0, 7);
     const prevM = days[i - 1].date.slice(0, 7);
     if (cm !== prevM) { // first day of a month
-      for (let k = 0; k < 3 && i + k < days.length && days[i + k].date.slice(0, 7) === cm; k++) tomSet.add(days[i + k].date);
-      for (let k = 1; k <= 2 && i - k >= 1; k++) tomSet.add(days[i - k].date);
+      for (let k = 0; k < 3 && i + k < days.length && days[i + k].date.slice(0, 7) === cm; k++) {
+        tomSet.add(days[i + k].date);
+      }
+      for (let k = 1; k <= 2 && i - k >= 1; k++) {
+        tomSet.add(days[i - k].date);
+      }
     }
   }
   const tom = ret.filter(d => tomSet.has(d.date)), rest = ret.filter(d => !tomSet.has(d.date));
@@ -161,7 +175,7 @@ function computeFromDaily(days) {
     tomUpPct: tom.length ? Math.round(100 * tom.filter(d => d.ret > 0).length / tom.length) : null,
     restAvgBps: +(avgOf(rest) * 10000).toFixed(1), restN: rest.length,
     restUpPct: rest.length ? Math.round(100 * rest.filter(d => d.ret > 0).length / rest.length) : null,
-    fyPositive: `${fyTomPos}/${fyList.length}`,
+    fyPositive: `${fyTomPos}/${fyList.length}`
   };
 
   // ── FY halves (Apr–Sep vs Oct–Mar)
@@ -180,7 +194,7 @@ function computeFromDaily(days) {
         strength: Math.abs(m.upPct - 50) + Math.min(Math.abs(m.avgPct) * 8, 20),
         title: `${m.month} is ${dirUp ? 'bullish' : 'bearish'} ${dirUp ? m.up : m.years - m.up} of ${m.years} years`,
         detail: `Average ${m.avgPct > 0 ? '+' : ''}${m.avgPct}% (median ${m.medianPct > 0 ? '+' : ''}${m.medianPct}%), worst ${m.worstPct}%, best +${m.bestPct}%.`,
-        theory: m.theory,
+        theory: m.theory
       });
     }
   }
@@ -191,35 +205,39 @@ function computeFromDaily(days) {
     findings.push({
       strength: 25,
       title: `${bestDow.day} is the strongest day (positive in ${bestDow.fyPositive} FYs)`,
-      detail: `Averages ${bestDow.avgBps > 0 ? '+' : ''}${bestDow.avgBps} bps/day across ${bestDow.n} sessions, ${bestDow.upPct}% up days.`,
+      detail: `Averages ${bestDow.avgBps > 0 ? '+' : ''}${bestDow.avgBps} bps/day across ${bestDow.n} sessions, ${bestDow.upPct}% up days.`
     });
   }
   if (worstDow && fyList.length - dowFyN(worstDow) >= fyList.length * 0.7) {
     findings.push({
       strength: 25,
       title: `${worstDow.day} is the weakest day (negative in ${fyList.length - dowFyN(worstDow)}/${fyList.length} FYs)`,
-      detail: `Averages ${worstDow.avgBps} bps/day across ${worstDow.n} sessions, ${worstDow.upPct}% up days.`,
+      detail: `Averages ${worstDow.avgBps} bps/day across ${worstDow.n} sessions, ${worstDow.upPct}% up days.`
     });
   }
   if (turnOfMonth.tomAvgBps > 2 * Math.max(turnOfMonth.restAvgBps, 0.1)) {
     findings.push({
       strength: 20 + Math.min(turnOfMonth.tomAvgBps, 20),
       title: `Turn-of-month drift (positive in ${turnOfMonth.fyPositive} FYs)`,
-      detail: `Last 2 + first 3 trading days of a month average +${turnOfMonth.tomAvgBps} bps/day vs ${turnOfMonth.restAvgBps > 0 ? '+' : ''}${turnOfMonth.restAvgBps} bps on all other days.`,
+      detail: `Last 2 + first 3 trading days of a month average +${turnOfMonth.tomAvgBps} bps/day vs ${turnOfMonth.restAvgBps > 0 ? '+' : ''}${turnOfMonth.restAvgBps} bps on all other days.`
     });
   }
   findings.sort((a, b) => b.strength - a.strength);
 
   // month -> +1 / -1 for the months that clear the bar (the tradeable tilt)
   const seasonalTilt = {};
-  for (const m of byMonth) if (m.tilt) seasonalTilt[m.m] = m.tilt;
+  for (const m of byMonth) {
+    if (m.tilt) {
+      seasonalTilt[m.m] = m.tilt;
+    }
+  }
 
   return {
     range: { from: days[0].date, to: days[days.length - 1].date, tradingDays: days.length },
     fyMonthOrder: FY_MONTH_ORDER.map(m => MONTH_NAMES[m - 1]),
     matrix, byMonth, byDow, turnOfMonth, halves, seasonalTilt,
     patternBar: { pct: PATTERN_PCT, minYears: MIN_YEARS },
-    findings: findings.slice(0, 8),
+    findings: findings.slice(0, 8)
   };
 }
 
@@ -230,8 +248,12 @@ function computeFromDaily(days) {
  */
 async function getSeasonalTilt(symbol = 'NIFTY', beforeDate = null) {
   let days = await dailyBars(symbol);
-  if (beforeDate) days = days.filter(d => d.date < beforeDate);
-  if (days.length < 200) return {};
+  if (beforeDate) {
+    days = days.filter(d => d.date < beforeDate);
+  }
+  if (days.length < 200) {
+    return {};
+  }
   return computeFromDaily(days).seasonalTilt;
 }
 
@@ -259,9 +281,13 @@ async function hourlyPattern(symbol) {
 
 async function getSeasonality(symbol = 'NIFTY') {
   const hit = cache.get(symbol);
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.data;
+  if (hit && Date.now() - hit.at < CACHE_MS) {
+    return hit.data;
+  }
   const days = await dailyBars(symbol);
-  if (days.length < 200) throw new Error(`Only ${days.length} daily bars for ${symbol} — backfill index candles first`);
+  if (days.length < 200) {
+    throw new Error(`Only ${days.length} daily bars for ${symbol} — backfill index candles first`);
+  }
   const data = computeFromDaily(days);
   data.symbol = symbol;
   data.hourly = await hourlyPattern(symbol);
@@ -278,7 +304,9 @@ const W_SEASON = 2;
 let liveTiltCache = null;   // { at, state }
 
 async function liveTiltState(symbol = 'NIFTY') {
-  if (liveTiltCache && Date.now() - liveTiltCache.at < 10 * 60 * 1000) return liveTiltCache.state;
+  if (liveTiltCache && Date.now() - liveTiltCache.at < 10 * 60 * 1000) {
+    return liveTiltCache.state;
+  }
   const { AppSetting } = require('../models');
   const row = await AppSetting.findByPk(SWITCH_KEY);
   const enabled = row?.value?.enabled === true;
@@ -288,7 +316,7 @@ async function liveTiltState(symbol = 'NIFTY') {
     enabled, wSeason: W_SEASON, months,
     currentMonth: MONTH_NAMES[m - 1],
     currentTilt: months[m] ?? 0,
-    nudge: enabled ? (months[m] ?? 0) * W_SEASON : 0,
+    nudge: enabled ? (months[m] ?? 0) * W_SEASON : 0
   };
   liveTiltCache = { at: Date.now(), state };
   return state;

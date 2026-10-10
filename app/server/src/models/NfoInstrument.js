@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     lot_size:         { type: DataTypes.INTEGER, allowNull: true },
     instrument_type:  { type: DataTypes.STRING(8),  allowNull: true },       // CE / PE / FUT
     segment:          { type: DataTypes.STRING(16), allowNull: true },
-    exchange:         { type: DataTypes.STRING(8),  allowNull: true },
+    exchange:         { type: DataTypes.STRING(8),  allowNull: true }
   }, {
     tableName: 'nfo_instruments',
     timestamps: false,
@@ -29,8 +29,8 @@ module.exports = (sequelize, DataTypes) => {
       { fields: ['snapshot_date'] },
       { fields: ['tradingsymbol'] },
       { fields: ['name', 'expiry', 'strike', 'instrument_type'] },
-      { unique: true, fields: ['instrument_token', 'snapshot_date'] },
-    ],
+      { unique: true, fields: ['instrument_token', 'snapshot_date'] }
+    ]
   });
 
   return NfoInstrument;

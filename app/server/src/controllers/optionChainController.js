@@ -39,7 +39,7 @@ async function getSpreadSummary({ symbol, premMin, premMax }) {
     symbol, premiumBand: [premMin, premMax], ...r,
     impliedSlippagePerSide: r.median_spread != null ? Number((r.median_spread / 2).toFixed(3)) : null,
     assumptionInBacktests: 0.25,
-    note: 'slippage per side ≈ half the spread (crossing from mid); backtests assume 0.25',
+    note: 'slippage per side ≈ half the spread (crossing from mid); backtests assume 0.25'
   };
 }
 
@@ -59,5 +59,5 @@ module.exports = {
   saveBookmarks,
   getSpreadSummary,
   runChainBenchmark,
-  getFeedStatus,
+  getFeedStatus
 };

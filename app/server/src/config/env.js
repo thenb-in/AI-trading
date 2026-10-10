@@ -27,5 +27,5 @@ module.exports = {
   // registered in the Zerodha Kite Connect app dashboard. Defaults to this
   // server's own callback path on the dev port.
   ZERODHA_CALLBACK_URL:
-    process.env.ZERODHA_CALLBACK_URL || 'http://localhost:8469/api/v1/zerodha/callback',
+    process.env.ZERODHA_CALLBACK_URL || 'http://localhost:8469/api/v1/zerodha/callback'
 };
