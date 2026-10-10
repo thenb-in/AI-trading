@@ -208,24 +208,35 @@ npm run validate-env      # Validate environment variables
 ### The product manual (Docusaurus)
 
 The end-user manual is a Docusaurus site, split along the usual startup/app boundary
-(principle 6 — framework first, app builds on it):
+(principle 6 — framework first, app builds on it). The site is built from **two content
+layers merged into one manual**:
 
-- **Engine — `startup/docs/`**: generic, **content-free** Docusaurus setup (config, theme,
-  auto-generated sidebar, self-hosted offline search). Reusable by any app on the framework.
-  Never put app content, branding, or copy here.
-- **Content & data — `app/docs/`**: everything app-specific — `content/*.md` (the manual),
-  `images/` (screenshots), `static/img/` (logo, favicon), and `docs.app.config.js` (title,
-  branding, routing, FAQ endpoint). The engine reads all app specifics from
-  `docs.app.config.js`; a second app reuses the engine by dropping in its own `app/docs/`.
+- **Engine — `startup/docs/`**: generic Docusaurus setup (config, theme, auto-generated
+  sidebar, self-hosted offline search) plus the **generic base manual** in
+  `startup/docs/content/` — the pages every app shares (sign-in, navigation, lists,
+  administration, files, places, announcements, search, shortcuts, troubleshooting,
+  glossary). The config files themselves stay content-free and read all branding from
+  `app/docs/docs.app.config.js`; the base content reads as a plain product manual and
+  never names the framework. Runs on **port 5171** (`npm run start` / `npm run serve`).
+- **App overlay — `app/docs/`**: everything app-specific — `content/*.md` (the app's own
+  pages), `content/images/` (screenshots), `static/img/` (logo, favicon), and
+  `docs.app.config.js` (title, branding, routing, FAQ endpoint). A second app reuses the
+  engine by dropping in its own `app/docs/`.
+- **Merge — `startup/docs/build-content.js`**: on every start/build it lays the base down
+  first, then copies the app overlay on top, into `startup/docs/content-build` (gitignored,
+  what Docusaurus reads). A new app file is **added**; an app file at the same relative path
+  (e.g. `01-getting-started.md`) **replaces** the generic one. The final manual carries both.
 
 Rules:
 
-- **Authoring**: Markdown in `app/docs/content/`. Write **lean and to-the-point** — imperatives,
-  one idea per line, lists and tables over prose. No narrative framing, motivational intros, or
-  editorial asides. Keep every operational fact: steps, field/menu names, tables, links, and any
-  warning that changes an outcome.
-- **Screenshots**: store in `app/docs/images/`; reference by relative path (`../images/x.png`,
-  or `../../images/x.png` from a nested folder) so Docusaurus bundles them. Captions stay short.
+- **Authoring**: generic pages go in `startup/docs/content/`, app-specific pages in
+  `app/docs/content/`. Write **lean and to-the-point** — imperatives, one idea per line,
+  lists and tables over prose. No narrative framing, motivational intros, or editorial
+  asides. Keep every operational fact: steps, field/menu names, tables, links, and any
+  warning that changes an outcome. Generic pages must not name the framework or any app.
+- **Screenshots**: store under the matching layer's `content/images/`; reference by relative
+  path (`images/x.png`, or `../images/x.png` from a nested folder) so Docusaurus bundles
+  them. Captions stay short.
 - **Sidebar**: labels are plain-language and **numbered to match the heading numbers**
   (`3.1 Daily checklist`). Nest related sections as a collapsible category via a folder +
   `_category_.json`; when nesting, give each child an explicit `slug:` so its URL stays flat.

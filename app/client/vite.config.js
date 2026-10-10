@@ -63,7 +63,7 @@ export default ({ mode }) => {
   // baseUrl /docs/ so it already serves under /docs). In prod it ships inside this
   // client bundle and nginx serves it at /docs/; in dev we proxy the subpath to its
   // dev server (`cd startup/docs && npm run start`). Override via env if elsewhere.
-  const docsUrl = 'http://localhost:5172';
+  const docsUrl = 'http://localhost:5171';
 
   return defineConfig({
     base: process.env.VITE_APP_BASENAME || '/',

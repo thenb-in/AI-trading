@@ -1,11 +1,15 @@
-// Common docs ENGINE for apps built on the startup framework.
-// This file is deliberately content-free: it reads everything app-specific from
-// app/docs/docs.app.config.js and serves content from app/docs/. A different app
-// drops in its own app/docs/ and reuses this engine untouched.
+// Common docs ENGINE. This file is deliberately content-free: it reads every
+// app-specific setting from app/docs/docs.app.config.js. The manual it serves is
+// built from two layers — the generic base in startup/docs/content and the app's
+// own pages in app/docs/content — merged into content-build by build-content.js.
+// A different app drops in its own app/docs/ and reuses this engine untouched.
 const path = require('path');
 const app = require('../../app/docs/docs.app.config.js');
+const { buildMergedContent } = require('./build-content.js');
 
-const CONTENT_DIR = path.resolve(__dirname, '../../app/docs/content');
+// Merge base + app pages on every start/build, so the served manual is always
+// current no matter how the engine was invoked.
+const CONTENT_DIR = buildMergedContent();
 // App branding/chrome (logo, favicon) lives here. Content images are referenced
 // relatively and bundled by webpack, so they are NOT served from here.
 const APP_STATIC_DIR = path.resolve(__dirname, '../../app/docs/static');

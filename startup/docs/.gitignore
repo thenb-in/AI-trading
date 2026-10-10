@@ -4,6 +4,9 @@
 # Production build output (generated here locally, and in CI by docs_build)
 /build
 
+# Merged content (base + app overlay), regenerated on every start/build
+/content-build
+
 # Docusaurus generated cache
 /.docusaurus
 .cache-loader
