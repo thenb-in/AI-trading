@@ -231,6 +231,45 @@ archive `/api/v1/market/history/*`; mailer `/api/v1/mailer/*`; trading config `/
 - [ ] **Role seeding:** the new permissions (`auto_execution`, `company_trading_config`, `mailer_config`, `history_archive`, and the `view_*_module` set) are not granted to any role yet — non-superuser accounts will 403 on those screens until a role is granted them. Seed/assign them.
 - [ ] To run live Zerodha flows, fill `ZERODHA_API_KEY/SECRET` in `app/server/.env` and reconcile the broker's hardcoded callback URL (`localhost:3000`) with the app port (`8469`).
 
+## Round 3 — broker credentials & interface sharing
+
+- **Zerodha credentials → Company Settings (per-company, DB).** `company_profiles` now stores
+  `zerodha_user_id / zerodha_api_key / zerodha_api_secret / zerodha_access_token` (replacing the old
+  label + configured-flag). New `config/brokerCredentials.js` (sync, never-throws, 60s refresh,
+  single-tenant company resolution) is the one source; `setAccessToken()` persists the daily token to the
+  DB + cache (so OAuth login hot-reloads with no restart and no `.env` rewrite). `kiteClient` +
+  `spotSummary` + `execution` + `ticker` all read creds from it; the three ZERODHA keys are gone from
+  `env.js`/`.env.example`. Settings UI got the credential fields (secret as a password field, access
+  token read-only). SQL: `db-scripts/app/20261010_zerodha-creds-to-company-profile.sql`.
+- **Callback URL → env.** `ZERODHA_CALLBACK_URL` is now read from `env` (default
+  `http://localhost:8469/api/v1/zerodha/callback`, matching the app port), documented in `.env.example`;
+  the hard-coded `localhost:3000` is gone.
+- **Shared authed-Kite factory.** Added `broker.buildKite()` (non-throwing, behaviour-identical to the
+  old per-service construction); `spotSummaryService` and `executionService` now call it instead of each
+  doing `new KiteConnect(...) + setAccessToken(...)`. (`tickerService` keeps its `KiteTicker` websocket
+  client — a genuinely different SDK class — but sources creds from `brokerCredentials`.)
+- **Interface convention confirmed:** broker lives in `app/server/interfaces/broker/` and follows the
+  framework's `interfaces/wallet/*` pattern (self-contained module, config from `env`, framework
+  `logger`). Zerodha is user-OAuth via the Kite SDK, so its login flow is necessarily its own code — but
+  config, credential source, and client construction are now shared.
+- **Verified:** server re-boots clean on all of the above; `/health` 200, gated routes 401, OAuth login
+  reachable (500 only because creds are empty in this env).
+
+### Resolved from the deferred list this round
+- ✅ ZERODHA_ACCESS_TOKEN hot-reload home (now DB-backed via brokerCredentials, no `.env` rewrite).
+- ✅ `spotSummaryService` built its own Kite client → now uses the shared `broker.buildKite()`.
+- ✅ Callback URL / port mismatch → now env-driven, defaults to the app port.
+
+### New follow-ups from Round 3
+- [ ] **Secrets at rest:** `zerodha_api_key/secret/access_token` are stored UNENCRYPTED in
+  `company_profiles`, and the access token round-trips to the client via `GET /company-profile/trading`.
+  Add column encryption in `companyProfileTradingService` (and consider not returning the secret/token to
+  the client) before this handles real money. Flagged with `TODO(security)` in the model + SQL.
+- [ ] `optionSnapshotService.reloadEnvForZerodhaToken()` is now a stale no-op (token lives in DB) and its
+  error string still says "save ZERODHA_ACCESS_TOKEN in .env" — cosmetic cleanup + drop the `dotenv.config`.
+- [ ] **Role seeding** (carried): grant the trading permissions to a role via `npm run create-new-company`
+  (verified: all 15 trading perms are in the 103-permission composed set the seeder grants to SUPER_ADMIN).
+
 ## Deferred TODOs (hard-won fixes, tech-debt, and cleanups to take up later)
 
 Logged now, acted on later. **Do not touch during the faithful move.**

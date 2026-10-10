@@ -20,7 +20,6 @@
  *    the broker misbehaves.
  */
 
-const { KiteConnect } = require('kiteconnect');
 const { Op } = require('sequelize');
 const logger = require('@startup/logger');
 // One-model-per-service is violated here (AutoOrder primary, plus AppSetting
@@ -28,7 +27,7 @@ const logger = require('@startup/logger');
 // MIGRATION FINDINGS: route AppSetting -> appSettingService and
 // Method2Trade -> method2TradeService when those services land.
 const { AutoOrder, AppSetting, Method2Trade } = require('../models');
-const brokerCredentials = require('../config/brokerCredentials');
+const broker = require('@appServer/interfaces/broker');
 const { isMarketOpen } = require('../utils/optionMath');
 
 const QTY = 130;                 // 2 lots of 65 — the user's stated hard ceiling
@@ -41,11 +40,9 @@ const SWITCH_KEY = 'auto_trade_mode';
 let modeCache = { at: 0, mode: 'off' };
 
 function kite() {
-  // Credentials from Company Settings (Company Profile → trading), hot-reloaded.
-  const creds = brokerCredentials.getBrokerCreds();
-  const k = new KiteConnect({ api_key: creds.apiKey });
-  k.setAccessToken(creds.accessToken);
-  return k;
+  // Single shared authed-client factory on the broker interface; credentials
+  // come from Company Settings (Company Profile → trading), hot-reloaded.
+  return broker.buildKite();
 }
 
 async function getMode() {

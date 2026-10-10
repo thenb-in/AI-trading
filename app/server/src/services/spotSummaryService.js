@@ -10,8 +10,7 @@
  * quotes it.
  */
 
-const { KiteConnect } = require('kiteconnect');
-const brokerCredentials = require('../config/brokerCredentials');
+const broker = require('@appServer/interfaces/broker');
 const tickerService = require('./tickerService');
 
 const KEYS = { NIFTY: 'NSE:NIFTY 50', BANKNIFTY: 'NSE:NIFTY BANK' };
@@ -25,9 +24,7 @@ async function restQuotes() {
   // Credentials come from Company Settings (Company Profile → trading) via the
   // synchronous, hot-reloading broker-credentials cache — the access token is
   // picked up immediately after Zerodha login with no restart.
-  const creds = brokerCredentials.getBrokerCreds();
-  const kite = new KiteConnect({ api_key: creds.apiKey });
-  kite.setAccessToken(creds.accessToken);
+  const kite = broker.buildKite();
   return kite.getQuote(Object.values(KEYS));
 }
 

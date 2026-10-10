@@ -1,10 +1,13 @@
 'use strict';
 const { KiteConnect } = require('kiteconnect');
 const logger = require('@startup/logger');
+const env = require('@appServer/src/config/env');
 const brokerCredentials = require('@appServer/src/config/brokerCredentials');
 
-/** Redirect URL must match the one configured in Zerodha Kite Connect app dashboard. */
-const ZERODHA_CALLBACK_URL = 'http://localhost:3000/api/v1/zerodha/callback';
+/** Redirect URL must match the one configured in the Zerodha Kite Connect app
+ *  dashboard. Sourced from env (ZERODHA_CALLBACK_URL) so it tracks the deploy's
+ *  host/port instead of a hard-coded localhost. */
+const ZERODHA_CALLBACK_URL = env.ZERODHA_CALLBACK_URL;
 
 const INSTRUMENT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -153,6 +156,21 @@ function getKiteWithAccessToken() {
   }
   const kite = new KiteConnect({ api_key: apiKey });
   kite.setAccessToken(accessToken);
+  return kite;
+}
+
+/**
+ * Builds a Kite Connect client from the company's credentials WITHOUT the
+ * access-token guard — the single shared way to construct an authed client for
+ * callers that manage their own no-token/error handling (quotes, order desk,
+ * websocket). Behavior-identical to the per-service construction it replaces,
+ * so a missing token surfaces as the broker's own token error (which callers
+ * recognise via isZerodhaTokenError) rather than a thrown precondition.
+ */
+function buildKite() {
+  const creds = brokerCredentials.getBrokerCreds();
+  const kite = new KiteConnect({ api_key: creds.apiKey });
+  kite.setAccessToken(creds.accessToken);
   return kite;
 }
 
@@ -320,6 +338,7 @@ module.exports = {
   isZerodhaTokenError,
   generateZerodhaSession,
   getKiteWithAccessToken,
+  buildKite,
   getCachedNfoInstruments,
   getCachedNiftyOptions,
   getCachedBankniftyOptions,
