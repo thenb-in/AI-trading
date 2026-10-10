@@ -6,7 +6,7 @@
 //   - broker (Zerodha)        -> ../services/broker
 //   - market data + indicators -> ../services/market_data
 //   - OI-change read           -> ../services/optionSnapshotService (F4 sibling)
-const broker = require('../services/broker');
+const broker = require('@appServer/interfaces/broker');
 const marketData = require('../services/market_data');
 const { getOiChangeAnalysis } = require('../services/optionSnapshotService');
 const { getSpotSummary } = require('../services/spotSummaryService');

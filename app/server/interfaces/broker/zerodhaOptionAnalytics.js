@@ -2,13 +2,14 @@
 const logger = require('@startup/logger');
 const { NIFTY_STRIKE_STEP, getNearestExpiryNiftyOptions } = require('./zerodhaInstruments');
 const { getOptionQuotesByTradingSymbols } = require('./zerodhaQuotes');
+const { getTunables } = require('@appServer/src/config/tradingConfig');
 
 // ---------------------------------------------------------------------------
 // Max Pain Calculation
 // ---------------------------------------------------------------------------
 
 async function calculateMaxPain(signalDir) {
-  const weight = Number(process.env.MAX_PAIN_CONFIDENCE_WEIGHT) || 5;
+  const weight = getTunables().maxPainWeight;
 
   try {
     const optionSlice = await getNearestExpiryNiftyOptions(10);
@@ -99,7 +100,7 @@ async function calculateMaxPain(signalDir) {
 // ---------------------------------------------------------------------------
 
 async function getOiBasedSupportResistance(signalDir) {
-  const weight = Number(process.env.OI_SR_CONFIDENCE_WEIGHT) || 7;
+  const weight = getTunables().oiSrWeight;
 
   try {
     const optionSlice = await getNearestExpiryNiftyOptions(10);

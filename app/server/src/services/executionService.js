@@ -28,7 +28,7 @@ const logger = require('@startup/logger');
 // MIGRATION FINDINGS: route AppSetting -> appSettingService and
 // Method2Trade -> method2TradeService when those services land.
 const { AutoOrder, AppSetting, Method2Trade } = require('../models');
-const env = require('../config/env');
+const brokerCredentials = require('../config/brokerCredentials');
 const { isMarketOpen } = require('../utils/optionMath');
 
 const QTY = 130;                 // 2 lots of 65 — the user's stated hard ceiling
@@ -41,8 +41,10 @@ const SWITCH_KEY = 'auto_trade_mode';
 let modeCache = { at: 0, mode: 'off' };
 
 function kite() {
-  const k = new KiteConnect({ api_key: env.ZERODHA_API_KEY });
-  k.setAccessToken(process.env.ZERODHA_ACCESS_TOKEN);
+  // Credentials from Company Settings (Company Profile → trading), hot-reloaded.
+  const creds = brokerCredentials.getBrokerCreds();
+  const k = new KiteConnect({ api_key: creds.apiKey });
+  k.setAccessToken(creds.accessToken);
   return k;
 }
 

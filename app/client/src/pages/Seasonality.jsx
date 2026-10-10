@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { seasonalityApi } from '@app/services/api';
-import './Seasonality.css';
+import '@app/styles/Seasonality.css';
 
 const fmtPct = (v, dp = 1) => v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(dp)}%`;
 
@@ -21,22 +21,22 @@ export default function Seasonality() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    seasonalityApi.getTilt().then(res => setTilt(res.data)).catch(() => {});
+    seasonalityApi.getTilt().then(t => setTilt(t)).catch(() => {});
   }, []);
 
   const toggleTilt = () => {
     if (!tilt || saving) return;
     setSaving(true);
     seasonalityApi.setTilt(!tilt.enabled)
-      .then(res => setTilt(res.data)).catch(() => {}).finally(() => setSaving(false));
+      .then(t => setTilt(t)).catch(() => {}).finally(() => setSaving(false));
   };
 
   useEffect(() => {
     let dead = false;
     setLoading(true); setErr(null);
     seasonalityApi.getSeasonality(symbol)
-      .then(res => { if (!dead) { setData(res.data); setLoading(false); } })
-      .catch(e => { if (!dead) { setErr(String(e?.response?.data?.message || e?.response?.data?.error || e.message || e)); setLoading(false); } });
+      .then(payload => { if (!dead) { setData(payload); setLoading(false); } })
+      .catch(e => { if (!dead) { setErr(String(e.message || e.error || e)); setLoading(false); } });
     return () => { dead = true; };
   }, [symbol]);
 

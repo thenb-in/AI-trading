@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import './MethodNav.css';
+import '@app/styles/MethodNav.css';
 
 // THE navbar — one component, one source of truth. Every page used to carry
 // its own hardcoded copy and they drifted apart (different pages showed

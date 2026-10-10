@@ -5,6 +5,7 @@ import { KeyRound, LineChart, Clock, Gauge, Sliders, Scale } from "lucide-react"
 
 import { SettingsCard } from "@startup/components/admin/company_setting/SettingsCard";
 import { TextTypeField } from "@startup/components/base_components/fields/TextTypeField";
+import { PasswordTypeField } from "@startup/components/base_components/fields/PasswordTypeField";
 import { NumberTypeField } from "@startup/components/base_components/fields/NumberTypeField";
 import { TimeTypeField } from "@startup/components/base_components/fields/TimeTypeField";
 import { CheckboxTypeField } from "@startup/components/base_components/fields/CheckboxTypeField";
@@ -59,12 +60,13 @@ const WEIGHT_FIELDS = [
 const NUMERIC_NAMES = [...TUNABLE_FIELDS, ...WEIGHT_FIELDS].map((f) => f.name);
 
 // Loaded row -> form state. Numeric values become strings for the text-based
-// number field; booleans/arrays/strings pass through. The read-only
-// credentials-configured flag is held outside the editable form.
+// number field; booleans/arrays/strings pass through.
 const toFormState = (data = {}) => {
   const form = {
     zerodha_user_id: data.zerodha_user_id ?? "",
-    zerodha_api_key_label: data.zerodha_api_key_label ?? "",
+    zerodha_api_key: data.zerodha_api_key ?? "",
+    zerodha_api_secret: data.zerodha_api_secret ?? "",
+    zerodha_access_token: data.zerodha_access_token ?? "",
     trading_symbols: Array.isArray(data.trading_symbols) ? data.trading_symbols : [],
     market_open_time: data.market_open_time ?? "",
     market_close_time: data.market_close_time ?? "",
@@ -90,7 +92,6 @@ const toPayload = (form) => {
 
 const CompanyProfileSettings = forwardRef(function CompanyProfileSettings({ isLoading, onDirtyChange }, ref) {
   const [form, setForm] = useState(() => toFormState());
-  const [credsConfigured, setCredsConfigured] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [dirty, setDirty] = useState(false);
   const originalRef = useRef(form);
@@ -103,7 +104,6 @@ const CompanyProfileSettings = forwardRef(function CompanyProfileSettings({ isLo
         const next = toFormState(data);
         setForm(next);
         originalRef.current = next;
-        setCredsConfigured(Boolean(data.zerodha_credentials_configured));
       })
       .catch((err) => toast.error(getApiErrorMessage(err, "Failed to load trading config")))
       .finally(() => setFetching(false));
@@ -146,17 +146,12 @@ const CompanyProfileSettings = forwardRef(function CompanyProfileSettings({ isLo
 
   return (
     <div className="space-y-4">
-      <SettingsCard icon={KeyRound} title="Broker account" subtitle="Non-secret Zerodha references. The API secret and access token live in server env, never here.">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <SettingsCard icon={KeyRound} title="Broker account" subtitle="Zerodha Kite Connect credentials for this company. Stored on the server; the access token is set automatically by broker login.">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <TextTypeField label="Zerodha user id" value={form.zerodha_user_id} onChange={onText("zerodha_user_id")} placeholder="e.g. AB1234" />
-          <TextTypeField label="API key label" value={form.zerodha_api_key_label} onChange={onText("zerodha_api_key_label")} placeholder="Which Kite Connect app" hint="A label, not the API key value." />
-          <div>
-            <div className="text-sm font-medium text-gray-700 mb-1">Credentials status</div>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${credsConfigured ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${credsConfigured ? "bg-green-500" : "bg-amber-500"}`} />
-              {credsConfigured ? "Configured in env" : "Not configured"}
-            </span>
-          </div>
+          <TextTypeField label="API key" value={form.zerodha_api_key} onChange={onText("zerodha_api_key")} placeholder="Kite Connect API key" />
+          <PasswordTypeField label="API secret" value={form.zerodha_api_secret} onChange={onText("zerodha_api_secret")} placeholder="Kite Connect API secret" />
+          <TextTypeField label="Access token" value={form.zerodha_access_token} readOnly onChange={() => {}} hint="Set automatically after Zerodha login and refreshed daily — no need to edit." />
         </div>
       </SettingsCard>
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { liveTradingApi } from '@app/services/api';
-import './LiveTrading.css';
+import '@app/styles/LiveTrading.css';
 
 const inr = (v) => v == null ? '—' : `₹${Number(v).toLocaleString('en-IN')}`;
 const t2 = (v) => v == null ? '—' : Number(v).toFixed(2);
@@ -22,14 +22,13 @@ export default function LiveTrading() {
   useEffect(() => {
     let dead = false;
     const pullBook = () => liveTradingApi.getDaybook()
-      .then(res => res.data).then(x => { if (!dead && x) setBook(x); }).catch(() => {});
+      .then(x => { if (!dead && x) setBook(x); }).catch(() => {});
     pullBook();
     const id = setInterval(pullBook, 60000);
     return () => { dead = true; clearInterval(id); };
   }, []);
 
   const pull = () => liveTradingApi.getAutotradeState()
-    .then(res => res.data)
     .then(x => { setD(x); setErr(null); })
     .catch(e => setErr(String(e.message || e.error || e)));
 

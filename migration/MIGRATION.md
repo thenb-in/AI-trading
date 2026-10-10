@@ -212,6 +212,25 @@ execution `/api/v1/market/method2/{autotrade,catchup,gtt}`; option chain `/api/v
 backtests `/api/v1/market/{yt/backtest/*,seasonality*,candles/*}`; scalp `/api/v1/market/scalp/*`;
 archive `/api/v1/market/history/*`; mailer `/api/v1/mailer/*`; trading config `/api/v1/company-profile/trading`.
 
+## Round 2 — follow-up refactors + first real run (all 7 requested items)
+
+1. **CSS → `styles/`** — all 16 client CSS files `git mv`'d to `app/client/src/styles/`; 17 imports repointed to `@app/styles/*`. (`index.css`/`App.css` left as framework entry.)
+2. **broker → interfaces** — `services/broker/` moved to `app/server/interfaces/broker/` (mirrors the framework's `startup/server/interfaces/`); 17 importers repointed to `@appServer/interfaces/broker`; broker's own internal requires fixed. Confirmed execution/ticker/spotSummary use the `kiteconnect` package directly, not the broker module.
+3. **env.js / .env.example** — verified `env.js` re-exports framework env and `.env.example` is consumed by the framework's `dotenv-safe` (cwd-relative). Tunables removed from both (now in Company Profile); secrets/URLs kept.
+4. **Tunables rewired to Company Profile** — new `app/server/src/config/tradingConfig.js`: synchronous, never-throws, cold→DEFAULTS, 60s background refresh, resolves the single-tenant company via `companyService` + `companyProfileTradingService`. All signal/indicator/session read sites in `market_data/*`, `optionSnapshotService`, and `interfaces/broker/zerodhaOptionAnalytics` now read it. DEFAULTS equal the old env values byte-for-byte, so behavior is unchanged. (Still in-code and deferred: the engine gate constants MIN_DIRECTION_PCT 70 / VIX 22 / ADX 20 and 8-factor weights; RSI/VWAP dead zones; `execution_mode` stays on AppSetting — live-order code untouched.)
+5. **Auth on public endpoints** — optionChain/mailer/archive routes now `protect` + `requirePermission`; new master perms `MAILER_CONFIG`, `HISTORY_ARCHIVE`. Only the Zerodha OAuth login/callback stay public (browser redirect, no session) and `/method2/pulse` is protect-only (polled widget).
+6. **Startup response envelope** — every trading JSON view returns `{ success, data }` (errors `{ success:false, error, message }`, same status codes); client `api.js` unwraps `r.data.data` and all 11 pages + chrome updated. Non-JSON responses (OAuth HTML/redirect, CSV downloads) left raw.
+7. **RAN THE APP — verified end-to-end:**
+   - `npm install` across nucleus/startup-server/app-server/app-client ✓ (incl. kiteconnect, technicalindicators, tradingview-scraper, yahoo-finance2, lightweight-charts).
+   - **Client build**: `vite build` + prerender succeeded — 25,586 modules, all 11 pages/envelope/CSS compile.
+   - **Server boot** against Postgres (`startup_db` created, `SYNC_DB=true`): **LISTENING on :8469**, 40 tables synced (all 12 trading tables present), signal-history replay ran, **all 8 trading scheduler jobs registered + started and tick cleanly** (graceful no-token skips, no crashes).
+   - **Endpoint probes:** `/health` 200; `/market/vix` and `/company-profile/trading` → **401 unauth** (auth gating verified); `/auth/zerodha/login` reachable (500 only because `ZERODHA_API_KEY` is empty in this env — not a bug).
+   - **Boot fix:** one permission key mismatch (`backtestRoutes` expected `VIEW_YT_BACKTEST_MODULE`/`VIEW_SEASONALITY_MODULE`; `app_permissions.js` had `YT_BACKTEST`/`SEASONALITY`) — renamed the keys; reboot clean.
+
+### New follow-up (from Round 2)
+- [ ] **Role seeding:** the new permissions (`auto_execution`, `company_trading_config`, `mailer_config`, `history_archive`, and the `view_*_module` set) are not granted to any role yet — non-superuser accounts will 403 on those screens until a role is granted them. Seed/assign them.
+- [ ] To run live Zerodha flows, fill `ZERODHA_API_KEY/SECRET` in `app/server/.env` and reconcile the broker's hardcoded callback URL (`localhost:3000`) with the app port (`8469`).
+
 ## Deferred TODOs (hard-won fixes, tech-debt, and cleanups to take up later)
 
 Logged now, acted on later. **Do not touch during the faithful move.**

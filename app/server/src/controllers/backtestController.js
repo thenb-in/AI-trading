@@ -5,7 +5,7 @@ const ytBacktestService = require('../services/ytBacktestService');
 const seasonalityService = require('../services/seasonalityService');
 const candleStoreService = require('../services/candleStoreService');
 const { tradesToCsv } = require('../services/method2BacktestService');
-const { getZerodhaErrorMessage } = require('../services/broker');
+const { getZerodhaErrorMessage } = require('@appServer/interfaces/broker');
 
 // ── YT year backtest (their good points × ours) ──────────────────────────
 async function runYt(opts) {

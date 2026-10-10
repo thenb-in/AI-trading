@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { backtestApi } from '@app/services/api';
-import './YearBacktest.css';
-import './YtBacktest.css';
-
-const rs = (v) => v == null ? '—' : `${v < 0 ? '−' : ''}₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
-const pc = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
+import BacktestReport from '../components/BacktestReport.jsx';
+import { rs, pc } from '@app/utils/money.js';
+import '@app/styles/YearBacktest.css';
+import '@app/styles/YtBacktest.css';
 
 const OUTCOME_LABEL = {
   target: 'T3 target completed',
@@ -48,11 +47,11 @@ export default function YtBacktest() {
     try {
       setReport(null);
       const res = await backtestApi.getYtReport({ pricing, triggerSet, expiryRule });
-      setReport(res.data);
+      setReport(res);
     } catch (e) {
       // HTTP error (e.g. 404 — no run yet) leaves the report empty, like before;
       // only a network/transport failure surfaces as an error banner.
-      if (e?.response) setReport(null);
+      if (e?.httpStatus) setReport(null);
       else setErr(e.message);
     }
   }, [pricing, triggerSet, expiryRule]);
@@ -63,7 +62,7 @@ export default function YtBacktest() {
     (async () => {
       const out = {};
       for (const [k, ep] of [['m2', 'method2'], ['m3', 'method3']]) {
-        try { const res = await backtestApi.getPeerYearReport(ep); out[k] = res.data; } catch { /* optional */ }
+        try { const res = await backtestApi.getPeerYearReport(ep); out[k] = res; } catch { /* optional */ }
       }
       setPeers(out);
     })();
@@ -74,13 +73,12 @@ export default function YtBacktest() {
     try {
       await backtestApi.runYtBacktest({ from: '2025-09-24', to: '2026-09-25', pricing, triggerSet, expiryRule });
       await load();
-    } catch (e) { setErr(e?.response?.data?.message || e.message || 'run failed'); }
+    } catch (e) { setErr(e.message || 'run failed'); }
     finally { setRunning(false); }
   };
 
   const s = report?.summary;
   const months = s?.monthly ?? [];
-  const trades = report?.trades ?? [];
   const strip = [
     { k: 'm2', name: 'Method 2 (ours)', r: peers.m2 },
     { k: 'm3', name: 'Method 3 ★ prime (ours)', r: peers.m3 },
@@ -172,90 +170,33 @@ export default function YtBacktest() {
         })}
       </section>
 
-      {err && <div className="yb-err">{err}</div>}
-      {!report && !err && <div className="yb-empty">No run yet — press “Re-run backtest”.</div>}
-
-      {s && (
-        <>
-          <section className="yb-cards">
-            <div className="yb-card"><span>Trades</span><b>{s.trades.toLocaleString('en-IN')}</b></div>
-            <div className="yb-card"><span>Win rate</span><b>{pc(s.winRate)}</b><i>needs {pc(s.requiredWinRate)}</i></div>
-            <div className="yb-card"><span>Gross</span><b>{rs(s.grossRs)}</b></div>
-            <div className="yb-card"><span>Charges</span><b className="yb-bad">{rs(-s.chargesRs)}</b></div>
-            <div className="yb-card"><span>Slippage</span><b className="yb-bad">{rs(-s.slippageRs)}</b></div>
-            <div className="yb-card yb-card--hero"><span>In hand</span>
-              <b className={s.netRs >= 0 ? 'yb-good' : 'yb-bad'}>{rs(s.netRs)}</b>
-              <i>PF {s.profitFactor} · max DD {rs(s.maxDrawdownRs)}</i></div>
-          </section>
-
-          <div className="yb-cols">
-            <section className="yb-panel">
-              <h3>Month by month</h3>
-              <table className="yb-table">
-                <thead><tr><th>Month</th><th>Trades</th><th>Wins</th><th>In hand</th></tr></thead>
-                <tbody>
-                  {months.map((m) => (
-                    <tr key={m.month}>
-                      <td>{m.month}</td><td className="yb-num">{m.trades}</td><td className="yb-num">{m.wins}</td>
-                      <td className={`yb-num yb-strong ${m.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(m.netRs)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-
-            <section className="yb-panel">
-              <h3>Which of their triggers paid</h3>
-              <table className="yb-table">
-                <thead><tr><th>Trigger</th><th>Trades</th><th>Win</th><th>In hand</th></tr></thead>
-                <tbody>
-                  {Object.entries(s.byTrigger ?? {}).sort((a, b) => b[1].netRs - a[1].netRs).map(([k, v]) => (
-                    <tr key={k}>
-                      <td>{TRIGGER_LABEL[k] ?? k}</td><td className="yb-num">{v.trades}</td>
-                      <td className="yb-num">{pc(v.trades ? v.wins / v.trades * 100 : 0)}</td>
-                      <td className={`yb-num yb-strong ${v.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(v.netRs)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <h3>How trades ended</h3>
-              <table className="yb-table">
-                <thead><tr><th>Resolution</th><th>Count</th><th>Share</th></tr></thead>
-                <tbody>
-                  {Object.entries(s.byOutcome ?? {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
-                    <tr key={k}><td>{OUTCOME_LABEL[k] ?? k}</td><td className="yb-num">{v}</td><td className="yb-num">{pc(v / s.trades * 100)}</td></tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="yb-note">Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} · avg hold {s.avgHoldMins} min.</p>
-            </section>
-          </div>
-
-          <section className="yb-panel">
-            <h3>Trade log (latest 100 of {s.trades.toLocaleString('en-IN')} — full log in the Excel download)</h3>
-            <div className="yb-scroll">
-              <table className="yb-table yb-table--log">
-                <thead><tr>
-                  <th>Date</th><th>Time</th><th>Call</th><th>Trigger</th><th>Contract</th><th>Conf</th>
-                  <th>Entry</th><th>Exit</th><th>Resolution</th><th>Held</th><th>In hand</th>
-                </tr></thead>
-                <tbody>
-                  {trades.slice(-100).reverse().map((t, i) => (
-                    <tr key={i}>
-                      <td>{t.date}</td><td>{t.time}</td><td>{t.dir}</td><td>{t.trigger ?? '—'}</td>
-                      <td className="yb-sym">{t.sym}</td><td className="yb-num">{t.conf}%</td>
-                      <td className="yb-num">₹{t.entry}</td><td className="yb-num">₹{t.exit}</td>
-                      <td>{t.outcome}{t.targetsHit > 0 ? ` (T${t.targetsHit}✓)` : ''}</td>
-                      <td className="yb-num">{t.heldMins}m</td>
-                      <td className={`yb-num yb-strong ${t.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(t.netRs)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
-      )}
+      <BacktestReport
+        report={report}
+        err={err}
+        months={months}
+        outcomeLabels={OUTCOME_LABEL}
+        showTrigger
+        renderExtraPanel={(s) => (
+          <>
+            <h3>Which of their triggers paid</h3>
+            <table className="yb-table">
+              <thead><tr><th>Trigger</th><th>Trades</th><th>Win</th><th>In hand</th></tr></thead>
+              <tbody>
+                {Object.entries(s.byTrigger ?? {}).sort((a, b) => b[1].netRs - a[1].netRs).map(([k, v]) => (
+                  <tr key={k}>
+                    <td>{TRIGGER_LABEL[k] ?? k}</td><td className="yb-num">{v.trades}</td>
+                    <td className="yb-num">{pc(v.trades ? v.wins / v.trades * 100 : 0)}</td>
+                    <td className={`yb-num yb-strong ${v.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(v.netRs)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+        outcomeNote={(s) => (
+          <p className="yb-note">Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} · avg hold {s.avgHoldMins} min.</p>
+        )}
+      />
     </div>
   );
 }

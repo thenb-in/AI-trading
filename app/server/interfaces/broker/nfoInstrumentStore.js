@@ -1,7 +1,7 @@
 'use strict';
 const { Op } = require('sequelize');
 const logger = require('@startup/logger');
-const { NfoInstrument } = require('../../models');
+const { NfoInstrument } = require('@appServer/src/models');
 const { getKiteWithAccessToken } = require('./kiteClient');
 
 /**

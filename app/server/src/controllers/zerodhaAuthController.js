@@ -1,6 +1,6 @@
 // Thin controller: no req/res, no models — orchestrates the broker + market-
 // data services behind the Zerodha auth / diagnostics endpoints.
-const broker = require('../services/broker');
+const broker = require('@appServer/interfaces/broker');
 const marketData = require('../services/market_data');
 const tickerService = require('../services/tickerService');
 

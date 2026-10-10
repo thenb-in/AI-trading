@@ -6,7 +6,7 @@
 const scalpService = require('../services/scalpService');
 const scalpPaperService = require('../services/scalpPaperService');
 const scalpReportService = require('../services/scalpReportService');
-const { fetchHistoricalCandles, getOptionQuotesByTradingSymbols } = require('../services/broker');
+const { fetchHistoricalCandles, getOptionQuotesByTradingSymbols } = require('@appServer/interfaces/broker');
 
 async function getLiveScalp(symbol) {
   const to = Math.floor(Date.now() / 1000);

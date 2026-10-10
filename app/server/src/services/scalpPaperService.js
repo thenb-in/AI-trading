@@ -19,7 +19,7 @@
 const { Op } = require('sequelize');
 const logger = require('@startup/logger');
 const { ScalpPaperTrade, NfoInstrument } = require('../models');
-const { fetchHistoricalCandles, getOptionQuotesByTradingSymbols } = require('./broker');
+const { fetchHistoricalCandles, getOptionQuotesByTradingSymbols } = require('@appServer/interfaces/broker');
 const {
   evaluateScalp, estimateCosts, QTY, REGIME_STRICT,
 } = require('./scalpService');

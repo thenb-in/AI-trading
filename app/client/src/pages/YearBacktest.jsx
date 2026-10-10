@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { useLocation } from 'react-router-dom';
 import { method2Api } from '@app/services/api';
-import './YearBacktest.css';
-
-const rs = (v) => v == null ? '—' : `${v < 0 ? '−' : ''}₹${Math.abs(Math.round(v)).toLocaleString('en-IN')}`;
-const pc = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
+import BacktestReport from '../components/BacktestReport.jsx';
+import { rs, pc } from '@app/utils/money.js';
+import '@app/styles/YearBacktest.css';
 
 const OUTCOME_LABEL = {
   target: 'T3 target completed',
@@ -42,11 +41,11 @@ export default function YearBacktest() {
   const load = useCallback(async (m = method) => {
     try {
       setReport(null);
-      const { data } = await method2Api.getBacktest(METHODS[m].ep);
+      const data = await method2Api.getBacktest(METHODS[m].ep);
       setReport(data);
     } catch (e) {
       // 404 = no run yet; surface anything else
-      if (e?.response?.status !== 404) setErr(e.message);
+      if (e?.httpStatus !== 404) setErr(e.message);
     }
   }, [method]);
   useEffect(() => { load(method); }, [method]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -56,13 +55,11 @@ export default function YearBacktest() {
     try {
       await method2Api.runBacktest(METHODS[method].ep, { from: '2025-09-24', to: '2026-09-25' });
       await load();
-    } catch (e) { setErr(e.response?.data?.message || e.message || 'run failed'); }
+    } catch (e) { setErr(e.message || 'run failed'); }
     finally { setRunning(false); }
   };
 
-  const s = report?.summary;
   const months = report?.by_day ?? report?.byDay ?? report?.summary?.monthly ?? [];
-  const trades = report?.trades ?? [];
 
   return (
     <div className="yb-page">
@@ -120,87 +117,20 @@ export default function YearBacktest() {
         chain-augmented results, on real premiums, live on the Scalp page and grow daily.
       </div>
 
-      {err && <div className="yb-err">{err}</div>}
-      {!report && !err && <div className="yb-empty">No run yet — press “Re-run backtest”.</div>}
-
-      {s && (
-        <>
-          <section className="yb-cards">
-            <div className="yb-card"><span>Trades</span><b>{s.trades.toLocaleString('en-IN')}</b></div>
-            <div className="yb-card"><span>Win rate</span><b>{pc(s.winRate)}</b><i>needs {pc(s.requiredWinRate)}</i></div>
-            <div className="yb-card"><span>Gross</span><b>{rs(s.grossRs)}</b></div>
-            <div className="yb-card"><span>Charges</span><b className="yb-bad">{rs(-s.chargesRs)}</b></div>
-            <div className="yb-card"><span>Slippage</span><b className="yb-bad">{rs(-s.slippageRs)}</b></div>
-            <div className="yb-card yb-card--hero"><span>In hand</span>
-              <b className={s.netRs >= 0 ? 'yb-good' : 'yb-bad'}>{rs(s.netRs)}</b>
-              <i>PF {s.profitFactor} · max DD {rs(s.maxDrawdownRs)}</i></div>
-          </section>
-
-          <div className="yb-cols">
-            <section className="yb-panel">
-              <h3>Month by month</h3>
-              <table className="yb-table">
-                <thead><tr><th>Month</th><th>Trades</th><th>Wins</th><th>In hand</th></tr></thead>
-                <tbody>
-                  {months.map((m) => (
-                    <tr key={m.month}>
-                      <td>{m.month}</td><td className="yb-num">{m.trades}</td>
-                      <td className="yb-num">{m.wins}</td>
-                      <td className={`yb-num yb-strong ${m.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(m.netRs)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-
-            <section className="yb-panel">
-              <h3>How trades ended</h3>
-              <table className="yb-table">
-                <thead><tr><th>Resolution</th><th>Count</th><th>Share</th></tr></thead>
-                <tbody>
-                  {Object.entries(s.byOutcome ?? {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
-                    <tr key={k}>
-                      <td>{OUTCOME_LABEL[k] ?? k}</td>
-                      <td className="yb-num">{v}</td>
-                      <td className="yb-num">{pc(v / s.trades * 100)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="yb-note">
-                Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} — the
-                lifecycle's trailing stops and fast invalidation keep losses
-                smaller than wins, which is how a {pc(s.winRate)} win rate
-                stays net positive. Avg hold {s.avgHoldMins} min.
-              </p>
-            </section>
-          </div>
-
-          <section className="yb-panel">
-            <h3>Trade log (latest 100 of {s.trades.toLocaleString('en-IN')} — full log in the Excel download)</h3>
-            <div className="yb-scroll">
-              <table className="yb-table yb-table--log">
-                <thead><tr>
-                  <th>Date</th><th>Time</th><th>Call</th><th>Contract</th><th>Conf</th>
-                  <th>Entry</th><th>Exit</th><th>Resolution</th><th>Held</th><th>In hand</th>
-                </tr></thead>
-                <tbody>
-                  {trades.slice(-100).reverse().map((t, i) => (
-                    <tr key={i}>
-                      <td>{t.date}</td><td>{t.time}</td><td>{t.dir}</td>
-                      <td className="yb-sym">{t.sym}</td><td className="yb-num">{t.conf}%</td>
-                      <td className="yb-num">₹{t.entry}</td><td className="yb-num">₹{t.exit}</td>
-                      <td>{t.outcome}{t.targetsHit > 0 ? ` (T${t.targetsHit}✓)` : ''}</td>
-                      <td className="yb-num">{t.heldMins}m</td>
-                      <td className={`yb-num yb-strong ${t.netRs >= 0 ? 'yb-good' : 'yb-bad'}`}>{rs(t.netRs)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
-      )}
+      <BacktestReport
+        report={report}
+        err={err}
+        months={months}
+        outcomeLabels={OUTCOME_LABEL}
+        outcomeNote={(s) => (
+          <p className="yb-note">
+            Avg win {rs(s.avgWinRs)} vs avg loss {rs(-s.avgLossRs)} — the
+            lifecycle's trailing stops and fast invalidation keep losses
+            smaller than wins, which is how a {pc(s.winRate)} win rate
+            stays net positive. Avg hold {s.avgHoldMins} min.
+          </p>
+        )}
+      />
     </div>
   );
 }

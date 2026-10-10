@@ -19,8 +19,9 @@ const {
   getNearestExpiryNiftyOptions,
   getOptionQuotesByTradingSymbols,
   isZerodhaTokenError,
-} = require('./broker');
+} = require('@appServer/interfaces/broker');
 const analytics = require('./optionSnapshot/analytics');
+const { getTunables } = require('@appServer/src/config/tradingConfig');
 
 const OPTION_SNAPSHOT_INTERVAL_MS = 2 * 60 * 1000;
 /** Avoid spamming logs every 2 minutes while token is invalid */
@@ -167,7 +168,7 @@ function interpretOiChange(oiChange, ltpChange, optionType) {
 }
 
 async function getOiChangeAnalysis() {
-  const weight = Number(process.env.OI_CHANGE_CONFIDENCE_WEIGHT) || 8;
+  const weight = getTunables().oiChangeWeight;
 
   try {
     // Get 2 most recent distinct timestamps

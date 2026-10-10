@@ -1,71 +1,71 @@
 'use strict';
 
-// View layer for Method 2: owns req/res only. These endpoints deliberately
-// return the engine's RAW JSON body (no { success, data } envelope) and the
-// exact status codes / error shapes the legacy handlers returned, because the
-// dashboard reads fields off the top level and the response is the frozen
-// contract under migration. getZerodhaErrorMessage is the broker's public
+// View layer for Method 2: owns req/res only. The engine's business payload is
+// preserved exactly and wrapped in the framework { success, data } envelope at
+// the response boundary; failures become { success:false, error, message } with
+// the exact status codes the legacy handlers returned. The *YearCsv handlers
+// stay raw (text/csv download). getZerodhaErrorMessage is the broker's public
 // error formatter, used here exactly where the legacy route handlers used it.
 const logger = require('@startup/logger');
 const method2Controller = require('../controllers/method2Controller');
-const { getZerodhaErrorMessage } = require('../services/broker');
+const { getZerodhaErrorMessage } = require('@appServer/interfaces/broker');
 
 async function getMethod2View(_req, res) {
   try {
-    res.json(await method2Controller.getMethod2());
+    res.json({ success: true, data: await method2Controller.getMethod2() });
   } catch (err) {
-    res.status(502).json({ error: 'Method 2 analysis failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: 'Method 2 analysis failed', message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function getPulseView(_req, res) {
   try {
-    res.json(await method2Controller.getPulse());
+    res.json({ success: true, data: await method2Controller.getPulse() });
   } catch (err) {
-    res.status(500).json({ error: 'Pulse failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Pulse failed', message: err.message });
   }
 }
 
 async function getAutotradeStateView(_req, res) {
   try {
-    res.json(await method2Controller.getAutotradeState());
+    res.json({ success: true, data: await method2Controller.getAutotradeState() });
   } catch (err) {
-    res.status(500).json({ error: 'Autotrade state failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Autotrade state failed', message: err.message });
   }
 }
 
 async function setAutotradeModeView(req, res) {
   try {
-    res.json(await method2Controller.setAutotradeMode(req.body?.mode));
+    res.json({ success: true, data: await method2Controller.setAutotradeMode(req.body?.mode) });
   } catch (err) {
-    res.status(400).json({ error: 'Autotrade mode failed', message: err.message });
+    res.status(400).json({ success: false, error: 'Autotrade mode failed', message: err.message });
   }
 }
 
 async function catchUpView(_req, res) {
   try {
-    res.json(await method2Controller.catchUp());
+    res.json({ success: true, data: await method2Controller.catchUp() });
   } catch (err) {
     if (err.noActive) {
-      return res.status(400).json({ error: 'No active trade to catch up' });
+      return res.status(400).json({ success: false, error: 'No active trade to catch up' });
     }
-    res.status(400).json({ error: 'Catch-up refused', message: err.message });
+    res.status(400).json({ success: false, error: 'Catch-up refused', message: err.message });
   }
 }
 
 async function modifyGttView(req, res) {
   try {
-    res.json(await method2Controller.modifyGtt(req.body ?? {}));
+    res.json({ success: true, data: await method2Controller.modifyGtt(req.body ?? {}) });
   } catch (err) {
-    res.status(400).json({ error: 'GTT modify failed', message: err.message });
+    res.status(400).json({ success: false, error: 'GTT modify failed', message: err.message });
   }
 }
 
 async function getDaybookView(_req, res) {
   try {
-    res.json(await method2Controller.getDaybook());
+    res.json({ success: true, data: await method2Controller.getDaybook() });
   } catch (err) {
-    res.status(500).json({ error: 'Daybook failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Daybook failed', message: err.message });
   }
 }
 
@@ -73,18 +73,18 @@ async function getDaybookView(_req, res) {
 async function runMethod2YearView(req, res) {
   try {
     logger.info('[m2year] running year backtest…');
-    res.json(await method2Controller.runMethod2Year(req.body ?? {}));
+    res.json({ success: true, data: await method2Controller.runMethod2Year(req.body ?? {}) });
   } catch (err) {
-    res.status(502).json({ error: 'Year backtest failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: 'Year backtest failed', message: getZerodhaErrorMessage(err) });
   }
 }
 async function latestMethod2YearView(_req, res) {
   try {
     const row = await method2Controller.latestMethod2Year();
-    if (!row) return res.status(404).json({ error: 'No year backtest yet — run it first' });
-    res.json(row);
+    if (!row) return res.status(404).json({ success: false, error: 'No year backtest yet — run it first' });
+    res.json({ success: true, data: row });
   } catch (err) {
-    res.status(500).json({ error: 'Fetch failed', message: getZerodhaErrorMessage(err) });
+    res.status(500).json({ success: false, error: 'Fetch failed', message: getZerodhaErrorMessage(err) });
   }
 }
 async function method2YearCsvView(_req, res) {
@@ -103,18 +103,18 @@ async function method2YearCsvView(_req, res) {
 async function runMethod3YearView(req, res) {
   try {
     logger.info('[m3year] running Method 3 year backtest…');
-    res.json(await method2Controller.runMethod3Year(req.body ?? {}));
+    res.json({ success: true, data: await method2Controller.runMethod3Year(req.body ?? {}) });
   } catch (err) {
-    res.status(502).json({ error: 'Method 3 backtest failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: 'Method 3 backtest failed', message: getZerodhaErrorMessage(err) });
   }
 }
 async function latestMethod3YearView(_req, res) {
   try {
     const row = await method2Controller.latestMethod3Year();
-    if (!row) return res.status(404).json({ error: 'No Method 3 backtest yet — run it first' });
-    res.json(row);
+    if (!row) return res.status(404).json({ success: false, error: 'No Method 3 backtest yet — run it first' });
+    res.json({ success: true, data: row });
   } catch (err) {
-    res.status(500).json({ error: 'Fetch failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Fetch failed', message: err.message });
   }
 }
 async function method3YearCsvView(_req, res) {
@@ -133,18 +133,18 @@ async function method3YearCsvView(_req, res) {
 async function runMethod2PlusYearView(req, res) {
   try {
     logger.info('[m2plus] running Method 2 + discipline year backtest…');
-    res.json(await method2Controller.runMethod2PlusYear(req.body ?? {}));
+    res.json({ success: true, data: await method2Controller.runMethod2PlusYear(req.body ?? {}) });
   } catch (err) {
-    res.status(502).json({ error: 'Method 2+ backtest failed', message: getZerodhaErrorMessage(err) });
+    res.status(502).json({ success: false, error: 'Method 2+ backtest failed', message: getZerodhaErrorMessage(err) });
   }
 }
 async function latestMethod2PlusYearView(_req, res) {
   try {
     const row = await method2Controller.latestMethod2PlusYear();
-    if (!row) return res.status(404).json({ error: 'No Method 2+ backtest yet — run it first' });
-    res.json(row);
+    if (!row) return res.status(404).json({ success: false, error: 'No Method 2+ backtest yet — run it first' });
+    res.json({ success: true, data: row });
   } catch (err) {
-    res.status(500).json({ error: 'Fetch failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Fetch failed', message: err.message });
   }
 }
 async function method2PlusYearCsvView(_req, res) {

@@ -18,7 +18,7 @@
  */
 
 const logger = require('@startup/logger');
-const { fetchHistoricalCandles, fetchOptionCandles } = require('./broker');
+const { fetchHistoricalCandles, fetchOptionCandles } = require('@appServer/interfaces/broker');
 const { upsertIndexCandles, upsertOptionCandles, storeStatus } = require('./candleStoreService');
 const { NfoInstrument } = require('../models');
 const { Op } = require('sequelize');

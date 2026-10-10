@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { method2Api, mailerApi } from '@app/services/api';
-import './Method2Dashboard.css';
+import '@app/styles/Method2Dashboard.css';
 
 const REFRESH_MS = 1000;
 
@@ -81,7 +81,7 @@ function AutoTradeSwitch() {
   const [state, setState] = useState(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    method2Api.getAutotrade().then(({ data }) => setState(data)).catch(() => {});
+    method2Api.getAutotrade().then((s) => setState(s)).catch(() => {});
   }, []);
   const setMode = (mode) => {
     if (busy || !state || mode === state.mode) return;
@@ -89,7 +89,7 @@ function AutoTradeSwitch() {
       'ARM LIVE AUTO-TRADING?\n\nReal orders on your Zerodha account: BUY 130 qty (2 lots) MIS per Method 2 call, stop resting on the exchange.\n\nRun Dry-run for a few days first if you have not.')) return;
     setBusy(true);
     method2Api.setAutotrade(mode)
-      .then(({ data: d }) => setState(s => ({ ...s, mode: d.mode ?? s.mode })))
+      .then((d) => setState(s => ({ ...s, mode: d.mode ?? s.mode })))
       .catch(() => {}).finally(() => setBusy(false));
   };
   if (!state) return null;
@@ -585,7 +585,7 @@ function MailerSettings() {
 
   useEffect(() => {
     mailerApi.getConfig()
-      .then(({ data: d }) => {
+      .then((d) => {
         setConfig(d);
         if (typeof d?.secretKey === 'string') setSecretKey(d.secretKey);
       })
@@ -596,22 +596,22 @@ function MailerSettings() {
     if (!secretKey) return;
     setSaving(true); setStatus(null);
     try {
-      const { data: d } = await mailerApi.saveConfig(secretKey);
+      const d = await mailerApi.saveConfig(secretKey);
       setConfig(d);
       if (typeof d?.secretKey === 'string') setSecretKey(d.secretKey);
       setStatus({ type: 'ok', msg: 'Key saved — mail alerts are active' });
     } catch (e) {
-      setStatus({ type: 'err', msg: e.response?.data?.error || e.message });
+      setStatus({ type: 'err', msg: e.error || e.message });
     } finally { setSaving(false); }
   }
 
   async function test() {
     setTesting(true); setStatus(null);
     try {
-      const { data: d } = await mailerApi.sendTest();
+      const d = await mailerApi.sendTest();
       setStatus({ type: 'ok', msg: `Test email sent to ${d.sentTo}` });
     } catch (e) {
-      setStatus({ type: 'err', msg: e.response?.data?.error || e.message });
+      setStatus({ type: 'err', msg: e.error || e.message });
     } finally { setTesting(false); }
   }
 
@@ -686,16 +686,16 @@ export default function Method2Dashboard() {
 
   const fetchData = useCallback(async () => {
     try {
-      const { data: json } = await method2Api.getMethod2();
+      const json = await method2Api.getMethod2();
       setData(json);
       setError(null);
       setLastFetch(new Date());
     } catch (e) {
-      const msg = e.response?.data?.message;
+      const msg = e.message;
       if (msg?.match(/token|expired|unauthorized/i)) {
         setError('__TOKEN_EXPIRED__');
       } else {
-        setError(msg || e.message || 'Failed to load');
+        setError(msg || 'Failed to load');
       }
     } finally {
       setLoading(false);

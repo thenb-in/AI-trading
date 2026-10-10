@@ -1,7 +1,9 @@
-// View layer: owns req/res. Response shapes are preserved verbatim from the
+// View layer: owns req/res. The business payload is preserved verbatim from the
 // legacy inline handlers (index.js: /market/yt/backtest/year[/csv],
 // /market/seasonality[/tilt], /market/candles/resampled, /market/candles/status)
-// so the migrated pages consume exactly what they did before.
+// and wrapped in the framework { success, data } envelope at the response
+// boundary (failures become { success:false, error, message }). The CSV
+// download (ytReportCsvView) stays raw text/csv.
 const logger = require('@startup/logger');
 const backtestController = require('../controllers/backtestController');
 
@@ -20,9 +22,9 @@ async function runYtBacktestView(req, res) {
       triggerSet: triggerSet === 'all' ? 'all' : 'yt',
       expiryRule: expiryRule === true || expiryRule === 'true',
     });
-    res.json({ id: r.id, label: r.label, params: r.params, summary: r.summary });
+    res.json({ success: true, data: { id: r.id, label: r.label, params: r.params, summary: r.summary } });
   } catch (err) {
-    res.status(502).json({ error: 'YT backtest failed', message: backtestController.formatBrokerError(err) });
+    res.status(502).json({ success: false, error: 'YT backtest failed', message: backtestController.formatBrokerError(err) });
   }
 }
 
@@ -33,10 +35,10 @@ async function latestYtReportView(req, res) {
       req.query.triggerSet === 'all' ? 'all' : 'yt',
       req.query.expiryRule === 'true',
     );
-    if (!row) return res.status(404).json({ error: 'No YT backtest yet — run it first' });
-    res.json(row);
+    if (!row) return res.status(404).json({ success: false, error: 'No YT backtest yet — run it first' });
+    res.json({ success: true, data: row });
   } catch (err) {
-    res.status(500).json({ error: 'Fetch failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Fetch failed', message: err.message });
   }
 }
 
@@ -60,22 +62,22 @@ async function ytReportCsvView(req, res) {
 async function seasonalityView(req, res) {
   try {
     const symbol = ['NIFTY', 'BANKNIFTY'].includes(req.query.symbol) ? req.query.symbol : 'NIFTY';
-    res.json(await backtestController.getSeasonality(symbol));
+    res.json({ success: true, data: await backtestController.getSeasonality(symbol) });
   } catch (err) {
-    res.status(500).json({ error: 'Seasonality failed', message: backtestController.formatBrokerError(err) });
+    res.status(500).json({ success: false, error: 'Seasonality failed', message: backtestController.formatBrokerError(err) });
   }
 }
 
 // Seasonal tilt switch: when on, qualifying months nudge live Method 2's
 // score by ±2 points (~1% conviction). Persisted; OFF by default.
 async function tiltStateView(_req, res) {
-  try { res.json(await backtestController.getTiltState()); }
-  catch (err) { res.status(500).json({ error: 'Tilt state failed', message: err.message }); }
+  try { res.json({ success: true, data: await backtestController.getTiltState() }); }
+  catch (err) { res.status(500).json({ success: false, error: 'Tilt state failed', message: err.message }); }
 }
 
 async function setTiltView(req, res) {
-  try { res.json(await backtestController.setTilt(req.body?.enabled === true)); }
-  catch (err) { res.status(500).json({ error: 'Tilt save failed', message: err.message }); }
+  try { res.json({ success: true, data: await backtestController.setTilt(req.body?.enabled === true) }); }
+  catch (err) { res.status(500).json({ success: false, error: 'Tilt save failed', message: err.message }); }
 }
 
 // ── Candle store (DB) ──────────────────────────────────────────────────────
@@ -90,15 +92,15 @@ async function resampledCandlesView(req, res) {
     const from = req.query.from ? Math.floor(new Date(`${req.query.from}T00:00:00+05:30`).getTime() / 1000)
                                 : to - 7 * 86400;
     const candles = await backtestController.getResampledCandles(symbol, interval, from, to);
-    res.json({ symbol, interval, from, to, count: candles.length, candles });
+    res.json({ success: true, data: { symbol, interval, from, to, count: candles.length, candles } });
   } catch (err) {
-    res.status(500).json({ error: 'Candle fetch failed', message: backtestController.formatBrokerError(err) });
+    res.status(500).json({ success: false, error: 'Candle fetch failed', message: backtestController.formatBrokerError(err) });
   }
 }
 
 async function candleStatusView(_req, res) {
-  try { res.json(await backtestController.getStoreStatus()); }
-  catch (err) { res.status(500).json({ error: 'Store status failed', message: backtestController.formatBrokerError(err) }); }
+  try { res.json({ success: true, data: await backtestController.getStoreStatus() }); }
+  catch (err) { res.status(500).json({ success: false, error: 'Store status failed', message: backtestController.formatBrokerError(err) }); }
 }
 
 module.exports = {

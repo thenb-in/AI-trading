@@ -342,7 +342,7 @@ export default function NiftyChart({ chartData, symbol = 'NIFTY', onSymbolChange
     const fromTime = toTime - LOAD_MORE_SECONDS;
     try {
       const res = await marketApi.getCandles(symbolRef.current, fromTime, toTime);
-      const { candles: newCandles } = res.data;
+      const { candles: newCandles } = res;
       if (!newCandles?.length) return;
       // Merge: new (older) candles + existing, deduplicate
       const merged = [...newCandles, ...allCandlesRef.current];

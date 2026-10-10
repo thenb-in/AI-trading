@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { marketApi } from '@app/services/api';
-import './SystemLogic.css';
+import '@app/styles/SystemLogic.css';
 
 // The experiment record. These are finished results — fixed history, kept
 // short on purpose. Full detail lives in SCALP_BACKTEST_RESULTS.md and the
@@ -133,7 +133,7 @@ export default function SystemLogic() {
 
   useEffect(() => {
     marketApi.getScalpConfig()
-      .then((r) => setCfg(r.data))
+      .then((cfg) => setCfg(cfg))
       .catch((e) => setErr(e.message));
   }, []);
 

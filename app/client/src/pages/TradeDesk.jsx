@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { liveTradingApi } from '@app/services/api';
-import './TradeDesk.css';
+import '@app/styles/TradeDesk.css';
 
 // THE screen: everything needed to take (or not take) a trade, in the order
 // it matters — can I trade right now → what is the call → what is running →
@@ -90,7 +90,6 @@ export default function TradeDesk() {
   useEffect(() => {
     let dead = false;
     const pull = () => liveTradingApi.getMethod2()
-      .then(res => res.data)
       .then(x => { if (!dead) { setD(x); setErr(null); } })
       .catch(e => { if (!dead) setErr(String(e.message || e.error || e)); });
     pull();
@@ -100,7 +99,7 @@ export default function TradeDesk() {
   useEffect(() => {
     let dead = false;
     const pull = () => liveTradingApi.getAutotradeState()
-      .then(res => res.data).then(x => { if (!dead && x) setAt(x); }).catch(() => {});
+      .then(x => { if (!dead && x) setAt(x); }).catch(() => {});
     pull();
     const id = setInterval(pull, 3000);
     return () => { dead = true; clearInterval(id); };

@@ -1,23 +1,24 @@
 // View layer for the auto-trade / live-execution endpoints.
 //
-// NOTE: returns the RAW JSON shapes the live-trading / trade-desk screens
-// consume (not the framework { success, data } envelope) — carried over
-// verbatim from source, including the exact error status codes and bodies.
+// The business payload consumed by the live-trading / trade-desk screens is
+// preserved verbatim from source and wrapped in the framework { success, data }
+// envelope at the response boundary; failures become { success:false, error,
+// message } with the exact error status codes carried over from source.
 const executionController = require('../controllers/executionController');
 
 async function autotradeStateView(_req, res) {
   try {
-    res.json(await executionController.getAutotradeState());
+    res.json({ success: true, data: await executionController.getAutotradeState() });
   } catch (err) {
-    res.status(500).json({ error: 'Autotrade state failed', message: err.message });
+    res.status(500).json({ success: false, error: 'Autotrade state failed', message: err.message });
   }
 }
 
 async function setModeView(req, res) {
   try {
-    res.json({ mode: await executionController.setMode(req.body?.mode) });
+    res.json({ success: true, data: { mode: await executionController.setMode(req.body?.mode) } });
   } catch (err) {
-    res.status(400).json({ error: 'Autotrade mode failed', message: err.message });
+    res.status(400).json({ success: false, error: 'Autotrade mode failed', message: err.message });
   }
 }
 
@@ -28,12 +29,12 @@ async function catchUpView(_req, res) {
   try {
     const trade = await executionController.getActiveTrade();
     if (!trade) {
-      res.status(400).json({ error: 'No active trade to catch up' });
+      res.status(400).json({ success: false, error: 'No active trade to catch up' });
       return;
     }
-    res.json(await executionController.catchUpEntry(trade));
+    res.json({ success: true, data: await executionController.catchUpEntry(trade) });
   } catch (err) {
-    res.status(400).json({ error: 'Catch-up refused', message: err.message });
+    res.status(400).json({ success: false, error: 'Catch-up refused', message: err.message });
   }
 }
 
@@ -42,9 +43,9 @@ async function catchUpView(_req, res) {
 async function modifyGttView(req, res) {
   try {
     const { tradingsymbol, sl, target } = req.body ?? {};
-    res.json(await executionController.modifyGtt({ tradingsymbol, sl, target }));
+    res.json({ success: true, data: await executionController.modifyGtt({ tradingsymbol, sl, target }) });
   } catch (err) {
-    res.status(400).json({ error: 'GTT modify failed', message: err.message });
+    res.status(400).json({ success: false, error: 'GTT modify failed', message: err.message });
   }
 }
 

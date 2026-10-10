@@ -22,7 +22,7 @@
  */
 
 const logger = require('@startup/logger');
-const { fetchHistoricalCandles } = require('./broker');
+const { fetchHistoricalCandles } = require('@appServer/interfaces/broker');
 const {
   IST, istMinutes, isMarketOpen, isNearClose,
   bsPrice, dteYears, atmStrike, optSymbol,

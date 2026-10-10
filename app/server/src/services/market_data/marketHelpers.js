@@ -1,5 +1,7 @@
 'use strict';
 
+const { getTunables } = require('@appServer/src/config/tradingConfig');
+
 const DEFAULT_RSI_DEAD_ZONE_POINTS = 2;
 const DEFAULT_VWAP_DEAD_ZONE_PCT = 0.001;
 
@@ -43,12 +45,6 @@ function evaluateVwapDeadZone(price, vwap) {
   return { direction: delta > 0 ? 'bullish' : 'bearish', inDeadZone: false, threshold: thresholdPoints, delta };
 }
 
-function getBoolEnv(name, fallback) {
-  const rawValue = process.env[name]?.trim().toLowerCase();
-  if (!rawValue) return fallback;
-  return rawValue !== 'false' && rawValue !== '0' && rawValue !== 'off' && rawValue !== 'no';
-}
-
 function toIst(date) {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istDate = new Date(date.getTime() + istOffset);
@@ -63,10 +59,7 @@ function evaluateMarketSession(now) {
   const currentTime = now ?? new Date();
   const { hours, minutes, dayOfWeek } = toIst(currentTime);
   const timeMin = istTimeInMinutes(hours, minutes);
-  const blockOpening = getBoolEnv('SESSION_BLOCK_OPENING', true);
-  const blockLunch = getBoolEnv('SESSION_BLOCK_LUNCH', true);
-  const blockClosing = getBoolEnv('SESSION_BLOCK_CLOSING', true);
-  const expiryDaySpecial = getBoolEnv('SESSION_EXPIRY_DAY_SPECIAL', true);
+  const { blockOpening, blockLunch, blockClosing, expiryDaySpecial } = getTunables().session;
   // NIFTY weeklies expire on TUESDAY now (the Thursday assumption made this
   // flag lie on two days a week)
   const isExpiryDay = expiryDaySpecial && dayOfWeek === 2;

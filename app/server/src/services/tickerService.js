@@ -23,7 +23,7 @@ const logger = require('@startup/logger');
 // SpreadSample) — carried over verbatim from the live-feed source. See
 // MIGRATION FINDINGS: split into per-model sibling services later.
 const { NfoInstrument, ChainOiBaseline, SpreadSample } = require('../models');
-const env = require('../config/env');
+const brokerCredentials = require('../config/brokerCredentials');
 const { isMarketOpen } = require('../utils/optionMath');
 
 // Both index chains ride the same websocket (it takes up to 3000 tokens).
@@ -206,8 +206,10 @@ async function subscribeChain() {
 
 function start() {
   stop();
-  const api_key = env.ZERODHA_API_KEY;
-  const access_token = process.env.ZERODHA_ACCESS_TOKEN;
+  // Credentials from Company Settings (Company Profile → trading), hot-reloaded.
+  const creds = brokerCredentials.getBrokerCreds();
+  const api_key = creds.apiKey;
+  const access_token = creds.accessToken;
   if (!api_key || !access_token) { lastError = 'no Zerodha credentials'; return; }
 
   ticker = new KiteTicker({ api_key, access_token });

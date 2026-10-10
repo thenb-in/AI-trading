@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
-import './Method2Brief.css';
+import '@app/styles/Method2Brief.css';
 
 /**
  * The Method 2 trade-calculation brief — one page that says exactly how a

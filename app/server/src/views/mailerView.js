@@ -4,30 +4,30 @@ const logger = require('@startup/logger');
 const mailerController = require('../controllers/mailerController');
 
 function getMailerConfigView(_req, res) {
-  res.json(mailerController.getConfig());
+  res.json({ success: true, data: mailerController.getConfig() });
 }
 
 async function saveMailerConfigView(req, res) {
   const { secretKey } = req.body;
   if (typeof secretKey !== 'string') {
-    return res.status(400).json({ error: 'Provide secretKey (string)' });
+    return res.status(400).json({ success: false, error: 'Provide secretKey (string)' });
   }
   try {
-    res.json(await mailerController.saveConfig(secretKey));
+    res.json({ success: true, data: await mailerController.saveConfig(secretKey) });
   } catch (err) {
     logger.error(`[Mailer] config save failed: ${err.message}`);
-    res.status(500).json({ error: 'Failed to persist mailer config', message: err.message });
+    res.status(500).json({ success: false, error: 'Failed to persist mailer config', message: err.message });
   }
 }
 
 async function sendTestMailView(_req, res) {
   try {
-    res.json(await mailerController.sendTest());
+    res.json({ success: true, data: await mailerController.sendTest() });
   } catch (err) {
     if (err.statusCode === 400) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ success: false, error: err.message });
     }
-    res.status(502).json({ error: 'Test mail failed', message: err.message });
+    res.status(502).json({ success: false, error: 'Test mail failed', message: err.message });
   }
 }
 

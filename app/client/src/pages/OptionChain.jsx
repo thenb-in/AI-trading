@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { optionChainApi } from '@app/services/api';
-import './OptionChain.css';
+import '@app/styles/OptionChain.css';
 
 const REFRESH_MS = 1000;
 
@@ -31,7 +31,7 @@ export default function OptionChain() {
 
   useEffect(() => {
     optionChainApi.getBookmarks()
-      .then((res) => setBookmarks(res.data.bookmarks ?? []))
+      .then((payload) => setBookmarks(payload.bookmarks ?? []))
       .catch(() => {});
   }, []);
 
@@ -47,7 +47,7 @@ export default function OptionChain() {
   const load = useCallback(async () => {
     try {
       const res = await optionChainApi.getLiveChain(symbol);
-      setChain(res.data);
+      setChain(res);
       setErr(null);
     } catch (e) { setErr(e.message); }
   }, [symbol]);

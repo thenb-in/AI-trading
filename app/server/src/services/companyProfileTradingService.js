@@ -6,7 +6,7 @@ const { CompanyProfile } = require('../models');
 // Kept as a plain list so read/update stay generic — add a column here and it
 // flows through both ends without touching the controller/view.
 const TRADING_FIELDS = [
-  'zerodha_user_id', 'zerodha_api_key_label', 'zerodha_credentials_configured',
+  'zerodha_user_id', 'zerodha_api_key', 'zerodha_api_secret', 'zerodha_access_token',
   'trading_symbols',
   'market_open_time', 'market_close_time',
   'session_block_opening', 'session_block_lunch', 'session_block_closing', 'session_expiry_day_special',

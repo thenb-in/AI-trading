@@ -13,7 +13,7 @@ const logger = require('@startup/logger');
 
 function registerAllJobs() {
   const { collectNiftyOptionSnapshots, isZerodhaTokenError } = require('../src/services/optionSnapshotService');
-  const { getZerodhaErrorMessage, saveNfoInstrumentsSnapshot } = require('../src/services/broker');
+  const { getZerodhaErrorMessage, saveNfoInstrumentsSnapshot } = require('@appServer/interfaces/broker');
   const { sendDailySummaryMail } = require('../src/services/dailySummaryMailService');
   const { tick: scalpPaperTick } = require('../src/services/scalpPaperService');
   const { tick: chainFeedTick } = require('../src/services/chainFeedService');

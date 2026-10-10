@@ -24,7 +24,7 @@ const {
   calculateMacd, calculateAdx, calculateSuperTrend,
   breakoutState, evaluateMarketSession,
 } = require('./market_data');
-const { getOiBasedSupportResistance, calculateMaxPain, getNiftyAtmOptionQuote } = require('./broker');
+const { getOiBasedSupportResistance, calculateMaxPain, getNiftyAtmOptionQuote } = require('@appServer/interfaces/broker');
 const { getOiChangeAnalysis } = require('./optionSnapshotService');
 const chainFeed = require('./chainFeedService');
 const { liveTiltState } = require('./seasonalityService');

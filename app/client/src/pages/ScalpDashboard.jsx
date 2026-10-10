@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link } from 'react-router-dom';
 import { scalpApi } from '@app/services/api';
-import './ScalpDashboard.css';
+import '@app/styles/ScalpDashboard.css';
 
 const REFRESH_MS = 30000;
 
@@ -287,7 +287,7 @@ export default function ScalpDashboard() {
       setArchive(r3);
       setError(null);
     } catch (e) {
-      setError(e.response?.data?.message || e.message);
+      setError(e.message);
     }
   }, []);
 
@@ -302,7 +302,7 @@ export default function ScalpDashboard() {
     try {
       await reqFn();
       await load();
-    } catch (e) { setError(e.response?.data?.message || e.message || 'run failed'); }
+    } catch (e) { setError(e.message || 'run failed'); }
     finally { setBusy(false); }
   };
 

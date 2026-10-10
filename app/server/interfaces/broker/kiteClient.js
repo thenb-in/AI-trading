@@ -1,9 +1,7 @@
 'use strict';
 const { KiteConnect } = require('kiteconnect');
-const fs = require('fs');
-const path = require('path');
 const logger = require('@startup/logger');
-const env = require('../../config/env');
+const brokerCredentials = require('@appServer/src/config/brokerCredentials');
 
 /** Redirect URL must match the one configured in Zerodha Kite Connect app dashboard. */
 const ZERODHA_CALLBACK_URL = 'http://localhost:3000/api/v1/zerodha/callback';
@@ -26,9 +24,9 @@ let cachedBankniftyOptions = [];
  */
 function getZerodhaLoginURL() {
   logger.info(`Redirecting user to Zerodha login`);
-  const apiKey = env.ZERODHA_API_KEY;
+  const apiKey = brokerCredentials.getBrokerCreds().apiKey;
   if (!apiKey?.trim()) {
-    throw new Error("ZERODHA_API_KEY is required. Set ZERODHA_API_KEY in .env");
+    throw new Error("ZERODHA_API_KEY is required. Set it in Company Settings (Company Profile → trading).");
   }
   const kite = new KiteConnect({ api_key: apiKey });
   return kite.getLoginURL();
@@ -90,7 +88,7 @@ function isZerodhaTokenError(err) {
 
   if (isToken && !_tokenExpiredLogged) {
     _tokenExpiredLogged = true;
-    const apiKey = env.ZERODHA_API_KEY ?? '';
+    const apiKey = brokerCredentials.getBrokerCreds().apiKey ?? '';
     const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${apiKey}`;
     logger.error(`\n❌ Zerodha access token expired.\n   Login here to get a new token:\n   ${loginUrl}\n`);
   }
@@ -106,15 +104,16 @@ async function generateZerodhaSession(requestToken) {
     logger.error(`[zerodhaService] request_token is missing`);
     throw new Error("request_token is required");
   }
-  const apiSecret = env.ZERODHA_API_SECRET;
+  const creds = brokerCredentials.getBrokerCreds();
+  const apiSecret = creds.apiSecret;
   if (!apiSecret?.trim()) {
-    logger.error(`[zerodhaService] ZERODHA_API_SECRET is not set in environment`);
-    throw new Error("ZERODHA_API_SECRET is required. Set ZERODHA_API_SECRET in .env");
+    logger.error(`[zerodhaService] ZERODHA_API_SECRET is not configured in Company Settings`);
+    throw new Error("ZERODHA_API_SECRET is required. Set it in Company Settings (Company Profile → trading).");
   }
 
-  const apiKey = env.ZERODHA_API_KEY;
+  const apiKey = creds.apiKey;
   if (!apiKey?.trim()) {
-    throw new Error("ZERODHA_API_KEY is required. Set ZERODHA_API_KEY in .env");
+    throw new Error("ZERODHA_API_KEY is required. Set it in Company Settings (Company Profile → trading).");
   }
   logger.info(`Generating Zerodha session`);
   const kite = new KiteConnect({ api_key: apiKey });
@@ -130,24 +129,26 @@ async function generateZerodhaSession(requestToken) {
   logger.info(`Zerodha access token generated`);
   _tokenExpiredLogged = false; // reset so next expiry logs again
 
-  saveZerodhaAccessTokenToEnv(accessToken);
+  await saveZerodhaAccessToken(accessToken);
 
   return accessToken;
 }
 
 /**
- * Returns a Kite Connect instance with access token set from .env (ZERODHA_ACCESS_TOKEN).
+ * Returns a Kite Connect instance with the company's access token set.
+ * Credentials come from Company Settings (Company Profile → trading).
  * Use for API calls that require authentication (e.g. getProfile).
  */
 function getKiteWithAccessToken() {
-  const apiKey = env.ZERODHA_API_KEY;
+  const creds = brokerCredentials.getBrokerCreds();
+  const apiKey = creds.apiKey;
   if (!apiKey?.trim()) {
-    throw new Error("ZERODHA_API_KEY is required. Set ZERODHA_API_KEY in .env");
+    throw new Error("ZERODHA_API_KEY is required. Set it in Company Settings (Company Profile → trading).");
   }
-  const accessToken = process.env.ZERODHA_ACCESS_TOKEN;
+  const accessToken = creds.accessToken;
   if (!accessToken?.trim()) {
     throw new Error(
-      "ZERODHA_ACCESS_TOKEN is required. Open /auth/zerodha/login, complete Zerodha login, then restart the server so the token saved to .env is loaded."
+      "ZERODHA_ACCESS_TOKEN is required. Open /auth/zerodha/login and complete Zerodha login — the token is saved to Company Settings and picked up automatically, no restart needed."
     );
   }
   const kite = new KiteConnect({ api_key: apiKey });
@@ -292,7 +293,7 @@ async function getNiftySpotFromZerodha(kite) {
   // All tiers failed and no cache — log all errors and throw
   const tokenFailed = errors.some(e => isZerodhaTokenError(e.error));
   if (tokenFailed) {
-    const apiKey = env.ZERODHA_API_KEY ?? '';
+    const apiKey = brokerCredentials.getBrokerCreds().apiKey ?? '';
     const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${apiKey}`;
     logger.error(`\n❌ Zerodha access token expired. Login here to get a new one:\n   ${loginUrl}\n`);
   } else {
@@ -301,44 +302,13 @@ async function getNiftySpotFromZerodha(kite) {
   throw new Error("Could not get NIFTY 50 spot from Zerodha (all fallback tiers exhausted)");
 }
 
-const ENV_FILE = path.join(process.cwd(), ".env");
-const ENV_KEY = "ZERODHA_ACCESS_TOKEN";
-
 /**
- * Writes the access token to .env (updates ZERODHA_ACCESS_TOKEN or appends it).
+ * Persists the access token to the company's Company Profile and updates the
+ * in-memory broker-credentials cache, so the very next read picks it up with no
+ * restart (the daily hot-reload). Persist failures are logged by the accessor.
  */
-function saveZerodhaAccessTokenToEnv(accessToken) {
-  try {
-    let content = "";
-    try {
-      content = fs.readFileSync(ENV_FILE, "utf8");
-    } catch {
-      content = "";
-    }
-    const lines = content.split(/\r?\n/);
-    const keyPrefix = `${ENV_KEY}=`;
-    let found = false;
-    const newLines = lines.map((line) => {
-      if (line.startsWith(keyPrefix)) {
-        found = true;
-        return `${keyPrefix}${accessToken}`;
-      }
-      return line;
-    });
-    if (!found) {
-      if (newLines.length > 0 && !newLines[newLines.length - 1].trim()) {
-        newLines.pop();
-      }
-      newLines.push("");
-      newLines.push(`# Zerodha access token (set automatically after login)`);
-      newLines.push(`${keyPrefix}${accessToken}`);
-    }
-    fs.writeFileSync(ENV_FILE, newLines.join("\n") + (content.endsWith("\n") ? "" : "\n"), "utf8");
-    process.env.ZERODHA_ACCESS_TOKEN = accessToken; // hot-reload into running process
-    logger.info(`[zerodhaService] Access token saved to .env and reloaded into process`);
-  } catch (err) {
-    logger.error(`[zerodhaService] Failed to save access token to .env ${err}`);
-  }
+async function saveZerodhaAccessToken(accessToken) {
+  await brokerCredentials.setAccessToken(accessToken);
 }
 
 module.exports = {
@@ -355,5 +325,5 @@ module.exports = {
   getCachedBankniftyOptions,
   getZerodhaProfile,
   getNiftySpotFromZerodha,
-  saveZerodhaAccessTokenToEnv,
+  saveZerodhaAccessToken,
 };

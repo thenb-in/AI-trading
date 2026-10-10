@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { marketApi } from '@app/services/api';
-import './TradeEffects.css';
+import '@app/styles/TradeEffects.css';
 
 // Full-screen trade effects, on whatever page is open:
 //  - target hit (T1/T2/T3 or final target exit)  → party poppers, 5 seconds
@@ -82,8 +82,7 @@ export default function TradeEffects() {
     const poll = async () => {
       let d;
       try {
-        const r = await marketApi.getMethod2Pulse();
-        d = r.data;
+        d = await marketApi.getMethod2Pulse();
       } catch { return; }
       const b = baseline.current;
       const activeKey = d.active ? `${d.active.id}:${d.active.targetsHit}` : null;

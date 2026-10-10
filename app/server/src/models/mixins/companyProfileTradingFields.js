@@ -5,30 +5,41 @@
 // company_profiles table — there is no separate trading table.
 //
 // This is the company-level HOME for everything that is company-specific
-// trading config: non-secret broker references, the traded symbols, the IST
+// trading config: the broker credentials, the traded symbols, the IST
 // market-session window, the trade/execution mode, and the strategy tunables.
-// Secrets (API secret, access token, mailer key) stay in env and are NEVER
-// stored here — only non-secret references and a "credentials configured" flag.
+//
+// Broker credentials: per the owner's decision these Zerodha Kite Connect
+// credentials (api key, api secret, access token) are now stored here, scoped
+// to the company, instead of in env. This deliberately reverses the earlier
+// "secrets are NEVER stored here" rule — storing them in the DB is what makes
+// the access-token daily hot-reload work (the login flow writes it straight
+// back to this row; see config/brokerCredentials.js) without rewriting .env.
+// TODO(security): these credential columns are plaintext at rest — add
+// encryption-at-rest (e.g. column-level encrypt/decrypt in the service) later.
 //
 // Defaults below are the exact validated values carried over from the legacy
 // app's .env.example / service fallbacks (do not change without a strategy review).
 const companyProfileTradingFields = (DataTypes) => ({
-  // --- Broker references (non-secret) ---------------------------------------
+  // --- Broker credentials (Zerodha Kite Connect) ----------------------------
   zerodha_user_id: {
     type: DataTypes.STRING(50),
     allowNull: true,
-    comment: 'Zerodha/Kite login user id (e.g. AB1234) — a non-secret account reference, display only.'
+    comment: 'Zerodha/Kite login user id (e.g. AB1234) — account reference, display only.'
   },
-  zerodha_api_key_label: {
+  zerodha_api_key: {
     type: DataTypes.STRING(100),
     allowNull: true,
-    comment: 'Human label naming which Kite Connect app/API key this company runs on. NOT the API key value — that stays in env.'
+    comment: 'Zerodha Kite Connect API key for this company. Secret — plaintext at rest (see encryption TODO in header).'
   },
-  zerodha_credentials_configured: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: false,
-    comment: 'Whether the Zerodha API key/secret/access token are present in env for this deployment. Status flag only; the secrets themselves are never stored here.'
+  zerodha_api_secret: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Zerodha Kite Connect API secret for this company. Secret — plaintext at rest (see encryption TODO in header).'
+  },
+  zerodha_access_token: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    comment: 'Zerodha access token, written at login and refreshed daily. Secret — plaintext at rest (see encryption TODO in header).'
   },
 
   // --- Traded symbols -------------------------------------------------------

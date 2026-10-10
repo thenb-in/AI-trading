@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { marketApi } from '@app/services/api';
-import './Clock.css';
+import '@app/styles/Clock.css';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -47,7 +47,7 @@ export default function Clock() {
   useEffect(() => {
     let dead = false;
     const pull = () => marketApi.getSpotSummary()
-      .then(r => { if (!dead && r.data) setSpots(r.data); })
+      .then(payload => { if (!dead && payload) setSpots(payload); })
       .catch(() => {});
     pull();
     const id = setInterval(pull, 3000);

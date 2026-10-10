@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import MethodNav from '../components/MethodNav.jsx';
 import { Link, useLocation } from 'react-router-dom';
-import './MarketDashboard.css';
+import '@app/styles/MarketDashboard.css';
 import NiftyChart from '../components/trading/NiftyChart.jsx';
 import ChartSignalPanel from '../components/trading/ChartSignalPanel.jsx';
 import { marketApi } from '@app/services/api';
@@ -378,7 +378,7 @@ export default function MarketDashboard() {
 
   const handleModeChange = useCallback(async (newMode) => {
     try {
-      const { data } = await marketApi.setTradeMode(newMode);
+      const data = await marketApi.setTradeMode(newMode);
       setTradeModeState(data.mode);
     } catch (err) {
       console.error('[TradeModeToggle] failed to switch mode:', err);
@@ -388,19 +388,19 @@ export default function MarketDashboard() {
   const fetchData = useCallback(async (symbol = chartSymbol) => {
     // Chart data is fetched independently — charts render even if other endpoints fail
     marketApi.getChartAnalysis(symbol)
-      .then(res => { if (res.data?.candles?.length) setChartData(res.data); })
+      .then(res => { if (res?.candles?.length) setChartData(res); })
       .catch(() => {});
 
-    // Required endpoints throw on failure; the axios error carries
-    // response.status (e.g. 502 on a Zerodha token error) and response.data.message,
+    // Required endpoints throw on failure; the rejected envelope carries
+    // httpStatus (e.g. 502 on a Zerodha token error) and message,
     // which the token-expired detection below keys off exactly as before.
     const failed = (label, reason) => {
-      const status = reason?.response?.status;
-      const message = reason?.response?.data?.message;
+      const status = reason?.httpStatus;
+      const message = reason?.message;
       let detail = `${status ?? ''}`;
       if (message) detail += ` — ${message}`;
       const err = new Error(`${label}: ${detail}`);
-      err.status = status;
+      err.httpStatus = status;
       throw err;
     };
 
@@ -421,20 +421,20 @@ export default function MarketDashboard() {
       if (pcrR.status === 'rejected') failed('PCR', pcrR.reason);
       if (signalR.status === 'rejected') failed('Signal', signalR.reason);
 
-      setPriceData(priceR.value.data);
-      setIndicatorData(indicatorsR.value.data);
-      setBankniftyData(bankIndicatorsR.value.data);
-      setPcrData(pcrR.value.data);
-      setSignalData(signalR.value.data);
+      setPriceData(priceR.value);
+      setIndicatorData(indicatorsR.value);
+      setBankniftyData(bankIndicatorsR.value);
+      setPcrData(pcrR.value);
+      setSignalData(signalR.value);
 
-      if (vixR.status === 'fulfilled') setVixData(vixR.value.data);
-      if (sessionR.status === 'fulfilled') setSessionData(sessionR.value.data);
+      if (vixR.status === 'fulfilled') setVixData(vixR.value);
+      if (sessionR.status === 'fulfilled') setSessionData(sessionR.value);
 
       setError(null);
     } catch (err) {
       const message = err?.message || 'Failed to fetch market data';
       const isTokenError =
-        err?.status === 502 ||
+        err?.httpStatus === 502 ||
         /\btoken\b|\bexpired\b|\bunauthorized\b|TokenException|PermissionException|api_key|access_token|fallback tiers exhausted|Zerodha/i.test(message);
       setError(isTokenError ? `__TOKEN_EXPIRED__: ${message}` : message);
       console.error('[MarketDashboard] fetch error:', err);
@@ -445,7 +445,7 @@ export default function MarketDashboard() {
 
   useEffect(() => {
     marketApi.getTradeMode()
-      .then(r => setTradeModeState(r.data.mode))
+      .then(r => setTradeModeState(r.mode))
       .catch(() => {});
   }, []);
 

@@ -11,7 +11,7 @@
  */
 
 const { KiteConnect } = require('kiteconnect');
-const env = require('../config/env');
+const brokerCredentials = require('../config/brokerCredentials');
 const tickerService = require('./tickerService');
 
 const KEYS = { NIFTY: 'NSE:NIFTY 50', BANKNIFTY: 'NSE:NIFTY BANK' };
@@ -22,11 +22,12 @@ let restSpotCache = { at: 0, data: null };
 const istDate = () => new Date(Date.now() + 19800 * 1000).toISOString().slice(0, 10);
 
 async function restQuotes() {
-  const kite = new KiteConnect({ api_key: env.ZERODHA_API_KEY });
-  // Access token read from raw process.env (not env.js): the token is hot-set
-  // into process.env after Zerodha login, and env.js snapshots at load. See
-  // MIGRATION.md deferred TODO on ZERODHA_ACCESS_TOKEN.
-  kite.setAccessToken(process.env.ZERODHA_ACCESS_TOKEN);
+  // Credentials come from Company Settings (Company Profile → trading) via the
+  // synchronous, hot-reloading broker-credentials cache — the access token is
+  // picked up immediately after Zerodha login with no restart.
+  const creds = brokerCredentials.getBrokerCreds();
+  const kite = new KiteConnect({ api_key: creds.apiKey });
+  kite.setAccessToken(creds.accessToken);
   return kite.getQuote(Object.values(KEYS));
 }
 

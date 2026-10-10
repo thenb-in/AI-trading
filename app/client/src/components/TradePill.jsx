@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { marketApi } from '@app/services/api';
-import './TradePill.css';
+import '@app/styles/TradePill.css';
 
 // Global trade pill, bottom-right on EVERY screen: the live position while
 // one is open, a quiet "watching" chip while none is. Rides the same light
@@ -55,7 +55,7 @@ export default function TradePill() {
   useEffect(() => {
     let dead = false;
     const poll = () => marketApi.getMethod2Pulse()
-      .then(r => { if (!dead && r.data) { setD(r.data); setSeen(true); } })
+      .then(payload => { if (!dead && payload) { setD(payload); setSeen(true); } })
       .catch(() => {});
     poll();
     const id = setInterval(poll, 1000);

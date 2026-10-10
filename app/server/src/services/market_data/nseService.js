@@ -4,7 +4,8 @@ const { TradingViewAPI } = require('tradingview-scraper');
 const { ema, rsi, MACD, ADX } = require('technicalindicators');
 const logger = require('@startup/logger');
 const { evaluateRsiDeadZone, evaluateVwapDeadZone, evaluateMarketSession } = require('./marketHelpers');
-const { getNiftyAtmOptionQuote, getNiftyAtmPcr, getNiftyPcrFromZerodha, calculateMaxPain, getOiBasedSupportResistance, getNiftySpotFromZerodha, fetchHistoricalCandles } = require('../broker');
+const { getTunables } = require('@appServer/src/config/tradingConfig');
+const { getNiftyAtmOptionQuote, getNiftyAtmPcr, getNiftyPcrFromZerodha, calculateMaxPain, getOiBasedSupportResistance, getNiftySpotFromZerodha, fetchHistoricalCandles } = require('@appServer/interfaces/broker');
 const { getOiChangeAnalysis } = require('../optionSnapshotService');
 
 const NSE_QUOTE_URL = 'https://www.nseindia.com/api/quote-equity?symbol=NIFTY%2050';
@@ -221,12 +222,7 @@ async function getBankNiftyCandles(windowSize = DEFAULT_INDICATOR_WINDOW_SIZE) {
 }
 
 function isPcrWeightingEnabled() {
-  const rawValue = process.env.SIGNAL_USE_PCR_WEIGHTING?.trim().toLowerCase();
-  if (!rawValue) {
-    return true;
-  }
-
-  return rawValue !== 'false' && rawValue !== '0' && rawValue !== 'off' && rawValue !== 'no';
+  return getTunables().signalUsePcrWeighting;
 }
 
 function getPcrConfidenceWeight(pcr) {
@@ -294,10 +290,8 @@ let cachedVix = null;
 const VIX_CACHE_TTL_MS = 60_000;
 
 function getVixThresholds() {
-  const high = Number(process.env.VIX_HIGH_THRESHOLD) || 20;
-  const low = Number(process.env.VIX_LOW_THRESHOLD) || 11;
-  const weight = Number(process.env.VIX_CONFIDENCE_WEIGHT) || 10;
-  return { high, low, weight };
+  const { vixHigh, vixLow, vixWeight } = getTunables();
+  return { high: vixHigh, low: vixLow, weight: vixWeight };
 }
 
 async function getIndiaVix() {
@@ -398,7 +392,7 @@ function extractPreviousDayLevels(candles) {
 
 function evaluatePdhPdl(price, levels, signalDir) {
   if (price == null || levels.pdh == null || levels.pdl == null || levels.pdc == null) return null;
-  const weight = Number(process.env.PDH_PDL_CONFIDENCE_WEIGHT) || 7;
+  const weight = getTunables().pdhPdlWeight;
   let breakout = 'within-range';
   let contribution = 0;
 
@@ -429,8 +423,7 @@ function calculateCpr(pdh, pdl, pdc, currentPrice, signalDir) {
   const cprWidth = topCpr - bottomCpr;
   const cprWidthPct = pivot > 0 ? cprWidth / pivot : 0;
 
-  const narrowThreshold = Number(process.env.CPR_NARROW_THRESHOLD_PCT) || 0.003;
-  const weight = Number(process.env.CPR_CONFIDENCE_WEIGHT) || 5;
+  const { cprNarrowThresholdPct: narrowThreshold, cprWeight: weight } = getTunables();
   const dayType = cprWidthPct < narrowThreshold ? 'trending' : 'ranging';
 
   let priceRelation = 'within-cpr';
@@ -456,9 +449,7 @@ function calculateCpr(pdh, pdl, pdc, currentPrice, signalDir) {
 // ---------------------------------------------------------------------------
 
 function calculateSuperTrend(candles, signalDir) {
-  const atrPeriod = Number(process.env.SUPERTREND_ATR_PERIOD) || 10;
-  const multiplier = Number(process.env.SUPERTREND_MULTIPLIER) || 3;
-  const weight = Number(process.env.SUPERTREND_CONFIDENCE_WEIGHT) || 10;
+  const { supertrendAtrPeriod: atrPeriod, supertrendMultiplier: multiplier, supertrendWeight: weight } = getTunables();
 
   if (candles.length < atrPeriod + 1) {
     return { superTrend: null, direction: null, confidenceContribution: 0 };
@@ -524,10 +515,7 @@ function calculateSuperTrend(candles, signalDir) {
 // ---------------------------------------------------------------------------
 
 function calculateMacd(candles, signalDir) {
-  const weight = Number(process.env.MACD_CONFIDENCE_WEIGHT) || 8;
-  const fastPeriod = Number(process.env.MACD_FAST) || 12;
-  const slowPeriod = Number(process.env.MACD_SLOW) || 26;
-  const signalPeriod = Number(process.env.MACD_SIGNAL) || 9;
+  const { macdWeight: weight, macdFast: fastPeriod, macdSlow: slowPeriod, macdSignal: signalPeriod } = getTunables();
 
   if (candles.length < slowPeriod + signalPeriod) {
     return { macd: null, signal: null, histogram: null, crossover: 'none', histogramDirection: 'flat', confidenceContribution: 0 };
@@ -589,8 +577,7 @@ function calculateMacd(candles, signalDir) {
 // ---------------------------------------------------------------------------
 
 function analyzeVolume(candles, signalDir) {
-  const weight = Number(process.env.VOLUME_CONFIDENCE_WEIGHT) || 5;
-  const breakoutMultiplier = Number(process.env.VOLUME_BREAKOUT_MULTIPLIER) || 1.5;
+  const { volumeWeight: weight, volumeBreakoutMultiplier: breakoutMultiplier } = getTunables();
 
   if (candles.length < 5) {
     return { currentVolume: null, averageVolume: null, volumeRatio: null, confirmation: 'insufficient-data', confidenceContribution: 0 };
@@ -845,10 +832,7 @@ function detectMarketRegime(price, ema20, ema50) {
 // Trade Mode — controls signal selectivity (runtime-settable via API)
 // ---------------------------------------------------------------------------
 
-let _tradeMode = (() => {
-  const env = process.env.TRADE_MODE?.toLowerCase();
-  return env === 'medium' ? 'medium' : 'selective';
-})();
+let _tradeMode = getTunables().signalTradeMode;
 
 function getTradeMode() {
   return _tradeMode;

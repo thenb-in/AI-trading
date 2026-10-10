@@ -19,7 +19,7 @@
  * instead of emitting zeros that masquerade as a balanced market.
  */
 
-const { getOptionQuotesByTradingSymbols } = require('./broker');
+const { getOptionQuotesByTradingSymbols } = require('@appServer/interfaces/broker');
 const { liveStrikeCandidates } = require('./scalpPaperService');
 const { isMarketOpen, istMinutes } = require('../utils/optionMath');
 

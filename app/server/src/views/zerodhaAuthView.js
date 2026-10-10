@@ -1,9 +1,9 @@
 // View layer for the Zerodha auth + diagnostics endpoints.
 //
-// NOTE: these handlers return RAW responses (redirects, HTML, and the broker's
-// own JSON shapes) rather than the framework's { success, data } envelope — the
-// OAuth redirect/callback and the legacy client contract require the exact
-// shapes carried over verbatim from source.
+// NOTE: the OAuth login redirect and the callback success/error HTML are
+// browser responses, carried over verbatim from source (no envelope). The
+// diagnostic JSON endpoints wrap their payload in the framework { success, data }
+// envelope (failures: { success:false, error, message } with the same codes).
 const env = require('../config/env');
 const zerodhaAuthController = require('../controllers/zerodhaAuthController');
 
@@ -13,7 +13,7 @@ function loginView(_req, res) {
     res.redirect(loginUrl);
   } catch (err) {
     const message = zerodhaAuthController.getErrorMessage(err);
-    res.status(500).json({ error: 'Zerodha login failed', message });
+    res.status(500).json({ success: false, error: 'Zerodha login failed', message });
   }
 }
 
@@ -42,40 +42,40 @@ h2{color:#0d9488;margin:0 0 .5rem}p{color:#6b7280;margin:0 0 1rem}a{color:#2563e
 async function profileView(_req, res) {
   try {
     const profile = await zerodhaAuthController.getProfile();
-    res.json(profile);
+    res.json({ success: true, data: profile });
   } catch (err) {
-    res.status(502).json({ error: 'Zerodha profile fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: 'Zerodha profile fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function instrumentsView(_req, res) {
   try {
     const instruments = await zerodhaAuthController.getInstruments();
-    res.json(instruments);
+    res.json({ success: true, data: instruments });
   } catch (err) {
-    res.status(502).json({ error: 'Zerodha instruments fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: 'Zerodha instruments fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function ltpView(req, res) {
   try {
     const token = req.params.token;
-    if (!token?.trim()) { res.status(400).json({ error: 'Missing token' }); return; }
+    if (!token?.trim()) { res.status(400).json({ success: false, error: 'Missing token' }); return; }
     const ltp = await zerodhaAuthController.getLTP(token);
-    res.json(ltp);
+    res.json({ success: true, data: ltp });
   } catch (err) {
-    res.status(502).json({ error: 'Zerodha LTP fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(502).json({ success: false, error: 'Zerodha LTP fetch failed', message: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
 
 async function debugNiftyView(_req, res) {
-  try { res.json(await zerodhaAuthController.debugNifty()); }
-  catch (err) { res.status(502).json({ error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
+  try { res.json({ success: true, data: await zerodhaAuthController.debugNifty() }); }
+  catch (err) { res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
 }
 
 async function debugNiftyIndicesView(_req, res) {
-  try { res.json(await zerodhaAuthController.debugNiftyIndices()); }
-  catch (err) { res.status(502).json({ error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
+  try { res.json({ success: true, data: await zerodhaAuthController.debugNiftyIndices() }); }
+  catch (err) { res.status(502).json({ success: false, error: 'Debug fetch failed', message: err instanceof Error ? err.message : 'Unknown error' }); }
 }
 
 module.exports = {

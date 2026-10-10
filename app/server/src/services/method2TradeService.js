@@ -27,7 +27,7 @@
 const { Op } = require('sequelize');
 const logger = require('@startup/logger');
 const { Method2Trade } = require('../models');
-const { getOptionQuotesByTradingSymbols } = require('./broker');
+const { getOptionQuotesByTradingSymbols } = require('@appServer/interfaces/broker');
 // real-account execution mirror (OFF unless the user arms it); its failures
 // are logged, never thrown — the signal ledger must stay truthful regardless
 const execution = require('./executionService');

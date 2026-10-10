@@ -36,9 +36,17 @@ const {
 // - AUTO_EXECUTION gates the live auto-execution endpoints (autotrade mode,
 //   catch-up entry, GTT); the Live Trading / Trade Desk pages reuse its
 //   read_auto_execution permission for nav visibility.
+// - MAILER_CONFIG gates the mailer secret read/write + test-send endpoints.
+//   Given its own master (rather than reusing AUTO_EXECUTION) because reading
+//   and rotating the mailer secret is a distinct concern from trade execution.
+// - HISTORY_ARCHIVE gates the historical data backfill endpoints (index-candle
+//   backfill, live option-candle harvest). Its own master for the same reason —
+//   data-infra ops, unrelated to live trading.
 const APP_MASTER_PERMISSION_CONSTANTS = {
   COMPANY_TRADING_CONFIG: create_master_permission('company_trading_config'),
   AUTO_EXECUTION: create_master_permission('auto_execution'),
+  MAILER_CONFIG: create_master_permission('mailer_config'),
+  HISTORY_ARCHIVE: create_master_permission('history_archive'),
 };
 
 // Module-style permissions (view_<x>_module) — one per page/dashboard.
@@ -48,8 +56,8 @@ const APP_MODULE_PERMISSION_CONSTANTS = {
   METHOD2: create_module_permission('method2', 'Method 2'),
   SCALP_DASHBOARD: create_module_permission('scalp_dashboard', 'Scalp Dashboard'),
   OPTION_CHAIN: create_module_permission('option_chain', 'Option Chain'),
-  YT_BACKTEST: create_module_permission('yt_backtest', 'YT Backtest'),
-  SEASONALITY: create_module_permission('seasonality', 'Seasonality'),
+  VIEW_YT_BACKTEST_MODULE: create_module_permission('yt_backtest', 'YT Backtest'),
+  VIEW_SEASONALITY_MODULE: create_module_permission('seasonality', 'Seasonality'),
 };
 
 const APP_REPORT_PERMISSION_CONSTANTS = {};

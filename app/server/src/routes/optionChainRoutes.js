@@ -5,10 +5,13 @@
 // Mounted by buildApp() extraRoutes at `${prefix}/market` (see the mount snippet
 // returned to the orchestrator for index.js / app_routes).
 //
-// Kept public to preserve the source behaviour exactly (the legacy routes had no
-// auth); see FINDINGS — the framework convention would gate these with protect +
-// a permission, deferred to the weave.
+// The source routes were public; conforming to the authed admin shell they now
+// require protect + the Option Chain module permission (view_option_chain_module).
 const { Router } = require('express');
+
+const { protect } = require('@startup/src/middleware/authMiddleware');
+const requirePermission = require('@startup/src/middleware/requirePermission');
+const { MODULE_PERMISSION_CONSTANTS } = require('../constants/permissions');
 const {
   getRecentOptionSnapshotsView,
   getLiveChainView,
@@ -21,12 +24,14 @@ const {
 
 const router = Router();
 
-router.get('/nifty/snapshots', getRecentOptionSnapshotsView);
-router.get('/chain/live', getLiveChainView);
-router.get('/chain/bookmarks', getBookmarksView);
-router.post('/chain/bookmarks', saveBookmarksView);
-router.get('/chain/spreads/summary', getSpreadSummaryView);
-router.post('/chain/benchmark', runChainBenchmarkView);
-router.get('/chain/feed-status', getFeedStatusView);
+const optionChain = requirePermission(MODULE_PERMISSION_CONSTANTS.OPTION_CHAIN.name);
+
+router.get('/nifty/snapshots', protect, optionChain, getRecentOptionSnapshotsView);
+router.get('/chain/live', protect, optionChain, getLiveChainView);
+router.get('/chain/bookmarks', protect, optionChain, getBookmarksView);
+router.post('/chain/bookmarks', protect, optionChain, saveBookmarksView);
+router.get('/chain/spreads/summary', protect, optionChain, getSpreadSummaryView);
+router.post('/chain/benchmark', protect, optionChain, runChainBenchmarkView);
+router.get('/chain/feed-status', protect, optionChain, getFeedStatusView);
 
 module.exports = router;
